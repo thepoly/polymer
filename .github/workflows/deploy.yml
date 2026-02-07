@@ -1,4 +1,4 @@
-name: Deploy Frontend to Arch
+name: Deploy Next.js to Polymer
 
 on:
   push:
@@ -11,28 +11,27 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Sync Files to Server
+      - name: Sync Entire Repo to Server
         run: |
-          # Sync the frontend/web folder to the production directory
-          # We exclude node_modules to force a fresh install on the server
-          rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' ./frontend/web/ /var/www/polymer/
+          # CHANGE: Sync the ROOT folder (./) instead of just the subfolder.
+          # We exclude node_modules to keep the transfer fast and clean.
+          rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' ./ /var/www/polymer/
 
-      - name: Install and Build
+      - name: Install Dependencies (Root)
         working-directory: /var/www/polymer
         run: |
-          # We assume pnpm is already installed globally on the server.
-          # This installs dependencies based on your lockfile.
+          # Now pnpm finds the workspace file and lockfile in the root!
           pnpm install --frozen-lockfile
 
-          # Build the Next.js application
+      - name: Build Frontend
+        working-directory: /var/www/polymer/frontend/web
+        run: |
+          # Build only the web project
           pnpm run build
 
       - name: Start/Restart Application
-        working-directory: /var/www/polymer
+        working-directory: /var/www/polymer/frontend/web
         run: |
-          # Start the app named 'polymer' on port 3000
-          # If it's already running, this reloads it with zero downtime
+          # We start PM2 from the subfolder so it finds the right next.config.ts
           pm2 start npm --name "polymer" -- start || pm2 reload polymer
-
-          # Save the process list so it survives reboots
           pm2 save
