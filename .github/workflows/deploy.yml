@@ -1,4 +1,4 @@
-name: Deploy Next.js to Arch VM
+name: Deploy Frontend to Arch
 
 on:
   push:
@@ -20,13 +20,11 @@ jobs:
       - name: Install and Build
         working-directory: /var/www/polymer
         run: |
-          # 1. Install pnpm (using the standalone script is safest on Arch)
-          npm install -g pnpm
-
-          # 2. Install dependencies (respecting pnpm-lock.yaml)
+          # We assume pnpm is already installed globally on the server.
+          # This installs dependencies based on your lockfile.
           pnpm install --frozen-lockfile
 
-          # 3. Build the Next.js application
+          # Build the Next.js application
           pnpm run build
 
       - name: Start/Restart Application
