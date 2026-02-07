@@ -1,4 +1,4 @@
-name: Deploy Next.js Monorepo
+name: Deploy Next.js Frontend (folder from the Monorepo) to polymer@archlinux
 
 on:
   push:
@@ -7,35 +7,49 @@ on:
 jobs:
   deploy:
     runs-on: self-hosted
+
+    # Set environment variables for the whole job to ensure pnpm works smoothly
+    env:
+      # efficient pnpm store location
+      PNPM_HOME: "/home/actions-runner/.local/share/pnpm"
+      # Ensure the path includes standard binaries
+      PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/home/actions-runner/.local/share/pnpm"
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Sync Repository to Server
         run: |
-          # Sync everything to the root
+          # 1. Sync the ENTIRE monorepo to /var/www/polymer
+          # We exclude node_modules to keep the transfer fast and clean
           rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' ./ /var/www/polymer/
 
       - name: Install Dependencies (Root)
         working-directory: /var/www/polymer
         run: |
-          # Install dependencies for the ENTIRE workspace at the root level.
-          # This places 'next' binary in /var/www/polymer/node_modules/.bin/
+          # 2. Install dependencies for the whole workspace
+          # This ensures 'next' and all libraries are linked correctly
           pnpm install --no-frozen-lockfile
 
       - name: Build Frontend
         working-directory: /var/www/polymer
         run: |
-          # Use pnpm to run the build script inside the 'web' package.
-          # It automatically adds the root node_modules to the PATH.
+          # 3. Build only the 'web' project
+          # pnpm automatically finds the package named "web" and builds it
           pnpm --filter web build
 
-      - name: Restart Application
+      - name: Start Application (Detached)
         working-directory: /var/www/polymer
+        # -------------------------------------------------------
+        # CRITICAL FIX: This prevents GitHub from killing PM2 on exit
+        # -------------------------------------------------------
+        env:
+          RUNNER_TRACKING_ID: ""
         run: |
-          # We tell PM2 to run the start script for the 'web' filter
-          # This is the cleanest way to start a monorepo app
-          pm2 start "pnpm --filter web start" --name "polymer" || pm2 restart polymer
+          # 4. Start (or reload) the app using PM2
+          # We use "pnpm --filter web start" to ensure it uses the project's start script
+          pm2 start "pnpm --filter web start" --name "polymer" || pm2 reload polymer
 
-          # Save the process list
+          # 5. Save the process list so it survives server reboots
           pm2 save
