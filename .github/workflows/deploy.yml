@@ -32,5 +32,6 @@ jobs:
           RUNNER_TRACKING_ID: ""
         run: |
           # Start using the local node_modules
+          pm2 stop polymer || true
           pm2 start "pnpm start" --name "polymer" || pm2 reload polymer
           pm2 save
