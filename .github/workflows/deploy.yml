@@ -1,0 +1,37 @@
+name: Deploy Next.js to Arch VM
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Sync Files to Server
+        run: |
+          # Sync the frontend/web folder to the production directory
+          # We exclude node_modules to force a fresh install on the server
+          rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' ./frontend/web/ /var/www/polymer/
+
+      - name: Install and Build
+        working-directory: /var/www/polymer
+        run: |
+          # Install dependencies
+          npm ci
+
+          # Build the Next.js application
+          npm run build
+
+      - name: Start/Restart Application
+        working-directory: /var/www/polymer
+        run: |
+          # Start the app named 'polymer' on port 3000
+          # If it's already running, this reloads it with zero downtime
+          pm2 start npm --name "polymer" -- start || pm2 reload polymer
+
+          # Save the process list so it survives reboots
+          pm2 save
