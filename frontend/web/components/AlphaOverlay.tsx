@@ -1,20 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Terminal, Cpu, ScanLine, Activity } from "lucide-react";
+import { Terminal, Cpu, ScanLine, Activity, Github } from "lucide-react";
 
 export default function AlphaOverlay() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const hasSeenAlphaMessage = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("seenAlphaMessage="));
+    // We wrap this in a setTimeout to push the execution to the end of the event loop.
+    // This prevents the "cascading render" warning by ensuring the initial 
+    // render (returning null) commits before we trigger the update to show the overlay.
+    const checkCookie = setTimeout(() => {
+      const hasSeenAlphaMessage = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("seenAlphaMessage="));
 
-    if (!hasSeenAlphaMessage) {
-      setIsVisible(true);
-      document.body.style.overflow = "hidden";
-    }
+      if (!hasSeenAlphaMessage) {
+        setIsVisible(true);
+        document.body.style.overflow = "hidden";
+      }
+    }, 0);
+
+    return () => clearTimeout(checkCookie);
   }, []);
 
   const handleDismiss = () => {
@@ -63,27 +70,36 @@ export default function AlphaOverlay() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 md:mb-12 border-b border-slate-800 pb-6">
               <div className="flex items-center gap-3 text-cyan-500">
                 <Terminal className="w-5 h-5 flex-shrink-0" />
-                <span className="text-xs uppercase tracking-[0.2em]">Alpha Release Phase</span>
+                <span className="text-xs uppercase tracking-[0.2em]">Alpha Release</span>
               </div>
-              <div className="flex items-center gap-2 text-[10px] text-slate-500 uppercase tracking-widest">
-                 <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
-                 System Active
-              </div>
+              
+              {/* Linked System Active Status */}
+              <a 
+                href="https://github.com/thepoly/polymer"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()} 
+                className="flex items-center gap-3 text-slate-500 hover:text-cyan-400 transition-colors cursor-pointer group"
+                aria-label="View Source on GitHub"
+              >
+                 <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse group-hover:shadow-[0_0_8px_rgba(34,211,238,0.8)] transition-shadow" />
+                 <Github className="w-5 h-5" />
+              </a>
             </div>
 
             <div className="grid lg:grid-cols-12 gap-8 lg:gap-12">
               
               {/* Main Text */}
-              <div className="lg:col-span-7 space-y-6 md:space-y-8">
+              <div className="lg:col-span-7 space-y-3 md:space-y-8">
                 <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold uppercase leading-tight tracking-tight text-white">
-                  The Next <br />
+                  A New <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">
-                    Polytechnic.
+                    Polytechnic...
                   </span>
                 </h1>
                 <div className="h-px w-16 md:w-24 bg-slate-700" />
                 <p className="text-sm md:text-lg leading-relaxed text-slate-400 max-w-xl">
-                  We are rebuilding our digital identity from the ground up. You
+                  We are redesigning our digital identity from the ground up. You
                   are currently viewing an early release of our 2026 infrastructure.
                 </p>
               </div>
@@ -93,18 +109,10 @@ export default function AlphaOverlay() {
                 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-cyan-500 text-xs uppercase tracking-widest mb-2">
-                    <Activity className="w-4 h-4" /> Official Launch
+                    <Activity className="w-4 h-4" /> Target Launch
                   </div>
                   <div className="text-2xl sm:text-3xl md:text-4xl text-white font-light">
-                    Late March <br /> 2026
-                  </div>
-                </div>
-
-                <div className="space-y-4 pt-8 border-t border-slate-800/50">
-                  <div className="text-xs text-slate-500 uppercase tracking-widest italic">Sincerely,</div>
-                  <div>
-                    <div className="text-lg md:text-xl text-white font-bold tracking-wide">Ronan Hevenor</div>
-                    <div className="text-[10px] text-cyan-500 uppercase tracking-[0.2em] mt-1 font-bold">Tech Director</div>
+                    March <br /> 2026
                   </div>
                 </div>
 
@@ -114,13 +122,13 @@ export default function AlphaOverlay() {
             {/* Footer Warning */}
             <div className="mt-12 md:mt-16 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-800 pt-6">
                <div className="flex items-center gap-4">
-                  <ScanLine className="w-5 h-5 text-slate-600 flex-shrink-0" />
-                  <span className="text-[10px] uppercase tracking-[0.3em] text-slate-500 animate-pulse">
+                  <ScanLine className="w-5 h-5 text-slate-400 flex-shrink-0" />
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-slate-200 animate-pulse font-medium">
                     Click anywhere to enter site
                   </span>
                </div>
                <div className="text-[10px] text-slate-600 font-mono">
-                  ID: 2026-ALPHA-V1
+                  v0.0.0 Alpha
                </div>
             </div>
 
