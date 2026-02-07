@@ -20,11 +20,14 @@ jobs:
       - name: Install and Build
         working-directory: /var/www/polymer
         run: |
-          # Install dependencies
-          npm ci
+          # 1. Install pnpm (using the standalone script is safest on Arch)
+          npm install -g pnpm
 
-          # Build the Next.js application
-          npm run build
+          # 2. Install dependencies (respecting pnpm-lock.yaml)
+          pnpm install --frozen-lockfile
+
+          # 3. Build the Next.js application
+          pnpm run build
 
       - name: Start/Restart Application
         working-directory: /var/www/polymer
