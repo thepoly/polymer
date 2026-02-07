@@ -1,4 +1,4 @@
-name: Deploy Next.js Frontend (folder from the Monorepo) to polymer@archlinux
+name: Deploy Next.js App
 
 on:
   push:
@@ -8,48 +8,34 @@ jobs:
   deploy:
     runs-on: self-hosted
 
-    # Set environment variables for the whole job to ensure pnpm works smoothly
-    env:
-      # efficient pnpm store location
-      PNPM_HOME: "/home/actions-runner/.local/share/pnpm"
-      # Ensure the path includes standard binaries
-      PATH: "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/home/actions-runner/.local/share/pnpm"
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Sync Repository to Server
         run: |
-          # 1. Sync the ENTIRE monorepo to /var/www/polymer
-          # We exclude node_modules to keep the transfer fast and clean
+          # Sync everything to the root
           rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' ./ /var/www/polymer/
 
-      - name: Install Dependencies (Root)
+      - name: Install Dependencies
         working-directory: /var/www/polymer
         run: |
-          # 2. Install dependencies for the whole workspace
-          # This ensures 'next' and all libraries are linked correctly
+          # Install everything at the root
           pnpm install --no-frozen-lockfile
 
       - name: Build Frontend
-        working-directory: /var/www/polymer
+        working-directory: /var/www/polymer/frontend/web
         run: |
-          # 3. Build only the 'web' project
-          # pnpm automatically finds the package named "web" and builds it
-          pnpm --filter web build
+          # Use the absolute path to the next binary to build
+          ../../node_modules/.bin/next build
 
-      - name: Start Application (Detached)
-        working-directory: /var/www/polymer
-        # -------------------------------------------------------
-        # CRITICAL FIX: This prevents GitHub from killing PM2 on exit
-        # -------------------------------------------------------
+      - name: Start Application (Direct Mode)
+        working-directory: /var/www/polymer/frontend/web
         env:
           RUNNER_TRACKING_ID: ""
         run: |
-          # 4. Start (or reload) the app using PM2
-          # We use "pnpm --filter web start" to ensure it uses the project's start script
-          pm2 start "pnpm --filter web start" --name "polymer" || pm2 reload polymer
+          # We point PM2 directly to the node_modules binary.
+          # We use -- to pass 'start' as an argument to the next binary.
+          pm2 start ../../node_modules/.bin/next --name "polymer" -- start || pm2 reload polymer
 
-          # 5. Save the process list so it survives server reboots
           pm2 save
