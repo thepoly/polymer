@@ -3,7 +3,7 @@ import type { MetadataRoute } from 'next'
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'The Polytechnic',
-    short_name: 'The Polytechnic',
+    short_name: 'The Poly',
     description: 'Serving the Rensselaer Community Since 1885',
     start_url: '/',
     display: 'standalone',
@@ -11,7 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#D6001C',
     icons: [
       {
-        src: '/dynamicPfavicon.svg',
+        src: '/static-app-icon.svg',
         sizes: 'any',
         type: 'image/svg+xml',
       },

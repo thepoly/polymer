@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     ],
     apple: [
       {
-        url: '/dynamicPfavicon.svg',
+        url: '/static-app-icon.svg',
         type: 'image/svg+xml',
       },
     ],
