@@ -35,7 +35,6 @@ export const Users: CollectionConfig = {
   admin: {
     useAsTitle: 'email',
     defaultColumns: ['firstName', 'lastName', 'roles'],
-    avatar: 'headshot',
   },
   access: {
     read: isSelfOrAdmin,

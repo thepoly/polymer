@@ -22,7 +22,12 @@ export default buildConfig({
     },
     meta: {
       titleSuffix: '- Polytechnic',
-      favicon: '/dynamicPfavicon.svg',
+      icons: [
+        {
+          rel: 'icon',
+          url: '/dynamicPfavicon.svg',
+        },
+      ],
     },
     components: {
       graphics: {
