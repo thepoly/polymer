@@ -1,13 +1,29 @@
-import type { CollectionConfig, FieldAccess } from 'payload'
+import type { CollectionConfig, FieldAccess, Access } from 'payload'
 
 type UserWithRoles = {
   id: string | number
   roles?: string[]
 }
 
-const isAdmin: FieldAccess = ({ req: { user } }) => {
+const isAdmin: Access = ({ req: { user } }) => {
   const u = user as unknown as UserWithRoles
   return Boolean(u?.roles?.includes('admin'))
+}
+
+const isAdminField: FieldAccess = ({ req: { user } }) => {
+  const u = user as unknown as UserWithRoles
+  return Boolean(u?.roles?.includes('admin'))
+}
+
+const isSelfOrAdmin: Access = ({ req: { user } }) => {
+  if (!user) return false
+  const u = user as unknown as UserWithRoles
+  if (u.roles?.includes('admin')) return true
+  return {
+    id: {
+      equals: user.id,
+    },
+  }
 }
 
 export const Users: CollectionConfig = {
@@ -16,6 +32,12 @@ export const Users: CollectionConfig = {
   admin: {
     useAsTitle: 'email',
     defaultColumns: ['firstName', 'lastName', 'roles'],
+  },
+  access: {
+    read: () => true,
+    create: isAdmin,
+    update: isSelfOrAdmin,
+    delete: isAdmin,
   },
   fields: [
     {
@@ -39,7 +61,7 @@ export const Users: CollectionConfig = {
       ],
       access: {
         // CONSTRAINT: Only Admins can change anyone's roles
-        update: isAdmin,
+        update: isAdminField,
         read: () => true, // Visible for attribution
       },
     },

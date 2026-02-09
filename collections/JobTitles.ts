@@ -1,4 +1,11 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Access } from 'payload'
+import { User } from '@/payload-types'
+
+const isAdminOrEIC: Access = ({ req: { user } }) => {
+  if (!user) return false
+  const roles = (user as User)?.roles || []
+  return roles.some((role: string) => ['admin', 'eic'].includes(role))
+}
 
 export const JobTitles: CollectionConfig = {
   slug: 'job-titles',
@@ -8,6 +15,9 @@ export const JobTitles: CollectionConfig = {
   },
   access: {
     read: () => true,
+    create: isAdminOrEIC,
+    update: isAdminOrEIC,
+    delete: isAdminOrEIC,
   },
   fields: [
     {
