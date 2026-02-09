@@ -26,6 +26,7 @@ import { StatusBadge as StatusBadge_86c977c677230d19a6e677b8bc520028 } from '@/c
 import { HeaderActions as HeaderActions_e8e4428a6620404d192440313fb7b984 } from '@/components/HeaderActions'
 import { HiddenButton as HiddenButton_fd97a2d0c7662fbdbce3025fb6228b4e } from '@/components/HiddenButton'
 import { SaveVersionButton as SaveVersionButton_b660b923d9e3f284dbfd6c2ad905c317 } from '@/components/SaveVersionButton'
+import { Icon as Icon_fe9ca0c9b67829fe284b73bb77968447 } from '@/components/Icon'
 import { Logo as Logo_2b7e2e151f989fb419ce3009e56b903e } from '@/components/Logo'
 import { default as default_b39f2d96c5778d5698b3c9e7777aa63a } from '@/components/Dashboard'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
@@ -59,6 +60,7 @@ export const importMap = {
   "@/components/HeaderActions#HeaderActions": HeaderActions_e8e4428a6620404d192440313fb7b984,
   "@/components/HiddenButton#HiddenButton": HiddenButton_fd97a2d0c7662fbdbce3025fb6228b4e,
   "@/components/SaveVersionButton#SaveVersionButton": SaveVersionButton_b660b923d9e3f284dbfd6c2ad905c317,
+  "@/components/Icon#Icon": Icon_fe9ca0c9b67829fe284b73bb77968447,
   "@/components/Logo#Logo": Logo_2b7e2e151f989fb419ce3009e56b903e,
   "@/components/Dashboard#default": default_b39f2d96c5778d5698b3c9e7777aa63a,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1

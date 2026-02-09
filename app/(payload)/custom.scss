@@ -357,6 +357,75 @@ header .status,
 
 
 
+/* Hide default Payload account and logout elements */
+.nav__account,
+.nav__logout,
+.app-header__account,
+.app-header__logout,
+.app-header__avatar,
+.graphic-account {
+  display: none !important;
+}
+
+.sidebar-new-article {
+  position: fixed;
+  top: 25px;
+  right: 25px;
+  z-index: 10000;
+}
+
+.btn-new-article {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--theme-elevation-1000, #ffffff) !important;
+  color: var(--theme-elevation-0, #000000) !important;
+  padding: 8px 16px;
+  border-radius: 0; /* Sharp corners like Payload */
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  transition: all 0.15s ease;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border: 1px solid var(--theme-elevation-1000, #ffffff);
+  white-space: nowrap;
+  font-family: var(--font-mono, monospace);
+  box-shadow: 4px 4px 0px var(--theme-elevation-200, rgba(0,0,0,0.2));
+}
+
+.btn-new-article .btn-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  margin-top: -2px;
+}
+
+.btn-new-article:hover {
+  background-color: var(--theme-elevation-0, #000000) !important;
+  color: var(--theme-elevation-1000, #ffffff) !important;
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px var(--theme-elevation-1000, #ffffff);
+  border-color: var(--theme-elevation-1000, #ffffff) !important;
+}
+
+/* Ensure custom icon fits perfectly */
+.nav__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.nav__icon svg {
+  margin-top: 0 !important; /* Override my inline marginTop if needed */
+}
+
+/* Make profile picture pop in account menu */
+.account__avatar {
+  border: 1px solid var(--theme-elevation-200);
+}
+
 @keyframes fadeIn {
 
 

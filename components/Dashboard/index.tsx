@@ -3,16 +3,21 @@ import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { headers } from 'next/headers'
 import { Greeting } from './Greeting.tsx'
+import { SidebarNewArticle } from '@/components/SidebarNewArticle'
 import { SearchBar } from './SearchBar.tsx'
 import { Todos } from './Todos/index.tsx'
-import { NewArticleButton } from './NewArticleButton.tsx'
 import './styles.css' // We will add a simple CSS file for layout
 import { User, Media, JobTitle } from '@/payload-types'
 
 const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) => {
   const payload = await getPayload({ config: configPromise })
   const headersList = await headers()
-  const { user } = await payload.auth({ headers: headersList })
+  const { user: authUser } = await payload.auth({ headers: headersList })
+  const user = authUser ? await payload.findByID({
+    collection: 'users',
+    id: authUser.id,
+    depth: 1,
+  }) : null
   const isAdmin = user?.roles?.includes('admin')
 
   const { search } = await searchParams
@@ -86,10 +91,10 @@ const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: strin
 
   return (
     <div className="dashboard-container">
-      {/* Header Section: Greeting + Action Button */}
+      <SidebarNewArticle />
+      {/* Header Section: Greeting (includes Profile Picture & New Article Button) */}
       <div className="dashboard-header">
-        <Greeting user={user} />
-        <NewArticleButton />
+        <Greeting user={user as any} />
       </div>
 
       {/* Search Bar */}

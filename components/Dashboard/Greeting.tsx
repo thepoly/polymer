@@ -13,18 +13,33 @@ export const Greeting = ({ user }: { user: User | null | undefined }) => {
                : roles.includes('editor') ? 'Section Editor'
                : 'Writer'
 
+  const headshot = user?.headshot && typeof user.headshot === 'object' ? user.headshot : null
+
   return (
-    <div className="greeting">
-      <h1>Hi {firstName}!</h1>
-      <p className="subtext">What&apos;s the plan for today?</p>
-      
-      {/* Role Footer */}
-      <div className="role-footer">
-        <div className="role-footer-content">
-          <span className="role-label">Access Level</span>
-          <span className="role-value">{status}</span>
+    <div className="greeting-container">
+      <div className="greeting">
+        <h1>Hi {firstName}! What&apos;s the plan for today?</h1>
+        
+        {/* Role Footer */}
+        <div className="role-footer">
+          <div className="role-footer-content">
+            <span className="role-label">Access Level</span>
+            <span className="role-value">{status}</span>
+          </div>
         </div>
       </div>
+      <a href="/admin/account" className="profile-link">
+        {headshot?.url && (
+          <div className="profile-picture">
+            <img src={headshot.url} alt={firstName} />
+          </div>
+        )}
+        {!headshot?.url && (
+          <div className="profile-picture-fallback">
+            {firstName.charAt(0).toUpperCase()}
+          </div>
+        )}
+      </a>
     </div>
   )
 }
