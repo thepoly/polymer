@@ -28,13 +28,16 @@ const isSelfOrAdmin: Access = ({ req: { user } }) => {
 
 export const Users: CollectionConfig = {
   slug: 'users',
-  auth: true,
+  auth: {
+    maxLoginAttempts: 5,
+    lockTime: 600000, // 10 minutes
+  },
   admin: {
     useAsTitle: 'email',
     defaultColumns: ['firstName', 'lastName', 'roles'],
   },
   access: {
-    read: () => true,
+    read: isSelfOrAdmin,
     create: isAdmin,
     update: isSelfOrAdmin,
     delete: isAdmin,
@@ -62,7 +65,6 @@ export const Users: CollectionConfig = {
       access: {
         // CONSTRAINT: Only Admins can change anyone's roles
         update: isAdminField,
-        read: () => true, // Visible for attribution
       },
     },
     // --- 3. PUBLIC PROFILE ---

@@ -39,6 +39,10 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URL || '',
     },
   }),
+  graphQL: {
+    disablePlaygroundInProduction: true,
+    disableIntrospectionInProduction: true,
+  },
   sharp,
   plugins: [],
 })
