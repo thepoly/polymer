@@ -8,6 +8,7 @@ import React from 'react'
 
 import { importMap } from './admin/importMap.js'
 import { BlackThemeProvider } from '@/components/BlackThemeProvider'
+import { LoginHint } from '@/components/LoginHint'
 import './custom.scss'
 
 type Args = {
@@ -25,7 +26,10 @@ const serverFunction: ServerFunctionClient = async function (args) {
 
 const Layout = ({ children }: Args) => (
   <RootLayout config={config} importMap={importMap} serverFunction={serverFunction}>
-    <BlackThemeProvider>{children}</BlackThemeProvider>
+    <BlackThemeProvider>
+      {children}
+      <LoginHint />
+    </BlackThemeProvider>
   </RootLayout>
 )
 

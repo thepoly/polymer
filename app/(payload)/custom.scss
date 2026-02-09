@@ -1,4 +1,5 @@
-[data-theme="dark"][data-black-theme="true"] {
+[data-black-theme="true"] {
+  color-scheme: dark;
   --theme-bg: #000000;
   --theme-elevation-0: #000000;
   --theme-elevation-50: #0a0a0a;  /* Slightly lighter to distinguish cards */
@@ -28,6 +29,31 @@
   --theme-border: #333333;     /* Visible borders against black */
   --theme-input-bg: #000000;
   --theme-input-border: #444444;
+
+  /* Force buttons to be perfectly white in black mode */
+  --theme-elevation-800: #ffffff;
+  --theme-elevation-900: #ffffff;
+  --theme-elevation-950: #ffffff;
+  
+  .btn--style-primary {
+    --theme-elevation-800: #ffffff;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border-color: #ffffff !important;
+
+    /* Ensure text inside button is black even if nested */
+    * {
+      color: #000000 !important;
+    }
+
+    &:hover {
+      background-color: #f0f0f0 !important;
+      border-color: #f0f0f0 !important;
+      * {
+        color: #000000 !important;
+      }
+    }
+  }
 }
 
 /* Simple Header Workflow Button - Match Theme Exactly */
@@ -52,11 +78,351 @@
 }
 
 /* Hide the default Payload status indicator in the header */
+
 header .status,
+
 .doc-header__status,
+
 .doc-controls__status,
+
 .status-pill,
+
 .collection-edit__header .pill,
+
 .doc-header .pill {
+
   display: none !important;
+
 }
+
+
+
+/* Hide login button - users should just hit enter */
+
+
+
+.login__form button[type="submit"] {
+
+
+
+  display: none !important;
+
+
+
+}
+
+
+
+
+
+
+
+.login__form {
+
+
+
+  position: relative;
+
+
+
+}
+
+
+
+
+
+
+
+.field-type-password {
+
+
+
+
+
+
+
+  position: relative;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.login-hit-enter-hint {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  position: absolute !important;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  right: 0;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  bottom: -20px;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color: rgba(255, 255, 255, 0.4);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  font-size: 0.75rem;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  letter-spacing: 0.05em;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  pointer-events: none;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  animation: fadeIn 0.3s ease-out;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  z-index: 10;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@keyframes fadeIn {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  from { opacity: 0; transform: translateY(-5px); }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  to { opacity: 1; transform: translateY(0); }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

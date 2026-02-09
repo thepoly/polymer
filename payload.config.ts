@@ -20,7 +20,15 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    meta: {
+      titleSuffix: '- Polytechnic',
+      favicon: '/dynamicPfavicon.svg',
+    },
     components: {
+      graphics: {
+        Logo: '@/components/Logo#Logo',
+        Icon: '@/components/Logo#Logo',
+      },
       views: {
         dashboard: {
           Component: '@/components/Dashboard#default',
