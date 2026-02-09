@@ -102,7 +102,7 @@ export default function Header() {
           </div>
           <div className="z-10 w-[150px] flex justify-end">
             <button className="text-[11px] font-bold tracking-widest uppercase hover:text-[#D6001C] transition-colors">
-              Editor's Picks
+              Editor&apos;s Picks
             </button>
           </div>
         </div>

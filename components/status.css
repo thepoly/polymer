@@ -1,0 +1,51 @@
+/* Status Badges for List View & Dashboard */
+.badge {
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.025em;
+  transition: all 0.2s ease;
+}
+
+/* Custom Status Themes */
+.status-draft { 
+  background: #334155; 
+  color: #f1f5f9; 
+} /* Slate-700 */
+
+.status-needs-copy { 
+  background: #7c2d12; 
+  color: #ffedd5; 
+} /* Orange-900 */
+
+.status-needs-1st, .status-needs-2nd, .status-needs-3rd { 
+  background: #854d0e; 
+  color: #fefce8; 
+} /* Yellow-900 */
+
+.status-ready { 
+  background: #1e3a8a; 
+  color: #dbeafe; 
+} /* Blue-900 */
+
+.status-published { 
+  background: #064e3b; 
+  color: #dcfce7; 
+} /* Green-900 */
+
+.dashboard-status-badge {
+  background-color: var(--theme-elevation-200, #333);
+  color: var(--theme-text, white);
+  padding: 8px 16px !important;
+  border-radius: 100px !important;
+  font-size: 0.85rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase;
+  border: 1px solid var(--theme-elevation-300, #444);
+}

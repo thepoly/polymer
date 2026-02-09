@@ -12,8 +12,10 @@ export default function AlphaOverlay() {
       .find((row) => row.startsWith("seenAlphaMessage="));
 
     if (!hasSeenAlphaMessage) {
-      setIsVisible(true);
-      document.body.style.overflow = "hidden";
+      setTimeout(() => {
+        setIsVisible(true);
+        document.body.style.overflow = "hidden";
+      }, 0);
     }
   }, []);
 

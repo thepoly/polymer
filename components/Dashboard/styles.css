@@ -1,0 +1,155 @@
+.dashboard-container {
+  padding: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  color: var(--theme-text, white);
+}
+
+/* Header & Greeting */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.greeting h1 {
+  font-size: 3rem;
+  margin: 0;
+  font-weight: 700;
+  color: var(--theme-text, white);
+}
+
+/* Role Footer Bar */
+.role-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 20px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.role-footer-content {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  color: white;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.role-label {
+  font-size: 0.6rem;
+  font-weight: 400;
+  opacity: 0.4;
+}
+
+.role-value {
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-shadow: 0 0 20px rgba(255,255,255,0.2);
+}
+
+.subtext {
+  font-size: 1.2rem;
+  opacity: 0.6;
+  margin-top: 10px;
+  color: var(--theme-text, white);
+}
+
+/* New Article Button */
+.btn-new-article {
+  background-color: var(--theme-text, white);
+  color: var(--theme-bg, black);
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+.btn-new-article:hover {
+  opacity: 0.9;
+}
+
+/* Search Bar */
+.dashboard-search {
+  margin-bottom: 60px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 20px;
+  font-size: 1.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--theme-elevation-200, #333);
+  color: var(--theme-text, white);
+  outline: none;
+}
+.search-input:focus {
+  border-bottom-color: var(--theme-text, white);
+}
+
+/* Todos List */
+.dashboard-todos h2 {
+  margin-bottom: 0;
+  color: var(--theme-text, white);
+}
+
+.dashboard-todos .subtext {
+  margin-bottom: 24px;
+}
+
+.todos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.todo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  background-color: var(--theme-elevation-50, #1a1a1a);
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--theme-text, white);
+  transition: transform 0.1s;
+  border: 1px solid var(--theme-elevation-150, #333);
+}
+
+.todo-row:hover {
+  transform: translateY(-2px);
+  border-color: var(--theme-elevation-300, #555);
+}
+
+.todo-col-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.todo-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.todo-meta {
+  font-size: 0.85rem;
+  opacity: 0.5;
+  text-transform: capitalize;
+}
+
+.todo-col-date {
+  opacity: 0.5;
+  font-size: 0.9rem;
+}

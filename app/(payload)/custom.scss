@@ -1,0 +1,62 @@
+[data-theme="dark"][data-black-theme="true"] {
+  --theme-bg: #000000;
+  --theme-elevation-0: #000000;
+  --theme-elevation-50: #0a0a0a;  /* Slightly lighter to distinguish cards */
+  --theme-elevation-100: #111111;
+  --theme-elevation-150: #1a1a1a;
+  --theme-elevation-200: #222222;
+  --theme-elevation-250: #2a2a2a;
+  --theme-elevation-300: #333333;
+  --theme-elevation-350: #3b3b3b;
+  --theme-elevation-400: #444444;
+  --theme-elevation-450: #4d4d4d;
+  --theme-elevation-500: #555555;
+  --theme-elevation-550: #5e5e5e;
+  --theme-elevation-600: #666666;
+  --theme-elevation-650: #777777;
+  --theme-elevation-700: #888888;
+  --theme-elevation-750: #999999;
+  --theme-elevation-800: #aaaaaa;
+  --theme-elevation-850: #bbbbbb;
+  --theme-elevation-900: #cccccc;
+  --theme-elevation-950: #dddddd;
+  --theme-elevation-1000: #ffffff;
+
+  /* Force high contrast text */
+  --theme-text: #ffffff;
+  --theme-text-muted: #a3a3a3; /* Light grey for secondary text */
+  --theme-border: #333333;     /* Visible borders against black */
+  --theme-input-bg: #000000;
+  --theme-input-border: #444444;
+}
+
+/* Simple Header Workflow Button - Match Theme Exactly */
+.workflow-header-button {
+  transition: all 0.2s ease !important;
+  box-shadow: none !important; /* Remove shadow which can look like a second border */
+}
+
+.workflow-header-button:hover {
+  filter: brightness(1.2);
+  transform: translateY(-1px);
+}
+
+/* Custom Border Colors Only - Kill any internal shadows/borders */
+.workflow-header-button.btn-blue { border: 1px solid #3b82f6 !important; box-shadow: none !important; }
+.workflow-header-button.btn-yellow { border: 1px solid #eab308 !important; box-shadow: none !important; }
+.workflow-header-button.btn-green { border: 1px solid #10b981 !important; box-shadow: none !important; }
+
+/* Ensure the native buttons look consistent next to our outline buttons */
+.workflow-header-button + button {
+  margin-left: 8px;
+}
+
+/* Hide the default Payload status indicator in the header */
+header .status,
+.doc-header__status,
+.doc-controls__status,
+.status-pill,
+.collection-edit__header .pill,
+.doc-header .pill {
+  display: none !important;
+}

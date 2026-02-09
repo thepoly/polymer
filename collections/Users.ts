@@ -1,10 +1,13 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, FieldAccess } from 'payload'
 
-// 1. Define a temporary type so TypeScript knows 'roles' exists
-// This bypasses the "Property does not exist" and "Unexpected any" errors
 type UserWithRoles = {
-  id: string
-  roles?: ('admin' | 'editor')[]
+  id: string | number
+  roles?: string[]
+}
+
+const isAdmin: FieldAccess = ({ req: { user } }) => {
+  const u = user as unknown as UserWithRoles
+  return Boolean(u?.roles?.includes('admin'))
 }
 
 export const Users: CollectionConfig = {
@@ -12,45 +15,100 @@ export const Users: CollectionConfig = {
   auth: true,
   admin: {
     useAsTitle: 'email',
-  },
-  access: {
-    // 2. READ: Users can see themselves; Admins can see everyone
-    read: ({ req: { user } }) => {
-      if ((user as unknown as UserWithRoles)?.roles?.includes('admin')) return true
-      return { id: { equals: user?.id } }
-    },
-    // 3. CREATE: Only Admins can create new users (Prevents public registration)
-    create: ({ req: { user } }) => 
-      Boolean((user as unknown as UserWithRoles)?.roles?.includes('admin')),
-    
-    // 4. UPDATE: Admins can update everyone; Users can update themselves
-    update: ({ req: { user } }) => {
-      if ((user as unknown as UserWithRoles)?.roles?.includes('admin')) return true
-      return { id: { equals: user?.id } }
-    },
-    // 5. DELETE: Only Admins can delete users
-    delete: ({ req: { user } }) => 
-      Boolean((user as unknown as UserWithRoles)?.roles?.includes('admin')),
+    defaultColumns: ['firstName', 'lastName', 'roles'],
   },
   fields: [
-    // Email and Password are added by default by 'auth: true'
-    
-    // We add a Roles field to distinguish Admins from Editors
+    {
+      type: 'row',
+      fields: [
+        { name: 'firstName', type: 'text', required: true },
+        { name: 'lastName', type: 'text', required: true },
+      ],
+    },
     {
       name: 'roles',
       type: 'select',
       hasMany: true,
-      defaultValue: ['editor'],
+      defaultValue: ['writer'],
       options: [
         { label: 'Admin', value: 'admin' },
-        { label: 'Editor', value: 'editor' },
+        { label: 'Editor in Chief', value: 'eic' },
+        { label: 'Copy Editor', value: 'copy-editor' },
+        { label: 'Section Editor', value: 'editor' },
+        { label: 'Writer', value: 'writer' },
       ],
       access: {
-        // Critical: Only Admins can give someone the 'admin' role
-        update: ({ req: { user } }) => 
-          Boolean((user as unknown as UserWithRoles)?.roles?.includes('admin')),
-        // Everyone can read their own roles
-        read: () => true,
+        // CONSTRAINT: Only Admins can change anyone's roles
+        update: isAdmin,
+        read: () => true, // Visible for attribution
+      },
+    },
+    // --- 3. PUBLIC PROFILE ---
+    {
+      name: 'headshot',
+      type: 'upload',
+      relationTo: 'media',
+    },
+    {
+      name: 'bio',
+      type: 'richText', 
+    },
+    {
+      name: 'positions',
+      type: 'array',
+      label: 'Positions Held',
+      admin: {
+        initCollapsed: false,
+        components: {
+          RowLabel: '@/components/PositionRowLabel#PositionRowLabel',
+        },
+      },
+      fields: [
+        {
+          name: 'jobTitle',
+          type: 'relationship',
+          relationTo: 'job-titles',
+          required: false,
+          label: 'Title',
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'startDate',
+              type: 'date',
+              required: true,
+              admin: {
+                date: {
+                  pickerAppearance: 'dayOnly',
+                  displayFormat: 'MMM yyyy',
+                },
+              },
+            },
+            {
+              name: 'endDate',
+              type: 'date',
+              label: 'End Date',
+              admin: {
+                placeholder: 'Current',
+                date: {
+                  pickerAppearance: 'dayOnly',
+                  displayFormat: 'MMM yyyy',
+                },
+              },
+            },
+          ],
+        },
+      ],
+    },
+    // --- 5. PREFERENCES ---
+    {
+      name: 'blackTheme',
+      type: 'checkbox',
+      label: 'Use Black Theme (OLED)',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
       },
     },
   ],
