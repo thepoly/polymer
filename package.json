@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "generate:types": "payload generate:types"
+    "generate:types": "payload generate:types",
+    "postinstall": "node scripts/generate-env.js"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "^3.75.0",
