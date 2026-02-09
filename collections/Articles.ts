@@ -18,19 +18,19 @@ const Articles: CollectionConfig = {
     // CONSTRAINT: Only Admin, EIC, Copy Editor, or Section Editor can modify articles
     update: ({ req: { user } }) => {
       if (!user) return false
-      const roles = (user as any)?.roles || []
+      const roles = (user)?.roles || []
       return roles.some((role: string) => ['admin', 'eic', 'copy-editor', 'editor'].includes(role))
     },
     // Everyone can read (or you can restrict this if needed)
     read: () => true,
     create: ({ req: { user } }) => {
       if (!user) return false
-      const roles = (user as any)?.roles || []
+      const roles = (user)?.roles || []
       return roles.some((role: string) => ['admin', 'eic', 'copy-editor', 'editor', 'writer'].includes(role))
     },
     delete: ({ req: { user } }) => {
       if (!user) return false
-      const roles = (user as any)?.roles || []
+      const roles = (user)?.roles || []
       return roles.includes('admin')
     },
   },
@@ -82,7 +82,7 @@ const Articles: CollectionConfig = {
       ],
       access: {
         update: ({ req: { user } }) => {
-          const roles = (user as any)?.roles || []
+          const roles = (user)?.roles || []
           return roles.some((role: string) => ['admin', 'eic', 'copy-editor', 'editor'].includes(role))
         },
       },
