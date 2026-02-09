@@ -1,4 +1,4 @@
-name: Deploy Next.js Frontend to polymer@archlinux
+name: Deploy to polymer@archlinux
 
 on:
   push:
@@ -12,26 +12,25 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Sync Repository to Server
+      - name: Sync Files
         run: |
-          # Sync everything
+          # Sync root directly to /var/www/polymer
           rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' ./ /var/www/polymer/
 
-      - name: Install & Build Frontend
-        working-directory: /var/www/polymer/frontend/web
+      - name: Install & Build
+        working-directory: /var/www/polymer
+        env:
+          # Add your secrets here later (DATABASE_URI, PAYLOAD_SECRET)
+          RUNNER_TRACKING_ID: ""
         run: |
-          # We force pnpm to ignore the workspace and install everything for the web app
-          pnpm install --no-frozen-lockfile --ignore-workspace
-
-          # Now build the app (this will now find 'next' in ./node_modules/.bin/)
+          pnpm install --no-frozen-lockfile
           pnpm run build
 
-      - name: Start Application
-        working-directory: /var/www/polymer/frontend/web
+      - name: Start App
+        working-directory: /var/www/polymer
         env:
           RUNNER_TRACKING_ID: ""
         run: |
-          # Start using the local node_modules
-          pm2 stop polymer || true
-          pm2 start "pnpm start" --name "polymer" || pm2 reload polymer
+          # Simple and clean. One app, one process.
+          pm2 start "pnpm start" --name "polymer" || pm2 restart polymer
           pm2 save
