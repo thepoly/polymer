@@ -71,6 +71,7 @@ export interface Config {
     media: Media;
     articles: Article;
     'job-titles': JobTitle;
+    layout: Layout;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -82,6 +83,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
     'job-titles': JobTitlesSelect<false> | JobTitlesSelect<true>;
+    layout: LayoutSelect<false> | LayoutSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -239,6 +241,26 @@ export interface Article {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "layout".
+ */
+export interface Layout {
+  id: number;
+  name: string;
+  mainArticle: number | Article;
+  top1?: (number | null) | Article;
+  top2?: (number | null) | Article;
+  top3?: (number | null) | Article;
+  op1?: (number | null) | Article;
+  op2?: (number | null) | Article;
+  op3?: (number | null) | Article;
+  op4?: (number | null) | Article;
+  op5?: (number | null) | Article;
+  special?: (number | null) | Article;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -276,6 +298,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'job-titles';
         value: number | JobTitle;
+      } | null)
+    | ({
+        relationTo: 'layout';
+        value: number | Layout;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -401,6 +427,25 @@ export interface ArticlesSelect<T extends boolean = true> {
  */
 export interface JobTitlesSelect<T extends boolean = true> {
   title?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "layout_select".
+ */
+export interface LayoutSelect<T extends boolean = true> {
+  name?: T;
+  mainArticle?: T;
+  top1?: T;
+  top2?: T;
+  top3?: T;
+  op1?: T;
+  op2?: T;
+  op3?: T;
+  op4?: T;
+  op5?: T;
+  special?: T;
   updatedAt?: T;
   createdAt?: T;
 }

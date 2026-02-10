@@ -9,6 +9,7 @@ import { Users } from './collections/Users.ts'
 import { Media } from './collections/Media.ts'
 import Articles from './collections/Articles.ts'
 import JobTitles from './collections/JobTitles.ts'
+import Layout from './collections/Layout.ts'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -31,8 +32,8 @@ export default buildConfig({
     },
     components: {
       graphics: {
-        Logo: '@/components/Logo#Logo',
-        Icon: '@/components/Icon#Icon',
+        Logo: '@/components/Dashboard/Login/Logo#Logo',
+        Icon: '@/components/Dashboard/Icon#Icon',
       },
       views: {
         dashboard: {
@@ -41,7 +42,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Media, Articles, JobTitles], 
+  collections: [Users, Media, Articles, JobTitles, Layout], 
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

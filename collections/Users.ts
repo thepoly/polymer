@@ -84,7 +84,7 @@ export const Users: CollectionConfig = {
       admin: {
         initCollapsed: false,
         components: {
-          RowLabel: '@/components/PositionRowLabel#PositionRowLabel',
+          RowLabel: '@/components/Dashboard/PositionRowLabel#PositionRowLabel',
         },
       },
       fields: [

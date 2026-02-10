@@ -8,9 +8,9 @@ const Articles: CollectionConfig = {
     components: {
       edit: {
         // [Save Version] [Progression Action] [Publish]
-        SaveDraftButton: '@/components/SaveVersionButton#SaveVersionButton',
-        PublishButton: '@/components/HeaderActions#HeaderActions',
-        SaveButton: '@/components/HiddenButton#HiddenButton',
+        SaveDraftButton: '@/components/Dashboard/SaveVersionButton#SaveVersionButton',
+        PublishButton: '@/components/Dashboard/HeaderActions#HeaderActions',
+        SaveButton: '@/components/Dashboard/HiddenButton#HiddenButton',
       },
     },
   },
@@ -40,21 +40,9 @@ const Articles: CollectionConfig = {
   hooks: {
     beforeChange: [
       ({ data, originalDoc }) => {
-        // 1. SYNC: If Payload's internal _status is set to published, 
-        // ensure our custom 'status' field follows suit.
-        if (data._status === 'published' && data.status !== 'published') {
-          data.status = 'published'
-        }
-
-        // 2. SYNC: If our custom 'status' is set to published,
-        // ensure Payload's internal _status follows suit.
-        if (data.status === 'published' && data._status !== 'published') {
-          data._status = 'published'
-        }
-
-        // 3. LOGIC: If transitioning to 'published', set the publishedDate
-        const isNowPublished = data.status === 'published' || data._status === 'published'
-        const wasPublished = originalDoc?.status === 'published' || originalDoc?._status === 'published'
+        // LOGIC: If transitioning to 'published' via Payload's internal _status, set the publishedDate
+        const isNowPublished = data._status === 'published'
+        const wasPublished = originalDoc?._status === 'published'
 
         if (isNowPublished && !wasPublished) {
           data.publishedDate = new Date().toISOString()
@@ -90,7 +78,7 @@ const Articles: CollectionConfig = {
         position: 'sidebar',
         components: {
           // Use Colored Badges in List View
-          Cell: '@/components/StatusBadge#StatusBadge',
+          Cell: '@/components/Dashboard/StatusBadge#StatusBadge',
         },
       },
       hooks: {
@@ -109,14 +97,6 @@ const Articles: CollectionConfig = {
               
               if (!c1 || !c2 || !c3) {
                 throw new Error('You cannot start the Copy Process (Needs 1st) until all 3 Copy Editors are assigned.')
-              }
-            }
-
-            // CONSTRAINT 2: Only EIC/Admin can mark "Ready"
-            if (newStatus === 'ready' && originalDoc?.status !== 'ready') {
-              const canApprove = userRoles.includes('admin') || userRoles.includes('eic')
-              if (!canApprove) {
-                throw new Error('Only the EIC or Admin can mark an article as Ready.')
               }
             }
 
