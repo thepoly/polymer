@@ -6,7 +6,7 @@ import { Byline } from './Byline';
 export const LeadArticle = ({ article }: { article: Article }) => (
     <div className="flex flex-col group cursor-pointer h-full">
         <div className="w-full relative mb-3">
-            <div className="aspect-[3/2] w-full overflow-hidden bg-gray-100 relative"> 
+            <div className="aspect-[16/9] w-full overflow-hidden bg-gray-100 relative"> 
                 {article.image && (
                     <Image 
                         src={article.image} 
