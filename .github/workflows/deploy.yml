@@ -15,7 +15,7 @@ jobs:
       - name: Sync Files
         run: |
           # Sync root directly to /var/www/polymer
-          rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' ./ /var/www/polymer/
+          rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' --exclude '.env' ./ /var/www/polymer/
 
       - name: Install & Build
         working-directory: /var/www/polymer
