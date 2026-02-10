@@ -16,10 +16,6 @@ jobs:
         run: |
           # Sync root directly to /var/www/polymer
           rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' --exclude '.env' ./ /var/www/polymer/
-          
-          # Fix Permissions
-          sudo chown -R $USER:$USER /var/www/polymer
-          sudo chmod -R 755 /var/www/polymer
 
       - name: Install & Build
         working-directory: /var/www/polymer
