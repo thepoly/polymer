@@ -7,8 +7,8 @@ import { handleServerFunctions, RootLayout } from '@payloadcms/next/layouts'
 import React from 'react'
 
 import { importMap } from './admin/importMap.js'
-import { BlackThemeProvider } from '@/components/BlackThemeProvider'
-import { LoginHint } from '@/components/LoginHint'
+import { BlackThemeProvider } from '@/components/Dashboard/BlackThemeProvider.js'
+import { LoginHint } from '@/components/Dashboard/Login/LoginHint.js'
 import './custom.scss'
 
 type Args = {

@@ -3,7 +3,7 @@ import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { headers } from 'next/headers'
 import { Greeting } from './Greeting.tsx'
-import { SidebarNewArticle } from '@/components/SidebarNewArticle'
+import { SidebarNewArticle } from '@/components/Dashboard/SidebarNewArticle.tsx'
 import { SearchBar } from './SearchBar.tsx'
 import { Todos } from './Todos/index.tsx'
 import './styles.css' // We will add a simple CSS file for layout
@@ -94,7 +94,7 @@ const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: strin
       <SidebarNewArticle />
       {/* Header Section: Greeting (includes Profile Picture & New Article Button) */}
       <div className="dashboard-header">
-        <Greeting user={user as any} />
+        <Greeting user={user} />
       </div>
 
       {/* Search Bar */}
