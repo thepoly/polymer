@@ -1,5 +1,7 @@
 import React from 'react'
 import type { User } from '@/payload-types.ts'
+import Link from 'next/link'
+import Image from 'next/image'
 
 export const Greeting = ({ user }: { user: User | null | undefined }) => {
   // Fallback if name is missing (e.g. strict null checks)
@@ -28,10 +30,16 @@ export const Greeting = ({ user }: { user: User | null | undefined }) => {
           </div>
         </div>
       </div>
-      <a href="/admin/account" className="profile-link">
+      <Link href="/admin/account" className="profile-link">
         {headshot?.url && (
           <div className="profile-picture">
-            <img src={headshot.url} alt={firstName} />
+            <Image 
+              src={headshot.url} 
+              alt={firstName} 
+              width={40} 
+              height={40} 
+              className="object-cover"
+            />
           </div>
         )}
         {!headshot?.url && (
@@ -39,7 +47,7 @@ export const Greeting = ({ user }: { user: User | null | undefined }) => {
             {firstName.charAt(0).toUpperCase()}
           </div>
         )}
-      </a>
+      </Link>
     </div>
   )
 }
