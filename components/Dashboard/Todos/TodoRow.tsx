@@ -1,7 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import type { Article, User } from '@/payload-types.ts'
-import { StatusBadge } from '@/components/StatusBadge'
+import { StatusBadge } from '@/components/Dashboard/StatusBadge'
 
 // Helper to format dates nicely
 const formatDate = (dateString: string | null | undefined) => {

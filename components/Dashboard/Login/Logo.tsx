@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { usePathname } from 'next/navigation'
-import { Icon } from './Icon'
+import { Icon } from '../Icon'
 
 const FullLogo = () => (
   <svg width="696" height="113" viewBox="0 0 696 113" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ maxWidth: '360px', height: 'auto' }}>
