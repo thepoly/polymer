@@ -254,7 +254,6 @@ export interface Layout {
   op2?: (number | null) | Article;
   op3?: (number | null) | Article;
   op4?: (number | null) | Article;
-  op5?: (number | null) | Article;
   special?: (number | null) | Article;
   updatedAt: string;
   createdAt: string;
@@ -444,7 +443,6 @@ export interface LayoutSelect<T extends boolean = true> {
   op2?: T;
   op3?: T;
   op4?: T;
-  op5?: T;
   special?: T;
   updatedAt?: T;
   createdAt?: T;

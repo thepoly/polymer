@@ -17,17 +17,22 @@ const formatArticle = (article: PayloadArticle | number | null | undefined): Com
     .join(' AND ');
 
   const date = article.publishedDate ? new Date(article.publishedDate) : null;
-  const formattedDate = date 
-    ? date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }).toUpperCase()
-    : null;
 
-  // Simple "days ago" logic for the mock look
-  let dateString = formattedDate;
+  let dateString: string | null = null;
   if (date) {
-    const diffTime = Math.abs(new Date().getTime() - date.getTime());
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) dateString = 'TODAY';
-    else dateString = `${diffDays} DAY${diffDays > 1 ? 'S' : ''} AGO`;
+    const now = new Date().getTime();
+    const diffMs = now - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffMins < 60) {
+      dateString = `${diffMins} MINUTE${diffMins !== 1 ? 'S' : ''} AGO`;
+    } else if (diffHours < 24) {
+      dateString = `${diffHours} HOUR${diffHours !== 1 ? 'S' : ''} AGO`;
+    } else if (diffDays < 7) {
+      dateString = `${diffDays} DAY${diffDays !== 1 ? 'S' : ''} AGO`;
+    }
   }
 
   return {
@@ -108,19 +113,27 @@ export default async function Home() {
 
   
 
-    const opinion = [
+        const opinion = [
 
-      formatArticle(layout.op1),
+  
 
-      formatArticle(layout.op2),
+          formatArticle(layout.op1),
 
-      formatArticle(layout.op3),
+  
 
-      formatArticle(layout.op4),
+          formatArticle(layout.op2),
 
-      formatArticle(layout.op5),
+  
 
-    ].filter(Boolean) as ComponentArticle[];
+          formatArticle(layout.op3),
+
+  
+
+          formatArticle(layout.op4),
+
+  
+
+        ].filter(Boolean) as ComponentArticle[];
 
   
 
