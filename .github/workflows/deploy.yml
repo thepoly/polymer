@@ -16,6 +16,10 @@ jobs:
         run: |
           # Sync root directly to /var/www/polymer
           rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' --exclude '.env' ./ /var/www/polymer/
+          
+          # Fix Permissions
+          sudo chown -R $USER:$USER /var/www/polymer
+          sudo chmod -R 755 /var/www/polymer
 
       - name: Install & Build
         working-directory: /var/www/polymer
@@ -26,11 +30,18 @@ jobs:
           pnpm install --no-frozen-lockfile
           pnpm run build
 
+      - name: Run Migrations
+        working-directory: /var/www/polymer
+        env:
+          RUNNER_TRACKING_ID: ""
+        run: |
+          pnpm payload migrate
+
       - name: Start App
         working-directory: /var/www/polymer
         env:
           RUNNER_TRACKING_ID: ""
         run: |
-          # Simple and clean. One app, one process.
-          pm2 start "pnpm start" --name "polymer" || pm2 restart polymer
+          # Robust start: Reload if exists, otherwise start fresh.
+          pm2 describe polymer > /dev/null && pm2 reload polymer || pm2 start "pnpm start" --name "polymer"
           pm2 save
