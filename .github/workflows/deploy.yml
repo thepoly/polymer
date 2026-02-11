@@ -17,28 +17,26 @@ jobs:
           # Sync root directly to /var/www/polymer
           rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' ./ /var/www/polymer/
 
-      - name: Install & Build
+      - name: Install Dependencies
         working-directory: /var/www/polymer
-        env:
-          DATABASE_URL: "${{ secrets.DATABASE_URL }}"
-          PAYLOAD_SECRET: "${{ secrets.PAYLOAD_SECRET }}"
-          RUNNER_TRACKING_ID: ""
-        run: |
-          pnpm install --no-frozen-lockfile
-          pnpm run build
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run Migrations
         working-directory: /var/www/polymer
         env:
-          RUNNER_TRACKING_ID: ""
-        run: |
-          pnpm payload migrate
+          DATABASE_URI: "${{ secrets.DATABASE_URI }}"
+          PAYLOAD_SECRET: "${{ secrets.PAYLOAD_SECRET }}"
+        run: pnpm payload migrate
+
+      - name: Build App
+        working-directory: /var/www/polymer
+        env:
+          DATABASE_URI: "${{ secrets.DATABASE_URI }}"
+          PAYLOAD_SECRET: "${{ secrets.PAYLOAD_SECRET }}"
+        run: pnpm run build
 
       - name: Start App
         working-directory: /var/www/polymer
-        env:
-          RUNNER_TRACKING_ID: ""
         run: |
-          # Robust start: Reload if exists, otherwise start fresh.
           pm2 describe polymer > /dev/null && pm2 reload polymer || pm2 start "pnpm start" --name "polymer"
           pm2 save
