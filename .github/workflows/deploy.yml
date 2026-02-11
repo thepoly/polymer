@@ -15,7 +15,7 @@ jobs:
       - name: Sync Files
         run: |
           # Sync code, removing the local .env if it exists in repo so we can generate a fresh one
-          sudo rm /var/www/polymer/* -rf
+          echo "${{ secrets.SERVER_PASSWORD }}" | sudo rm /var/www/polymer/* -rf
           rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' ./ /var/www/polymer/
 
       - name: Create .env file
