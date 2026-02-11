@@ -1,3 +1,4 @@
+export const revalidate = 0;
 import Header from "@/components/Header";
 import FrontPage from "@/components/FrontPage";
 import { getPayload } from "payload";
