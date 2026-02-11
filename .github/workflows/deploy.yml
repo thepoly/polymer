@@ -15,12 +15,13 @@ jobs:
       - name: Sync Files
         run: |
           # Sync root directly to /var/www/polymer
-          rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' --exclude '.env' ./ /var/www/polymer/
+          rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' ./ /var/www/polymer/
 
       - name: Install & Build
         working-directory: /var/www/polymer
         env:
-          # Add your secrets here later (DATABASE_URI, PAYLOAD_SECRET)
+          DATABASE_URL: "${{ secrets.DATABASE_URL }}"
+          PAYLOAD_SECRET: "${{ secrets.PAYLOAD_SECRET }}"
           RUNNER_TRACKING_ID: ""
         run: |
           pnpm install --no-frozen-lockfile
