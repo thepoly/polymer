@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Cinzel } from "next/font/google";
 import "./globals.css";
 // START TEMPORARY OVERLAY IMPORT
-import AlphaOverlay from "@/components/AlphaOverlay";
+// import AlphaOverlay from "@/components/AlphaOverlay";
 // END TEMPORARY OVERLAY IMPORT
 
 const geistSans = Geist({
@@ -50,7 +50,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} antialiased`}
       >
         {/* START TEMPORARY OVERLAY: Remove this component when alpha is over */}
-        <AlphaOverlay />
+        {/* <AlphaOverlay /> */}
         {/* END TEMPORARY OVERLAY */}
         {children}
       </body>
