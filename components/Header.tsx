@@ -122,7 +122,6 @@ export default function Header() {
             <div className="relative z-10 flex flex-col items-start justify-center h-full pointer-events-auto w-[210px]"> 
               <div className="flex items-center gap-2">
                 <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none"><path d="M10 0.833252V2.49992M10 17.4999V19.1666M3.51671 3.51659L4.70004 4.69992M15.3 15.2999L16.4834 16.4833M0.833374 9.99992H2.50004M17.5 9.99992H19.1667M3.51671 16.4833L4.70004 15.2999M15.3 4.69992L16.4834 3.51659M14.1667 9.99992C14.1667 12.3011 12.3012 14.1666 10 14.1666C7.69885 14.1666 5.83337 12.3011 5.83337 9.99992C5.83337 7.69873 7.69885 5.83325 10 5.83325C12.3012 5.83325 14.1667 7.69873 14.1667 9.99992Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                <svg className="w-1.5 h-1.5" viewBox="0 0 8 8" fill="none"><circle cx="4" cy="4" r="4" fill="#17AC3C" stroke="white" strokeWidth="1"/></svg>
                 <span className="text-[15px] font-bold whitespace-nowrap text-white">Sunny 18° F</span>
               </div>
               <div className="text-[15px] font-bold text-white/80 mt-0.5">Volume XCI No. 22</div>
