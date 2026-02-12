@@ -14,18 +14,18 @@ jobs:
 
       - name: Sync Files
         run: |
-          # Clean up everything EXCEPT the media symlink
-          echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S find /var/www/polymer -maxdepth 1 ! -name 'media' ! -path '/var/www/polymer' -exec rm -rf {} +
+          # Sync code without nuking the directory first.
+          # --delete ensures files removed from Git are removed from the server.
+          # Exclude keeps node_modules and .next from being wiped during the sync.
+          rsync -av --delete             --exclude '.git'             --exclude 'node_modules'             --exclude '.next'      --exclude 'media'             ./ /var/www/polymer/
 
-          # Sync files, excluding media
-          rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' --exclude 'media' ./ /var/www/polymer/
-
-          # Ensure symlink exists
+          # Ensure persistent media symlink exists
           ln -sfn /var/www/polymer-media /var/www/polymer/media
 
       - name: Create .env file
         working-directory: /var/www/polymer
         run: |
+          # Use '>' to overwrite the old .env with fresh secrets
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
           echo "PAYLOAD_SECRET=${{ secrets.PAYLOAD_SECRET }}" >> .env
 
@@ -50,5 +50,6 @@ jobs:
       - name: Start App
         working-directory: /var/www/polymer
         run: |
+          # Reload ensures zero-downtime if possible
           pm2 describe polymer > /dev/null && pm2 reload polymer || pm2 start "pnpm start" --name "polymer"
           pm2 save
