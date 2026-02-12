@@ -1,10 +1,11 @@
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Article } from './types';
 import { Byline } from './Byline';
 
 export const LeadArticle = ({ article }: { article: Article }) => (
-    <div className="flex flex-col group cursor-pointer h-full">
+    <Link href={`/article/${article.slug}`} className="flex flex-col group cursor-pointer h-full">
         <div className="w-full relative mb-3">
             <div className="aspect-[16/9] w-full overflow-hidden bg-gray-100 relative"> 
                 {article.image && (
@@ -19,7 +20,7 @@ export const LeadArticle = ({ article }: { article: Article }) => (
         </div>
         <div className="flex flex-col justify-between flex-grow">
             <div>
-                <h3 className="font-serif font-black text-gray-900 mb-2 text-2xl md:text-3xl leading-[1.05]">
+                <h3 className="font-serif font-black text-gray-900 mb-2 text-2xl md:text-3xl leading-[1.05] group-hover:underline decoration-2 underline-offset-4 decoration-gray-900">
                     {article.title}
                 </h3>
                 <p className="font-serif text-gray-800 text-[15px] leading-snug mb-2">
@@ -28,5 +29,5 @@ export const LeadArticle = ({ article }: { article: Article }) => (
             </div>
             <Byline author={article.author} date={article.date} />
         </div>
-    </div>
+    </Link>
 );

@@ -38,6 +38,7 @@ const formatArticle = (article: PayloadArticle | number | null | undefined): Com
 
   return {
     id: article.id,
+    slug: article.slug || '#',
     title: article.title,
     excerpt: article.subdeck || '',
     author: authors || null,
@@ -148,7 +149,7 @@ export default async function Home() {
 
           topStories={topStories}
 
-          studentSenate={studentSenate || { id: 'fallback', title: 'No Senate Update', excerpt: '', author: '', date: '', image: null }}
+          studentSenate={studentSenate || { id: 'fallback', slug: '#', title: 'No Senate Update', excerpt: '', author: '', date: '', image: null }}
 
           opinion={opinion}
 

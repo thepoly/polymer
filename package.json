@@ -16,6 +16,7 @@
     "@payloadcms/next": "^3.75.0",
     "@payloadcms/richtext-lexical": "^3.75.0",
     "@payloadcms/ui": "^3.75.0",
+    "escape-html": "^1.0.3",
     "graphql": "^16.12.0",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/escape-html": "^1.0.4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
