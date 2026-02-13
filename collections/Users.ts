@@ -58,7 +58,6 @@ export const Users: CollectionConfig = {
       options: [
         { label: 'Admin', value: 'admin' },
         { label: 'Editor in Chief', value: 'eic' },
-        { label: 'Copy Editor', value: 'copy-editor' },
         { label: 'Section Editor', value: 'editor' },
         { label: 'Writer', value: 'writer' },
       ],

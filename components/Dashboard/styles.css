@@ -260,6 +260,18 @@
   border: 1px solid var(--theme-elevation-150, #333);
 }
 
+.todo-row.published {
+  background-color: #064e3b;
+  color: #dcfce7;
+  border-color: #059669;
+}
+
+.todo-row.draft {
+  background-color: #334155;
+  color: #f1f5f9;
+  border-color: #475569;
+}
+
 .todo-row:hover {
   transform: translateY(-2px);
   border-color: var(--theme-elevation-300, #555);

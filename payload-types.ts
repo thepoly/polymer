@@ -128,7 +128,7 @@ export interface User {
   id: number;
   firstName: string;
   lastName: string;
-  roles?: ('admin' | 'eic' | 'copy-editor' | 'editor' | 'writer')[] | null;
+  roles?: ('admin' | 'eic' | 'editor' | 'writer')[] | null;
   headshot?: (number | null) | Media;
   bio?: {
     root: {
@@ -209,10 +209,6 @@ export interface JobTitle {
 export interface Article {
   id: number;
   title: string;
-  status?: ('draft' | 'needs-copy' | 'needs-1st' | 'needs-2nd' | 'needs-3rd' | 'ready') | null;
-  copyEditor1?: (number | null) | User;
-  copyEditor2?: (number | null) | User;
-  copyEditor3?: (number | null) | User;
   kicker?: string | null;
   subdeck?: string | null;
   section: 'news' | 'sports' | 'features' | 'editorial' | 'opinion';
@@ -404,10 +400,6 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface ArticlesSelect<T extends boolean = true> {
   title?: T;
-  status?: T;
-  copyEditor1?: T;
-  copyEditor2?: T;
-  copyEditor3?: T;
   kicker?: T;
   subdeck?: T;
   section?: T;

@@ -3,9 +3,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Article } from './types';
 import { Byline } from './Byline';
+import { getArticleUrl } from '@/utils/getArticleUrl';
 
 export const LeadArticle = ({ article }: { article: Article }) => (
-    <Link href={`/article/${article.slug}`} className="flex flex-col group cursor-pointer h-full">
+    <Link href={getArticleUrl(article)} className="flex flex-col group cursor-pointer h-full">
         <div className="w-full relative mb-3">
             <div className="aspect-[16/9] w-full overflow-hidden bg-gray-100 relative"> 
                 {article.image && (

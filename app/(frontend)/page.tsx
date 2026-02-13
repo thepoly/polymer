@@ -44,6 +44,9 @@ const formatArticle = (article: PayloadArticle | number | null | undefined): Com
     author: authors || null,
     date: dateString,
     image: (article.featuredImage as Media)?.url || null,
+    section: article.section,
+    publishedDate: article.publishedDate,
+    createdAt: article.createdAt,
   };
 };
 

@@ -1,7 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
 import type { Article, User } from '@/payload-types.ts'
-import { StatusBadge } from '@/components/Dashboard/StatusBadge'
 
 // Helper to format dates nicely
 const formatDate = (dateString: string | null | undefined) => {
@@ -13,8 +12,13 @@ const formatDate = (dateString: string | null | undefined) => {
 }
 
 export const TodoRow = ({ article }: { article: Article }) => {
+  const isPublished = article._status === 'published'
+  
   return (
-    <Link href={`/admin/collections/articles/${article.id}`} className="todo-row">
+    <Link 
+      href={`/admin/collections/articles/${article.id}`} 
+      className={`todo-row ${isPublished ? 'published' : 'draft'}`}
+    >
       <div className="todo-col-main">
         <span className="todo-title">{article.title || 'Untitled'}</span>
         <span className="todo-meta">
@@ -22,10 +26,6 @@ export const TodoRow = ({ article }: { article: Article }) => {
         </span>
       </div>
       
-      <div className="todo-col-status">
-        <StatusBadge cellData={article._status === 'published' ? 'published' : (article.status || 'draft')} />
-      </div>
-
       <div className="todo-col-date">
         {formatDate(article.publishedDate)}
       </div>

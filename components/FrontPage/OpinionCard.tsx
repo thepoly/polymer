@@ -2,9 +2,10 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Article } from './types';
+import { getArticleUrl } from '@/utils/getArticleUrl';
 
 export const OpinionCard = ({ article, hasImage }: { article: Article, hasImage?: boolean }) => (
-    <Link href={`/article/${article.slug}`} className="flex flex-col cursor-pointer group">
+    <Link href={getArticleUrl(article)} className="flex flex-col cursor-pointer group">
         {hasImage && article.image && (
              <div className="aspect-[16/9] w-full overflow-hidden bg-gray-100 mb-3 relative">
                 <Image 
