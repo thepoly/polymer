@@ -39,7 +39,7 @@ export const SerializeLexical = ({ nodes }: { nodes: Node[] }) => {
           
           case 'paragraph':
             return (
-              <p key={index} className="font-serif text-lg leading-relaxed text-gray-800 mb-6">
+              <p key={index} className="font-serif text-xl leading-relaxed text-gray-800 mb-6">
                 {serializedChildren}
               </p>
             );
@@ -54,7 +54,7 @@ export const SerializeLexical = ({ nodes }: { nodes: Node[] }) => {
           case 'list':
             const ListTag = node.tag === 'ol' ? 'ol' : 'ul';
             return (
-              <ListTag key={index} className="font-serif text-lg text-gray-800 mb-6 pl-8 list-disc">
+              <ListTag key={index} className="font-serif text-xl text-gray-800 mb-6 pl-8 list-disc">
                 {serializedChildren}
               </ListTag>
             );

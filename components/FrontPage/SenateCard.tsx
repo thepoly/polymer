@@ -3,9 +3,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Article } from './types';
 import { Byline } from './Byline';
+import { getArticleUrl } from '@/utils/getArticleUrl';
 
 export const SenateCard = ({ article }: { article: Article }) => (
-    <Link href={`/article/${article.slug}`} className="flex flex-col md:flex-row gap-6 cursor-pointer group mt-5 border-t border-gray-300 pt-5">
+    <Link href={getArticleUrl(article)} className="flex flex-col md:flex-row gap-6 cursor-pointer group mt-5 border-t border-gray-300 pt-5">
         <div className="flex-1 flex flex-col justify-center">
              <div className="mb-2">
                 <span className="text-[#D6001C] font-bold font-serif uppercase text-xs tracking-wider">Student Senate</span>

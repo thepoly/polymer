@@ -9,12 +9,15 @@ export const revalidate = 60;
 
 type Args = {
   params: Promise<{
+    section: string;
+    year: string;
+    month: string;
     slug: string;
   }>;
 };
 
 export default async function ArticlePage({ params }: Args) {
-  const { slug } = await params;
+  const { slug } = await params; // We primarily need slug for lookup
   const payload = await getPayload({ config });
 
   const result = await payload.find({
@@ -52,12 +55,25 @@ export async function generateStaticParams() {
     limit: 1000,
     select: {
       slug: true,
+      section: true,
+      publishedDate: true,
+      createdAt: true,
     },
   });
 
   return articles.docs
-    .filter((doc) => doc.slug)
-    .map((doc) => ({
-      slug: doc.slug as string,
-    }));
+    .filter((doc) => doc.slug && doc.section)
+    .map((doc) => {
+      const dateStr = doc.publishedDate || doc.createdAt;
+      const date = new Date(dateStr);
+      const year = date.getFullYear().toString();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      
+      return {
+        section: doc.section,
+        year,
+        month,
+        slug: doc.slug as string,
+      };
+    });
 }

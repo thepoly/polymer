@@ -11,7 +11,6 @@ export const Greeting = ({ user }: { user: User | null | undefined }) => {
   const roles = user?.roles || []
   const status = roles.includes('admin') ? 'Admin' 
                : roles.includes('eic') ? 'EIC'
-               : roles.includes('copy-editor') ? 'Copy Editor'
                : roles.includes('editor') ? 'Section Editor'
                : 'Writer'
 

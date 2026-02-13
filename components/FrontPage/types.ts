@@ -6,4 +6,7 @@ export interface Article {
   author: string | null;
   date: string | null;
   image: string | null;
+  section: string;
+  publishedDate?: string | null;
+  createdAt?: string;
 }
