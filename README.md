@@ -1,38 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Polymer
 
-## Getting Started
- anthony
-First, run the development server:
+Polymer is the ongoing digital rebuild of **The Polytechnic** web presence.
+This repository currently contains the alpha web app, Payload CMS integration, and deployment automation.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Current Status
+
+- Phase: early alpha
+- Focus: frontend experience, content modeling, and editorial platform readiness
+- Target launch window: **March 2026**
+
+## Project Plan
+
+### Phase 1: Foundation and Alpha Experience (in progress)
+
+- Set up a unified Next.js + Payload CMS application
+- Build a responsive newspaper-style frontend experience
+- Establish initial collections and migration baseline
+- Establish CI-driven deployment workflow
+
+### Phase 2: Core Content Experience (planned)
+
+- Replace placeholder front page modules with real content data
+- Implement section pages (News, Features, Opinion, Sports, etc.)
+- Add search and archive browsing paths
+
+### Phase 3: Editorial and Platform Readiness (planned)
+
+- Add content publishing/editorial workflows
+- Improve accessibility, performance, and SEO
+- Finalize analytics/observability and release hardening
+
+## Repository Structure
+
+```text
+.
+|-- app/                     # Next.js app routes (frontend + payload)
+|-- collections/             # Payload CMS collections
+|-- components/              # Shared UI and dashboard components
+|-- migrations/              # Payload migration files
+|-- docs/                    # Mockups and design artifacts
+|-- .github/workflows/       # Deployment workflow(s)
+|-- package.json             # Project scripts and dependencies
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Next.js (App Router)
+- React
+- TypeScript
+- Payload CMS
+- PostgreSQL
+- Tailwind CSS v4
+- pnpm
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Local Development
 
-## Learn More
+### Prerequisites
 
-To learn more about Next.js, take a look at the following resources:
+- Node.js 20+
+- pnpm 10+
+- PostgreSQL
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Run the app
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm install
+pnpm dev
+```
 
-## Deploy on Vercel
+Then open [http://localhost:3000](http://localhost:3000).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Production deploys run via GitHub Actions (`.github/workflows/deploy.yml`) on pushes to `main`.
+The workflow syncs the repo to `/var/www/polymer/`, installs dependencies, runs Payload migrations, builds the app, and reloads the `polymer` PM2 process.
 
-anthony
+## License
+
+MIT (see `LICENSE`).
