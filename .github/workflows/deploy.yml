@@ -1,4 +1,4 @@
-name: Deploy Next.js Frontend to polymer@archlinux
+name: Deploy to polymer@archlinux
 
 on:
   push:
@@ -12,26 +12,44 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Sync Repository to Server
+      - name: Sync Files
         run: |
-          # Sync everything
-          rsync -av --delete --exclude '.git' --exclude 'node_modules' --exclude '.next' ./ /var/www/polymer/
+          # Sync code without nuking the directory first.
+          # --delete ensures files removed from Git are removed from the server.
+          # Exclude keeps node_modules and .next from being wiped during the sync.
+          rsync -av --delete             --exclude '.git'             --exclude 'node_modules'             --exclude '.next'      --exclude 'media'             ./ /var/www/polymer/
 
-      - name: Install & Build Frontend
-        working-directory: /var/www/polymer/frontend/web
+          # Ensure persistent media symlink exists
+          ln -sfn /var/www/polymer-media /var/www/polymer/media
+
+      - name: Create .env file
+        working-directory: /var/www/polymer
         run: |
-          # We force pnpm to ignore the workspace and install everything for the web app
-          pnpm install --no-frozen-lockfile --ignore-workspace
+          # Use '>' to overwrite the old .env with fresh secrets
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
+          echo "PAYLOAD_SECRET=${{ secrets.PAYLOAD_SECRET }}" >> .env
 
-          # Now build the app (this will now find 'next' in ./node_modules/.bin/)
-          pnpm run build
+      - name: Install Dependencies
+        working-directory: /var/www/polymer
+        run: pnpm install --no-frozen-lockfile
 
-      - name: Start Application
-        working-directory: /var/www/polymer/frontend/web
+      - name: Run Migrations
+        working-directory: /var/www/polymer
         env:
-          RUNNER_TRACKING_ID: ""
+          DATABASE_URL: "${{ secrets.DATABASE_URL }}"
+          PAYLOAD_SECRET: "${{ secrets.PAYLOAD_SECRET }}"
+        run: pnpm payload migrate
+
+      - name: Build App
+        working-directory: /var/www/polymer
+        env:
+          DATABASE_URL: "${{ secrets.DATABASE_URL }}"
+          PAYLOAD_SECRET: "${{ secrets.PAYLOAD_SECRET }}"
+        run: pnpm run build
+
+      - name: Start App
+        working-directory: /var/www/polymer
         run: |
-          # Start using the local node_modules
-          pm2 stop polymer || true
-          pm2 start "pnpm start" --name "polymer" || pm2 reload polymer
+          # Reload ensures zero-downtime if possible
+          pm2 describe polymer > /dev/null && pm2 reload polymer || pm2 start "pnpm start" --name "polymer"
           pm2 save

@@ -1,13 +1,40 @@
 {
-  "name": "polymer",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "web",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "generate:types": "payload generate:types",
+    "postinstall": "node scripts/generate-env.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "packageManager": "pnpm@10.28.2"
+  "dependencies": {
+    "@payloadcms/db-postgres": "^3.75.0",
+    "@payloadcms/next": "^3.75.0",
+    "@payloadcms/richtext-lexical": "^3.75.0",
+    "@payloadcms/ui": "^3.75.0",
+    "escape-html": "^1.0.3",
+    "graphql": "^16.12.0",
+    "lucide-react": "^0.563.0",
+    "next": "16.1.6",
+    "payload": "^3.75.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/escape-html": "^1.0.4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4",
+    "tsx": "^4.21.0",
+    "typescript": "^5"
+  }
 }

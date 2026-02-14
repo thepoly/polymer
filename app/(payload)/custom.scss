@@ -1,0 +1,497 @@
+[data-black-theme="true"] {
+  color-scheme: dark;
+  --theme-bg: #000000;
+  --theme-elevation-0: #000000;
+  --theme-elevation-50: #0a0a0a;  /* Slightly lighter to distinguish cards */
+  --theme-elevation-100: #111111;
+  --theme-elevation-150: #1a1a1a;
+  --theme-elevation-200: #222222;
+  --theme-elevation-250: #2a2a2a;
+  --theme-elevation-300: #333333;
+  --theme-elevation-350: #3b3b3b;
+  --theme-elevation-400: #444444;
+  --theme-elevation-450: #4d4d4d;
+  --theme-elevation-500: #555555;
+  --theme-elevation-550: #5e5e5e;
+  --theme-elevation-600: #666666;
+  --theme-elevation-650: #777777;
+  --theme-elevation-700: #888888;
+  --theme-elevation-750: #999999;
+  --theme-elevation-800: #aaaaaa;
+  --theme-elevation-850: #bbbbbb;
+  --theme-elevation-900: #cccccc;
+  --theme-elevation-950: #dddddd;
+  --theme-elevation-1000: #ffffff;
+
+  /* Force high contrast text */
+  --theme-text: #ffffff;
+  --theme-text-muted: #a3a3a3; /* Light grey for secondary text */
+  --theme-border: #333333;     /* Visible borders against black */
+  --theme-input-bg: #000000;
+  --theme-input-border: #444444;
+
+  /* Force buttons to be perfectly white in black mode */
+  --theme-elevation-800: #ffffff;
+  --theme-elevation-900: #ffffff;
+  --theme-elevation-950: #ffffff;
+  
+  .btn--style-primary {
+    --theme-elevation-800: #ffffff;
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border-color: #ffffff !important;
+
+    /* Ensure text inside button is black even if nested */
+    * {
+      color: #000000 !important;
+    }
+
+    &:hover {
+      background-color: #f0f0f0 !important;
+      border-color: #f0f0f0 !important;
+      * {
+        color: #000000 !important;
+      }
+    }
+  }
+}
+
+/* Simple Header Workflow Button - Match Theme Exactly */
+.workflow-header-button {
+  transition: all 0.2s ease !important;
+  box-shadow: none !important; /* Remove shadow which can look like a second border */
+}
+
+.workflow-header-button:hover {
+  filter: brightness(1.2);
+  transform: translateY(-1px);
+}
+
+/* Custom Border Colors Only - Kill any internal shadows/borders */
+.workflow-header-button.btn-blue { border: 1px solid #3b82f6 !important; box-shadow: none !important; }
+.workflow-header-button.btn-yellow { border: 1px solid #eab308 !important; box-shadow: none !important; }
+.workflow-header-button.btn-green { border: 1px solid #10b981 !important; box-shadow: none !important; }
+
+/* Ensure the native buttons look consistent next to our outline buttons */
+.workflow-header-button + button {
+  margin-left: 8px;
+}
+
+/* Hide the default Payload status indicator in the header */
+
+header .status,
+
+.doc-header__status,
+
+.doc-controls__status,
+
+.status-pill,
+
+.collection-edit__header .pill,
+
+.doc-header .pill {
+
+  display: none !important;
+
+}
+
+
+
+/* Hide login button - users should just hit enter */
+
+
+
+.login__form button[type="submit"] {
+
+
+
+  display: none !important;
+
+
+
+}
+
+
+
+
+
+
+
+.login__form {
+
+
+
+  position: relative;
+
+
+
+}
+
+
+
+
+
+
+
+.field-type-password {
+
+
+
+
+
+
+
+  position: relative;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.login-hit-enter-hint {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  position: absolute !important;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  right: 0;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  bottom: -20px;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  color: rgba(255, 255, 255, 0.4);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  font-size: 0.75rem;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  letter-spacing: 0.05em;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  pointer-events: none;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  animation: fadeIn 0.3s ease-out;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  z-index: 10;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Hide default Payload account and logout elements */
+.nav__account,
+.nav__logout,
+.app-header__account,
+.app-header__logout,
+.app-header__avatar,
+.graphic-account {
+  display: none !important;
+}
+
+.sidebar-new-article {
+  position: fixed;
+  top: 25px;
+  right: 25px;
+  z-index: 10000;
+}
+
+.btn-new-article {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--theme-elevation-1000, #ffffff) !important;
+  color: var(--theme-elevation-0, #000000) !important;
+  padding: 8px 16px;
+  border-radius: 0; /* Sharp corners like Payload */
+  font-weight: 600;
+  text-decoration: none;
+  text-align: center;
+  transition: all 0.15s ease;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border: 1px solid var(--theme-elevation-1000, #ffffff);
+  white-space: nowrap;
+  font-family: var(--font-mono, monospace);
+  box-shadow: 4px 4px 0px var(--theme-elevation-200, rgba(0,0,0,0.2));
+}
+
+.btn-new-article .btn-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  margin-top: -2px;
+}
+
+.btn-new-article:hover {
+  background-color: var(--theme-elevation-0, #000000) !important;
+  color: var(--theme-elevation-1000, #ffffff) !important;
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px var(--theme-elevation-1000, #ffffff);
+  border-color: var(--theme-elevation-1000, #ffffff) !important;
+}
+
+/* Ensure custom icon fits perfectly */
+.nav__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.nav__icon svg {
+  margin-top: 0 !important; /* Override my inline marginTop if needed */
+}
+
+/* Make profile picture pop in account menu */
+.account__avatar {
+  border: 1px solid var(--theme-elevation-200);
+}
+
+@keyframes fadeIn {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  from { opacity: 0; transform: translateY(-5px); }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  to { opacity: 1; transform: translateY(0); }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
