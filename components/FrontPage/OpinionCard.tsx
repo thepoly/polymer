@@ -12,11 +12,11 @@ export const OpinionCard = ({ article, hasImage }: { article: Article, hasImage?
                     src={article.image} 
                     alt={article.title} 
                     fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="object-cover"
                 />
             </div>
         )}
-        <h3 className={`font-serif font-bold text-gray-900 mb-1 leading-tight ${hasImage ? 'text-lg' : 'text-[17px]'} group-hover:underline decoration-2 underline-offset-2 decoration-gray-900`}>
+        <h3 className={`font-serif font-bold text-gray-900 mb-1 leading-tight ${hasImage ? 'text-lg' : 'text-[17px]'} group-hover:text-gray-600 transition-colors`}>
             {article.title}
         </h3>
         <p className="font-serif text-gray-600 text-[14px] leading-snug mb-1">

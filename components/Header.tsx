@@ -24,6 +24,7 @@ export default function Header() {
   });
 
   const navItems = ['News', 'Features', 'Opinion', 'Sports', 'Editorial', 'Checkmate', 'Archives', 'About'];
+  const desktopNavItems = ['News', 'Features', 'Opinion', 'Sports', 'Staff', 'Contact', 'About', 'Archives', 'Submit'];
 
   return (
     <>
@@ -96,60 +97,62 @@ export default function Header() {
       <header className="hidden lg:block mb-5">
         
         {/* TOP RED SECTION */}
-        <div className="bg-[#D6001C] px-4 xl:px-[30px] pt-[11px] pb-4">
-          
-          {/* Top Utilities Row */}
-          <div className="relative flex items-center justify-between mb-4 text-white">
-            <div className="z-10 w-[150px]">
-              <Search className="w-4 h-4 text-white/80 cursor-pointer hover:text-white transition-colors" />
-            </div>
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none whitespace-nowrap">
-              <span className="text-[11px] font-bold tracking-widest text-white/90">
-                Serving the Rensselaer Community Since 1885
-              </span>
-            </div>
-            <div className="z-10 w-[150px] flex justify-end">
-              <button className="text-[11px] font-bold tracking-widest uppercase text-white hover:text-gray-200 transition-colors">
-                Editor&apos;s Picks
-              </button>
-            </div>
-          </div>
-
-          {/* MAIN LOGO ROW */}
-          <div className="relative flex items-center justify-between h-[100px] my-2.5">
+        <div className="bg-white px-3">
+          <div className="max-w-[1280px] mx-auto bg-[#D6001C] rounded-2xl mt-2 px-4 xl:px-[30px] pt-[11px] pb-3 relative">
             
-            {/* Left Column (Weather) */}
-            <div className="relative z-10 flex flex-col items-start justify-center h-full pointer-events-auto w-[210px]"> 
-              <div className="flex items-center gap-2">
-                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none"><path d="M10 0.833252V2.49992M10 17.4999V19.1666M3.51671 3.51659L4.70004 4.69992M15.3 15.2999L16.4834 16.4833M0.833374 9.99992H2.50004M17.5 9.99992H19.1667M3.51671 16.4833L4.70004 15.2999M15.3 4.69992L16.4834 3.51659M14.1667 9.99992C14.1667 12.3011 12.3012 14.1666 10 14.1666C7.69885 14.1666 5.83337 12.3011 5.83337 9.99992C5.83337 7.69873 7.69885 5.83325 10 5.83325C12.3012 5.83325 14.1667 7.69873 14.1667 9.99992Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                <span className="text-[15px] font-bold whitespace-nowrap text-white">Sunny 18° F</span>
+            {/* Top Utilities Row */}
+            <div className="relative z-10 flex items-center justify-between mb-4 text-white">
+              <div className="z-10 w-[150px]">
+                <Search className="w-4 h-4 text-white/80 cursor-pointer hover:text-white transition-colors" />
               </div>
-              <div className="text-[15px] font-bold text-white/80 mt-0.5">Volume XCI No. 22</div>
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none whitespace-nowrap">
+                <span className="text-[11px] font-bold tracking-widest text-white/90">
+                  Serving the Rensselaer Community Since 1885
+                </span>
+              </div>
+              <div className="z-10 w-[150px] flex justify-end">
+                {/* Editor's Picks removed */}
+              </div>
             </div>
 
-            {/* ABSOLUTE CENTERED LOGO */}
-            <div className="absolute left-[50.2%] top-1/2 -translate-x-1/2 -translate-y-1/2 h-full w-full max-w-[650px] pointer-events-none">
-              <div className="relative w-full h-full">
-                <Image src="/logo.svg" alt="The Polytechnic" fill className="object-contain brightness-0 invert" priority />
+            {/* MAIN LOGO ROW */}
+            <div className="relative flex items-center justify-between h-[100px] my-2.5">
+              
+              {/* Left Column (Weather) */}
+              <div className="relative z-10 flex flex-col items-start justify-end h-full pointer-events-auto w-[210px] pb-0"> 
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none"><path d="M10 0.833252V2.49992M10 17.4999V19.1666M3.51671 3.51659L4.70004 4.69992M15.3 15.2999L16.4834 16.4833M0.833374 9.99992H2.50004M17.5 9.99992H19.1667M3.51671 16.4833L4.70004 15.2999M15.3 4.69992L16.4834 3.51659M14.1667 9.99992C14.1667 12.3011 12.3012 14.1666 10 14.1666C7.69885 14.1666 5.83337 12.3011 5.83337 9.99992C5.83337 7.69873 7.69885 5.83325 10 5.83325C12.3012 5.83325 14.1667 7.69873 14.1667 9.99992Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span className="text-[15px] font-bold whitespace-nowrap text-white">Sunny 18° F</span>
+                </div>
+                <div className="text-[15px] font-bold text-white/80 mt-0.5">Volume XCI No. 22</div>
               </div>
-            </div>
 
-            {/* Right Column (Date) */}
-            <div className="relative z-10 flex items-center justify-end h-full w-[210px] text-[15px] font-bold text-right whitespace-nowrap text-white pointer-events-auto">
-              {currentDate}
+              {/* ABSOLUTE CENTERED LOGO */}
+              <div className="absolute left-[50.2%] top-[48%] -translate-x-1/2 -translate-y-1/2 h-full w-full max-w-[650px] pointer-events-none scale-90">
+                <div className="relative w-full h-full">
+                  <Image src="/logo.svg" alt="The Polytechnic" fill className="object-contain brightness-0 invert" priority />
+                </div>
+              </div>
+
+              {/* Right Column (Date) */}
+              <div className="relative z-10 flex items-end justify-end h-full w-[210px] text-[15px] font-bold text-right whitespace-nowrap text-white pointer-events-auto pb-0">
+                {currentDate}
+              </div>
             </div>
           </div>
         </div>
 
         {/* BOTTOM NAV SECTION (WHITE) */}
-        <div className="bg-white border-b border-black">
-          <nav className="flex flex-wrap items-center justify-center py-3 gap-8">
-            {navItems.map((item) => (
-              <button key={item} className="flex items-center gap-1 font-bold text-[15px] text-black hover:text-[#D6001C] transition-colors uppercase">
+        <div className="bg-white px-3">
+          <div className="max-w-[1280px] mx-auto px-4 md:px-6 flex justify-center border-b border-black">
+            <nav className="flex flex-wrap items-center py-3 gap-8">
+              {desktopNavItems.map((item) => (
+              <button key={item} className="flex items-center gap-1 text-[15px] text-black hover:text-[#D6001C] transition-colors uppercase">
                 {item} <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
               </button>
             ))}
           </nav>
+        </div>
         </div>
       </header>
     </>

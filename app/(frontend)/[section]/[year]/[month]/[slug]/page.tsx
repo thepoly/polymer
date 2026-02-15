@@ -4,6 +4,7 @@ import { getPayload } from 'payload';
 import config from '@/payload.config';
 import Header from '@/components/Header';
 import { ArticleHeader, ArticleContent, ArticleFooter } from '@/components/Article';
+import * as Photofeature from '@/components/Article/Photofeature';
 
 export const revalidate = 60;
 
@@ -34,6 +35,38 @@ export default async function ArticlePage({ params }: Args) {
 
   if (!article) {
     notFound();
+  }
+
+  // Check for #photofeature# flag
+  let isPhotofeature = false;
+  let cleanContent = article.content;
+
+  const firstNode = article.content?.root?.children?.[0] as any;
+  if (article.content && firstNode?.type === 'paragraph' && firstNode.children?.length > 0) {
+     const firstTextNode = firstNode.children[0];
+     if (firstTextNode.type === 'text' && firstTextNode.text?.trim() === '#photofeature#') {
+        isPhotofeature = true;
+        // Remove the first node (the flag) from the content to be displayed
+        cleanContent = {
+            ...article.content,
+            root: {
+                ...article.content.root,
+                children: (article.content.root as any).children.slice(1)
+            }
+        };
+     }
+  }
+
+  if (isPhotofeature) {
+    return (
+        <main className="min-h-screen bg-white pb-20">
+            <Photofeature.ArticleHeader article={article} />
+            <article className="container mx-auto px-4 md:px-6">
+                <Photofeature.ArticleContent content={cleanContent} />
+                <Photofeature.ArticleFooter />
+            </article>
+        </main>
+    );
   }
 
   return (
