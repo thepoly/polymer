@@ -14,14 +14,14 @@ export const LeadArticle = ({ article }: { article: Article }) => (
                         src={article.image} 
                         alt={article.title}
                         fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        className="object-cover"
                     />
                 )}
             </div>
         </div>
         <div className="flex flex-col justify-between flex-grow">
             <div>
-                <h3 className="font-serif font-black text-gray-900 mb-2 text-2xl md:text-3xl leading-[1.05] group-hover:underline decoration-2 underline-offset-4 decoration-gray-900">
+                <h3 className="font-serif font-black text-gray-900 mb-2 text-2xl md:text-3xl leading-[1.05] group-hover:text-gray-600 transition-colors">
                     {article.title}
                 </h3>
                 <p className="font-serif text-gray-800 text-[15px] leading-snug mb-2">

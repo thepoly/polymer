@@ -22,34 +22,74 @@ const FrontPageBody = ({ topStories, studentSenate, opinion }: FrontPageBodyProp
   const listRef = useRef<HTMLDivElement>(null);
   const leftContentRef = useRef<HTMLDivElement>(null);
   const opinionContainerRef = useRef<HTMLDivElement>(null);
-  const [split, setSplit] = useState<'9-3' | '8-4' | '7-5' | '6-6'>('7-5');
+  
+  // Default to a wider lead (8-4) to start compressed
+  const [split, setSplit] = useState<'9-3' | '8-4' | '7-5' | '6-6'>('8-4');
   const [visibleOpinions, setVisibleOpinions] = useState(opinion.length);
+  const [visibleStories, setVisibleStories] = useState(topStories.list.length);
 
   useLayoutEffect(() => {
     const balance = () => {
       if (!leadRef.current || !listRef.current || !leftContentRef.current || !opinionContainerRef.current) return;
 
-      // 1. Balance Top Stories
       const leadHeight = leadRef.current.offsetHeight;
       const listHeight = listRef.current.offsetHeight;
       const diff = listHeight - leadHeight;
 
-      if (diff > 50) {
-         if (split === '9-3') setSplit('8-4');
-         else if (split === '8-4') setSplit('7-5');
-         else if (split === '7-5') setSplit('6-6');
-      } else if (diff < -50) {
+      // 1. Column Compression Logic
+      const tolerance = 60; 
+
+      if (diff < -tolerance) {
+         // List is too short. Widen the Lead to squish the list.
          if (split === '6-6') setSplit('7-5');
          else if (split === '7-5') setSplit('8-4');
          else if (split === '8-4') setSplit('9-3');
+      } else if (diff > tolerance) {
+         // List is too tall. Narrow the Lead to widen the list.
+         if (split === '9-3') setSplit('8-4');
+         else if (split === '8-4') setSplit('7-5');
+         else if (split === '7-5') setSplit('6-6');
       }
 
-      // 2. Hide Overflowing Opinions
+      // 2. Hide Overflowing Top Stories
+      const listWrappers = Array.from(listRef.current.children) as HTMLElement[];
+      const heights = listWrappers.map(w => {
+          // Structure: [Spacer, Content, Spacer, Line] -> Content is index 1
+          const contentNode = w.children[1] as HTMLElement; 
+          return contentNode ? contentNode.offsetHeight : 0;
+      });
+
+      let count = heights.length;
+      const minGap = 32; 
+      
+      const calculateNeededHeight = (n: number) => {
+          if (n === 0) return 0;
+          const contentH = heights.slice(0, n).reduce((a, b) => a + b, 0);
+          const gapsH = (n - 1) * minGap; 
+          return contentH + gapsH;
+      };
+
+      while (count > 1) {
+          const needed = calculateNeededHeight(count);
+          const overflowThreshold = heights[count - 1] * 0.25; 
+          
+          if (needed > leadHeight + overflowThreshold) {
+              count--;
+          } else {
+              break;
+          }
+      }
+
+      if (count !== visibleStories) {
+          setVisibleStories(count);
+      }
+
+      // 3. Hide Overflowing Opinions
       const leftHeight = leftContentRef.current.offsetHeight;
       const opWrappers = Array.from(opinionContainerRef.current.children) as HTMLElement[];
       
       let currentTotalHeight = 0;
-      const gap = 24; // gap-6
+      const opGap = 24; 
       let newVisibleCount = 0;
 
       for (let i = 0; i < opWrappers.length; i++) {
@@ -60,7 +100,7 @@ const FrontPageBody = ({ topStories, studentSenate, opinion }: FrontPageBodyProp
         if (currentTotalHeight + itemHeight > leftHeight) {
           break;
         }
-        currentTotalHeight += itemHeight + gap;
+        currentTotalHeight += itemHeight + opGap;
         newVisibleCount = i + 1;
       }
 
@@ -71,13 +111,13 @@ const FrontPageBody = ({ topStories, studentSenate, opinion }: FrontPageBodyProp
 
     balance();
     window.addEventListener('resize', balance);
-    const timer = setTimeout(balance, 100);
+    const timer = setTimeout(balance, 150);
     
     return () => {
       window.removeEventListener('resize', balance);
       clearTimeout(timer);
     };
-  }, [split, topStories, opinion, visibleOpinions]);
+  }, [split, topStories, opinion, visibleOpinions, visibleStories]);
 
   const getGridConfig = () => {
     switch (split) {
@@ -85,7 +125,7 @@ const FrontPageBody = ({ topStories, studentSenate, opinion }: FrontPageBodyProp
       case '8-4': return { lead: 'lg:col-span-8', list: 'lg:col-span-4' };
       case '7-5': return { lead: 'lg:col-span-7', list: 'lg:col-span-5' };
       case '6-6': return { lead: 'lg:col-span-6', list: 'lg:col-span-6' };
-      default: return { lead: 'lg:col-span-7', list: 'lg:col-span-5' };
+      default: return { lead: 'lg:col-span-8', list: 'lg:col-span-4' };
     }
   };
 
@@ -101,20 +141,52 @@ const FrontPageBody = ({ topStories, studentSenate, opinion }: FrontPageBodyProp
                 <div ref={leftContentRef} className="flex flex-col">
                     <SectionHeader title="Top Stories" />
 
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+                    {/* Increased gap from 5 (20px) to 10 (40px) */}
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-7">
                         
                         {/* LEAD STORY */}
-                        <div ref={leadRef} className={`md:col-span-12 ${config.lead} transition-all duration-300`}>
-                            <LeadArticle article={topStories.lead} />
+                        <div className={`md:col-span-12 ${config.lead} transition-all duration-300 ease-in-out`}>
+                            <div ref={leadRef}>
+                                <LeadArticle article={topStories.lead} />
+                            </div>
                         </div>
 
                         {/* SECONDARY STORIES LIST */}
-                        <div ref={listRef} className={`md:col-span-12 ${config.list} flex flex-col justify-between transition-all duration-300`}>
-                            {topStories.list.map((story, index) => (
-                                <div key={`${story.id}-${index}`} className={`${index !== topStories.list.length - 1 ? 'border-b border-gray-200 pb-4 mb-4' : ''}`}>
-                                    <CompactArticle article={story} />
-                                </div>
-                            ))}
+                        <div className={`md:col-span-12 ${config.list} transition-all duration-300 ease-in-out`}>
+                            <div 
+                                ref={listRef} 
+                                className="flex flex-col h-full"
+                            >
+                                {topStories.list.map((story, index) => {
+                                    const isVisible = index < visibleStories;
+                                    const isLastVisible = index === visibleStories - 1;
+                                    
+                                    return (
+                                        <div 
+                                            key={`${story.id}-${index}`} 
+                                            className={`${isVisible ? 'flex-1 flex flex-col' : 'h-0 overflow-hidden'}`}
+                                        >
+                                            {/* Spacer Sandwich: Ensures exact 2x spacing (x - line - x) */}
+                                            
+                                            {/* Top Spacer: x */}
+                                            <div className="flex-1 w-full" />
+
+                                            {/* Article Content */}
+                                            <div className="w-full">
+                                                <CompactArticle article={story} />
+                                            </div>
+
+                                            {/* Bottom Spacer: x */}
+                                            <div className="flex-1 w-full" />
+
+                                            {/* Border Line */}
+                                            {!isLastVisible && isVisible && (
+                                                <div className="border-b border-gray-200 w-full" />
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
 
@@ -145,7 +217,7 @@ const FrontPageBody = ({ topStories, studentSenate, opinion }: FrontPageBodyProp
                               }}
                               className={index < visibleOpinions - 1 ? 'border-b border-gray-200 pb-5' : ''}
                             >
-                                <div className="py-0.5"> {/* Inner wrapper for accurate measurement */}
+                                <div className="py-0.5"> 
                                   <OpinionCard article={op} hasImage={index === 0} />
                                 </div>
                             </div>

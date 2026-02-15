@@ -152,7 +152,7 @@ export default async function Home() {
 
           topStories={topStories}
 
-          studentSenate={studentSenate || { id: 'fallback', slug: '#', title: 'No Senate Update', excerpt: '', author: '', date: '', image: null }}
+          studentSenate={studentSenate || { id: 'fallback', slug: '#', title: 'No Senate Update', excerpt: '', author: '', date: '', image: null, section: 'News' }}
 
           opinion={opinion}
 
