@@ -2,9 +2,8 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
-import Header from '@/components/Header';
-import { ArticleHeader, ArticleContent, ArticleFooter } from '@/components/Article';
-import * as Photofeature from '@/components/Article/Photofeature';
+import { getArticleLayout, ArticleLayouts } from '@/components/Article/Layouts';
+import { LexicalNode } from '@/components/Article/RichTextParser';
 
 export const revalidate = 60;
 
@@ -18,7 +17,7 @@ type Args = {
 };
 
 export default async function ArticlePage({ params }: Args) {
-  const { slug } = await params; // We primarily need slug for lookup
+  const { slug } = await params;
   const payload = await getPayload({ config });
 
   const result = await payload.find({
@@ -37,48 +36,30 @@ export default async function ArticlePage({ params }: Args) {
     notFound();
   }
 
-  // Check for #photofeature# flag
-  let isPhotofeature = false;
+  // Determine the layout
+  const layoutType = getArticleLayout(article);
+  const LayoutComponent = ArticleLayouts[layoutType];
+
+  // Prepare content (clean up flags if necessary)
   let cleanContent = article.content;
 
-  const firstNode = article.content?.root?.children?.[0] as any;
-  if (article.content && firstNode?.type === 'paragraph' && firstNode.children?.length > 0) {
-     const firstTextNode = firstNode.children[0];
-     if (firstTextNode.type === 'text' && firstTextNode.text?.trim() === '#photofeature#') {
-        isPhotofeature = true;
-        // Remove the first node (the flag) from the content to be displayed
-        cleanContent = {
-            ...article.content,
-            root: {
-                ...article.content.root,
-                children: (article.content.root as any).children.slice(1)
-            }
-        };
-     }
+  if (layoutType === 'photofeature') {
+      const firstNode = article.content?.root?.children?.[0] as unknown as LexicalNode;
+      if (article.content && firstNode?.type === 'paragraph' && firstNode.children?.length && firstNode.children.length > 0) {
+         const firstTextNode = firstNode.children[0];
+         if (firstTextNode.type === 'text' && firstTextNode.text?.trim() === '#photofeature#') {
+            cleanContent = {
+                ...article.content,
+                root: {
+                    ...article.content.root,
+                    children: (article.content.root.children as unknown as LexicalNode[]).slice(1)
+                }
+            };
+         }
+      }
   }
 
-  if (isPhotofeature) {
-    return (
-        <main className="min-h-screen bg-white pb-20">
-            <Photofeature.ArticleHeader article={article} />
-            <article className="container mx-auto px-4 md:px-6">
-                <Photofeature.ArticleContent content={cleanContent} />
-                <Photofeature.ArticleFooter />
-            </article>
-        </main>
-    );
-  }
-
-  return (
-    <main className="min-h-screen bg-white pb-20">
-      <Header />
-      <article className="container mx-auto px-4 md:px-6 mt-8 md:mt-12">
-        <ArticleHeader article={article} />
-        <ArticleContent content={article.content} />
-        <ArticleFooter />
-      </article>
-    </main>
-  );
+  return <LayoutComponent article={article} content={cleanContent} />;
 }
 
 export async function generateStaticParams() {
