@@ -45,7 +45,7 @@ export default async function ArticlePage({ params }: Args) {
 
   if (layoutType === 'photofeature') {
       const firstNode = article.content?.root?.children?.[0] as unknown as LexicalNode;
-      if (article.content && firstNode?.type === 'paragraph' && firstNode.children?.length && firstNode.children.length > 0) {
+      if (article.content && firstNode?.type === 'paragraph' && firstNode.children && firstNode.children.length > 0) {
          const firstTextNode = firstNode.children[0];
          if (firstTextNode.type === 'text' && firstTextNode.text?.trim() === '#photofeature#') {
             cleanContent = {
