@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { ChevronDown, Menu, X, ChevronRight, Search } from "lucide-react";
+import { ChevronDown, Menu, ChevronRight, Search } from "lucide-react";
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

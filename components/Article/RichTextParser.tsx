@@ -2,15 +2,15 @@ import React, { Fragment } from 'react';
 import Link from 'next/link';
 import escapeHTML from 'escape-html';
 
-type Node = {
+export type LexicalNode = {
   type: string;
-  value?: any;
-  children?: Node[];
+  value?: unknown;
+  children?: LexicalNode[];
   url?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
-export const SerializeLexical = ({ nodes }: { nodes: Node[] }) => {
+export const SerializeLexical = ({ nodes }: { nodes: LexicalNode[] }) => {
   return (
     <Fragment>
       {nodes?.map((node, index) => {

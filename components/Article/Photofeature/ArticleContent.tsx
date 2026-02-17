@@ -1,8 +1,12 @@
 import React from 'react';
-import { SerializeLexical } from '../RichTextParser';
+import { SerializeLexical, LexicalNode } from '@/components/Article/RichTextParser';
 
 type Props = {
-  content: any; // Using any for the Lexical root structure
+  content: {
+    root: {
+      children: LexicalNode[];
+    };
+  }; 
 };
 
 export const ArticleContent: React.FC<Props> = ({ content }) => {
