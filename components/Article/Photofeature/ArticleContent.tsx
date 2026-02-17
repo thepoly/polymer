@@ -2,11 +2,11 @@ import React from 'react';
 import { SerializeLexical, LexicalNode } from '@/components/Article/RichTextParser';
 
 type Props = {
-  content: {
+  content?: {
     root: {
       children: LexicalNode[];
     };
-  }; 
+  } | null;
 };
 
 export const ArticleContent: React.FC<Props> = ({ content }) => {

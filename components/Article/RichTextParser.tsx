@@ -5,8 +5,12 @@ import escapeHTML from 'escape-html';
 export type LexicalNode = {
   type: string;
   value?: unknown;
+  text?: string;
   children?: LexicalNode[];
   url?: string;
+  version: number;
+  format?: number;
+  tag?: string;
   [key: string]: unknown;
 };
 
@@ -16,11 +20,12 @@ export const SerializeLexical = ({ nodes }: { nodes: LexicalNode[] }) => {
       {nodes?.map((node, index) => {
         if (node.type === 'text') {
           let text = <span key={index} dangerouslySetInnerHTML={{ __html: escapeHTML(node.text) }} />;
-          if (node.format & 1) text = <strong key={index}>{text}</strong>;
-          if (node.format & 2) text = <em key={index}>{text}</em>;
-          if (node.format & 8) text = <u key={index}>{text}</u>;
-          if (node.format & 4) text = <s key={index}>{text}</s>; // Strikethrough
-          if (node.format & 32) text = <code key={index}>{text}</code>;
+          const format = node.format || 0;
+          if (format & 1) text = <strong key={index}>{text}</strong>;
+          if (format & 2) text = <em key={index}>{text}</em>;
+          if (format & 8) text = <u key={index}>{text}</u>;
+          if (format & 4) text = <s key={index}>{text}</s>; // Strikethrough
+          if (format & 32) text = <code key={index}>{text}</code>;
           return text;
         }
 
