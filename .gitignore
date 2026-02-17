@@ -42,3 +42,6 @@ next-env.d.ts
 
 # local media
 media/
+
+# scraping
+scripts/scraper/

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { ChevronDown, Menu, ChevronRight, Search } from "lucide-react";
 
 export default function Header() {
@@ -23,7 +24,7 @@ export default function Header() {
     year: 'numeric'
   });
 
-  const navItems = ['News', 'Features', 'Opinion', 'Sports', 'Editorial', 'Checkmate', 'Archives', 'About'];
+  const navItems = ['News', 'Features', 'Opinion', 'Sports', 'Staff', 'Editorial', 'Checkmate', 'Archives', 'About'];
   const desktopNavItems = ['News', 'Features', 'Opinion', 'Sports', 'Staff', 'Contact', 'About', 'Archives', 'Submit'];
 
   return (
@@ -82,9 +83,14 @@ export default function Header() {
           <div className="fixed inset-0 top-[70px] sm:top-[90px] z-[60] bg-white overflow-y-auto flex flex-col">
             <nav className="flex flex-col p-6 gap-0">
               {navItems.map((item) => (
-                <button key={item} className="flex items-center justify-between text-2xl font-bold py-4 border-b border-gray-100 text-left text-black hover:text-[#D6001C] transition-all group">
+                <Link 
+                  key={item} 
+                  href={item === 'Staff' ? '/staff' : `/${item.toLowerCase()}`}
+                  className="flex items-center justify-between text-2xl font-bold py-4 border-b border-gray-100 text-left text-black hover:text-[#D6001C] transition-all group"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
                   {item} <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[#D6001C]" />
-                </button>
+                </Link>
               ))}
             </nav>
           </div>
@@ -147,9 +153,13 @@ export default function Header() {
           <div className="max-w-[1280px] mx-auto px-4 md:px-6 flex justify-center border-b border-black">
             <nav className="flex flex-wrap items-center py-3 gap-8">
               {desktopNavItems.map((item) => (
-              <button key={item} className="flex items-center gap-1 text-[15px] text-black hover:text-[#D6001C] transition-colors uppercase">
+              <Link 
+                key={item} 
+                href={item === 'Staff' ? '/staff' : `/${item.toLowerCase()}`}
+                className="flex items-center gap-1 text-[15px] text-black hover:text-[#D6001C] transition-colors uppercase"
+              >
                 {item} <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-              </button>
+              </Link>
             ))}
           </nav>
         </div>
