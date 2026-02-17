@@ -1,10 +1,12 @@
 import React, { Fragment } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import escapeHTML from 'escape-html';
+import { Media } from '@/payload-types';
 
 export type LexicalNode = {
   type: string;
-  value?: unknown;
+  value?: any;
   text?: string;
   children?: LexicalNode[];
   url?: string;
@@ -54,6 +56,31 @@ export const SerializeLexical = ({ nodes }: { nodes: LexicalNode[] }) => {
               <Link key={index} href={escapeHTML(node.url)} className="text-[#D6001C] hover:underline decoration-1 underline-offset-2">
                 {serializedChildren}
               </Link>
+            );
+
+          case 'upload':
+            const media = node.value as Media;
+            if (!media || !media.url) return null;
+            return (
+              <div 
+                key={index} 
+                id={`media-${media.id}`}
+                className="my-10 flex flex-col gap-2 scroll-mt-20"
+              >
+                <div className="relative aspect-[3/2] w-full bg-gray-100 overflow-hidden rounded-sm">
+                  <Image
+                    src={media.url}
+                    alt={media.alt || ''}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                {media.alt && (
+                  <span className="text-sm text-gray-500 font-sans italic">
+                    {media.alt}
+                  </span>
+                )}
+              </div>
             );
 
           case 'list':
