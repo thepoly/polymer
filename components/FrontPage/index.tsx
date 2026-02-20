@@ -139,7 +139,7 @@ const FrontPageBody = ({ topStories, studentSenate, opinion }: FrontPageBodyProp
             {/* --- LEFT MAIN CONTENT (COL-9) --- */}
             <div className="lg:col-span-9 flex flex-col pr-0 lg:pr-6">
                 <div ref={leftContentRef} className="flex flex-col">
-                    <SectionHeader title="Top Stories" />
+                    {/* <SectionHeader title="Top Stories" /> */}
 
                     {/* Increased gap from 5 (20px) to 10 (40px) */}
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-7">
@@ -202,7 +202,7 @@ const FrontPageBody = ({ topStories, studentSenate, opinion }: FrontPageBodyProp
                 <div className="hidden lg:block absolute left-0 top-0 bottom-0 w-px bg-border-main transition-colors"></div>
 
                 <div className="lg:pl-6 h-full">
-                    <SectionHeader title="Opinion" />
+                    {/* <SectionHeader title="Opinion" /> */}
                     
                     {/* Opinion Items */}
                     <div ref={opinionContainerRef} className="flex flex-col gap-6">
