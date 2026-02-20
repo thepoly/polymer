@@ -88,17 +88,13 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         </div>
 
         {/* Bottom Content Area (z-10) */}
-        {/* Reduced bottom padding to pb-4 sm:pb-6 to push text lower */}
         <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center text-center px-4 pb-4 sm:pb-6 md:pb-8 pointer-events-none">
-          {/* Reduced space-y to tighten headline and subdeck gap */}
           <div className="max-w-4xl w-full space-y-1 md:space-y-2">
             
-            {/* Headline: Bumped size up slightly to lg:text-5xl */}
             <h1 className="font-serif font-bold italic text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-tight tracking-tight drop-shadow-lg text-white">
               {article.title}
             </h1>
 
-            {/* Subdeck: Large size, no top padding */}
             {article.subdeck && (
               <div className="flex flex-col items-center">
                 <h2 className="font-serif text-lg sm:text-xl md:text-2xl text-gray-100 leading-snug max-w-3xl drop-shadow-md">

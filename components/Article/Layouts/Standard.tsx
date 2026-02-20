@@ -6,7 +6,7 @@ import { Article } from '@/payload-types';
 
 export const StandardLayout = ({ article, content }: { article: Article, content?: Article['content'] }) => {
   return (
-    <main className="min-h-screen bg-white pb-20">
+    <main className="min-h-screen bg-bg-main pb-20 transition-colors duration-300">
       <Header />
       <article className="container mx-auto px-4 md:px-6 mt-8 md:mt-12">
         <ArticleHeader article={article} />

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Cinzel } from "next/font/google";
 import "./globals.css";
+import ThemeProvider from "@/components/ThemeProvider";
+import { cookies } from "next/headers";
 // START TEMPORARY OVERLAY IMPORT
 // import AlphaOverlay from "@/components/AlphaOverlay";
 // END TEMPORARY OVERLAY IMPORT
@@ -39,20 +41,26 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const theme = cookieStore.get("theme")?.value;
+  const isDarkMode = theme === "light" ? false : true;
+
   return (
-    <html lang="en">
+    <html lang="en" className={isDarkMode ? "dark" : ""}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} antialiased`}
       >
         {/* START TEMPORARY OVERLAY: Remove this component when alpha is over */}
         {/* <AlphaOverlay /> */}
         {/* END TEMPORARY OVERLAY */}
-        {children}
+        <ThemeProvider initialDarkMode={isDarkMode}>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

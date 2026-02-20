@@ -142,15 +142,23 @@ export default async function Home() {
 
   
 
-    return (
+            return (
 
-      <main className="min-h-screen bg-white">
+  
 
-        <Header />
+              <main className="min-h-screen bg-bg-main transition-colors duration-300">
 
-        <FrontPage 
+  
 
-          topStories={topStories}
+                <Header />
+
+  
+
+                <FrontPage 
+
+  
+
+                  topStories={topStories}
 
           studentSenate={studentSenate || { id: 'fallback', slug: '#', title: 'No Senate Update', excerpt: '', author: '', date: '', image: null, section: 'News' }}
 

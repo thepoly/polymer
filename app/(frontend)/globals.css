@@ -1,1 +1,59 @@
 @import "tailwindcss";
+
+@theme {
+  --color-bg-main: var(--background);
+  --color-text-main: var(--foreground);
+  --color-text-muted: var(--foreground-muted);
+  --color-accent: var(--accent-color);
+  --color-border-main: var(--border-color);
+  
+  --color-header-top: var(--header-top-bg);
+  --color-header-top-text: var(--header-top-text);
+  --color-header-nav: var(--header-nav-bg);
+  --color-header-nav-text: var(--header-nav-text);
+  --color-header-border: var(--header-border);
+}
+
+:root {
+  --background: #ffffff;
+  --foreground: #111827;
+  --foreground-muted: #374151;
+  --accent-color: #D6001C;
+  --border-color: #000000;
+  
+  --header-top-bg: #D6001C;
+  --header-top-text: #ffffff;
+  --header-nav-bg: #ffffff;
+  --header-nav-text: #111827;
+  --header-border: #000000;
+  
+  --logo-filter: none;
+  --header-logo-invert: brightness(0) invert(1);
+}
+
+html.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+  --foreground-muted: #9ca3af;
+  --accent-color: #ffffff;
+  --border-color: #27272a;
+  
+  --header-top-bg: #000000;
+  --header-top-text: #ffffff;
+  --header-nav-bg: #000000;
+  --header-nav-text: #ffffff;
+  --header-border: #27272a;
+  
+  --logo-filter: brightness(0) invert(1);
+  --header-logo-invert: brightness(0) invert(1);
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  transition: color 0.3s ease, background-color 0.3s ease;
+}
+
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}

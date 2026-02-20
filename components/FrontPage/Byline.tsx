@@ -7,8 +7,8 @@ export const Byline = ({ author, date }: { author?: string | null, date?: string
         const parts = text.split(' AND ');
         return parts.map((part, index) => (
             <React.Fragment key={index}>
-                <span className="text-[#D6001C] font-bold">{part}</span>
-                {index < parts.length - 1 && <span className="text-black font-normal"> AND </span>}
+                <span className="text-accent font-bold">{part}</span>
+                {index < parts.length - 1 && <span className="text-text-main font-normal"> AND </span>}
             </React.Fragment>
         ));
     };
@@ -20,8 +20,8 @@ export const Byline = ({ author, date }: { author?: string | null, date?: string
                     {renderAuthor(author)}
                 </span>
             )}
-            {author && date && <span className="text-gray-400 mx-1">|</span>}
-            {date && <span className="text-black font-normal">{date}</span>}
+            {author && date && <span className="text-text-muted mx-1">|</span>}
+            {date && <span className="text-text-main font-normal">{date}</span>}
         </div>
     );
 };

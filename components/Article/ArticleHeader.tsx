@@ -13,15 +13,15 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
     <div className="flex flex-col gap-6 mb-8">
       <div className="flex flex-col gap-4 max-w-[680px] w-full mx-auto">
         {article.kicker && (
-            <span className="text-[#D6001C] font-bold font-serif uppercase text-lg tracking-wider">
+            <span className="text-accent font-bold font-serif uppercase text-lg tracking-wider transition-colors">
                 {article.kicker}
             </span>
         )}
-        <h1 className="font-serif font-bold text-2xl md:text-3xl lg:text-4xl text-gray-900 leading-[1.1]">
+        <h1 className="font-serif font-bold text-2xl md:text-3xl lg:text-4xl text-text-main leading-[1.1] transition-colors">
           {article.title}
         </h1>
         {article.subdeck && (
-            <h2 className="font-serif text-xl md:text-2xl text-gray-700 leading-snug">
+            <h2 className="font-serif text-xl md:text-2xl text-text-muted leading-snug transition-colors">
                 {article.subdeck}
             </h2>
         )}
@@ -30,7 +30,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
       {featuredImage?.url && (
         <div 
           id={`media-${featuredImage.id}`}
-          className="relative aspect-[3/2] w-full bg-gray-100 overflow-hidden rounded-sm max-w-4xl mx-auto scroll-mt-20"
+          className="relative aspect-[3/2] w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden rounded-sm max-w-4xl mx-auto scroll-mt-20"
         >
           <Image
             src={featuredImage.url}
@@ -42,7 +42,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 font-serif text-gray-600 text-sm md:text-base max-w-[680px] w-full mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 font-serif text-text-muted text-sm md:text-base max-w-[680px] w-full mx-auto transition-colors">
         <div className="flex items-center gap-3">
             {/* Author Headshots */}
             <div className="flex -space-x-2">
@@ -51,7 +51,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                     const headshot = user.headshot as Media | null;
                     if (!headshot?.url) return null;
                     return (
-                        <div key={user.id} className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100 border-2 border-white">
+                        <div key={user.id} className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 border-2 border-bg-main transition-colors">
                             <Image
                                 src={headshot.url}
                                 alt={`${user.firstName} ${user.lastName}`}
@@ -64,7 +64,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
             </div>
 
             {/* Author Names */}
-            <div className="font-bold text-gray-900">
+            <div className="font-bold text-text-main transition-colors">
                 By {article.authors && article.authors.length > 0 ? (
                     article.authors.map((author, index) => {
                         const user = author as User;
