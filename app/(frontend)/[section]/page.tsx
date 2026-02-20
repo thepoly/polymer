@@ -93,13 +93,13 @@ export default async function SectionPage({ params }: Args) {
   // If no articles, show a placeholder
   if (articles.length === 0) {
     return (
-      <main className="min-h-screen bg-white">
+      <main className="min-h-screen bg-bg-main transition-colors duration-300">
         <Header />
         <div className="container mx-auto px-4 py-20 text-center">
-            <h1 className={`text-4xl font-serif font-bold mb-4 capitalize ${theme.accentColor}`}>
+            <h1 className={`text-4xl font-serif font-bold mb-4 capitalize text-accent`}>
                 {section}
             </h1>
-            <p className="text-gray-500 font-serif">No articles found in this section yet.</p>
+            <p className="text-text-muted font-serif">No articles found in this section yet.</p>
         </div>
       </main>
     );
@@ -142,68 +142,14 @@ export default async function SectionPage({ params }: Args) {
 
   const SectionHeaderBlock = () => (
       <div className="max-w-[1280px] mx-auto px-4 md:px-6 pt-8 pb-4">
-        <h1 className={`text-5xl font-serif font-bold capitalize ${theme.accentColor} border-b-4 border-black inline-block pr-6 mb-2`}>
+        <h1 className={`text-5xl font-serif font-bold capitalize text-accent border-b-4 border-border-main inline-block pr-6 mb-2 transition-colors`}>
             {section}
         </h1>
       </div>
   );
 
-  // SECTION SPECIFIC RENDERERS
-  // Currently they all share the same layout but are separated for future customization.
-
-  if (section === 'news') {
-      return (
-        <main className={`min-h-screen bg-white section-${section}`}>
-          <Header />
-          <SectionHeaderBlock />
-          <FrontPage {...commonProps} />
-        </main>
-      );
-  }
-
-  if (section === 'sports') {
-      return (
-        <main className={`min-h-screen bg-white section-${section}`}>
-          <Header />
-          <SectionHeaderBlock />
-          <FrontPage {...commonProps} />
-        </main>
-      );
-  }
-
-  if (section === 'features') {
-      return (
-        <main className={`min-h-screen bg-white section-${section}`}>
-          <Header />
-          <SectionHeaderBlock />
-          <FrontPage {...commonProps} />
-        </main>
-      );
-  }
-
-  if (section === 'editorial') {
-      return (
-        <main className={`min-h-screen bg-white section-${section}`}>
-          <Header />
-          <SectionHeaderBlock />
-          <FrontPage {...commonProps} />
-        </main>
-      );
-  }
-
-  if (section === 'opinion') {
-      return (
-        <main className={`min-h-screen bg-white section-${section}`}>
-          <Header />
-          <SectionHeaderBlock />
-          <FrontPage {...commonProps} />
-        </main>
-      );
-  }
-
-  // Default Fallback
   return (
-    <main className={`min-h-screen bg-white section-${section}`}>
+    <main className={`min-h-screen bg-bg-main section-${section} transition-colors duration-300`}>
       <Header />
       <SectionHeaderBlock />
       <FrontPage {...commonProps} />

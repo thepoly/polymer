@@ -16,11 +16,11 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
   const bio = user.bio as any;
 
   return (
-    <div className="flex flex-col gap-16">
+    <div className="flex flex-col gap-16 text-text-main transition-colors duration-300">
       <div className="flex flex-col md:flex-row gap-12 items-start">
         {/* Left Column: Photo & Basic Info */}
         <div className="w-full md:w-1/3 flex-shrink-0">
-          <div className="relative w-full aspect-[3/4] mb-6 rounded-sm overflow-hidden bg-gray-100 shadow-sm">
+          <div className="relative w-full aspect-[3/4] mb-6 rounded-sm overflow-hidden bg-gray-100 dark:bg-zinc-800 shadow-sm transition-colors">
             {headshot?.url ? (
               <Image
                 src={headshot.url}
@@ -30,7 +30,7 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
                 priority
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+              <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-zinc-800 text-text-muted transition-colors">
                 <span className="text-6xl font-serif">
                   {user.firstName[0]}{user.lastName[0]}
                 </span>
@@ -48,10 +48,10 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
                   if (!title) return null;
                   return (
                       <div key={i} className="mb-3">
-                          <span className="text-[#D6001C] font-bold uppercase tracking-wider text-[11px] block mb-0.5">
+                          <span className="text-accent font-bold uppercase tracking-wider text-[11px] block mb-0.5 transition-colors">
                               {title}
                           </span>
-                          <span className="text-gray-500 text-[11px] block uppercase tracking-tight">
+                          <span className="text-text-muted text-[11px] block uppercase tracking-tight transition-colors">
                               {new Date(pos.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} 
                               {' - '}
                               {pos.endDate ? new Date(pos.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : 'Present'}
@@ -66,30 +66,30 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
         <div className="w-full md:w-2/3">
           {/* Biography Section */}
           <section className="mb-12">
-            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-6 border-b pb-2">Biography</h2>
+            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-text-muted mb-6 border-b border-border-main pb-2 transition-colors">Biography</h2>
             {bio && bio.root && bio.root.children ? (
-              <div className="prose prose-sm max-w-none font-sans text-gray-800 leading-relaxed">
+              <div className="prose prose-sm max-w-none font-sans text-text-muted leading-relaxed transition-colors">
                  <SerializeLexical nodes={bio.root.children} />
               </div>
             ) : (
-                <p className="text-gray-500 italic text-sm">No biography available.</p>
+                <p className="text-text-muted italic text-sm transition-colors">No biography available.</p>
             )}
           </section>
 
           {/* Articles Section */}
           {articles.length > 0 && (
             <section>
-              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-6 border-b pb-2">Recent Articles</h2>
+              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-text-muted mb-6 border-b border-border-main pb-2 transition-colors">Recent Articles</h2>
               <div className="space-y-6">
                 {articles.map((article) => (
                   <div key={article.id} className="group">
                     <Link href={`/${article.section}/${new Date(article.publishedDate!).getFullYear()}/${(new Date(article.publishedDate!).getMonth() + 1).toString().padStart(2, '0')}/${article.slug}`} className="block">
-                      <h3 className="text-lg font-bold group-hover:text-[#D6001C] transition-colors leading-tight mb-1">
+                      <h3 className="text-lg font-bold group-hover:text-accent transition-colors leading-tight mb-1">
                         {article.title}
                       </h3>
                     </Link>
-                    <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-gray-500">
-                      <span className="font-bold text-[#D6001C]">{article.section}</span>
+                    <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-text-muted transition-colors">
+                      <span className="font-bold text-accent">{article.section}</span>
                       <span>•</span>
                       <span>{new Date(article.publishedDate!).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                     </div>
@@ -104,12 +104,12 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
       {/* Full Width Photos Section (Below everything else) */}
       {photos.length > 0 && (
         <section className="w-full">
-          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400 mb-8 border-b pb-2">Photo Portfolio</h2>
+          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-text-muted mb-8 border-b border-border-main pb-2 transition-colors">Photo Portfolio</h2>
           <div className="columns-2 sm:columns-2 lg:columns-3 gap-6 space-y-6">
             {photos.map((photo) => {
               const articleUrl = photoToArticleMap[photo.id];
               const content = (
-                <div className="relative bg-gray-100 overflow-hidden group mb-4">
+                <div className="relative bg-gray-100 dark:bg-zinc-800 overflow-hidden group mb-4 transition-colors">
                   {photo.url && (
                     <Image
                       src={photo.url}

@@ -23,7 +23,7 @@ export default async function StaffPage() {
     <>
       {/* Staff Title */}
       <div className="mb-10 mt-5">
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-black">
+        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-text-main transition-colors">
           Staff
         </h1>
       </div>
@@ -58,7 +58,7 @@ export default async function StaffPage() {
               key={user.id}
               className="group flex flex-col items-start text-left"
             >
-              <div className="relative w-full aspect-[3/4] mb-3 bg-gray-100 overflow-hidden">
+              <div className="relative w-full aspect-[3/4] mb-3 bg-gray-100 dark:bg-zinc-800 overflow-hidden transition-colors">
                 {headshot?.url ? (
                   <Image
                     src={headshot.url}
@@ -68,7 +68,7 @@ export default async function StaffPage() {
                     sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-300">
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-zinc-800 text-text-muted transition-colors">
                     <svg className="w-12 h-12 opacity-50" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                     </svg>
@@ -76,12 +76,12 @@ export default async function StaffPage() {
                 )}
               </div>
               
-              <h3 className="text-[15px] md:text-[16px] leading-tight font-bold text-black mb-1 group-hover:underline decoration-1 underline-offset-2">
+              <h3 className="text-[15px] md:text-[16px] leading-tight font-bold text-text-main mb-1 group-hover:underline decoration-1 underline-offset-2 transition-colors">
                 {user.firstName} {user.lastName}
               </h3>
               
               {titleString && (
-                <p className="text-[13px] md:text-[14px] leading-snug text-gray-600 font-light">
+                <p className="text-[13px] md:text-[14px] leading-snug text-text-muted font-light transition-colors">
                   {titleString}
                 </p>
               )}

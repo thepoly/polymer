@@ -7,7 +7,7 @@ export default function StaffLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-white text-black font-sans selection:bg-gray-200">
+    <div className="min-h-screen bg-bg-main text-text-main font-sans selection:bg-gray-200 transition-colors duration-300">
       <Header />
       <main className="max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8 py-10">
         {children}
