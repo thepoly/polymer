@@ -97,40 +97,36 @@ export default function Header() {
       {/* ==================================================================
           DESKTOP HEADER
           ================================================================== */}
-      <header className="hidden lg:block mb-5">
+      {/* 👇 Added mb-2.5 right here for that exact 30% spacing 👇 */}
+      <header className="hidden lg:block mb-4">
         
-        {/* TOP SECTION */}
-        <div className="bg-header-nav px-3">
-          <div className="max-w-[1280px] mx-auto bg-header-top border border-header-border rounded-2xl mt-2 px-4 xl:px-[30px] pt-[11px] pb-3 relative">
+        {/* TOP LOGO ROW */}
+        <div className="bg-header-nav pt-2 pb-5">
+          <div className="max-w-[1280px] mx-auto px-4 md:px-6 xl:px-[30px] relative">
             
-            {/* Top Utilities Row */}
-            <div className="relative z-10 flex items-center justify-between mb-4 text-header-top-text">
-              <div className="z-10 w-[150px]">
-                <Search className="w-4 h-4 text-header-top-text/80 cursor-pointer hover:text-header-top-text transition-colors" />
-              </div>
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none whitespace-nowrap">
-                <span className="text-[11px] font-bold tracking-widest text-header-top-text/90">
-                  Serving the Rensselaer Community Since 1885
-                </span>
-              </div>
-              <div className="z-10 w-[150px] flex justify-end">
-              </div>
-            </div>
-
-            {/* MAIN LOGO ROW */}
-            <div className="relative flex items-center justify-between h-[100px] my-2.5">
+            <div className="relative flex items-center justify-between h-[100px]">
               
-              {/* Left Column (Weather) */}
-              <div className="relative z-10 flex flex-col items-start justify-end h-full pointer-events-auto w-[210px] pb-0"> 
-                <div className="flex items-center gap-2">
-                  <svg className="w-4 h-4" viewBox="0 0 20 20" fill="none"><path d="M10 0.833252V2.49992M10 17.4999V19.1666M3.51671 3.51659L4.70004 4.69992M15.3 15.2999L16.4834 16.4833M0.833374 9.99992H2.50004M17.5 9.99992H19.1667M3.51671 16.4833L4.70004 15.2999M15.3 4.69992L16.4834 3.51659M14.1667 9.99992C14.1667 12.3011 12.3012 14.1666 10 14.1666C7.69885 14.1666 5.83337 12.3011 5.83337 9.99992C5.83337 7.69873 7.69885 5.83325 10 5.83325C12.3012 5.83325 14.1667 7.69873 14.1667 9.99992Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  <span className="text-[15px] font-bold whitespace-nowrap text-header-top-text">Sunny 18° F</span>
+              {/* Left Column (Search + Weather) */}
+              <div className="relative z-10 flex flex-col items-start justify-between h-full pointer-events-auto w-[250px] py-2"> 
+                {/* Search Icon at Top Left */}
+                <div>
+                   <Search className="w-4 h-4 text-header-nav-text cursor-pointer hover:text-header-nav-text/80 transition-colors" />
                 </div>
-                <div className="text-[15px] font-bold text-header-top-text/80 mt-0.5">Volume XCI No. 22</div>
+                
+                {/* Weather Block */}
+                <div className="-mt-6">
+                  <div className="flex items-center gap-2">
+                    <svg className="w-4 h-4 text-header-nav-text" viewBox="0 0 20 20" fill="none"><path d="M10 0.833252V2.49992M10 17.4999V19.1666M3.51671 3.51659L4.70004 4.69992M15.3 15.2999L16.4834 16.4833M0.833374 9.99992H2.50004M17.5 9.99992H19.1667M3.51671 16.4833L4.70004 15.2999M15.3 4.69992L16.4834 3.51659M14.1667 9.99992C14.1667 12.3011 12.3012 14.1666 10 14.1666C7.69885 14.1666 5.83337 12.3011 5.83337 9.99992C5.83337 7.69873 7.69885 5.83325 10 5.83325C12.3012 5.83325 14.1667 7.69873 14.1667 9.99992Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <span className="text-[15px] font-bold whitespace-nowrap text-header-nav-text">
+                      Sunny 18° F <span className="text-[#17AC3C] text-2xl leading-none relative top-1">•</span>
+                    </span>
+                  </div>
+                  <div className="text-[15px] font-bold text-header-nav-text mt-0.5">Volume XCI No. 22</div>
+                </div>
               </div>
 
-              {/* ABSOLUTE CENTERED LOGO */}
-              <div className="absolute left-[50.2%] top-[48%] -translate-x-1/2 -translate-y-1/2 h-full w-full max-w-[650px] pointer-events-none scale-90">
+              {/* CENTER LOGO */}
+              <div className="absolute left-[50%] top-[50%] mt-3 -translate-x-1/2 -translate-y-1/2 h-full w-full max-w-[650px] pointer-events-none">
                 <div className="relative w-full h-full">
                   <Image 
                     src="/logo.svg" 
@@ -144,7 +140,7 @@ export default function Header() {
               </div>
 
               {/* Right Column (Date) */}
-              <div className="relative z-10 flex items-end justify-end h-full w-[210px] text-[15px] font-bold text-right whitespace-nowrap text-header-top-text pointer-events-auto pb-0">
+              <div className="relative z-10 flex items-center justify-end h-full w-[250px] text-[15px] font-bold text-right whitespace-nowrap text-header-nav-text pointer-events-auto">
                 {currentDate}
               </div>
             </div>
@@ -152,20 +148,22 @@ export default function Header() {
         </div>
 
         {/* BOTTOM NAV SECTION */}
-        <div className="bg-header-nav px-3">
-          <div className="max-w-[1280px] mx-auto px-4 md:px-6 flex justify-center border-b border-header-border">
-            <nav className="flex flex-wrap items-center py-3 gap-8">
-              {desktopNavItems.map((item) => (
-              <Link 
-                key={item} 
-                href={item === 'Staff' ? '/staff' : `/${item.toLowerCase()}`}
-                className="flex items-center gap-1 text-[15px] text-header-nav-text hover:text-accent transition-colors uppercase"
-              >
-                {item} <ChevronDown className="w-3.5 h-3.5 text-text-muted" />
-              </Link>
-            ))}
-          </nav>
-        </div>
+        <div className="bg-header-nav">
+          <div className="max-w-[1280px] mx-auto px-4 md:px-6 xl:px-[30px]">
+            <div className="flex justify-center border-b-[4px] border-double border-header-nav-text -mx-[2.5px]">
+              <nav className="flex flex-wrap items-center py-2 gap-8">
+                {desktopNavItems.map((item, index) => (
+                <Link 
+                  key={`${item}-${index}`} 
+                  href={item === 'Staff' ? '/staff' : `/${item.toLowerCase()}`}
+                  className="flex items-center gap-1 text-[16px] text-header-nav-text hover:text-accent transition-colors uppercase"
+                >
+                  {item} <ChevronDown className="w-4 h-4 text-text-muted" />
+                </Link>
+              ))}
+              </nav>
+            </div>
+          </div>
         </div>
       </header>
     </>
