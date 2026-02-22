@@ -22,10 +22,6 @@ import { UnderlineFeatureClient as UnderlineFeatureClient_e70f5e05f09f93e00b997e
 import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { PositionRowLabel as PositionRowLabel_86f57aac7d0693294032b493201ea313 } from '@/components/Dashboard/PositionRowLabel'
-import { StatusBadge as StatusBadge_72718a7bf9241b9cbe9215ad84b3a4f2 } from '@/components/Dashboard/StatusBadge'
-import { HeaderActions as HeaderActions_a63604816d123fee7db7d0b39861fd12 } from '@/components/Dashboard/HeaderActions'
-import { HiddenButton as HiddenButton_9da624a5ecfc753c5fe3c0b20475093b } from '@/components/Dashboard/HiddenButton'
-import { SaveVersionButton as SaveVersionButton_73ec45d33c7232800d8340c1e11336d3 } from '@/components/Dashboard/SaveVersionButton'
 import { Icon as Icon_6823e23e6721eed83ef38d632cfc3284 } from '@/components/Dashboard/Icon'
 import { Logo as Logo_fb0cfd647438b613656b847e25f14183 } from '@/components/Dashboard/Login/Logo'
 import { default as default_b39f2d96c5778d5698b3c9e7777aa63a } from '@/components/Dashboard'
@@ -56,10 +52,6 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#BoldFeatureClient": BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@/components/Dashboard/PositionRowLabel#PositionRowLabel": PositionRowLabel_86f57aac7d0693294032b493201ea313,
-  "@/components/Dashboard/StatusBadge#StatusBadge": StatusBadge_72718a7bf9241b9cbe9215ad84b3a4f2,
-  "@/components/Dashboard/HeaderActions#HeaderActions": HeaderActions_a63604816d123fee7db7d0b39861fd12,
-  "@/components/Dashboard/HiddenButton#HiddenButton": HiddenButton_9da624a5ecfc753c5fe3c0b20475093b,
-  "@/components/Dashboard/SaveVersionButton#SaveVersionButton": SaveVersionButton_73ec45d33c7232800d8340c1e11336d3,
   "@/components/Dashboard/Icon#Icon": Icon_6823e23e6721eed83ef38d632cfc3284,
   "@/components/Dashboard/Login/Logo#Logo": Logo_fb0cfd647438b613656b847e25f14183,
   "@/components/Dashboard#default": default_b39f2d96c5778d5698b3c9e7777aa63a,

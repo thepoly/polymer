@@ -1,12 +1,12 @@
 import React from 'react';
-import { SerializeLexical, LexicalNode } from './RichTextParser';
+import { SerializeLexical, LexicalNode } from '@/components/Article/RichTextParser';
 
 type Props = {
-  content: {
+  content?: {
     root: {
       children: LexicalNode[];
     };
-  } | null | undefined; 
+  } | null;
 };
 
 export const ArticleContent: React.FC<Props> = ({ content }) => {
@@ -15,7 +15,7 @@ export const ArticleContent: React.FC<Props> = ({ content }) => {
   }
 
   return (
-    <div className="max-w-[680px] mx-auto">
+    <div className="max-w-[680px] mx-auto px-4 md:px-0 mb-20">
       <SerializeLexical nodes={content.root.children} />
     </div>
   );

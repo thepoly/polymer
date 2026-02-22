@@ -44,6 +44,9 @@ const formatArticle = (article: PayloadArticle | number | null | undefined): Com
     author: authors || null,
     date: dateString,
     image: (article.featuredImage as Media)?.url || null,
+    section: article.section,
+    publishedDate: article.publishedDate,
+    createdAt: article.createdAt,
   };
 };
 
@@ -139,17 +142,25 @@ export default async function Home() {
 
   
 
-    return (
+            return (
 
-      <main className="min-h-screen bg-white">
+  
 
-        <Header />
+              <main className="min-h-screen bg-bg-main transition-colors duration-300">
 
-        <FrontPage 
+  
 
-          topStories={topStories}
+                <Header />
 
-          studentSenate={studentSenate || { id: 'fallback', slug: '#', title: 'No Senate Update', excerpt: '', author: '', date: '', image: null }}
+  
+
+                <FrontPage 
+
+  
+
+                  topStories={topStories}
+
+          studentSenate={studentSenate || { id: 'fallback', slug: '#', title: 'No Senate Update', excerpt: '', author: '', date: '', image: null, section: 'News' }}
 
           opinion={opinion}
 

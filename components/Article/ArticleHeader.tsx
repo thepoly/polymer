@@ -8,40 +8,30 @@ type Props = {
 
 export const ArticleHeader: React.FC<Props> = ({ article }) => {
   const featuredImage = article.featuredImage as Media | null;
-  const authors = article.authors?.map(author => {
-      const user = author as User;
-      return `${user.firstName} ${user.lastName}`;
-  }).join(' AND ');
 
   return (
-    <div className="flex flex-col gap-6 mb-8 max-w-4xl mx-auto">
-      <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6 mb-8">
+      <div className="flex flex-col gap-4 max-w-[680px] w-full mx-auto">
         {article.kicker && (
-            <span className="text-[#D6001C] font-bold font-serif uppercase text-sm tracking-wider">
+            <span className="text-accent font-bold font-serif uppercase text-lg tracking-wider transition-colors">
                 {article.kicker}
             </span>
         )}
-        <h1 className="font-serif font-black text-4xl md:text-5xl lg:text-6xl text-gray-900 leading-[1.1]">
+        <h1 className="font-serif font-bold text-2xl md:text-3xl lg:text-4xl text-text-main leading-[1.1] transition-colors">
           {article.title}
         </h1>
         {article.subdeck && (
-            <h2 className="font-serif text-xl md:text-2xl text-gray-700 leading-snug">
+            <h2 className="font-serif text-xl md:text-2xl text-text-muted leading-snug transition-colors">
                 {article.subdeck}
             </h2>
         )}
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-b border-gray-200 py-4 font-serif text-gray-600 text-sm md:text-base">
-        <div className="font-bold text-gray-900">
-             By {authors || 'The Poly Staff'}
-        </div>
-        <div>
-            {article.publishedDate ? new Date(article.publishedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}
-        </div>
-      </div>
-
       {featuredImage?.url && (
-        <div className="relative aspect-[3/2] w-full bg-gray-100 overflow-hidden rounded-sm">
+        <div 
+          id={`media-${featuredImage.id}`}
+          className="relative aspect-[3/2] w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden rounded-sm max-w-4xl mx-auto scroll-mt-20"
+        >
           <Image
             src={featuredImage.url}
             alt={featuredImage.alt || article.title}
@@ -51,6 +41,49 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
           />
         </div>
       )}
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 font-serif text-text-muted text-sm md:text-base max-w-[680px] w-full mx-auto transition-colors">
+        <div className="flex items-center gap-3">
+            {/* Author Headshots */}
+            <div className="flex -space-x-2">
+                {article.authors?.map((author) => {
+                    const user = author as User;
+                    const headshot = user.headshot as Media | null;
+                    if (!headshot?.url) return null;
+                    return (
+                        <div key={user.id} className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 border-2 border-bg-main transition-colors">
+                            <Image
+                                src={headshot.url}
+                                alt={`${user.firstName} ${user.lastName}`}
+                                fill
+                                className="object-cover"
+                            />
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Author Names */}
+            <div className="font-bold text-text-main transition-colors">
+                By {article.authors && article.authors.length > 0 ? (
+                    article.authors.map((author, index) => {
+                        const user = author as User;
+                        return (
+                            <React.Fragment key={user.id}>
+                                {index > 0 && index === article.authors!.length - 1 ? ' and ' : index > 0 ? ', ' : ''}
+                                {user.firstName} {user.lastName}
+                            </React.Fragment>
+                        );
+                    })
+                ) : (
+                    'The Poly Staff'
+                )}
+            </div>
+        </div>
+        <div className="mt-2 sm:mt-0">
+            {article.publishedDate ? new Date(article.publishedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}
+        </div>
+      </div>
     </div>
   );
 };
