@@ -3,8 +3,13 @@ import { notFound } from 'next/navigation';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
 import Header from '@/components/Header';
+import OpinionHeader from '@/components/Opinion/OpinionHeader';
+import { OpinionArticleHeader } from '@/components/Opinion/OpinionArticleHeader';
+import OpinionScrollBar from '@/components/Opinion/OpinionScrollBar';
+import { OpinionArticleFooter } from '@/components/Opinion/OpinionArticleFooter';
 import { ArticleHeader, ArticleContent, ArticleFooter } from '@/components/Article';
 import * as Photofeature from '@/components/Article/Photofeature';
+import { deriveSlug } from '@/utils/deriveSlug';
 
 export const revalidate = 60;
 
@@ -18,10 +23,11 @@ type Args = {
 };
 
 export default async function ArticlePage({ params }: Args) {
-  const { slug } = await params; // We primarily need slug for lookup
+  const { section, slug } = await params;
   const payload = await getPayload({ config });
 
-  const result = await payload.find({
+  // Try finding by slug first
+  let result = await payload.find({
     collection: 'articles',
     where: {
       slug: {
@@ -30,6 +36,31 @@ export default async function ArticlePage({ params }: Args) {
     },
     limit: 1,
   });
+
+  // If no result, try matching by title (for articles without saved slugs)
+  if (result.docs.length === 0) {
+    const allInSection = await payload.find({
+      collection: 'articles',
+      where: {
+        section: { equals: section },
+      },
+      limit: 200,
+    });
+
+    const match = allInSection.docs.find((doc) => {
+      return deriveSlug(doc.title) === slug;
+    });
+
+    if (match) {
+      // Save the slug so future lookups work directly
+      await payload.update({
+        collection: 'articles',
+        id: match.id,
+        data: { slug },
+      });
+      result = { ...result, docs: [match] };
+    }
+  }
 
   const article = result.docs[0];
 
@@ -66,6 +97,25 @@ export default async function ArticlePage({ params }: Args) {
                 <Photofeature.ArticleFooter />
             </article>
         </main>
+    );
+  }
+
+  const isOpinion = section === 'opinion';
+
+  if (isOpinion) {
+    return (
+      <main className="min-h-screen bg-white pb-20 pt-[58px] font-[family-name:var(--font-raleway)]">
+        <OpinionHeader />
+        <OpinionScrollBar title={article.title} />
+        <article className="container mx-auto px-4 md:px-6 mt-8 md:mt-12">
+          <OpinionArticleHeader article={article} />
+          <div className="max-w-[600px] mx-auto">
+            <ArticleContent content={article.content} />
+            <ArticleFooter />
+          </div>
+        </article>
+        <OpinionArticleFooter />
+      </main>
     );
   }
 

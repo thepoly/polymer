@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { deriveSlug } from '../utils/deriveSlug'
 
 const Articles: CollectionConfig = {
   slug: 'articles',
@@ -32,6 +33,11 @@ const Articles: CollectionConfig = {
   hooks: {
     beforeChange: [
       ({ data, originalDoc }) => {
+        // Auto-generate slug from title if not provided
+        if (!data.slug && data.title) {
+          data.slug = deriveSlug(data.title)
+        }
+
         // LOGIC: If transitioning to 'published' via Payload's internal _status, set the publishedDate
         const isNowPublished = data._status === 'published'
         const wasPublished = originalDoc?._status === 'published'
@@ -56,7 +62,7 @@ const Articles: CollectionConfig = {
       type: 'textarea',
     },
     {
-      name: 'section', 
+      name: 'section',
       type: 'select',
       options: [
         { label: 'News', value: 'news' },
@@ -66,6 +72,26 @@ const Articles: CollectionConfig = {
         { label: 'Opinion', value: 'opinion' },
       ],
       required: true,
+    },
+    {
+      name: 'opinionType',
+      type: 'select',
+      options: [
+        { label: 'Op-Ed', value: 'opinion' },
+        { label: 'Column', value: 'column' },
+        { label: 'Staff Editorial', value: 'staff-editorial' },
+        { label: 'Editorial Notebook', value: 'editorial-notebook' },
+        { label: 'Endorsement', value: 'endorsement' },
+        { label: 'Top Hat', value: 'top-hat' },
+        { label: 'Candidate Profile', value: 'candidate-profile' },
+        { label: 'Letter to the Editor', value: 'letter-to-the-editor' },
+        { label: "The Poly's Recommendations", value: 'polys-recommendations' },
+        { label: 'Other', value: 'other' },
+      ],
+      admin: {
+        condition: (data) => data?.section === 'opinion',
+        description: 'Categorizes opinion articles. Only visible when section is Opinion.',
+      },
     },
     {
       name: 'authors',
@@ -93,6 +119,13 @@ const Articles: CollectionConfig = {
       name: 'featuredImage',
       type: 'upload',
       relationTo: 'media',
+    },
+    {
+      name: 'imageCaption',
+      type: 'text',
+      admin: {
+        description: 'Caption for the featured image (e.g. "Illustration by The Polytechnic")',
+      },
     },
     {
       name: 'content',

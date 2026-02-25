@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { ChevronDown, Menu, X, ChevronRight, Search } from "lucide-react";
 
@@ -81,11 +82,25 @@ export default function Header() {
         {isMobileMenuOpen && (
           <div className="fixed inset-0 top-[70px] sm:top-[90px] z-[60] bg-white overflow-y-auto flex flex-col">
             <nav className="flex flex-col p-6 gap-0">
-              {navItems.map((item) => (
-                <button key={item} className="flex items-center justify-between text-2xl font-bold py-4 border-b border-gray-100 text-left text-black hover:text-[#D6001C] transition-all group">
-                  {item} <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[#D6001C]" />
-                </button>
-              ))}
+              {navItems.map((item) => {
+                if (item === 'Opinion') {
+                  return (
+                    <Link
+                      key={item}
+                      href="/opinion"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center justify-between text-2xl font-bold py-4 border-b border-gray-100 text-left text-black hover:text-[#D6001C] transition-all group"
+                    >
+                      {item} <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[#D6001C]" />
+                    </Link>
+                  );
+                }
+                return (
+                  <button key={item} className="flex items-center justify-between text-2xl font-bold py-4 border-b border-gray-100 text-left text-black hover:text-[#D6001C] transition-all group">
+                    {item} <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[#D6001C]" />
+                  </button>
+                );
+              })}
             </nav>
           </div>
         )}
@@ -146,11 +161,24 @@ export default function Header() {
         <div className="bg-white px-3">
           <div className="max-w-[1280px] mx-auto px-4 md:px-6 flex justify-center border-b border-black">
             <nav className="flex flex-wrap items-center py-3 gap-8">
-              {desktopNavItems.map((item) => (
-              <button key={item} className="flex items-center gap-1 text-[15px] text-black hover:text-[#D6001C] transition-colors uppercase">
-                {item} <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-              </button>
-            ))}
+              {desktopNavItems.map((item) => {
+                if (item === 'Opinion') {
+                  return (
+                    <Link
+                      key={item}
+                      href="/opinion"
+                      className="flex items-center gap-1 text-[15px] text-black hover:text-[#D6001C] transition-colors uppercase"
+                    >
+                      {item} <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                    </Link>
+                  );
+                }
+                return (
+                  <button key={item} className="flex items-center gap-1 text-[15px] text-black hover:text-[#D6001C] transition-colors uppercase">
+                    {item} <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+                  </button>
+                );
+              })}
           </nav>
         </div>
         </div>
