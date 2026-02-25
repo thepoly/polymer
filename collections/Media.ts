@@ -18,6 +18,14 @@ export const Media: CollectionConfig = {
       name: 'alt',
       type: 'text',
     },
+    {
+      name: 'photographer',
+      type: 'relationship',
+      relationTo: 'users',
+      admin: {
+        position: 'sidebar',
+      },
+    },
   ],
   upload: true,
 }

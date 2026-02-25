@@ -132,14 +132,14 @@ const FrontPageBody = ({ topStories, studentSenate, opinion }: FrontPageBodyProp
   const config = getGridConfig();
 
   return (
-    <div className="w-full bg-white font-serif text-gray-900">
+    <div className="w-full bg-bg-main font-serif text-text-main transition-colors duration-300">
       <div className="max-w-[1280px] mx-auto px-4 md:px-6 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
             
             {/* --- LEFT MAIN CONTENT (COL-9) --- */}
             <div className="lg:col-span-9 flex flex-col pr-0 lg:pr-6">
                 <div ref={leftContentRef} className="flex flex-col">
-                    <SectionHeader title="Top Stories" />
+                    {/* <SectionHeader title="Top Stories" /> */}
 
                     {/* Increased gap from 5 (20px) to 10 (40px) */}
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-7">
@@ -181,7 +181,7 @@ const FrontPageBody = ({ topStories, studentSenate, opinion }: FrontPageBodyProp
 
                                             {/* Border Line */}
                                             {!isLastVisible && isVisible && (
-                                                <div className="border-b border-gray-200 w-full" />
+                                                <div className="border-b border-border-main w-full transition-colors" />
                                             )}
                                         </div>
                                     );
@@ -199,10 +199,10 @@ const FrontPageBody = ({ topStories, studentSenate, opinion }: FrontPageBodyProp
             <div className="lg:col-span-3 mt-10 lg:mt-0 flex flex-col relative">
                 
                 {/* Vertical Divider */}
-                <div className="hidden lg:block absolute left-0 top-0 bottom-0 w-px bg-gray-300"></div>
+                <div className="hidden lg:block absolute left-0 top-0 bottom-0 w-px bg-border-main transition-colors"></div>
 
                 <div className="lg:pl-6 h-full">
-                    <SectionHeader title="Opinion" />
+                    {/* <SectionHeader title="Opinion" /> */}
                     
                     {/* Opinion Items */}
                     <div ref={opinionContainerRef} className="flex flex-col gap-6">
@@ -215,7 +215,7 @@ const FrontPageBody = ({ topStories, studentSenate, opinion }: FrontPageBodyProp
                                 opacity: index < visibleOpinions ? 1 : 0,
                                 pointerEvents: index < visibleOpinions ? 'auto' : 'none'
                               }}
-                              className={index < visibleOpinions - 1 ? 'border-b border-gray-200 pb-5' : ''}
+                              className={index < visibleOpinions - 1 ? 'border-b border-border-main pb-5 transition-colors' : ''}
                             >
                                 <div className="py-0.5"> 
                                   <OpinionCard article={op} hasImage={index === 0} />

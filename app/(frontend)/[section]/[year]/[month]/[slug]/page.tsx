@@ -2,13 +2,13 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
-import Header from '@/components/Header';
+import { getArticleLayout, ArticleLayouts } from '@/components/Article/Layouts';
+import { LexicalNode } from '@/components/Article/RichTextParser';
 import OpinionHeader from '@/components/Opinion/OpinionHeader';
 import { OpinionArticleHeader } from '@/components/Opinion/OpinionArticleHeader';
 import OpinionScrollBar from '@/components/Opinion/OpinionScrollBar';
 import { OpinionArticleFooter } from '@/components/Opinion/OpinionArticleFooter';
-import { ArticleHeader, ArticleContent, ArticleFooter } from '@/components/Article';
-import * as Photofeature from '@/components/Article/Photofeature';
+import { ArticleContent, ArticleFooter } from '@/components/Article';
 import { deriveSlug } from '@/utils/deriveSlug';
 
 export const revalidate = 60;
@@ -68,41 +68,31 @@ export default async function ArticlePage({ params }: Args) {
     notFound();
   }
 
-  // Check for #photofeature# flag
-  let isPhotofeature = false;
+  // Determine the layout
+  const layoutType = getArticleLayout(article);
+  const LayoutComponent = ArticleLayouts[layoutType];
+
+  // Prepare content (clean up flags if necessary)
   let cleanContent = article.content;
 
-  const firstNode = article.content?.root?.children?.[0] as any;
-  if (article.content && firstNode?.type === 'paragraph' && firstNode.children?.length > 0) {
-     const firstTextNode = firstNode.children[0];
-     if (firstTextNode.type === 'text' && firstTextNode.text?.trim() === '#photofeature#') {
-        isPhotofeature = true;
-        // Remove the first node (the flag) from the content to be displayed
-        cleanContent = {
-            ...article.content,
-            root: {
-                ...article.content.root,
-                children: (article.content.root as any).children.slice(1)
-            }
-        };
-     }
+  if (layoutType === 'photofeature') {
+      const firstNode = article.content?.root?.children?.[0] as unknown as LexicalNode;
+      if (article.content && firstNode?.type === 'paragraph' && firstNode.children && firstNode.children.length > 0) {
+         const firstTextNode = firstNode.children[0];
+         if (firstTextNode.type === 'text' && firstTextNode.text?.trim() === '#photofeature#') {
+            cleanContent = {
+                ...article.content,
+                root: {
+                    ...article.content.root,
+                    children: (article.content.root.children as unknown as LexicalNode[]).slice(1)
+                }
+            };
+         }
+      }
   }
 
-  if (isPhotofeature) {
-    return (
-        <main className="min-h-screen bg-white pb-20">
-            <Photofeature.ArticleHeader article={article} />
-            <article className="container mx-auto px-4 md:px-6">
-                <Photofeature.ArticleContent content={cleanContent} />
-                <Photofeature.ArticleFooter />
-            </article>
-        </main>
-    );
-  }
-
-  const isOpinion = section === 'opinion';
-
-  if (isOpinion) {
+  // Opinion articles get their own custom layout
+  if (section === 'opinion' && layoutType !== 'photofeature') {
     return (
       <main className="min-h-screen bg-white pb-20 pt-[58px] font-[family-name:var(--font-raleway)]">
         <OpinionHeader />
@@ -119,16 +109,7 @@ export default async function ArticlePage({ params }: Args) {
     );
   }
 
-  return (
-    <main className="min-h-screen bg-white pb-20">
-      <Header />
-      <article className="container mx-auto px-4 md:px-6 mt-8 md:mt-12">
-        <ArticleHeader article={article} />
-        <ArticleContent content={article.content} />
-        <ArticleFooter />
-      </article>
-    </main>
-  );
+  return <LayoutComponent article={article} content={cleanContent} />;
 }
 
 export async function generateStaticParams() {
@@ -151,7 +132,7 @@ export async function generateStaticParams() {
       const date = new Date(dateStr);
       const year = date.getFullYear().toString();
       const month = String(date.getMonth() + 1).padStart(2, '0');
-      
+
       return {
         section: doc.section,
         year,
