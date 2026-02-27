@@ -1,42 +1,125 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Polymer
 
-## Getting Started
- anthony
-First, run the development server:
+Polymer is the ongoing digital rebuild of **The Polytechnic** web presence.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Overview
+
+A technical and stylistic revamp of RPI’s Newspaper, The Polytechnic, improving the webpage’s UX/UI and SEO.
+
+## Goals
+
+### Frontend
+
+Rebuild the frontend from scratch using React ([Next.js](https://nextjs.org/)).
+
+**General Poly Landing Page/Sections:**
+
+- Design landing page structure (take note from [The Harvard Crimson](https://www.thecrimson.com/); fix obsolete newsletter subscription; take note from [Stanford Daily's email digests](https://stanforddaily.com/email-digests/)).
+- Add Date & Volume.
+- Top News gets a dedicated section (like [Stanford Daily](https://stanforddaily.com/)), as do Opinion and Sports.
+- Improve section structures to include a featured/top article for each section.
+- Add a "Most Read" / "Opinions Choice" section.
+- Add access to visual copies of past papers (either [link to archive](https://chicagomaroon.com/archive/) or have a [print issues section](https://dailybruin.com/category/print)).
+- Add a "by | date" format next to articles (like [Chicago Maroon](https://chicagomaroon.com/) or [Stanford Daily](https://stanforddaily.com/category/opinions/)).
+
+**Opinions Section:**
+
+- Add a drop-down menu on hover (Editorial, Columns, Op-Ed, Letter to the Editor) - similar to [Daily Princetonian](https://www.dailyprincetonian.com/).
+- Include pictures/graphics with opinion pieces to elevate the section (standard for collegiate newspapers).
+- Opinions section will have an ["Opinion's Choice"](https://www.thecrimson.com/section/opinion/) highlighted section.
+- Dedicated section for Columns!
+
+### Backend & Analytics
+
+- **CMS:** [Payload CMS](https://payloadcms.com/)
+- **Diagnostics/Analytics:** Implement an analytics tool to measure website traffic.
+- **Migration:** Database copy and migration from the old Poly website backend.
+- **Deployment:** Deploy the new site on our RPI server (with VMware).
+
+## Milestones
+
+### Done on February 15th - Visual Mockup
+
+- Receive formal and cohesive opinions from the Polytechnic Executive Board regarding complaints and suggestions for improvements.
+- Visualize and finalize a new web design and a list of features/improvements that we’d like to instill on our new website (using Figma or whiteboards).
+
+### Done on February 23 - Backend
+
+- Picking and finalizing which backend we’re using (likely Payload, but doing more research is part of this phase).
+- Locally test the backend, and plan how it will interface with our Frontend site.
+- Test the migration of articles and photos from our old website to our new one, or choose to keep the old one running.
+
+### Done on March 28 - Frontend
+
+- Building the Frontend and implementing all of the previous design choices that were agreed on.
+- Address General Poly Landing Page Issues:
+  - Our landing pages newsletter subscription is obsolete.
+  - No structure to our landing page.
+  - Date & Volume.
+  - Top News gets a section and so does Opinion, Sports.
+- Address Section structures:
+  - Add a featured/top for each section.
+  - Add a Most Read/ Opinions Choice.
+  - Access to visual copies of past papers.
+  - Add a by | date next to our articles.
+- Address Opinions page:
+  - Would like a drop down menu when you hover over opinions.
+  - Drop down includes editorial, columns, op-ed, letter to the editor.
+  - Pictures/graphics with opinion pieces will elevate the section.
+  - Opinions section will have an “Opinion’s Choice”.
+  - Columns!
+
+### April 15th - Deployment and Feedback
+
+- Deploy the site to our RPI vmware server.
+- Migrate the old database to the new website.
+- Implement an analytics tool to measure website traffic.
+
+## Repository Structure
+
+```text
+.
+|-- app/                     # Next.js app routes (frontend + payload)
+|-- collections/             # Payload CMS collections
+|-- components/              # Shared UI and dashboard components
+|-- migrations/              # Payload migration files
+|-- docs/                    # Mockups and design artifacts
+|-- .github/workflows/       # Deployment workflow(s)
+|-- package.json             # Project scripts and dependencies
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Next.js (App Router)
+- React
+- TypeScript
+- Payload CMS
+- PostgreSQL
+- Tailwind CSS v4
+- pnpm
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Local Development
 
-## Learn More
+### Prerequisites
 
-To learn more about Next.js, take a look at the following resources:
+- Node.js 20+
+- pnpm 10+
+- PostgreSQL
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Run the app
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm install
+pnpm dev
+```
 
-## Deploy on Vercel
+Then open [http://localhost:3000](http://localhost:3000).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Production deploys run via GitHub Actions (`.github/workflows/deploy.yml`) on pushes to `main`.
+The workflow syncs the repo to `/var/www/polymer/`, installs dependencies, runs Payload migrations, builds the app, and reloads the `polymer` PM2 process.
 
-anthony
+## License
 
-
- if the first line in the content of an article is #photofeature# then don't display that line in a final page. also if this line is present then don't
-   use components in @components/Article/ use components in a new components folder inside @components/Article/ called Photofeature. the photofeature article pages don't have the normal red header. they have the special photofeature header with a really small polytechnic logo, white, centered at the top of the screen. also the search icon is white at the top left. the headline is whatever the best contrase color is for the image (defalt to white) centered down at the bottom of the FULLSCREEN image. the header is over this image, and the headline (and subdeck under it) is at the bottom, also over the image. everything is on top of the fullscreen image. make this page work on mobile as well please, just the image will be cropped to be fullscreen mobile. then when you scroll it is no longer the fullscreen image and then it is normal from there. 
+MIT (see `LICENSE`).
