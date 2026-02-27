@@ -83,7 +83,7 @@ export default function Header() {
                 <Link 
                   key={item} 
                   href={item === 'Staff' ? '/staff' : `/${item.toLowerCase()}`}
-                  className="flex items-center justify-between text-2xl font-bold py-4 border-b border-border-main text-left text-header-nav-text hover:text-accent transition-all group"
+                  className="flex items-center justify-between text-2xl font-extrabold py-4 border-b border-border-main text-left text-header-nav-text hover:text-accent transition-all group"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {item} <ChevronRight className="w-5 h-5 text-text-muted group-hover:text-accent" />
@@ -97,7 +97,6 @@ export default function Header() {
       {/* ==================================================================
           DESKTOP HEADER
           ================================================================== */}
-      {/* 👇 Added mb-2.5 right here for that exact 30% spacing 👇 */}
       <header className="hidden lg:block mb-4">
         
         {/* TOP LOGO ROW */}
@@ -156,7 +155,7 @@ export default function Header() {
                 <Link 
                   key={`${item}-${index}`} 
                   href={item === 'Staff' ? '/staff' : `/${item.toLowerCase()}`}
-                  className="flex items-center gap-1 text-[16px] text-header-nav-text hover:text-accent transition-colors uppercase"
+                  className="flex items-center gap-1 text-[16px] font-bold text-header-nav-text hover:text-accent transition-colors uppercase"
                 >
                   {item} <ChevronDown className="w-4 h-4 text-text-muted" />
                 </Link>
