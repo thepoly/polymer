@@ -22,7 +22,7 @@ export default async function About() {
                     {"Meeting Times"}
             </h1>
             <p>
-                We hold our weekly business and content meetings on Sundays at 1 pm EST in RU 3510/3511. Everyone is welcome to attend. 
+                <i>The Poly</i> meets twice a week in RU 3510/3511 on Sunday at 1 pm, and on Monday at 6 pm. Everyone is welcome to attend. 
                 Meeting times are subject to change, so please contact poly@rpi.edu in advance if you plan on coming or would prefer to attend meetings online.
             </p>
         </div>
