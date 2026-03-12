@@ -22,7 +22,7 @@ export default async function StaffPage() {
   return (
     <>
       {/* Staff Title */}
-      <div className="mb-10 mt-5">
+      <div className="mb-16 mt-0 md:mt-2">
         <h1 className="text-4xl md:text-5xl font-black tracking-tight text-text-main transition-colors">
           Staff
         </h1>
@@ -54,7 +54,7 @@ export default async function StaffPage() {
 
           return (
             <Link 
-              href={`/staff/${user.id}`} 
+              href={`/staff/${user.slug || user.id}`} 
               key={user.id}
               className="group flex flex-col items-start text-left"
             >
@@ -64,7 +64,7 @@ export default async function StaffPage() {
                     src={headshot.url}
                     alt={`${user.firstName} ${user.lastName}`}
                     fill
-                    className="object-cover transition-opacity duration-300 hover:opacity-95"
+                    className="object-cover"
                     sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
                   />
                 ) : (

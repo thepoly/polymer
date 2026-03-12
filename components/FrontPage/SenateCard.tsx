@@ -14,7 +14,7 @@ export const SenateCard = ({ article }: { article: Article }) => (
             <h3 className="font-serif font-bold text-xl md:text-2xl text-text-main mb-3 leading-tight group-hover:underline decoration-2 underline-offset-2 decoration-text-main transition-colors">
                 {article.title}
             </h3>
-            <p className="font-serif text-text-muted text-[15px] leading-snug mb-3 transition-colors">
+            <p className="font-serif text-text-main text-[15px] leading-snug mb-3 transition-colors">
                 {article.excerpt}
             </p>
              <Byline author={article.author} date={article.date} />

@@ -45,7 +45,7 @@ export default function Header() {
           </div>
 
           <div className="flex-grow flex justify-center items-center px-0 overflow-visible">
-             <div className="relative h-[50px] sm:h-[70px] w-full max-w-[280px] transform scale-[1.05] -translate-x-2">
+             <Link href="/" className="relative h-[50px] sm:h-[70px] w-full max-w-[280px] transform scale-[1.05] -translate-x-2 block cursor-pointer">
                <Image
                 src="/logo.svg"
                 alt="The Polytechnic"
@@ -54,7 +54,7 @@ export default function Header() {
                 className="object-contain"
                 priority
               />
-             </div>
+             </Link>
           </div>
 
           <div className="flex-shrink-0 flex items-center gap-1.5 -mr-1 z-20 bg-header-nav pl-2">
@@ -126,7 +126,7 @@ export default function Header() {
 
               {/* CENTER LOGO */}
               <div className="absolute left-[50%] top-[50%] mt-3 -translate-x-1/2 -translate-y-1/2 h-full w-full max-w-[650px] pointer-events-none">
-                <div className="relative w-full h-full">
+                <Link href="/" className="relative w-full h-full block pointer-events-auto cursor-pointer">
                   <Image 
                     src="/logo.svg" 
                     alt="The Polytechnic" 
@@ -135,7 +135,7 @@ export default function Header() {
                     className="object-contain" 
                     priority 
                   />
-                </div>
+                </Link>
               </div>
 
               {/* Right Column (Date) */}

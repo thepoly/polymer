@@ -7,18 +7,27 @@ import { getArticleUrl } from '@/utils/getArticleUrl';
 
 export const revalidate = 60;
 
-export default async function StaffProfilePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function StaffProfilePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const payload = await getPayload({ config });
   
   let user;
   try {
-    user = await payload.findByID({
+    const isNumeric = /^\d+$/.test(slug);
+    const result = await payload.find({
       collection: 'users',
-      id,
+      where: {
+        or: [
+          { slug: { equals: slug } },
+          ...(isNumeric ? [{ id: { equals: parseInt(slug, 10) } }] : []),
+        ],
+      },
       depth: 2,
+      limit: 1,
     });
+    user = result.docs[0];
   } catch (error) {
+    console.error('Error fetching user by slug/id:', error);
     notFound();
   }
 
@@ -68,7 +77,7 @@ export default async function StaffProfilePage({ params }: { params: Promise<{ i
     relatedArticles.docs.forEach(article => {
       const imageId = typeof article.featuredImage === 'object' ? article.featuredImage?.id : article.featuredImage;
       if (imageId && !photoToArticleMap[imageId]) {
-        photoToArticleMap[imageId] = `${getArticleUrl(article as any)}#media-${imageId}`;
+        photoToArticleMap[imageId] = getArticleUrl(article as any);
       }
     });
   }

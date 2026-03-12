@@ -1,4 +1,5 @@
-import React from 'react';
+"use client";
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Media, User, Article } from '@/payload-types';
@@ -14,6 +15,11 @@ interface StaffProfileProps {
 export function StaffProfile({ user, articles = [], photos = [], photoToArticleMap = {} }: StaffProfileProps) {
   const headshot = user.headshot as Media | null;
   const bio = user.bio as any;
+  const [showAllArticles, setShowAllArticles] = useState(false);
+
+  const INITIAL_ARTICLE_COUNT = 8;
+  const displayedArticles = showAllArticles ? articles : articles.slice(0, INITIAL_ARTICLE_COUNT);
+  const hasMoreArticles = articles.length > INITIAL_ARTICLE_COUNT;
 
   return (
     <div className="flex flex-col gap-16 text-text-main transition-colors duration-300">
@@ -81,7 +87,7 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
             <section>
               <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-text-muted mb-6 border-b border-border-main pb-2 transition-colors">Recent Articles</h2>
               <div className="space-y-6">
-                {articles.map((article) => (
+                {displayedArticles.map((article) => (
                   <div key={article.id} className="group">
                     <Link href={`/${article.section}/${new Date(article.publishedDate!).getFullYear()}/${(new Date(article.publishedDate!).getMonth() + 1).toString().padStart(2, '0')}/${article.slug}`} className="block">
                       <h3 className="text-lg font-bold group-hover:text-accent transition-colors leading-tight mb-1">
@@ -96,6 +102,14 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
                   </div>
                 ))}
               </div>
+              {hasMoreArticles && !showAllArticles && (
+                <button 
+                  onClick={() => setShowAllArticles(true)}
+                  className="mt-8 text-xs font-bold uppercase tracking-widest text-text-muted hover:text-text-main transition-colors py-2.5 px-0"
+                >
+                  See More Articles
+                </button>
+              )}
             </section>
           )}
         </div>
@@ -106,17 +120,21 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
         <section className="w-full">
           <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-text-muted mb-8 border-b border-border-main pb-2 transition-colors">Photo Portfolio</h2>
           <div className="columns-2 sm:columns-2 lg:columns-3 gap-6 space-y-6">
-            {photos.map((photo) => {
+            {photos.map((photo, index) => {
               const articleUrl = photoToArticleMap[photo.id];
+              // Alternating aspect ratios for a fun masonry feel if dimensions aren't perfect
+              const aspectRatios = ['aspect-[4/3]', 'aspect-[3/4]', 'aspect-square', 'aspect-[16/9]'];
+              const aspectRatioClass = (photo.width && photo.height) ? '' : aspectRatios[index % aspectRatios.length];
+              
               const content = (
-                <div className="relative bg-gray-100 dark:bg-zinc-800 overflow-hidden group mb-4 transition-colors">
+                <div className={`relative bg-gray-100 dark:bg-zinc-800 overflow-hidden group mb-4 transition-colors ${aspectRatioClass}`}>
                   {photo.url && (
                     <Image
                       src={photo.url}
                       alt={photo.alt || 'Photo credit'}
                       width={photo.width || 800}
                       height={photo.height || 600}
-                      className="w-full h-auto object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                      className={`w-full ${photo.width && photo.height ? 'h-auto' : 'h-full'} object-cover`}
                       sizes="(max-width: 768px) 50vw, 25vw"
                     />
                   )}

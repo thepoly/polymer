@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Article, Media, User } from '@/payload-types';
 
 type Props = {
@@ -51,14 +52,14 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                     const headshot = user.headshot as Media | null;
                     if (!headshot?.url) return null;
                     return (
-                        <div key={user.id} className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 border-2 border-bg-main transition-colors">
+                        <Link href={`/staff/${user.slug || user.id}`} key={user.id} className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 border-2 border-bg-main transition-colors hover:border-accent z-10 hover:z-20">
                             <Image
                                 src={headshot.url}
                                 alt={`${user.firstName} ${user.lastName}`}
                                 fill
                                 className="object-cover"
                             />
-                        </div>
+                        </Link>
                     );
                 })}
             </div>
@@ -71,7 +72,9 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                         return (
                             <React.Fragment key={user.id}>
                                 {index > 0 && index === article.authors!.length - 1 ? ' and ' : index > 0 ? ', ' : ''}
-                                {user.firstName} {user.lastName}
+                                <Link href={`/staff/${user.slug || user.id}`} className="hover:text-accent hover:underline decoration-1 underline-offset-2 transition-colors">
+                                    {user.firstName} {user.lastName}
+                                </Link>
                             </React.Fragment>
                         );
                     })

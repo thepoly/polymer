@@ -19,7 +19,7 @@ export const OpinionCard = ({ article, hasImage }: { article: Article, hasImage?
         <h3 className={`font-serif font-bold text-text-main mb-1 leading-tight ${hasImage ? 'text-lg' : 'text-[17px]'} group-hover:text-text-muted transition-colors`}>
             {article.title}
         </h3>
-        <p className="font-serif text-text-muted text-[14px] leading-snug mb-1 transition-colors">
+        <p className="font-serif text-text-main text-[14px] leading-snug mb-1 transition-colors">
             {article.excerpt}
         </p>
     </Link>

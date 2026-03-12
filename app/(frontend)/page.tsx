@@ -1,6 +1,7 @@
 export const revalidate = 0;
 import Header from "@/components/Header";
 import FrontPage from "@/components/FrontPage";
+import { HorizontalSection } from "@/components/FrontPage/HorizontalSection";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import { Article as PayloadArticle, Media } from "@/payload-types";
@@ -72,104 +73,73 @@ export default async function Home() {
     );
   }
 
-    const mainArticle = formatArticle(layout.mainArticle);
+  const mainArticle = formatArticle(layout.mainArticle);
 
-    if (!mainArticle) {
-
-      return (
-
-          <main className="min-h-screen bg-white">
-
-            <Header />
-
-            <div className="flex items-center justify-center h-[50vh]">
-
-                <p className="text-gray-500 font-serif">Please assign a main article in the layout configuration.</p>
-
-            </div>
-
-          </main>
-
-        );
-
-    }
-
-  
-
-    const topStories = {
-
-      lead: mainArticle,
-
-      list: [
-
-        formatArticle(layout.top1),
-
-        formatArticle(layout.top2),
-
-        formatArticle(layout.top3),
-
-      ].filter(Boolean) as ComponentArticle[],
-
-    };
-
-  
-
-    const studentSenate = formatArticle(layout.special);
-
-  
-
-        const opinion = [
-
-  
-
-          formatArticle(layout.op1),
-
-  
-
-          formatArticle(layout.op2),
-
-  
-
-          formatArticle(layout.op3),
-
-  
-
-          formatArticle(layout.op4),
-
-  
-
-        ].filter(Boolean) as ComponentArticle[];
-
-  
-
-            return (
-
-  
-
-              <main className="min-h-screen bg-bg-main transition-colors duration-300">
-
-  
-
-                <Header />
-
-  
-
-                <FrontPage 
-
-  
-
-                  topStories={topStories}
-
-          studentSenate={studentSenate || { id: 'fallback', slug: '#', title: 'No Senate Update', excerpt: '', author: '', date: '', image: null, section: 'News' }}
-
-          opinion={opinion}
-
-        />
-
-      </main>
-
-    );
-
+  if (!mainArticle) {
+    return (
+        <main className="min-h-screen bg-white">
+          <Header />
+          <div className="flex items-center justify-center h-[50vh]">
+              <p className="text-gray-500 font-serif">Please assign a main article in the layout configuration.</p>
+          </div>
+        </main>
+      );
   }
+
+  const topStories = {
+    lead: mainArticle,
+    list: [
+      formatArticle(layout.top1),
+      formatArticle(layout.top2),
+      formatArticle(layout.top3),
+    ].filter(Boolean) as ComponentArticle[],
+  };
+
+  const studentSenate = formatArticle(layout.special);
+
+  const opinion = [
+    formatArticle(layout.op1),
+    formatArticle(layout.op2),
+    formatArticle(layout.op3),
+    formatArticle(layout.op4),
+  ].filter(Boolean) as ComponentArticle[];
+
+  // Fetch recent articles for the horizontal sections
+  const fetchRecent = async (section: 'news' | 'features' | 'sports' | 'opinion') => {
+    const res = await payload.find({
+      collection: 'articles',
+      where: {
+        _status: { equals: 'published' },
+        section: { equals: section },
+      },
+      sort: '-publishedDate',
+      limit: 20,
+      depth: 2,
+    });
+    return res.docs.map(formatArticle).filter(Boolean) as ComponentArticle[];
+  };
+
+  const [newsArticles, featuresArticles, sportsArticles, opinionArticles] = await Promise.all([
+    fetchRecent('news'),
+    fetchRecent('features'),
+    fetchRecent('sports'),
+    fetchRecent('opinion'),
+  ]);
+
+  return (
+    <main className="min-h-screen bg-bg-main transition-colors duration-300">
+      <Header />
+      <FrontPage 
+        topStories={topStories}
+        studentSenate={studentSenate || { id: 'fallback', slug: '#', title: 'No Senate Update', excerpt: '', author: '', date: '', image: null, section: 'News' }}
+        opinion={opinion}
+      />
+      <HorizontalSection title="News" articles={newsArticles} />
+      <HorizontalSection title="Features" articles={featuresArticles} />
+      <HorizontalSection title="Sports" articles={sportsArticles} />
+      <HorizontalSection title="Opinion" articles={opinionArticles} />
+    </main>
+  );
+}
 
   
