@@ -7,26 +7,32 @@ import { getArticleUrl } from '@/utils/getArticleUrl';
 
 export const LeadArticle = ({ article }: { article: Article }) => (
     <Link href={getArticleUrl(article)} className="flex flex-col group cursor-pointer h-full">
-        <div className="w-full relative mb-3">
-            <div className="aspect-[16/9] w-full overflow-hidden bg-gray-100 dark:bg-zinc-800 relative"> 
-                {article.image && (
+        {article.image && (
+            <div className="relative mb-4 w-full overflow-hidden">
+                <div className="relative aspect-[16/10] w-full">
                     <Image 
                         src={article.image} 
                         alt={article.title}
                         fill
                         className="object-cover"
+                        sizes="(max-width: 1280px) 100vw, 720px"
                     />
-                )}
+                </div>
             </div>
-        </div>
+        )}
         <div className="flex flex-col justify-between flex-grow">
             <div>
-                <h3 className="font-utopia-subhead font-semibold text-text-main mb-2 text-2xl md:text-3xl leading-[1.05] group-hover:text-text-muted transition-colors">
+                <p className="font-ui mb-2 text-[10px] font-bold uppercase tracking-[0.22em] text-accent">
+                    {article.section}
+                </p>
+                <h3 className="font-display mb-3 text-[26px] font-bold leading-[1] tracking-[-0.018em] text-text-main transition-colors group-hover:text-accent md:text-[32px]">
                     {article.title}
                 </h3>
-                <p className="font-serif text-text-main text-[15px] leading-snug mb-2 transition-colors">
-                    {article.excerpt}
-                </p>
+                {article.excerpt && (
+                    <p className="font-copy max-w-[40rem] text-[13px] leading-[1.42] text-text-main transition-colors md:text-[14px]">
+                        {article.excerpt}
+                    </p>
+                )}
             </div>
             <Byline author={article.author} date={article.date} />
         </div>

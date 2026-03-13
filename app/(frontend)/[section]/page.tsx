@@ -5,7 +5,7 @@ import Header from '@/components/Header';
 import FrontPage from '@/components/FrontPage';
 import { Article as PayloadArticle, Media } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
-import { getSectionTheme } from '@/app/section-theme';
+import { notFound } from 'next/navigation';
 
 export const revalidate = 60;
 
@@ -61,15 +61,31 @@ type Args = {
 
 export default async function SectionPage({ params }: Args) {
   const { section } = await params;
-  
-  // Validate section exists in our theme map or valid sections list
-  const validSections = ['news', 'sports', 'features', 'editorial', 'opinion'];
-  if (!validSections.includes(section)) {
-     // Optional: You might want to allow other sections or just 404
-     // notFound(); 
+  const contentSections = ['news', 'sports', 'features', 'editorial', 'opinion'];
+  const placeholderSections = ['about', 'archives', 'checkmate', 'contact', 'submit'];
+  const isContentSection = contentSections.includes(section);
+  const isPlaceholderSection = placeholderSections.includes(section);
+
+  if (!isContentSection && !isPlaceholderSection) {
+    notFound();
   }
 
-  const theme = getSectionTheme(section);
+  const renderPlaceholder = (message: string) => (
+    <main className="min-h-screen bg-bg-main transition-colors duration-300">
+      <Header />
+      <div className="container mx-auto px-4 py-20 text-center">
+        <h1 className="text-4xl font-serif font-bold mb-4 capitalize text-accent">
+          {section}
+        </h1>
+        <p className="text-text-muted font-serif">{message}</p>
+      </div>
+    </main>
+  );
+
+  if (isPlaceholderSection) {
+    return renderPlaceholder('This section does not have published articles yet.');
+  }
+
   const payload = await getPayload({ config });
 
   // Fetch articles for this section
@@ -92,17 +108,7 @@ export default async function SectionPage({ params }: Args) {
 
   // If no articles, show a placeholder
   if (articles.length === 0) {
-    return (
-      <main className="min-h-screen bg-bg-main transition-colors duration-300">
-        <Header />
-        <div className="container mx-auto px-4 py-20 text-center">
-            <h1 className={`text-4xl font-serif font-bold mb-4 capitalize text-accent`}>
-                {section}
-            </h1>
-            <p className="text-text-muted font-serif">No articles found in this section yet.</p>
-        </div>
-      </main>
-    );
+    return renderPlaceholder('No articles found in this section yet.');
   }
 
   // Map to ComponentArticle

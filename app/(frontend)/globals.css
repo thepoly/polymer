@@ -16,19 +16,23 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #000000; /* Swapped to pure black */
-  --foreground-muted: #6b7280;
+  --foreground: #000000;
+  --foreground-muted: #5f5f5f;
   --accent-color: #D6001C;
-  --border-color: #d1d5db; 
+  --border-color: #d8d8d8;
   
-  --header-top-bg: #ffffff; 
-  --header-top-text: #000000; /* Swapped to pure black */
+  --header-top-bg: #ffffff;
+  --header-top-text: #000000;
   --header-nav-bg: #ffffff;
-  --header-nav-text: #000000; /* Swapped to pure black */
-  --header-border: #d1d5db; 
+  --header-nav-text: #000000;
+  --header-border: #d8d8d8;
   
   --logo-filter: none;
-  --header-logo-invert: none; 
+  --header-logo-invert: none;
+
+  --font-display: "Utopia Std Semibold Subhead", "Utopia Std", "Utopia", "Iowan Old Style", Georgia, serif;
+  --font-copy: "Minion Pro", "Adobe Text Pro", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --font-ui: "Myriad Pro", "Myriad", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
 }
 
 html.dark {
@@ -51,9 +55,24 @@ html.dark {
 body {
   color: var(--foreground);
   background: var(--background);
+  font-family: var(--font-copy);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   transition: color 0.3s ease, background-color 0.3s ease;
 }
 
 * {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-copy {
+  font-family: var(--font-copy);
+}
+
+.font-ui {
+  font-family: var(--font-ui);
 }

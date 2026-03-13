@@ -1,11 +1,44 @@
 export const revalidate = 0;
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import FrontPage from "@/components/FrontPage";
 import { HorizontalSection } from "@/components/FrontPage/HorizontalSection";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import { Article as PayloadArticle, Media } from "@/payload-types";
 import { Article as ComponentArticle } from "@/components/FrontPage/types";
+
+const dedupeArticles = (articles: (ComponentArticle | null | undefined)[], excludeIDs: Array<string | number> = []) => {
+  const seen = new Set<string>(excludeIDs.map(String));
+  const result: ComponentArticle[] = [];
+
+  for (const article of articles) {
+    if (!article) continue;
+    const key = String(article.id);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(article);
+  }
+
+  return result;
+};
+
+const fillArticles = (
+  preferred: (ComponentArticle | null | undefined)[],
+  fallback: ComponentArticle[],
+  count: number,
+  excludeIDs: Array<string | number> = [],
+) => dedupeArticles([...preferred, ...fallback], excludeIDs).slice(0, count);
+
+const prioritizeUnusedSectionArticles = (
+  articles: ComponentArticle[],
+  usedIDs: Array<string | number>,
+  count: number,
+) => {
+  const usedSet = new Set(usedIDs.map(String));
+  const preferred = articles.filter((article) => !usedSet.has(String(article.id)));
+  return fillArticles(preferred, articles, count);
+};
 
 const formatArticle = (article: PayloadArticle | number | null | undefined): ComponentArticle | null => {
   if (!article || typeof article === 'number') return null;
@@ -86,26 +119,7 @@ export default async function Home() {
       );
   }
 
-  const topStories = {
-    lead: mainArticle,
-    list: [
-      formatArticle(layout.top1),
-      formatArticle(layout.top2),
-      formatArticle(layout.top3),
-    ].filter(Boolean) as ComponentArticle[],
-  };
-
-  const studentSenate = formatArticle(layout.special);
-
-  const opinion = [
-    formatArticle(layout.op1),
-    formatArticle(layout.op2),
-    formatArticle(layout.op3),
-    formatArticle(layout.op4),
-  ].filter(Boolean) as ComponentArticle[];
-
-  // Fetch recent articles for the horizontal sections
-  const fetchRecent = async (section: 'news' | 'features' | 'sports' | 'opinion') => {
+  const fetchRecent = async (section: 'news' | 'features' | 'sports' | 'opinion' | 'editorial') => {
     const res = await payload.find({
       collection: 'articles',
       where: {
@@ -119,25 +133,87 @@ export default async function Home() {
     return res.docs.map(formatArticle).filter(Boolean) as ComponentArticle[];
   };
 
-  const [newsArticles, featuresArticles, sportsArticles, opinionArticles] = await Promise.all([
+  const [newsArticlesRaw, featuresArticlesRaw, sportsArticlesRaw, opinionArticlesRaw, editorialArticlesRaw] = await Promise.all([
     fetchRecent('news'),
     fetchRecent('features'),
     fetchRecent('sports'),
     fetchRecent('opinion'),
+    fetchRecent('editorial'),
   ]);
+
+  const recentPool = dedupeArticles([
+    ...newsArticlesRaw,
+    ...featuresArticlesRaw,
+    ...sportsArticlesRaw,
+    ...opinionArticlesRaw,
+    ...editorialArticlesRaw,
+  ]);
+
+  const topStoryList = fillArticles(
+    [
+      formatArticle(layout.top1),
+      formatArticle(layout.top2),
+      formatArticle(layout.top3),
+    ],
+    recentPool,
+    3,
+    [mainArticle.id],
+  );
+
+  const specialFeature =
+    dedupeArticles(
+      [formatArticle(layout.special)],
+      [mainArticle.id, ...topStoryList.map((article) => article.id)],
+    )[0] || null;
+
+  const opinion = fillArticles(
+    [
+      formatArticle(layout.op1),
+      formatArticle(layout.op2),
+      formatArticle(layout.op3),
+      formatArticle(layout.op4),
+    ].filter((article): article is ComponentArticle => Boolean(article && article.section === 'opinion')),
+    opinionArticlesRaw,
+    4,
+    [
+      mainArticle.id,
+      ...topStoryList.map((article) => article.id),
+      ...(specialFeature ? [specialFeature.id] : []),
+    ],
+  );
+
+  const topStories = {
+    lead: mainArticle,
+    list: topStoryList,
+  };
+
+  const homepageUsedIds = [
+    mainArticle.id,
+    ...topStoryList.map((article) => article.id),
+    ...(specialFeature ? [specialFeature.id] : []),
+    ...opinion.map((article) => article.id),
+  ];
+
+  const newsArticles = prioritizeUnusedSectionArticles(newsArticlesRaw, homepageUsedIds, 8);
+  const featuresArticles = prioritizeUnusedSectionArticles(featuresArticlesRaw, homepageUsedIds, 8);
+  const sportsArticles = prioritizeUnusedSectionArticles(sportsArticlesRaw, homepageUsedIds, 8);
+  const opinionArticles = prioritizeUnusedSectionArticles(opinionArticlesRaw, homepageUsedIds, 8);
+  const editorialArticles = prioritizeUnusedSectionArticles(editorialArticlesRaw, homepageUsedIds, 8);
 
   return (
     <main className="min-h-screen bg-bg-main transition-colors duration-300">
       <Header />
       <FrontPage 
         topStories={topStories}
-        studentSenate={studentSenate || { id: 'fallback', slug: '#', title: 'No Senate Update', excerpt: '', author: '', date: '', image: null, section: 'News' }}
+        specialFeature={specialFeature}
         opinion={opinion}
       />
       <HorizontalSection title="News" articles={newsArticles} />
       <HorizontalSection title="Features" articles={featuresArticles} />
       <HorizontalSection title="Sports" articles={sportsArticles} />
       <HorizontalSection title="Opinion" articles={opinionArticles} />
+      <HorizontalSection title="Editorial" articles={editorialArticles} />
+      <Footer />
     </main>
   );
 }

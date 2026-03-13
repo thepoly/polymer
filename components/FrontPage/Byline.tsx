@@ -14,7 +14,7 @@ export const Byline = ({ author, date }: { author?: string | null, date?: string
     };
 
     return (
-        <div className="mt-2 text-[10px] md:text-[11px] font-sans tracking-wide leading-tight uppercase">
+        <div className="font-ui mt-2 text-[10px] md:text-[11px] font-semibold tracking-[0.14em] leading-tight uppercase">
             {author && (
                 <span className="mr-1">
                     {renderAuthor(author)}
