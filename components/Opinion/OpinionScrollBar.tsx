@@ -84,7 +84,11 @@ export default function OpinionScrollBar({ title }: Props) {
 
   useEffect(() => {
     const handleScroll = () => {
-      setVisible(window.scrollY > 200);
+      setVisible(prev => {
+        if (!prev && window.scrollY > 400) return true;
+        if (prev && window.scrollY < 300) return false;
+        return prev;
+      });
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
@@ -139,9 +143,12 @@ export default function OpinionScrollBar({ title }: Props) {
 
   return (
     <div
-      className={`fixed top-0 left-0 right-0 z-[51] bg-white border-b border-gray-200 transition-opacity duration-500 ${
-        visible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-      }`}
+      className="fixed top-0 left-0 right-0 z-[51] bg-white border-b border-gray-200"
+      style={{
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? 'auto' : 'none',
+        transition: 'opacity 0.1s ease-in-out',
+      }}
     >
       <div className="relative flex items-center h-[58px] px-4 md:px-6">
         {/* Left: Logo */}
