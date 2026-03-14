@@ -2,18 +2,7 @@ import React from 'react';
 import Image from 'next/image';
 import { Article, Media, User } from '@/payload-types';
 
-const opinionTypeLabels: Record<string, string> = {
-  opinion: 'Op-Ed',
-  column: 'Column',
-  'staff-editorial': 'Staff Editorial',
-  'editorial-notebook': 'Editorial Notebook',
-  endorsement: 'Endorsement',
-  'top-hat': 'Top Hat',
-  'candidate-profile': 'Candidate Profile',
-  'letter-to-the-editor': 'Letter to the Editor',
-  'polys-recommendations': "The Poly's Recommendations",
-  other: 'Other',
-};
+import { opinionTypeLabels } from './opinionTypeLabels';
 
 type Props = {
   article: Article;
@@ -44,7 +33,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
       </h1>
 
       {/* Date */}
-      <div className="text-black text-[13px] mb-8">
+      <div className="text-black text-[15px] mb-8">
         {article.publishedDate
           ? new Date(article.publishedDate).toLocaleDateString('en-US', {
               month: 'short',

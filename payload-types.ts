@@ -216,7 +216,7 @@ export interface Article {
   title: string;
   kicker?: string | null;
   subdeck?: string | null;
-  section: 'news' | 'sports' | 'features' | 'editorial' | 'opinion';
+  section: 'news' | 'sports' | 'features' | 'opinion';
   /**
    * Categorizes opinion articles. Only visible when section is Opinion.
    */
@@ -231,6 +231,8 @@ export interface Article {
         | 'candidate-profile'
         | 'letter-to-the-editor'
         | 'polys-recommendations'
+        | 'editors-notebook'
+        | 'derby'
         | 'other'
       )
     | null;
