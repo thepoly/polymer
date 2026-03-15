@@ -99,7 +99,7 @@ export default function SearchOverlay() {
                     }`}
                   >
                     <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">
-                      {r.section}
+                      {r.section.charAt(0).toUpperCase() + r.section.slice(1)}
                     </span>
                     <span className="text-[15px] font-semibold text-gray-900 leading-snug">
                       {r.title}
