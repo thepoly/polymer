@@ -1,0 +1,135 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { X } from "lucide-react";
+import { Article } from "@/components/FrontPage/types";
+import { Byline } from "@/components/FrontPage/Byline";
+import { getArticleUrl } from "@/utils/getArticleUrl";
+
+export default function SearchOverlay({ onClose }: { onClose: () => void }) {
+  const [query, setQuery] = useState("");
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [searched, setSearched] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const fetchResults = useCallback(async (q: string) => {
+    abortRef.current?.abort();
+
+    if (!q.trim()) {
+      setArticles([]);
+      setSearched(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}`, {
+        signal: controller.signal,
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setArticles(data.articles);
+      setSearched(true);
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => fetchResults(query), 250);
+    return () => clearTimeout(timer);
+  }, [query, fetchResults]);
+
+  // Focus input on mount
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  // Lock body scroll and handle Esc
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKey);
+
+    return () => {
+      document.body.style.overflow = "unset";
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-bg-main/95 backdrop-blur-sm overflow-y-auto">
+      <div className="mx-auto max-w-[1280px] px-4 md:px-6 xl:px-[30px] pt-6 pb-16">
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={onClose}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-border-main/70 text-text-muted transition-colors hover:border-accent hover:text-accent"
+            aria-label="Close search"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="relative flex items-center border-b-2 border-border-main transition-colors focus-within:border-accent">
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search..."
+            className="w-full bg-transparent py-2 pl-3 pr-36 font-serif text-xl md:text-3xl font-bold text-text-main placeholder:text-text-muted/30 outline-none"
+          />
+          <Image
+            src="/logo.svg"
+            alt="The Polytechnic"
+            width={160}
+            height={42}
+            style={{ filter: "var(--header-logo-invert)" }}
+            className="absolute right-2 top-1/2 -translate-y-1/3 opacity-20 pointer-events-none"
+          />
+        </div>
+
+        <p className="mt-3 font-serif text-sm text-text-muted">
+          {searched && (
+            <>
+              We found <span className="text-accent font-bold">{articles.length}</span> result{articles.length !== 1 ? "s" : ""} that matched your query.{" "}
+            </>
+          )}
+          Our search algorithm uses title, subtitle, and kicker matching. You are currently searching our online database, containing articles published after 2009. You can access older articles in our archive at the Richard G. Folsom Library.
+        </p>
+
+        {searched && articles.length > 0 && (
+          <div className="mt-8">
+            <div className="flex flex-col divide-y divide-border-main">
+              {articles.map((article) => (
+                <div key={article.id} className="py-4 first:pt-0">
+                  <Link
+                    href={getArticleUrl(article)}
+                    onClick={onClose}
+                    className="flex flex-col group cursor-pointer"
+                  >
+                    <h3 className="font-serif font-bold text-text-main mb-1 text-[16px] md:text-[18px] leading-tight group-hover:text-text-muted transition-colors">
+                      {article.title}
+                    </h3>
+                    <p className="font-serif text-text-main text-[13px] md:text-[14px] leading-[1.4] mb-2 transition-colors">
+                      {article.excerpt}
+                    </p>
+                    <Byline author={article.author} date={article.date} />
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

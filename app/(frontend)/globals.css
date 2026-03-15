@@ -30,9 +30,9 @@
   --logo-filter: none;
   --header-logo-invert: none;
 
-  --font-display: "Utopia Std Semibold Subhead", "Utopia Std", "Utopia", "Iowan Old Style", Georgia, serif;
-  --font-copy: "Minion Pro", "Adobe Text Pro", "Iowan Old Style", Georgia, "Times New Roman", serif;
-  --font-ui: "Myriad Pro", "Myriad", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-source-serif), "Utopia Std Semibold Subhead", "Iowan Old Style", Georgia, serif;
+  --font-copy: var(--font-eb-garamond), "Minion Pro", "Iowan Old Style", Georgia, serif;
+  --font-ui: var(--font-source-sans), "Myriad Pro", "Helvetica Neue", Arial, sans-serif;
 }
 
 html.dark {
@@ -75,4 +75,17 @@ body {
 
 .font-ui {
   font-family: var(--font-ui);
+}
+
+.font-cinzel {
+  font-family: var(--font-cinzel);
+}
+
+@keyframes search-icon-slide {
+  from { transform: translateX(52px); }
+  to   { transform: translateX(0); }
+}
+
+.search-icon-animate {
+  animation: search-icon-slide 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }

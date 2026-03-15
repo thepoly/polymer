@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Cinzel } from "next/font/google";
+import { Cinzel, EB_Garamond, Source_Serif_4, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import { cookies } from "next/headers";
@@ -7,19 +7,29 @@ import { cookies } from "next/headers";
 // import AlphaOverlay from "@/components/AlphaOverlay";
 // END TEMPORARY OVERLAY IMPORT
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 const cinzel = Cinzel({
   variable: "--font-cinzel",
   subsets: ["latin"],
+});
+
+const ebGaramond = EB_Garamond({
+  variable: "--font-eb-garamond",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  style: ["normal", "italic"],
+});
+
+const sourceSerif = Source_Serif_4({
+  variable: "--font-source-serif",
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  style: ["normal", "italic"],
+});
+
+const sourceSans = Source_Sans_3({
+  variable: "--font-source-sans",
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -48,14 +58,14 @@ export default async function RootLayout({
 }>) {
   const cookieStore = await cookies();
   const theme = cookieStore.get("theme")?.value;
-  
+
   // CHANGED: Now it defaults to false (light) unless the cookie explicitly says "dark"
   const isDarkMode = theme === "dark";
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} antialiased`}
+        className={`${cinzel.variable} ${ebGaramond.variable} ${sourceSerif.variable} ${sourceSans.variable} antialiased`}
       >
         {/* START TEMPORARY OVERLAY: Remove this component when alpha is over */}
         {/* <AlphaOverlay /> */}

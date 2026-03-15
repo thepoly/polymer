@@ -55,7 +55,7 @@ export default function FrontPage({
   return (
     <div className="w-full bg-bg-main text-text-main transition-colors duration-300">
       <div className="mx-auto max-w-[1280px] px-4 pb-14 md:px-6 xl:px-[30px]">
-        <section className="border-y-[3px] border-double border-border-main py-6 md:py-7">
+        <section className="border-b border-border-main py-6 md:py-7">
           <div className="grid gap-8 xl:grid-cols-12 xl:gap-7">
             <div className={hasOpinionRail ? "xl:col-span-6" : "xl:col-span-8"}>
               <LeadArticle article={topStories.lead} />
