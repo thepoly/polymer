@@ -21,7 +21,7 @@ export const LeadArticle = ({ article }: { article: Article }) => (
         </div>
         <div className="flex flex-col justify-between flex-grow">
             <div>
-                <h3 className="font-serif font-black text-text-main mb-2 text-2xl md:text-3xl leading-[1.05] group-hover:text-text-muted transition-colors">
+                <h3 className="font-utopia-subhead font-semibold text-text-main mb-2 text-2xl md:text-3xl leading-[1.05] group-hover:text-text-muted transition-colors">
                     {article.title}
                 </h3>
                 <p className="font-serif text-text-muted text-[15px] leading-snug mb-2 transition-colors">
