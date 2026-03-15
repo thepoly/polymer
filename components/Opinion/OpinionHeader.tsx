@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Search } from 'lucide-react';
+import SearchOverlay from '@/components/SearchOverlay';
 
 export default function OpinionHeader() {
   return (
@@ -20,9 +20,7 @@ export default function OpinionHeader() {
         </Link>
 
         {/* Right: Search */}
-        <button className="ml-auto p-2 hover:bg-gray-100 rounded transition-colors">
-          <Search className="w-5 h-5 text-black" />
-        </button>
+        <SearchOverlay />
       </div>
     </header>
   );
