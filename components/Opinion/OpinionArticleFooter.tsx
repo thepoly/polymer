@@ -18,7 +18,7 @@ export const OpinionArticleFooter: React.FC<Props> = async ({ currentArticleId }
     collection: 'articles',
     where: {
       and: [
-        { section: { in: ['opinion', 'editorial'] } },
+        { section: { equals: 'opinion' } },
         { id: { not_equals: currentArticleId } },
       ],
     },
