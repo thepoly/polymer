@@ -4,6 +4,12 @@ import { getPayload } from 'payload';
 import config from '@/payload.config';
 import { getArticleLayout, ArticleLayouts } from '@/components/Article/Layouts';
 import { LexicalNode } from '@/components/Article/RichTextParser';
+import OpinionHeader from '@/components/Opinion/OpinionHeader';
+import { OpinionArticleHeader } from '@/components/Opinion/OpinionArticleHeader';
+import OpinionScrollBar from '@/components/Opinion/OpinionScrollBar';
+import { OpinionArticleFooter } from '@/components/Opinion/OpinionArticleFooter';
+import { ArticleContent, ArticleFooter } from '@/components/Article';
+import { deriveSlug } from '@/utils/deriveSlug';
 
 export const revalidate = 60;
 
@@ -17,10 +23,11 @@ type Args = {
 };
 
 export default async function ArticlePage({ params }: Args) {
-  const { slug } = await params;
+  const { section, slug } = await params;
   const payload = await getPayload({ config });
 
-  const result = await payload.find({
+  // Try finding by slug first
+  let result = await payload.find({
     collection: 'articles',
     where: {
       slug: {
@@ -29,6 +36,31 @@ export default async function ArticlePage({ params }: Args) {
     },
     limit: 1,
   });
+
+  // If no result, try matching by title (for articles without saved slugs)
+  if (result.docs.length === 0) {
+    const allInSection = await payload.find({
+      collection: 'articles',
+      where: {
+        section: { equals: section },
+      },
+      limit: 200,
+    });
+
+    const match = allInSection.docs.find((doc) => {
+      return deriveSlug(doc.title) === slug;
+    });
+
+    if (match) {
+      // Save the slug so future lookups work directly
+      await payload.update({
+        collection: 'articles',
+        id: match.id,
+        data: { slug },
+      });
+      result = { ...result, docs: [match] };
+    }
+  }
 
   const article = result.docs[0];
 
@@ -59,6 +91,24 @@ export default async function ArticlePage({ params }: Args) {
       }
   }
 
+  // Opinion articles get their own custom layout
+  if (section === 'opinion' && layoutType !== 'photofeature') {
+    return (
+      <main className="min-h-screen bg-white pb-20 pt-[58px] font-[family-name:var(--font-raleway)]">
+        <OpinionHeader />
+        <OpinionScrollBar title={article.title} />
+        <article className="container mx-auto px-4 md:px-6 mt-8 md:mt-12">
+          <OpinionArticleHeader article={article} />
+          <div className="max-w-[600px] mx-auto [--foreground-muted:#000000] [--color-text-muted:#000000]">
+            <ArticleContent content={article.content} />
+            <ArticleFooter />
+          </div>
+        </article>
+        <OpinionArticleFooter currentArticleId={article.id} />
+      </main>
+    );
+  }
+
   return <LayoutComponent article={article} content={cleanContent} />;
 }
 
@@ -82,7 +132,7 @@ export async function generateStaticParams() {
       const date = new Date(dateStr);
       const year = date.getFullYear().toString();
       const month = String(date.getMonth() + 1).padStart(2, '0');
-      
+
       return {
         section: doc.section,
         year,

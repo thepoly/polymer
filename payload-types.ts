@@ -130,6 +130,10 @@ export interface User {
   lastName: string;
   roles?: ('admin' | 'eic' | 'editor' | 'writer')[] | null;
   headshot?: (number | null) | Media;
+  /**
+   * A short one-line description (e.g. "is a senior studying computer science")
+   */
+  oneLiner?: string | null;
   bio?: {
     root: {
       type: string;
@@ -212,10 +216,33 @@ export interface Article {
   title: string;
   kicker?: string | null;
   subdeck?: string | null;
-  section: 'news' | 'sports' | 'features' | 'editorial' | 'opinion';
+  section: 'news' | 'sports' | 'features' | 'opinion';
+  /**
+   * Categorizes opinion articles. Only visible when section is Opinion.
+   */
+  opinionType?:
+    | (
+        | 'opinion'
+        | 'column'
+        | 'staff-editorial'
+        | 'editorial-notebook'
+        | 'endorsement'
+        | 'top-hat'
+        | 'candidate-profile'
+        | 'letter-to-the-editor'
+        | 'polys-recommendations'
+        | 'editors-notebook'
+        | 'derby'
+        | 'other'
+      )
+    | null;
   authors: (number | User)[];
   publishedDate?: string | null;
   featuredImage?: (number | null) | Media;
+  /**
+   * Caption for the featured image (e.g. "Illustration by The Polytechnic")
+   */
+  imageCaption?: string | null;
   content?: {
     root: {
       type: string;
@@ -350,6 +377,7 @@ export interface UsersSelect<T extends boolean = true> {
   lastName?: T;
   roles?: T;
   headshot?: T;
+  oneLiner?: T;
   bio?: T;
   positions?:
     | T
@@ -405,9 +433,11 @@ export interface ArticlesSelect<T extends boolean = true> {
   kicker?: T;
   subdeck?: T;
   section?: T;
+  opinionType?: T;
   authors?: T;
   publishedDate?: T;
   featuredImage?: T;
+  imageCaption?: T;
   content?: T;
   slug?: T;
   updatedAt?: T;

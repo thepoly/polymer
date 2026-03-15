@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Cinzel } from "next/font/google";
+import { Geist, Geist_Mono, Cinzel, Raleway } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import { cookies } from "next/headers";
@@ -19,6 +19,11 @@ const geistMono = Geist_Mono({
 
 const cinzel = Cinzel({
   variable: "--font-cinzel",
+  subsets: ["latin"],
+});
+
+const raleway = Raleway({
+  variable: "--font-raleway",
   subsets: ["latin"],
 });
 
@@ -55,7 +60,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} ${raleway.variable} antialiased`}
       >
         {/* START TEMPORARY OVERLAY: Remove this component when alpha is over */}
         {/* <AlphaOverlay /> */}

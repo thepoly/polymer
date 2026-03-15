@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronDown, Menu, ChevronRight, Search } from "lucide-react";
 
 export default function Header() {
@@ -34,9 +34,9 @@ export default function Header() {
           ================================================================== */}
       <header className="lg:hidden sticky top-0 z-50 bg-header-nav border-b border-header-border mb-6">
         <div className="flex items-center justify-between px-3 h-[70px] sm:h-[90px] bg-header-nav relative z-[70]">
-          
+
           <div className="flex-shrink-0 min-w-[44px] z-20">
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
             >
@@ -67,7 +67,7 @@ export default function Header() {
             <span className="text-xs font-bold tracking-wide whitespace-nowrap text-header-nav-text">18° F</span>
           </div>
         </div>
-        
+
         {!isMobileMenuOpen && (
           <div className="bg-header-nav pb-1 -mt-2 text-center relative z-40">
              <span className="text-[11px] sm:text-sm font-bold text-header-nav-text tracking-wide">
@@ -80,8 +80,8 @@ export default function Header() {
           <div className="fixed inset-0 top-[70px] sm:top-[90px] z-[60] bg-header-nav overflow-y-auto flex flex-col">
             <nav className="flex flex-col p-6 gap-0">
               {navItems.map((item) => (
-                <Link 
-                  key={item} 
+                <Link
+                  key={item}
                   href={item === 'Staff' ? '/staff' : `/${item.toLowerCase()}`}
                   className="flex items-center justify-between text-2xl font-extrabold py-4 border-b border-border-main text-left text-header-nav-text hover:text-accent transition-all group"
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -98,20 +98,20 @@ export default function Header() {
           DESKTOP HEADER
           ================================================================== */}
       <header className="hidden lg:block mb-4">
-        
+
         {/* TOP LOGO ROW */}
         <div className="bg-header-nav pt-2 pb-5">
           <div className="max-w-[1280px] mx-auto px-4 md:px-6 xl:px-[30px] relative">
-            
+
             <div className="relative flex items-center justify-between h-[100px]">
-              
+
               {/* Left Column (Search + Weather) */}
-              <div className="relative z-10 flex flex-col items-start justify-between h-full pointer-events-auto w-[250px] py-2"> 
+              <div className="relative z-10 flex flex-col items-start justify-between h-full pointer-events-auto w-[250px] py-2">
                 {/* Search Icon at Top Left */}
                 <div>
                    <Search className="w-4 h-4 text-header-nav-text cursor-pointer hover:text-header-nav-text/80 transition-colors" />
                 </div>
-                
+
                 {/* Weather Block */}
                 <div className="-mt-6">
                   <div className="flex items-center gap-2">
@@ -127,13 +127,13 @@ export default function Header() {
               {/* CENTER LOGO */}
               <div className="absolute left-[50%] top-[50%] mt-3 -translate-x-1/2 -translate-y-1/2 h-full w-full max-w-[650px] pointer-events-none">
                 <div className="relative w-full h-full">
-                  <Image 
-                    src="/logo.svg" 
-                    alt="The Polytechnic" 
-                    fill 
+                  <Image
+                    src="/logo.svg"
+                    alt="The Polytechnic"
+                    fill
                     style={{ filter: 'var(--header-logo-invert)' }}
-                    className="object-contain" 
-                    priority 
+                    className="object-contain"
+                    priority
                   />
                 </div>
               </div>
@@ -152,8 +152,8 @@ export default function Header() {
             <div className="flex justify-center border-b-[4px] border-double border-header-nav-text -mx-[2.5px]">
               <nav className="flex flex-wrap items-center py-2 gap-8">
                 {desktopNavItems.map((item, index) => (
-                <Link 
-                  key={`${item}-${index}`} 
+                <Link
+                  key={`${item}-${index}`}
                   href={item === 'Staff' ? '/staff' : `/${item.toLowerCase()}`}
                   className="flex items-center gap-1 text-[16px] font-bold text-header-nav-text hover:text-accent transition-colors uppercase"
                 >
