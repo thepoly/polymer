@@ -1,144 +1,114 @@
 import React from 'react';
-import Link from 'next/link';
 import { OpinionArticle } from './types';
 import { OpinionPageArticleCard } from './OpinionPageArticleCard';
 
-export const OpinionArticleGrid = ({
-  articles,
-  activeCategory,
-}: {
-  articles: OpinionArticle[];
-  activeCategory: string;
-}) => {
+const editorialTypes = new Set(['staff-editorial', 'editorial-notebook', 'editors-notebook']);
+
+function SectionRow({ title, articles }: { title: string; articles: OpinionArticle[] }) {
+  if (articles.length === 0) return null;
+  return (
+    <div>
+      <div className="flex items-center gap-4 mb-6">
+        <h2 className="text-sm font-bold uppercase tracking-widest text-gray-900 shrink-0 whitespace-nowrap">
+          {title}
+        </h2>
+        <div className="flex-1 h-px bg-gray-200" />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-0">
+        {articles.map((article, idx) => (
+          <div
+            key={article.id}
+            className={`lg:px-4 ${idx === 0 ? 'lg:pl-0' : ''} ${
+              idx === articles.length - 1 ? 'lg:pr-0' : ''
+            } ${idx < articles.length - 1 ? 'lg:border-r border-gray-200' : ''}`}
+          >
+            <OpinionPageArticleCard article={article} variant="compact" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export const OpinionArticleGrid = ({ articles }: { articles: OpinionArticle[] }) => {
   if (articles.length === 0) {
     return (
       <div className="py-12 text-center">
-        <p className="text-gray-500">
-          No articles found in this category.
-        </p>
+        <p className="text-gray-500">No articles found.</p>
       </div>
     );
   }
 
-  // Split articles into rows: 1 lead, 3 medium, 5 compact, then repeat
-  const leadArticle = articles[0];
-  const threeRow = articles.slice(1, 4);
-  const fiveRow = articles.slice(4, 9);
-  const remaining = articles.slice(9);
+  const top3 = articles.slice(0, 3);
+  const next5 = articles.slice(3, 8);
+  const shownIds = new Set(articles.slice(0, 8).map((a) => a.id));
+  const remaining = articles.filter((a) => !shownIds.has(a.id));
+
+  const opinionSection = remaining
+    .filter((a) => a.opinionType === 'opinion' || !a.opinionType)
+    .slice(0, 5);
+  const opinionIds = new Set(opinionSection.map((a) => a.id));
+
+  const editorialSection = remaining
+    .filter((a) => editorialTypes.has(a.opinionType || ''))
+    .slice(0, 5);
+  const editorialIds = new Set(editorialSection.map((a) => a.id));
+
+  const moreSection = remaining
+    .filter((a) => !opinionIds.has(a.id) && !editorialIds.has(a.id))
+    .slice(0, 5);
 
   return (
     <div>
-      {/* ===== LEAD ARTICLE (1 up) ===== */}
-      <div className="pb-8">
-        <OpinionPageArticleCard article={leadArticle} variant="lead" />
+      {/* Section header */}
+      <div className="flex items-center gap-4 mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 shrink-0">Opinion</h1>
+        <div className="flex-1 h-px bg-gray-300" />
       </div>
 
-      {/* Faint divider */}
-      <div className="border-t border-gray-200" />
-
-      {/* ===== THREE ROW ===== */}
-      {threeRow.length > 0 && (
-        <div className="py-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0">
-            {threeRow.map((article, idx) => (
-              <div
-                key={article.id}
-                className={`px-0 sm:px-5 ${
-                  idx === 0 ? 'sm:pl-0' : ''
-                } ${
-                  idx === threeRow.length - 1 ? 'sm:pr-0' : ''
-                } ${
-                  idx < threeRow.length - 1 ? 'sm:border-r border-gray-200' : ''
-                } ${
-                  idx > 0 ? 'mt-6 sm:mt-0' : ''
-                }`}
-              >
-                <OpinionPageArticleCard article={article} variant="medium" />
-              </div>
-            ))}
+      {/* Top 3 with images */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-0 mb-8">
+        {top3.map((article, idx) => (
+          <div
+            key={article.id}
+            className={`lg:px-5 ${idx === 0 ? 'lg:pl-0' : ''} ${
+              idx === top3.length - 1 ? 'lg:pr-0' : ''
+            } ${idx < top3.length - 1 ? 'lg:border-r border-gray-200' : ''}`}
+          >
+            <OpinionPageArticleCard article={article} variant="medium" />
           </div>
-        </div>
-      )}
+        ))}
+      </div>
 
-      {/* Faint divider */}
-      {fiveRow.length > 0 && <div className="border-t border-gray-200" />}
+      {/* Divider */}
+      {next5.length > 0 && <div className="border-t border-gray-200 mb-8" />}
 
-      {/* ===== FIVE ROW ===== */}
-      {fiveRow.length > 0 && (
-        <div className="py-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-0">
-            {fiveRow.map((article, idx) => (
-              <div
-                key={article.id}
-                className={`px-0 lg:px-4 ${
-                  idx === 0 ? 'lg:pl-0' : ''
-                } ${
-                  idx === fiveRow.length - 1 ? 'lg:pr-0' : ''
-                } ${
-                  idx < fiveRow.length - 1 ? 'lg:border-r border-gray-200' : ''
-                } ${
-                  idx > 0 ? 'mt-6 lg:mt-0' : ''
-                }`}
-              >
-                <OpinionPageArticleCard article={article} variant="compact" />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ===== REMAINING ARTICLES (repeat pattern) ===== */}
-      {remaining.length > 0 && (
-        <>
-          <div className="border-t border-gray-200" />
-          <div className="py-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-0">
-              {remaining.map((article, idx) => (
-                <div
-                  key={article.id}
-                  className={`px-0 sm:px-5 ${
-                    idx === 0 ? 'sm:pl-0' : ''
-                  } ${
-                    (idx + 1) % 3 === 0 || idx === remaining.length - 1 ? 'sm:pr-0' : ''
-                  } ${
-                    (idx + 1) % 3 !== 0 && idx < remaining.length - 1 ? 'sm:border-r border-gray-200' : ''
-                  } ${
-                    idx >= 3 ? 'mt-8 sm:mt-6 lg:mt-8 pt-6 lg:pt-8 border-t border-gray-200 sm:border-t-0 lg:border-t' : ''
-                  } ${
-                    idx > 0 && idx < 3 ? 'mt-6 sm:mt-0' : ''
-                  }`}
-                >
-                  <OpinionPageArticleCard article={article} variant="medium" />
-                </div>
-              ))}
+      {/* 5 smaller articles */}
+      {next5.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-0 mb-8">
+          {next5.map((article, idx) => (
+            <div
+              key={article.id}
+              className={`lg:px-4 ${idx === 0 ? 'lg:pl-0' : ''} ${
+                idx === next5.length - 1 ? 'lg:pr-0' : ''
+              } ${idx < next5.length - 1 ? 'lg:border-r border-gray-200' : ''}`}
+            >
+              <OpinionPageArticleCard article={article} variant="compact" />
             </div>
-          </div>
-        </>
+          ))}
+        </div>
       )}
 
-      {/* Sidebar boxes */}
-      <div className="border-t border-gray-200 pt-8 mt-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="border border-gray-200 p-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-3">
-              What should The Polytechnic write about?
-            </h3>
-            <p className="text-[14px] text-gray-600 mb-4">
-              Help us prioritize topics for future opinion pieces.
-            </p>
-            <button className="w-full bg-[#D6001C] text-white font-bold py-2.5 px-4 hover:bg-[#a00014] transition-colors text-[14px]">
-              Submit a Suggestion
-            </button>
-          </div>
-          <div className="border-l-4 border-[#D6001C] pl-5 flex items-center">
-            <p className="text-[15px] text-gray-700">
-              Interested in submitting an op-ed?{' '}
-              <Link href="#" className="text-[#D6001C] font-semibold hover:underline">
-                Learn More
-              </Link>
-            </p>
-          </div>
-        </div>
+      {/* Divider before section rows */}
+      {(opinionSection.length > 0 || editorialSection.length > 0 || moreSection.length > 0) && (
+        <div className="border-t border-gray-200 mb-8" />
+      )}
+
+      {/* Section rows */}
+      <div className="flex flex-col gap-10">
+        <SectionRow title="Opinion" articles={opinionSection} />
+        <SectionRow title="Editorials" articles={editorialSection} />
+        <SectionRow title="More in Opinion" articles={moreSection} />
       </div>
     </div>
   );

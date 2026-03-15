@@ -3,19 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { OpinionArticle } from './types';
 import { getArticleUrl } from '@/utils/getArticleUrl';
-
-const opinionTypeLabels: Record<string, string> = {
-  opinion: 'Op-Ed',
-  column: 'Column',
-  'staff-editorial': 'Staff Editorial',
-  'editorial-notebook': 'Editorial Notebook',
-  endorsement: 'Endorsement',
-  'top-hat': 'Top Hat',
-  'candidate-profile': 'Candidate Profile',
-  'letter-to-the-editor': 'Letter to the Editor',
-  'polys-recommendations': "The Poly's Recommendations",
-  other: 'Other',
-};
+import { opinionTypeLabels } from './opinionTypeLabels';
 
 export const OpinionPageArticleCard = ({
   article,
