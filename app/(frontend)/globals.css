@@ -1,12 +1,120 @@
 @import "tailwindcss";
 
-@theme {
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Self-hosted fonts ── */
+
+/* Minion Pro */
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-It.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-MediumIt.otf") format("opentype");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-Semibold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-SemiboldIt.otf") format("opentype");
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-BoldIt.otf") format("opentype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Myriad Pro */
+@font-face {
+  font-family: "Myriad Pro";
+  src: url("/fonts/myriad-pro/MyriadPro-Light.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Myriad Pro";
+  src: url("/fonts/myriad-pro/MYRIADPRO-REGULAR.OTF") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Myriad Pro";
+  src: url("/fonts/myriad-pro/MYRIADPRO-SEMIBOLD.OTF") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Myriad Pro";
+  src: url("/fonts/myriad-pro/MYRIADPRO-SEMIBOLDIT.OTF") format("opentype");
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Myriad Pro";
+  src: url("/fonts/myriad-pro/MYRIADPRO-BOLD.OTF") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Myriad Pro";
+  src: url("/fonts/myriad-pro/MYRIADPRO-BOLDIT.OTF") format("opentype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@theme inline {
   --color-bg-main: var(--background);
   --color-text-main: var(--foreground);
   --color-text-muted: var(--foreground-muted);
   --color-accent: var(--accent-color);
   --color-border-main: var(--border-color);
-  
+  --color-rule: var(--rule-color);
+  --color-rule-strong: var(--rule-strong-color);
+
   --color-header-top: var(--header-top-bg);
   --color-header-top-text: var(--header-top-text);
   --color-header-nav: var(--header-nav-bg);
@@ -20,42 +128,48 @@
   --foreground-muted: #5f5f5f;
   --accent-color: #D6001C;
   --border-color: #d8d8d8;
-  
+  --rule-color: rgba(0, 0, 0, 0.15);
+  --rule-strong-color: rgba(0, 0, 0, 0.8);
+
   --header-top-bg: #ffffff;
   --header-top-text: #000000;
   --header-nav-bg: #ffffff;
   --header-nav-text: #000000;
   --header-border: #d8d8d8;
-  
+
   --logo-filter: none;
   --header-logo-invert: none;
 
-  --font-display: var(--font-source-serif), "Utopia Std Semibold Subhead", "Iowan Old Style", Georgia, serif;
-  --font-copy: var(--font-eb-garamond), "Minion Pro", "Iowan Old Style", Georgia, serif;
-  --font-ui: var(--font-source-sans), "Myriad Pro", "Helvetica Neue", Arial, sans-serif;
+  --font-copy: "Minion Pro", "Iowan Old Style", Georgia, serif;
+  --font-ui: "Myriad Pro", "Helvetica Neue", Arial, sans-serif;
+  --font-meta: "Raleway", "Helvetica Neue", Arial, sans-serif;
 }
 
 html.dark {
-  --background: #000000;
-  --foreground: #ffffff;
-  --foreground-muted: #9ca3af;
-  --accent-color: #D6001C; 
-  --border-color: #3f3f46; 
-  
-  --header-top-bg: #000000;
-  --header-top-text: #ffffff;
-  --header-nav-bg: #000000;
-  --header-nav-text: #ffffff;
-  --header-border: #3f3f46;
-  
-  --logo-filter: none; 
-  --header-logo-invert: none; 
+  --background: #0a0a0a;
+  --foreground: #e8e8e8;
+  --foreground-muted: #6b7280;
+  --accent-color: #e8e8e8;
+  --border-color: #1f1f1f;
+
+  --header-top-bg: #0a0a0a;
+  --header-top-text: #e8e8e8;
+  --header-nav-bg: #0a0a0a;
+  --header-nav-text: #e8e8e8;
+  --header-border: #1f1f1f;
+  --rule-color: rgba(255, 255, 255, 0.08);
+  --rule-strong-color: rgba(255, 255, 255, 0.25);
+
+  --logo-filter: none;
+  --header-logo-invert: none;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: var(--font-copy);
+  font-size: 17px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   transition: color 0.3s ease, background-color 0.3s ease;
@@ -69,6 +183,28 @@ body {
   font-family: var(--font-display);
 }
 
+.font-display-news {
+  font-family: var(--font-display-news);
+}
+
+h1.font-display,
+h2.font-display,
+h3.font-display,
+h4.font-display,
+h5.font-display,
+h6.font-display {
+  color: #000 !important;
+}
+
+h1.font-display.italic,
+h2.font-display.italic,
+h3.font-display.italic,
+h4.font-display.italic,
+h5.font-display.italic,
+h6.font-display.italic {
+  margin-left: -0.1em;
+}
+
 .font-copy {
   font-family: var(--font-copy);
 }
@@ -79,6 +215,21 @@ body {
 
 .font-cinzel {
   font-family: var(--font-cinzel);
+}
+
+.font-meta {
+  font-family: var(--font-meta);
+}
+
+.drop-cap::first-letter {
+  float: left;
+  font-size: 3.5em;
+  line-height: 0.8;
+  margin-right: 0.08em;
+  padding-top: 0.05em;
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--foreground);
 }
 
 @keyframes search-icon-slide {

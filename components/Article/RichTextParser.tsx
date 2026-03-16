@@ -16,7 +16,19 @@ export type LexicalNode = {
   [key: string]: unknown;
 };
 
-export const SerializeLexical = ({ nodes }: { nodes: LexicalNode[] }) => {
+let paragraphCount = 0;
+
+const ParagraphTracker = ({ children, isFirst }: { children: React.ReactNode; isFirst: boolean }) => (
+  <p className={`font-copy text-xl leading-relaxed text-text-muted mb-6 transition-colors ${isFirst ? 'drop-cap' : ''}`}>
+    {children}
+  </p>
+);
+
+export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[]; isRoot?: boolean }) => {
+  if (isRoot) {
+    paragraphCount = 0;
+  }
+
   return (
     <Fragment>
       {nodes?.map((node, index) => {
@@ -26,7 +38,7 @@ export const SerializeLexical = ({ nodes }: { nodes: LexicalNode[] }) => {
           if (format & 1) text = <strong key={index}>{text}</strong>;
           if (format & 2) text = <em key={index}>{text}</em>;
           if (format & 8) text = <u key={index}>{text}</u>;
-          if (format & 4) text = <s key={index}>{text}</s>; // Strikethrough
+          if (format & 4) text = <s key={index}>{text}</s>;
           if (format & 32) text = <code key={index}>{text}</code>;
           return text;
         }
@@ -36,20 +48,23 @@ export const SerializeLexical = ({ nodes }: { nodes: LexicalNode[] }) => {
         }
 
         const serializedChildren = node.children ? (
-          <SerializeLexical nodes={node.children} />
+          <SerializeLexical nodes={node.children} isRoot={false} />
         ) : null;
 
         switch (node.type) {
           case 'heading':
             const Tag = node.tag as React.ElementType;
-            return <Tag key={index} className="font-serif font-bold text-text-main my-4 leading-tight transition-colors">{serializedChildren}</Tag>;
-          
-          case 'paragraph':
+            return <Tag key={index} className="font-display font-bold text-text-main my-4 leading-tight transition-colors">{serializedChildren}</Tag>;
+
+          case 'paragraph': {
+            const isFirst = paragraphCount === 0;
+            paragraphCount++;
             return (
-              <p key={index} className="font-serif text-xl leading-relaxed text-text-muted mb-6 transition-colors">
+              <ParagraphTracker key={index} isFirst={isFirst}>
                 {serializedChildren}
-              </p>
+              </ParagraphTracker>
             );
+          }
 
           case 'link':
             return (
@@ -62,12 +77,12 @@ export const SerializeLexical = ({ nodes }: { nodes: LexicalNode[] }) => {
             const media = node.value as Media;
             if (!media || !media.url) return null;
             return (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 id={`media-${media.id}`}
                 className="my-10 flex flex-col gap-2 scroll-mt-20"
               >
-                <div className="relative aspect-[3/2] w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden rounded-sm transition-colors">
+                <div className="relative aspect-[3/2] w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden transition-colors">
                   <Image
                     src={media.url}
                     alt={media.alt || ''}
@@ -76,7 +91,7 @@ export const SerializeLexical = ({ nodes }: { nodes: LexicalNode[] }) => {
                   />
                 </div>
                 {media.alt && (
-                  <span className="text-sm text-text-muted font-sans italic transition-colors">
+                  <span className="font-meta text-[12px] text-text-muted italic transition-colors">
                     {media.alt}
                   </span>
                 )}
@@ -86,7 +101,7 @@ export const SerializeLexical = ({ nodes }: { nodes: LexicalNode[] }) => {
           case 'list':
             const ListTag = node.tag === 'ol' ? 'ol' : 'ul';
             return (
-              <ListTag key={index} className="font-serif text-xl text-text-muted mb-6 pl-8 list-disc transition-colors">
+              <ListTag key={index} className="font-copy text-xl text-text-muted mb-6 pl-8 list-disc transition-colors">
                 {serializedChildren}
               </ListTag>
             );

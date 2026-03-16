@@ -1,29 +1,62 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useTheme } from "@/components/ThemeProvider";
 
 export default function Footer() {
+  const { isDarkMode } = useTheme();
+  const logoSrc = isDarkMode ? "/logo-dark.svg" : "/logo-light.svg";
+  const [lineVisible, setLineVisible] = useState(false);
+
+  useEffect(() => {
+    const checkIfAtBottom = () => {
+      const viewportBottom = window.scrollY + window.innerHeight;
+      const pageBottom = document.documentElement.scrollHeight;
+
+      if (viewportBottom >= pageBottom - 2) {
+        setLineVisible(true);
+      }
+    };
+
+    checkIfAtBottom();
+    window.addEventListener("scroll", checkIfAtBottom, { passive: true });
+    window.addEventListener("resize", checkIfAtBottom);
+
+    return () => {
+      window.removeEventListener("scroll", checkIfAtBottom);
+      window.removeEventListener("resize", checkIfAtBottom);
+    };
+  }, []);
+
   return (
-    <footer className="border-t-[3px] border-double border-border-main bg-bg-main">
-      <div className="mx-auto max-w-[1280px] px-4 py-8 md:px-6 xl:px-[30px]">
+    <footer className="bg-bg-main">
+      <div className="mx-auto max-w-[1280px] px-4 md:px-6 xl:px-[30px]">
+        <div
+          className="h-[1.5px] bg-rule-strong origin-left"
+          style={{
+            transform: lineVisible ? "scaleX(1)" : "scaleX(0)",
+            transition: "transform 0.9s cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+        />
+      </div>
+      <div className="mx-auto max-w-[1280px] px-4 pt-4 pb-8 md:px-6 xl:px-[30px]">
         <div className="flex flex-col items-center gap-4 pb-6 md:flex-row md:justify-between">
           <div className="flex flex-col items-center md:items-start">
             <Link href="/" className="relative block h-[44px] w-[230px] sm:h-[52px] sm:w-[280px]">
               <Image
-                src="/logo.svg"
+                src={logoSrc}
                 alt="The Polytechnic"
                 fill
-                style={{ filter: "var(--header-logo-invert)" }}
                 className="object-contain"
               />
             </Link>
-            <p className="font-copy mt-2 text-[14px] text-text-muted">
-              Serving the Rensselaer community since 1885.
-            </p>
           </div>
 
-          <div className="font-ui flex flex-col items-center gap-1 text-[10px] font-bold uppercase tracking-[0.22em] text-text-muted md:items-end">
-            <span>Troy, New York</span>
-            <span className="text-accent">Vol. XCI No. 22</span>
+          <div className="font-meta flex flex-col items-center gap-1 text-[10px] font-medium uppercase tracking-[0.12em] text-text-muted md:items-end">
+            <span className="relative -top-1">Troy, New York</span>
+            <span className="text-accent font-semibold">Vol. XCI No. 22</span>
           </div>
         </div>
       </div>

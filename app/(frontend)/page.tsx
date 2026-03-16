@@ -2,7 +2,6 @@ export const revalidate = 0;
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FrontPage from "@/components/FrontPage";
-import { HorizontalSection } from "@/components/FrontPage/HorizontalSection";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import { Article as PayloadArticle, Media } from "@/payload-types";
@@ -36,8 +35,9 @@ const prioritizeUnusedSectionArticles = (
   count: number,
 ) => {
   const usedSet = new Set(usedIDs.map(String));
-  const preferred = articles.filter((article) => !usedSet.has(String(article.id)));
-  return fillArticles(preferred, articles, count);
+  return articles
+    .filter((article) => !usedSet.has(String(article.id)))
+    .slice(0, count);
 };
 
 const formatArticle = (article: PayloadArticle | number | null | undefined): ComponentArticle | null => {
@@ -100,7 +100,7 @@ export default async function Home() {
       <main className="min-h-screen bg-white">
         <Header />
         <div className="flex items-center justify-center h-[50vh]">
-            <p className="text-gray-500 font-serif">Please configure the layout in the admin panel.</p>
+            <p className="text-text-muted font-copy">Please configure the layout in the admin panel.</p>
         </div>
       </main>
     );
@@ -113,13 +113,13 @@ export default async function Home() {
         <main className="min-h-screen bg-white">
           <Header />
           <div className="flex items-center justify-center h-[50vh]">
-              <p className="text-gray-500 font-serif">Please assign a main article in the layout configuration.</p>
+              <p className="text-text-muted font-copy">Please assign a main article in the layout configuration.</p>
           </div>
         </main>
       );
   }
 
-  const fetchRecent = async (section: 'news' | 'features' | 'sports' | 'opinion' | 'editorial') => {
+  const fetchRecent = async (section: 'news' | 'features' | 'sports' | 'opinion') => {
     const res = await payload.find({
       collection: 'articles',
       where: {
@@ -133,12 +133,11 @@ export default async function Home() {
     return res.docs.map(formatArticle).filter(Boolean) as ComponentArticle[];
   };
 
-  const [newsArticlesRaw, featuresArticlesRaw, sportsArticlesRaw, opinionArticlesRaw, editorialArticlesRaw] = await Promise.all([
+  const [newsArticlesRaw, featuresArticlesRaw, sportsArticlesRaw, opinionArticlesRaw] = await Promise.all([
     fetchRecent('news'),
     fetchRecent('features'),
     fetchRecent('sports'),
     fetchRecent('opinion'),
-    fetchRecent('editorial'),
   ]);
 
   const recentPool = dedupeArticles([
@@ -146,7 +145,6 @@ export default async function Home() {
     ...featuresArticlesRaw,
     ...sportsArticlesRaw,
     ...opinionArticlesRaw,
-    ...editorialArticlesRaw,
   ]);
 
   const topStoryList = fillArticles(
@@ -154,32 +152,11 @@ export default async function Home() {
       formatArticle(layout.top1),
       formatArticle(layout.top2),
       formatArticle(layout.top3),
+      formatArticle(layout.top4),
     ],
     recentPool,
-    3,
-    [mainArticle.id],
-  );
-
-  const specialFeature =
-    dedupeArticles(
-      [formatArticle(layout.special)],
-      [mainArticle.id, ...topStoryList.map((article) => article.id)],
-    )[0] || null;
-
-  const opinion = fillArticles(
-    [
-      formatArticle(layout.op1),
-      formatArticle(layout.op2),
-      formatArticle(layout.op3),
-      formatArticle(layout.op4),
-    ].filter((article): article is ComponentArticle => Boolean(article && article.section === 'opinion')),
-    opinionArticlesRaw,
     4,
-    [
-      mainArticle.id,
-      ...topStoryList.map((article) => article.id),
-      ...(specialFeature ? [specialFeature.id] : []),
-    ],
+    [mainArticle.id],
   );
 
   const topStories = {
@@ -187,32 +164,31 @@ export default async function Home() {
     list: topStoryList,
   };
 
-  const homepageUsedIds = [
+  const heroUsedIds = [
     mainArticle.id,
     ...topStoryList.map((article) => article.id),
-    ...(specialFeature ? [specialFeature.id] : []),
-    ...opinion.map((article) => article.id),
   ];
 
-  const newsArticles = prioritizeUnusedSectionArticles(newsArticlesRaw, homepageUsedIds, 8);
-  const featuresArticles = prioritizeUnusedSectionArticles(featuresArticlesRaw, homepageUsedIds, 8);
-  const sportsArticles = prioritizeUnusedSectionArticles(sportsArticlesRaw, homepageUsedIds, 8);
-  const opinionArticles = prioritizeUnusedSectionArticles(opinionArticlesRaw, homepageUsedIds, 8);
-  const editorialArticles = prioritizeUnusedSectionArticles(editorialArticlesRaw, homepageUsedIds, 8);
+  const homepageUsedIds = [
+    ...heroUsedIds,
+  ];
 
+  const newsArticles = prioritizeUnusedSectionArticles(newsArticlesRaw, homepageUsedIds, 9);
+  const featuresArticles = prioritizeUnusedSectionArticles(featuresArticlesRaw, homepageUsedIds, 9);
+  const sportsArticles = prioritizeUnusedSectionArticles(sportsArticlesRaw, homepageUsedIds, 9);
+  const opinionArticles = prioritizeUnusedSectionArticles(opinionArticlesRaw, homepageUsedIds, 9);
   return (
     <main className="min-h-screen bg-bg-main transition-colors duration-300">
       <Header />
-      <FrontPage 
+      <FrontPage
         topStories={topStories}
-        specialFeature={specialFeature}
-        opinion={opinion}
+        sections={{
+          news: newsArticles,
+          features: featuresArticles,
+          sports: sportsArticles,
+          opinion: opinionArticles,
+        }}
       />
-      <HorizontalSection title="News" articles={newsArticles} />
-      <HorizontalSection title="Features" articles={featuresArticles} />
-      <HorizontalSection title="Sports" articles={sportsArticles} />
-      <HorizontalSection title="Opinion" articles={opinionArticles} />
-      <HorizontalSection title="Editorial" articles={editorialArticles} />
       <Footer />
     </main>
   );

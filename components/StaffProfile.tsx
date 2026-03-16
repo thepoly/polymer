@@ -37,7 +37,7 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-zinc-800 text-text-muted transition-colors">
-                <span className="text-6xl font-serif">
+                <span className="text-6xl font-display">
                   {user.firstName[0]}{user.lastName[0]}
                 </span>
               </div>
@@ -45,7 +45,7 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
           </div>
           
           <div className="text-center md:text-left">
-              <h1 className="text-3xl font-bold font-sans mb-3 tracking-tight">
+              <h1 className="font-display text-3xl font-bold mb-3 tracking-tight">
                   {user.firstName} {user.lastName}
               </h1>
               
@@ -54,7 +54,7 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
                   if (!title) return null;
                   return (
                       <div key={i} className="mb-3">
-                          <span className="text-accent font-bold uppercase tracking-wider text-[11px] block mb-0.5 transition-colors">
+                          <span className="font-meta text-accent font-bold uppercase tracking-[0.1em] text-[11px] block mb-0.5 transition-colors">
                               {title}
                           </span>
                           <span className="text-text-muted text-[11px] block uppercase tracking-tight transition-colors">
@@ -72,7 +72,7 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
         <div className="w-full md:w-2/3">
           {/* Biography Section */}
           <section className="mb-12">
-            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-text-muted mb-6 border-b border-border-main pb-2 transition-colors">Biography</h2>
+            <h2 className="font-meta text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted mb-6 border-b border-rule pb-2 transition-colors">Biography</h2>
             {bio && bio.root && bio.root.children ? (
               <div className="prose prose-sm max-w-none font-sans text-text-muted leading-relaxed transition-colors">
                  <SerializeLexical nodes={bio.root.children} />
@@ -85,7 +85,7 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
           {/* Articles Section */}
           {articles.length > 0 && (
             <section>
-              <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-text-muted mb-6 border-b border-border-main pb-2 transition-colors">Recent Articles</h2>
+              <h2 className="font-meta text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted mb-6 border-b border-rule pb-2 transition-colors">Recent Articles</h2>
               <div className="space-y-6">
                 {displayedArticles.map((article) => (
                   <div key={article.id} className="group">
@@ -95,7 +95,7 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
                       </h3>
                     </Link>
                     <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-text-muted transition-colors">
-                      <span className="font-bold text-accent">{article.section}</span>
+                      <span className="font-meta font-bold text-accent">{article.section}</span>
                       <span>•</span>
                       <span>{new Date(article.publishedDate!).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                     </div>
@@ -105,7 +105,7 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
               {hasMoreArticles && !showAllArticles && (
                 <button 
                   onClick={() => setShowAllArticles(true)}
-                  className="mt-8 text-xs font-bold uppercase tracking-widest text-text-muted hover:text-text-main transition-colors py-2.5 px-0"
+                  className="font-meta mt-8 text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted hover:text-text-main transition-colors py-2.5 px-0"
                 >
                   See More Articles
                 </button>
@@ -118,7 +118,7 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
       {/* Full Width Photos Section (Below everything else) */}
       {photos.length > 0 && (
         <section className="w-full">
-          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-text-muted mb-8 border-b border-border-main pb-2 transition-colors">Photo Portfolio</h2>
+          <h2 className="font-meta text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted mb-8 border-b border-rule pb-2 transition-colors">Photo Portfolio</h2>
           <div className="columns-2 sm:columns-2 lg:columns-3 gap-6 space-y-6">
             {photos.map((photo, index) => {
               const articleUrl = photoToArticleMap[photo.id];

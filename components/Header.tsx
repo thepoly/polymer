@@ -1,46 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight, Menu, Search, X } from "lucide-react";
 import SearchOverlay from "@/components/SearchOverlay";
+import { useTheme } from "@/components/ThemeProvider";
 
 const primaryNavItems = [
   { label: "News", href: "/news" },
   { label: "Features", href: "/features" },
   { label: "Opinion", href: "/opinion" },
   { label: "Sports", href: "/sports" },
-  { label: "Editorial", href: "/editorial" },
 ];
 
 const secondaryNavItems = [
   { label: "About", href: "/about" },
   { label: "Archives", href: "/archives" },
+  { label: "Staff", href: "/staff" },
   { label: "Contact", href: "/contact" },
   { label: "Submit", href: "/submit" },
 ];
 
 const mobileNavItems = [
   ...primaryNavItems,
-  { label: "Staff", href: "/staff" },
   { label: "Checkmate", href: "/checkmate" },
   ...secondaryNavItems,
 ];
 
-type HeaderWeather = {
-  available: boolean;
-  city: string;
-  state: string;
-  shortForecast?: string;
-  temperature?: number;
-  temperatureUnit?: string;
-};
-
 export default function Header({ compact = false }: { compact?: boolean }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [weather, setWeather] = useState<HeaderWeather | null>(null);
   const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
+  const { isDarkMode } = useTheme();
+  const logoSrc = isDarkMode ? "/logo-dark.svg" : "/logo-light.svg";
+  const glowColor = isDarkMode ? "white" : "black";
+  const glowColorRef = useRef(glowColor);
+
+  useEffect(() => {
+    glowColorRef.current = glowColor;
+  }, [glowColor]);
 
   useEffect(() => {
     document.body.style.overflow = isMobileMenuOpen ? "hidden" : "unset";
@@ -49,38 +47,6 @@ export default function Header({ compact = false }: { compact?: boolean }) {
     };
   }, [isMobileMenuOpen]);
 
-  useEffect(() => {
-    let isActive = true;
-
-    const loadWeather = async () => {
-      try {
-        const response = await fetch("/api/weather", { cache: "no-store" });
-        if (!response.ok) return;
-
-        const data = (await response.json()) as HeaderWeather;
-        if (isActive) {
-          setWeather(data);
-        }
-      } catch {
-        if (isActive) {
-          setWeather({
-            available: false,
-            city: "Troy",
-            state: "NY",
-          });
-        }
-      }
-    };
-
-    loadWeather();
-    const interval = window.setInterval(loadWeather, 10 * 60 * 1000);
-
-    return () => {
-      isActive = false;
-      window.clearInterval(interval);
-    };
-  }, []);
-
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
@@ -88,28 +54,22 @@ export default function Header({ compact = false }: { compact?: boolean }) {
     year: "numeric",
   });
 
-  const weatherLine =
-    weather?.available && weather.shortForecast && typeof weather.temperature === "number"
-      ? `${weather.shortForecast} ${weather.temperature}°`
-      : "Weather unavailable";
-
-  const weatherLocation = weather ? `${weather.city}, ${weather.state}` : "Troy, NY";
-
   return (
     <>
-      <header className={`${compact ? "sticky top-0" : ""} z-50 border-b border-header-border bg-header-nav lg:hidden`}>
-        <div className="font-cinzel border-b border-header-border/70 bg-header-nav px-4 py-2 text-[10px] font-bold uppercase tracking-[0.08em] text-header-nav-text">
+      {/* ── MOBILE HEADER ── */}
+      <header className={`${compact ? "sticky top-0" : ""} z-50 border-b border-rule-strong bg-bg-main lg:hidden`}>
+        <div className="font-meta border-b border-rule px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-text-main">
           <div className="relative mx-auto flex max-w-[1280px] items-center justify-center gap-2.5">
-            <span className="text-text-muted">{currentDate}</span>
-            <span className="text-header-border">|</span>
-            <span className="text-accent">Vol. XCI No. 22</span>
+            <span>{currentDate}</span>
+            <span className="text-text-muted/30">|</span>
+            <span className="text-accent font-semibold">Vol. XCI No. 22</span>
           </div>
         </div>
 
         <div className="mx-auto flex h-[56px] max-w-[1280px] items-center justify-between gap-3 px-3 sm:h-[64px]">
           <button
             onClick={() => setIsMobileMenuOpen((open) => !open)}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-border-main/70 bg-bg-main text-header-nav-text transition-colors hover:border-accent hover:text-accent"
+            className="flex h-9 w-9 items-center justify-center text-text-main transition-colors hover:text-accent"
             aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
           >
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -117,10 +77,9 @@ export default function Header({ compact = false }: { compact?: boolean }) {
 
           <Link href="/" className="relative block h-[40px] w-full max-w-[220px] sm:h-[48px] sm:max-w-[260px]">
             <Image
-              src="/logo.svg"
+              src={logoSrc}
               alt="The Polytechnic"
               fill
-              style={{ filter: "var(--logo-filter)" }}
               className="object-contain"
               priority
             />
@@ -128,7 +87,7 @@ export default function Header({ compact = false }: { compact?: boolean }) {
 
           <button
             onClick={() => setIsSearchOverlayOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-border-main/70 bg-bg-main text-header-nav-text transition-colors hover:border-accent hover:text-accent"
+            className="flex h-9 w-9 items-center justify-center text-text-main transition-colors hover:text-accent"
             aria-label="Search"
           >
             <Search className="h-4 w-4" />
@@ -136,22 +95,18 @@ export default function Header({ compact = false }: { compact?: boolean }) {
         </div>
 
         {isMobileMenuOpen && (
-          <div className="fixed inset-x-0 bottom-0 top-[100px] z-[60] overflow-y-auto border-t border-header-border bg-header-nav sm:top-[110px]">
+          <div className="fixed inset-x-0 bottom-0 top-[100px] z-[60] overflow-y-auto border-t border-rule-strong bg-bg-main sm:top-[110px]">
             <div className="mx-auto flex max-w-[1280px] flex-col px-6 pb-8 pt-6">
-              <div className="font-cinzel mb-6 border-b border-border-main pb-4 text-[10px] font-bold uppercase tracking-[0.08em] text-text-muted">
-                <span>{weatherLocation}</span>
-              </div>
-
-              <nav className="flex flex-col border-t border-border-main">
+              <nav className="flex flex-col">
                 {mobileNavItems.map((item) => (
                   <Link
                     key={item.label}
                     href={item.href}
-                    className="flex items-center justify-between border-b border-border-main py-4 text-2xl font-bold tracking-tight text-header-nav-text transition-colors hover:text-accent"
+                    className="font-meta flex items-center justify-between border-b border-rule py-4 text-lg font-semibold uppercase tracking-[0.06em] text-text-main transition-colors hover:text-accent"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     {item.label}
-                    <ArrowUpRight className="h-5 w-5 text-text-muted" />
+                    <ArrowUpRight className="h-4 w-4 text-text-muted" />
                   </Link>
                 ))}
               </nav>
@@ -160,89 +115,121 @@ export default function Header({ compact = false }: { compact?: boolean }) {
         )}
       </header>
 
+      {/* ── DESKTOP HEADER ── */}
       <header className="hidden lg:block">
-        <div className={`${compact ? "fixed" : "relative"} top-0 left-0 right-0 z-50 border-b border-header-border bg-header-nav/80 backdrop-blur-md`}>
-          <div className="font-cinzel relative mx-auto flex max-w-[1280px] items-center justify-between gap-6 px-4 py-2.5 md:px-6 xl:px-[30px]">
-            <div className="flex items-center gap-4 text-[11px] font-bold uppercase tracking-[0.08em] text-header-nav-text">
-              <Link href="/about" className="transition-colors hover:text-accent">
-                About
-              </Link>
-              <Link href="/archives" className="transition-colors hover:text-accent">
-                Archives
-              </Link>
-              <Link href="/staff" className="transition-colors hover:text-accent">
-                Staff
-              </Link>
-              <Link href="/contact" className="transition-colors hover:text-accent">
-                Contact
-              </Link>
-              <Link href="/submit" className="transition-colors hover:text-accent">
-                Submit
-              </Link>
+        {/* Top bar: secondary nav + date + search */}
+        <div className={`${compact ? "fixed" : "relative"} top-0 left-0 right-0 z-50 bg-bg-main/95 backdrop-blur-md`}>
+          <div className="font-meta relative mx-auto flex max-w-[1280px] items-center justify-between gap-6 px-4 pt-1.5 pb-0.5 md:px-6 xl:px-[30px]">
+            <div className="flex items-center gap-5 text-[11px] font-medium uppercase tracking-[0.1em] text-text-main">
+              {secondaryNavItems.map((item) => (
+                <Link key={item.label} href={item.href} className="transition-colors hover:text-accent">
+                  {item.label}
+                </Link>
+              ))}
             </div>
 
-            <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 text-[11px] font-bold uppercase tracking-[0.08em]">
-              <span className="text-text-muted">{currentDate}</span>
-              <span className="text-header-border">|</span>
-              <span className="text-accent">Vol. XCI No. 22</span>
+            <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 text-[11px] font-medium uppercase tracking-[0.1em]">
+              <span className="text-text-main">{currentDate}</span>
+              <span className="text-text-muted/30">|</span>
+              <span className="text-accent font-semibold">Vol. XCI No. 22</span>
             </div>
 
             <button
-              className="flex items-center cursor-pointer"
+              className="flex items-center cursor-pointer gap-1.5"
               onClick={() => setIsSearchOverlayOpen(true)}
               aria-label="Search"
             >
-              <Search className="h-3.5 w-3.5 shrink-0 text-header-nav-text" />
-              <span className="whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.08em] text-header-nav-text ml-2">
+              <Search className="h-3.5 w-3.5 shrink-0 text-text-main" />
+              <span className="whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.1em] text-text-main">
                 Search
               </span>
             </button>
           </div>
         </div>
 
-        {compact && <div className="h-[40px]" />}
+        {compact && <div className="h-[38px]" />}
 
         {!compact && (
           <>
-            <div className="mx-auto grid max-w-[1280px] grid-cols-[200px_minmax(0,1fr)_200px] items-center gap-4 px-4 py-3 md:px-6 xl:px-[30px]">
-              <div className="flex flex-col gap-1.5 justify-center">
-                <p className="font-copy text-[22px] leading-none text-text-main">{weatherLine}</p>
-                <p className="font-ui text-[10px] font-bold uppercase tracking-[0.22em] text-text-muted">
-                  {weatherLocation}
-                </p>
-              </div>
-
-              <div className="flex flex-col items-center">
-                <Link href="/" className="relative block h-[80px] w-[520px] max-w-full">
-                  <Image
-                    src="/logo.svg"
-                    alt="The Polytechnic"
-                    fill
-                    style={{ filter: "var(--header-logo-invert)" }}
-                    className="object-contain"
-                    priority
-                  />
-                </Link>
-                <p className="font-copy mt-1 text-[14px] leading-none text-text-muted">
-                  Serving the Rensselaer community since 1885.
-                </p>
-              </div>
-
-              <div />
+            {/* Logo + tagline */}
+            <div className="mx-auto flex max-w-[1280px] flex-col items-center px-4 pt-7 pb-5 md:px-6 xl:px-[30px]">
+              <Link href="/" className="relative block h-[80px] w-[520px] max-w-full">
+                <Image
+                  src={logoSrc}
+                  alt="The Polytechnic"
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </Link>
             </div>
 
+            {/* Primary nav with thin black border lines that fade at edges */}
             <div className="mx-auto max-w-[1280px] px-4 md:px-6 xl:px-[30px]">
-              <nav className="flex flex-wrap items-center justify-center gap-x-8 border-t border-b border-header-border py-2">
-                {primaryNavItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className="font-ui relative py-0.5 text-[15px] font-semibold tracking-[0.02em] text-header-nav-text transition-colors duration-200 hover:text-accent after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-accent after:opacity-0 after:transition-opacity after:duration-200 after:content-[''] hover:after:opacity-100"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
+              <div className="relative">
+                <div className="absolute inset-x-0 bottom-0 h-[1.5px] bg-rule-strong" />
+                <nav
+                  className="font-meta relative flex flex-wrap items-center justify-center gap-x-10 py-2"
+                  ref={(nav) => {
+                    if (!nav) return;
+                    const glow = nav.querySelector("[data-glow-bottom]") as HTMLElement;
+                    if (!glow) return;
+
+                    let active = false;
+
+                    const links = nav.querySelectorAll("a");
+                    links.forEach((link) => {
+                      link.addEventListener("mouseenter", () => {
+                        const navRect = nav.getBoundingClientRect();
+                        const linkRect = link.getBoundingClientRect();
+                        const center = linkRect.left + linkRect.width / 2 - navRect.left;
+                        const width = linkRect.width + 60;
+
+                        const c = glowColorRef.current;
+                        const bg = `radial-gradient(ellipse at center, ${c} 0%, transparent 70%)`;
+
+                        if (!active) {
+                          glow.style.transition = "none";
+                          glow.style.background = bg;
+                          glow.style.left = `${center}px`;
+                          glow.style.width = "0px";
+                          glow.style.opacity = "1";
+                          void glow.offsetHeight;
+                          glow.style.transition = "left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease";
+                          glow.style.left = `${center - width / 2}px`;
+                          glow.style.width = `${width}px`;
+                          active = true;
+                        } else {
+                          glow.style.background = bg;
+                          glow.style.left = `${center - width / 2}px`;
+                          glow.style.width = `${width}px`;
+                          glow.style.opacity = "1";
+                        }
+                      });
+                    });
+
+                    nav.addEventListener("mouseleave", () => {
+                      active = false;
+                      glow.style.opacity = "0";
+                    });
+                  }}
+                >
+                  <span
+                    data-glow-bottom
+                    className="pointer-events-none absolute bottom-0 translate-y-1/2 h-px"
+                    style={{ background: `radial-gradient(ellipse at center, ${glowColor} 0%, transparent 70%)`, opacity: 0, width: 0, transition: "left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease" }}
+                  />
+                  {primaryNavItems.map((item) => (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      className="relative py-0.5 text-[13px] font-semibold uppercase tracking-[0.12em] text-text-main"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </nav>
+              </div>
             </div>
           </>
         )}

@@ -31,7 +31,6 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
     { label: 'Features', href: '/features' },
     { label: 'Opinion', href: '/opinion' },
     { label: 'Sports', href: '/sports' },
-    { label: 'Editorial', href: '/editorial' },
   ];
 
   return (
@@ -138,7 +137,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                 </div>
 
                 {/* Author Names */}
-                <div className="font-serif font-bold text-lg pointer-events-auto">
+                <div className="font-meta text-[14px] font-[440] tracking-[0.08em] pointer-events-auto sm:text-[15px]">
                   By {article.authors && article.authors.length > 0 ? (
                     article.authors.map((author, index) => {
                       const user = author as User;

@@ -52,14 +52,14 @@ export default function SearchInput({ defaultValue }: { defaultValue?: string })
 
   return (
     <div>
-      <div className="relative flex items-center border-b-2 border-border-main transition-colors focus-within:border-accent">
+      <div className="relative flex items-center border-b-2 border-rule-strong transition-colors focus-within:border-accent">
         <input
           ref={inputRef}
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search..."
-          className="w-full bg-transparent py-2 pl-3 pr-36 font-serif text-xl md:text-3xl font-bold text-text-main placeholder:text-text-muted/30 outline-none"
+          className="w-full bg-transparent py-2 pl-3 pr-36 font-display text-xl md:text-3xl font-bold text-text-main placeholder:text-text-muted/30 outline-none"
         />
         <Image
           src="/logo.svg"
@@ -71,7 +71,7 @@ export default function SearchInput({ defaultValue }: { defaultValue?: string })
         />
       </div>
 
-      <p className="mt-3 font-serif text-sm text-text-muted">
+      <p className="mt-3 font-meta text-[12px] text-text-muted">
         {searched && (
           <>
             We found <span className="text-accent font-bold">{articles.length}</span> result{articles.length !== 1 ? "s" : ""} that matched your query.{" "}
@@ -82,14 +82,14 @@ export default function SearchInput({ defaultValue }: { defaultValue?: string })
 
       {searched && articles.length > 0 && (
         <div className="mt-8">
-          <div className="flex flex-col divide-y divide-border-main">
+          <div className="flex flex-col divide-y divide-rule">
             {articles.map((article) => (
               <div key={article.id} className="py-4 first:pt-0">
                 <Link href={getArticleUrl(article)} className="flex flex-col group cursor-pointer">
-                  <h3 className="font-serif font-bold text-text-main mb-1 text-[16px] md:text-[18px] leading-tight group-hover:text-text-muted transition-colors">
+                  <h3 className={`font-display font-bold text-text-main mb-1 text-[16px] md:text-[18px] leading-tight group-hover:text-accent transition-colors ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
                     {article.title}
                   </h3>
-                  <p className="font-serif text-text-main text-[13px] md:text-[14px] leading-[1.4] mb-2 transition-colors">
+                  <p className="font-copy text-text-main text-[13px] md:text-[14px] leading-[1.4] mb-2 transition-colors">
                     {article.excerpt}
                   </p>
                   <Byline author={article.author} date={article.date} />

@@ -213,7 +213,7 @@ export interface Article {
   title: string;
   kicker?: string | null;
   subdeck?: string | null;
-  section: 'news' | 'sports' | 'features' | 'editorial' | 'opinion';
+  section: 'news' | 'sports' | 'features' | 'opinion';
   authors: (number | User)[];
   publishedDate?: string | null;
   featuredImage?: (number | null) | Media;
@@ -248,6 +248,7 @@ export interface Layout {
   top1?: (number | null) | Article;
   top2?: (number | null) | Article;
   top3?: (number | null) | Article;
+  top4?: (number | null) | Article;
   op1?: (number | null) | Article;
   op2?: (number | null) | Article;
   op3?: (number | null) | Article;
@@ -435,6 +436,7 @@ export interface LayoutSelect<T extends boolean = true> {
   top1?: T;
   top2?: T;
   top3?: T;
+  top4?: T;
   op1?: T;
   op2?: T;
   op3?: T;

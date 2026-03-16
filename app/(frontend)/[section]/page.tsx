@@ -2,7 +2,8 @@ import React from 'react';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
 import Header from '@/components/Header';
-import FrontPage from '@/components/FrontPage';
+import { HorizontalSection } from '@/components/FrontPage/HorizontalSection';
+import Footer from '@/components/Footer';
 import { Article as PayloadArticle } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
 import { formatArticle } from '@/utils/formatArticle';
@@ -18,7 +19,7 @@ type Args = {
 
 export default async function SectionPage({ params }: Args) {
   const { section } = await params;
-  const contentSections = ['news', 'sports', 'features', 'editorial', 'opinion'];
+  const contentSections = ['news', 'sports', 'features', 'opinion'];
   const placeholderSections = ['about', 'archives', 'checkmate', 'contact', 'submit'];
   const isContentSection = contentSections.includes(section);
   const isPlaceholderSection = placeholderSections.includes(section);
@@ -31,10 +32,10 @@ export default async function SectionPage({ params }: Args) {
     <main className="min-h-screen bg-bg-main transition-colors duration-300">
       <Header />
       <div className="container mx-auto px-4 py-20 text-center">
-        <h1 className="text-4xl font-serif font-bold mb-4 capitalize text-accent">
+        <h1 className="font-meta text-4xl font-bold mb-4 uppercase tracking-[0.08em] text-accent">
           {section}
         </h1>
-        <p className="text-text-muted font-serif">{message}</p>
+        <p className="text-text-muted font-copy">{message}</p>
       </div>
     </main>
   );
@@ -71,51 +72,13 @@ export default async function SectionPage({ params }: Args) {
   // Map to ComponentArticle
   const formattedArticles = articles.map(formatArticle).filter(Boolean) as ComponentArticle[];
 
-  // Distribute articles into the FrontPage slots
-  const lead = formattedArticles[0];
-  const list = formattedArticles.slice(1, 4); 
-  const special = formattedArticles[4] || formattedArticles[0]; 
-
-  let sidebarArticles: ComponentArticle[] = [];
-
-  if (section === 'opinion') {
-     sidebarArticles = formattedArticles.slice(5, 9);
-  } else {
-     const opinionResponse = await payload.find({
-        collection: 'articles',
-        where: {
-            section: { equals: 'opinion' }
-        },
-        sort: '-publishedDate',
-        limit: 4,
-     });
-     sidebarArticles = opinionResponse.docs.map(formatArticle).filter(Boolean) as ComponentArticle[];
-  }
-
-  const topStories = {
-    lead: lead!,
-    list: list,
-  };
-
-  const commonProps = {
-      topStories,
-      studentSenate: special!,
-      opinion: sidebarArticles
-  };
-
-  const SectionHeaderBlock = () => (
-      <div className="max-w-[1280px] mx-auto px-4 md:px-6 pt-8 pb-4">
-        <h1 className={`text-5xl font-serif font-bold capitalize text-accent border-b-4 border-border-main inline-block pr-6 mb-2 transition-colors`}>
-            {section}
-        </h1>
-      </div>
-  );
+  const sectionTitle = section.charAt(0).toUpperCase() + section.slice(1);
 
   return (
     <main className={`min-h-screen bg-bg-main section-${section} transition-colors duration-300`}>
       <Header />
-      <SectionHeaderBlock />
-      <FrontPage {...commonProps} />
+      <HorizontalSection title={sectionTitle} articles={formattedArticles} />
+      <Footer />
     </main>
   );
 }

@@ -9,12 +9,12 @@ export const SenateCard = ({ article }: { article: Article }) => (
     <Link href={getArticleUrl(article)} className="flex flex-col md:flex-row gap-6 cursor-pointer group transition-colors">
         <div className="flex-1 flex flex-col justify-center">
              <div className="mb-2">
-                <span className="font-ui text-accent font-bold uppercase text-[10px] tracking-[0.22em] transition-colors">Student Senate</span>
+                <span className="font-meta text-accent font-[440] italic capitalize text-[11px] md:text-[12px] tracking-[0.04em] transition-colors">Student Senate</span>
             </div>
-            <h3 className="font-display font-bold text-[19px] md:text-[24px] text-text-main mb-3 leading-[1.06] tracking-[-0.018em] group-hover:text-accent transition-colors">
+            <h3 className={`font-display font-bold text-[24px] md:text-[30px] text-text-main mb-3 leading-[1.06] tracking-[-0.018em] group-hover:text-accent transition-colors ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic text-[25px] md:text-[31px]" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
                 {article.title}
             </h3>
-            <p className="font-copy text-text-main text-[13px] leading-[1.4] mb-3 transition-colors">
+            <p className="font-meta text-text-main text-[13px] font-normal leading-[1.4] mb-3 transition-colors">
                 {article.excerpt}
             </p>
              <Byline author={article.author} date={article.date} />

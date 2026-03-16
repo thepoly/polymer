@@ -1,102 +1,294 @@
 import React from "react";
 import Link from "next/link";
 import { LeadArticle } from "./LeadArticle";
-import { FeatureBand } from "./FeatureBand";
-import { OpinionCard } from "./OpinionCard";
-import { Byline } from "./Byline";
+import { ArticleCard } from "./ArticleCard";
+import { ArticleListItem } from "./ArticleListItem";
 import { Article } from "./types";
-import { getArticleUrl } from "@/utils/getArticleUrl";
 
-interface FrontPageBodyProps {
+interface FrontPageProps {
   topStories: {
     lead: Article;
     list: Article[];
   };
-  specialFeature?: Article | null;
-  opinion: Article[];
+  sections: {
+    news: Article[];
+    features: Article[];
+    sports: Article[];
+    opinion: Article[];
+  };
 }
 
-function FrontPageStoryList({ articles }: { articles: Article[] }) {
+interface HeroColumns {
+  left: Article[];
+  right: Article[];
+}
+
+interface ArrangedSectionStories {
+  featureStory: Article | null;
+  supportingStories: Article[];
+  listStories: Article[];
+}
+
+const MAX_SECTION_STORIES = 9;
+const MAX_LIST_STORIES = 6;
+
+const arrangeHeroStories = (articles: Article[]): HeroColumns => {
+  const heroStories = articles.slice(0, 4);
+
+  return {
+    left: heroStories.slice(0, 2),
+    right: heroStories.slice(2, 4),
+  };
+};
+
+const prioritizeImageStory = (articles: Article[]) => {
+  const imageIndex = articles.findIndex((article) => article.image);
+
+  if (imageIndex <= 0) return articles;
+
+  return [
+    articles[imageIndex],
+    ...articles.slice(0, imageIndex),
+    ...articles.slice(imageIndex + 1),
+  ];
+};
+
+const arrangeSectionStories = (articles: Article[]): ArrangedSectionStories => {
+  const sectionStories = articles.slice(0, MAX_SECTION_STORIES);
+
+  if (sectionStories.length === 0) {
+    return {
+      featureStory: null,
+      supportingStories: [],
+      listStories: [],
+    };
+  }
+
+  const leftRows = Math.min(2, Math.max(0, Math.floor((sectionStories.length - 1) / 3)));
+  const listTarget = Math.min(MAX_LIST_STORIES, leftRows * 3);
+  const hasImage = sectionStories.some((article) => article.image);
+  const blockCapacity =
+    leftRows === 0
+      ? sectionStories.length
+      : hasImage
+        ? 4
+        : leftRows === 1
+          ? 2
+          : 3;
+  const blockCount =
+    leftRows === 0
+      ? sectionStories.length
+      : Math.min(blockCapacity, Math.max(0, sectionStories.length - listTarget));
+  const prioritizedStories =
+    blockCount > 0 && hasImage ? prioritizeImageStory(sectionStories) : sectionStories;
+  const blockStories = prioritizedStories.slice(0, blockCount);
+  const listStories = prioritizedStories.slice(blockCount, blockCount + listTarget);
+  const useFeatureStory = Boolean(
+    blockStories[0] &&
+      (blockStories[0].image || leftRows !== 1 || blockStories.length === 1),
+  );
+
+  return {
+    featureStory: useFeatureStory ? blockStories[0] : null,
+    supportingStories: useFeatureStory ? blockStories.slice(1) : blockStories,
+    listStories,
+  };
+};
+
+const chunkIntoColumns = (articles: Article[], columnCount: number) => {
+  if (articles.length === 0) return [];
+
+  const columns = Array.from({ length: Math.min(columnCount, articles.length) }, () => [] as Article[]);
+
+  articles.forEach((article, index) => {
+    columns[index % columns.length].push(article);
+  });
+
+  return columns;
+};
+
+function SectionBlock({
+  title,
+  articles,
+}: {
+  title: string;
+  articles: Article[];
+}) {
+  if (articles.length === 0) return null;
+
+  const { featureStory, supportingStories, listStories } = arrangeSectionStories(articles);
+  const sectionSlug = title.toLowerCase();
+  const hasBlocks = Boolean(featureStory) || supportingStories.length > 0;
+  const hasVisualLead = Boolean(featureStory?.image);
+  const hasListRail = listStories.length > 0;
+  const textOnlyBlocks = featureStory?.image
+    ? supportingStories
+    : [featureStory, ...supportingStories].filter((article): article is Article => Boolean(article));
+  const textColumns = chunkIntoColumns(textOnlyBlocks, 2);
+
   return (
-    <div className="flex flex-col divide-y divide-border-main">
-      {articles.map((article, index) => (
-        <Link
-          key={`${article.id}-${index}`}
-          href={getArticleUrl(article)}
-          className="group py-4 first:pt-0 last:pb-0"
-        >
-          <p className="font-ui mb-2 text-[10px] font-bold uppercase tracking-[0.22em] text-accent">
-            {article.section}
-          </p>
-          <h3
-            className="font-display text-[19px] font-bold leading-[1.04] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent"
-          >
-            {article.title}
-          </h3>
-          {index === 0 && article.excerpt && (
-            <p className="font-copy mt-2 line-clamp-3 text-[13px] leading-[1.38] text-text-muted">
-              {article.excerpt}
-            </p>
-          )}
-          <Byline author={article.author} date={article.date} />
+    <section className="border-t-2 border-rule-strong pt-5">
+      <div className="mb-5">
+        <Link href={`/${sectionSlug}`} className="group inline-block">
+          <h2 className="font-meta text-[13px] font-bold uppercase tracking-[0.08em] text-accent transition-colors group-hover:text-accent/70 md:text-[14px]">
+            {title}
+          </h2>
         </Link>
-      ))}
-    </div>
+      </div>
+
+      <div
+        className={`grid gap-6 ${
+          hasBlocks && listStories.length > 0
+            ? "lg:grid-cols-[minmax(0,1.7fr)_minmax(280px,1fr)] lg:items-start"
+            : ""
+        }`}
+      >
+        {hasBlocks ? (
+          <div>
+            {featureStory && hasVisualLead && supportingStories.length > 0 ? (
+              <div
+                className={`grid gap-5 lg:items-start ${
+                  hasListRail
+                    ? "lg:w-[88%] lg:grid-cols-[minmax(0,0.82fr)_minmax(0,0.68fr)]"
+                    : "lg:grid-cols-[minmax(0,0.92fr)_minmax(0,0.78fr)]"
+                }`}
+              >
+                <ArticleCard
+                  article={featureStory}
+                  showImage
+                  imageAspectClassName="aspect-[5/4]"
+                  titleClassName="text-[18px] md:text-[22px]"
+                  excerptClassName="mt-2.5 line-clamp-4 text-[13px] leading-[1.45]"
+                />
+
+                <div className="flex flex-col gap-5">
+                  {supportingStories.slice(0, 3).map((article) => (
+                    <ArticleCard
+                      key={article.id}
+                      article={article}
+                      showImage={false}
+                      titleClassName="text-[16px] md:text-[18px]"
+                      excerptClassName="mt-2 line-clamp-3 text-[13px] leading-[1.4]"
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {hasVisualLead && featureStory ? (
+                  <ArticleCard
+                    article={featureStory}
+                    showImage
+                    imageAspectClassName="aspect-[5/4]"
+                    titleClassName="text-[18px] md:text-[22px]"
+                    excerptClassName="mt-2.5 line-clamp-4 text-[13px] leading-[1.45]"
+                  />
+                ) : null}
+
+                {textOnlyBlocks.length > 0 && (
+                  <div
+                    className={
+                      textColumns.length > 1
+                        ? hasListRail
+                          ? "grid gap-5 sm:grid-cols-2 lg:w-[86%]"
+                          : "grid gap-5 sm:grid-cols-2"
+                        : hasListRail
+                          ? "lg:w-[42%]"
+                          : "w-full"
+                    }
+                  >
+                    {textColumns.map((column, columnIndex) => (
+                      <div key={columnIndex} className="flex flex-col gap-5">
+                        {column.map((article) => (
+                          <ArticleCard
+                            key={article.id}
+                            article={article}
+                            showImage={false}
+                            titleClassName="text-[16px] md:text-[18px]"
+                            excerptClassName="mt-2 line-clamp-3 text-[13px] leading-[1.4]"
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : null}
+
+        {listStories.length > 0 && (
+          <ul>
+            {listStories.map((article) => (
+              <ArticleListItem key={article.id} article={article} />
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="mt-4">
+        <Link
+          href={`/${sectionSlug}`}
+          className="font-meta text-[11px] font-bold uppercase tracking-[0.06em] text-accent transition-colors hover:text-accent/70"
+        >
+          More {title} &rarr;
+        </Link>
+      </div>
+    </section>
   );
 }
 
 export default function FrontPage({
   topStories,
-  specialFeature,
-  opinion,
-}: FrontPageBodyProps) {
-  const hasOpinionRail = opinion.length > 0;
+  sections,
+}: FrontPageProps) {
+  const heroStories = arrangeHeroStories(topStories.list);
+  const heroImageCount = [...heroStories.left, ...heroStories.right].filter(
+    (article) => article.image,
+  ).length;
+  const leadIsCompact = heroImageCount >= 2;
 
   return (
     <div className="w-full bg-bg-main text-text-main transition-colors duration-300">
       <div className="mx-auto max-w-[1280px] px-4 pb-14 md:px-6 xl:px-[30px]">
-        <section className="border-b border-border-main py-6 md:py-7">
-          <div className="grid gap-8 xl:grid-cols-12 xl:gap-7">
-            <div className={hasOpinionRail ? "xl:col-span-6" : "xl:col-span-8"}>
-              <LeadArticle article={topStories.lead} />
+        <section className="py-6 md:py-7">
+          <div
+            className={`grid gap-7 ${
+              leadIsCompact
+                ? "lg:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]"
+                : "lg:grid-cols-[minmax(0,0.97fr)_minmax(0,1.03fr)]"
+            }`}
+          >
+            <div>
+              <LeadArticle article={topStories.lead} compact={leadIsCompact} />
             </div>
-
-            <div
-              className={
-                hasOpinionRail
-                  ? "xl:col-span-3 xl:border-l xl:border-border-main xl:pl-6"
-                  : "xl:col-span-4 xl:border-l xl:border-border-main xl:pl-6"
-              }
-            >
-              <FrontPageStoryList articles={topStories.list} />
+            <div className="grid grid-cols-2 gap-4 items-start">
+              <div className="flex flex-col gap-5">
+                {heroStories.left.map((article) => (
+                  <ArticleCard
+                    key={article.id}
+                    article={article}
+                  />
+                ))}
+              </div>
+              <div className="flex flex-col gap-5">
+                {heroStories.right.map((article) => (
+                  <ArticleCard
+                    key={article.id}
+                    article={article}
+                  />
+                ))}
+              </div>
             </div>
-
-            {hasOpinionRail ? (
-              <aside className="xl:col-span-3 xl:border-l xl:border-border-main xl:pl-6">
-                <div className="mb-4 border-b border-border-main pb-3">
-                  <Link href="/opinion" className="group inline-block">
-                    <h2 className="font-display text-[18px] font-bold leading-none tracking-[-0.02em] transition-colors group-hover:text-accent">
-                      Opinion
-                    </h2>
-                  </Link>
-                </div>
-                <div className="flex flex-col divide-y divide-border-main">
-                  {opinion.slice(0, 4).map((article, index) => (
-                    <div key={`${article.id}-${index}`} className="py-4 first:pt-0 last:pb-0">
-                      <OpinionCard article={article} hasImage={index === 0} />
-                    </div>
-                  ))}
-                </div>
-              </aside>
-            ) : null}
           </div>
         </section>
 
-        {specialFeature ? (
-          <section className="border-b border-border-main py-8 md:py-10">
-            <FeatureBand article={specialFeature} />
-          </section>
-        ) : null}
+        <div className="mt-4 flex flex-col gap-10">
+          <SectionBlock title="News" articles={sections.news} />
+          <SectionBlock title="Features" articles={sections.features} />
+          <SectionBlock title="Opinion" articles={sections.opinion} />
+          <SectionBlock title="Sports" articles={sections.sports} />
+        </div>
       </div>
     </div>
   );

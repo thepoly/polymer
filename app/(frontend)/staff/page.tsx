@@ -23,7 +23,7 @@ export default async function StaffPage() {
     <>
       {/* Staff Title */}
       <div className="mb-16 mt-0 md:mt-2">
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-text-main transition-colors">
+        <h1 className="font-meta text-[18px] font-bold uppercase tracking-[0.1em] text-accent border-b border-rule-strong inline-block pr-6 pb-2 transition-colors">
           Staff
         </h1>
       </div>
@@ -76,12 +76,12 @@ export default async function StaffPage() {
                 )}
               </div>
               
-              <h3 className="text-[15px] md:text-[16px] leading-tight font-bold text-text-main mb-1 group-hover:underline decoration-1 underline-offset-2 transition-colors">
+              <h3 className="font-display text-[15px] md:text-[16px] leading-tight font-bold text-text-main mb-1 group-hover:text-accent transition-colors">
                 {user.firstName} {user.lastName}
               </h3>
-              
+
               {titleString && (
-                <p className="text-[13px] md:text-[14px] leading-snug text-text-muted font-light transition-colors">
+                <p className="font-meta text-[11px] leading-snug text-accent font-semibold uppercase tracking-[0.06em] transition-colors">
                   {titleString}
                 </p>
               )}
