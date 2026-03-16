@@ -77,7 +77,7 @@ export default function SearchInput({ defaultValue }: { defaultValue?: string })
             We found <span className="text-accent font-bold">{articles.length}</span> result{articles.length !== 1 ? "s" : ""} that matched your query.{" "}
           </>
         )}
-        Our search algorithm uses title, subtitle, and kicker matching. You are currently searching our online database, containing articles published after 2009. You can access older articles in our archive at the Richard G. Folsom Library.
+        Our search algorithm uses title, subtitle, and kicker matching. You are currently searching our online database, containing articles published after 2009. You can access older articles in <a href="https://digitalassets.archives.rpi.edu/do/235be3d2-f018-48af-a413-b50e16dd6dc7" target="_blank" rel="noopener noreferrer" className="underline hover:text-accent">our archive at the Richard G. Folsom Library</a>.
       </p>
 
       {searched && articles.length > 0 && (

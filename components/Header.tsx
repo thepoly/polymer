@@ -73,7 +73,6 @@ export default function Header({ compact = false }: { compact?: boolean }) {
         <div className="font-meta border-b border-rule px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-text-main">
           <div className="relative mx-auto flex max-w-[1280px] items-center justify-center gap-2.5">
             <span>{currentDate}</span>
-            <span className="text-text-muted/30">|</span>
             <span className="text-accent font-semibold">Vol. XCI No. 22</span>
           </div>
         </div>
@@ -142,7 +141,6 @@ export default function Header({ compact = false }: { compact?: boolean }) {
 
             <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 text-[11px] font-medium uppercase tracking-[0.1em]">
               <span className="text-text-main">{currentDate}</span>
-              <span className="text-text-muted/30">|</span>
               <span className="text-accent font-semibold">Vol. XCI No. 22</span>
             </div>
 

@@ -19,7 +19,7 @@ export type LexicalNode = {
 let paragraphCount = 0;
 
 const ParagraphTracker = ({ children, isFirst }: { children: React.ReactNode; isFirst: boolean }) => (
-  <p className={`font-copy text-xl leading-relaxed text-text-muted mb-6 transition-colors ${isFirst ? 'drop-cap' : ''}`}>
+  <p className={`font-copy text-xl leading-relaxed text-text-main dark:text-[#CCCCCC] mb-6 transition-colors ${isFirst ? 'drop-cap' : ''}`}>
     {children}
   </p>
 );
@@ -101,7 +101,7 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
           case 'list':
             const ListTag = node.tag === 'ol' ? 'ol' : 'ul';
             return (
-              <ListTag key={index} className="font-copy text-xl text-text-muted mb-6 pl-8 list-disc transition-colors">
+              <ListTag key={index} className="font-copy text-xl text-text-main dark:text-[#CCCCCC] mb-6 pl-8 list-disc transition-colors">
                 {serializedChildren}
               </ListTag>
             );
@@ -115,7 +115,7 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
 
           case 'quote':
             return (
-              <blockquote key={index} className="border-l-4 border-accent pl-4 italic text-xl text-text-muted my-6 transition-colors">
+              <blockquote key={index} className="border-l-4 border-accent pl-4 italic text-xl text-text-main dark:text-[#CCCCCC] my-6 transition-colors">
                 {serializedChildren}
               </blockquote>
             );

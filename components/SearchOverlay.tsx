@@ -32,6 +32,8 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
   // 2: line extends + logo fades in + X drops in
   // 3: cursor starts blinking, input is live
 
+  const showTypingOverlay = query.length === 0 && stage >= 1 && stage < 3;
+
   const updateCursor = useCallback(() => {
     const input = inputRef.current;
     const cursor = cursorRef.current;
@@ -64,6 +66,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       setIsVisible(true);
+      inputRef.current?.focus();
     });
 
     return () => window.cancelAnimationFrame(frame);
@@ -115,7 +118,6 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
     timers.push(setTimeout(() => {
       if (closingRef.current) return;
       setStage(3);
-      inputRef.current?.focus();
     }, 1250));
 
     return () => timers.forEach(clearTimeout);
@@ -213,7 +215,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
           />
 
           {/* Typing overlay */}
-          {stage >= 1 && stage < 3 && (
+          {showTypingOverlay && (
             <div className="absolute inset-0 z-10 flex items-center py-2 pl-3 pr-36 font-display text-xl md:text-3xl font-bold pointer-events-none">
               <span
                 className={`inline-block overflow-hidden whitespace-nowrap ${isDarkMode ? "text-white/85" : "text-text-muted/60"}`}
@@ -232,7 +234,6 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
             onSelect={() => updateCursor()}
             placeholder={stage >= 3 ? "Search..." : ""}
             className="search-caret w-full bg-transparent py-2 pl-3 pr-36 font-display text-xl md:text-3xl font-bold text-text-main placeholder:text-text-muted/60 dark:placeholder:text-white/85 outline-none"
-            style={{ pointerEvents: stage < 3 ? "none" : undefined }}
           />
 
           {/* Hidden span to measure text width */}
@@ -283,7 +284,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
                 We found <span className="text-accent font-bold">{articles.length}</span> result{articles.length !== 1 ? "s" : ""} that matched your query.{" "}
               </>
             )}
-            Our search algorithm uses title, subtitle, and kicker matching. You are currently searching our online database, containing articles published after 2009. You can access older articles in our archive at the Richard G. Folsom Library.
+            Our search algorithm uses title, subtitle, and kicker matching. You are currently searching our online database, containing articles published after 2009. You can access older articles in <a href="https://digitalassets.archives.rpi.edu/do/235be3d2-f018-48af-a413-b50e16dd6dc7" target="_blank" rel="noopener noreferrer" className="underline hover:text-accent">our archive at the Richard G. Folsom Library</a>.
           </p>
         )}
 
