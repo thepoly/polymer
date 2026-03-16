@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { AlignCenter, ArrowUpRight, Menu, Moon, Search, Sun, X } from "lucide-react";
+import { ArrowUpRight, Menu, Moon, Search, Sun, X } from "lucide-react";
 import SearchOverlay from "@/components/SearchOverlay";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -34,11 +34,6 @@ export default function Header({ compact = false }: { compact?: boolean }) {
   const [animationKey, setAnimationKey] = useState(0);
   const [isSucking, setIsSucking] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false); // The global lock
-  const [isCenteredDesktopHeader, setIsCenteredDesktopHeader] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem("desktop-header-layout") === "centered";
-  });
-  
   const { isDarkMode, toggleDarkMode } = useTheme();
   const logoSrc = isDarkMode ? "/logo-dark.svg" : "/logo-light.svg";
   const glowColor = isDarkMode ? "white" : "black";
@@ -47,14 +42,6 @@ export default function Header({ compact = false }: { compact?: boolean }) {
   useEffect(() => {
     glowColorRef.current = glowColor;
   }, [glowColor]);
-
-  const toggleDesktopHeaderLayout = () => {
-    setIsCenteredDesktopHeader((current) => {
-      const next = !current;
-      window.localStorage.setItem("desktop-header-layout", next ? "centered" : "flush");
-      return next;
-    });
-  };
 
   const handleLogoClick = (e: React.MouseEvent) => {
     // Bail if we're not on home or if an animation is already in flight
@@ -123,10 +110,6 @@ export default function Header({ compact = false }: { compact?: boolean }) {
               <button className="flex h-7 w-7 items-center justify-center rounded-full border border-rule text-text-main hover:border-accent hover:text-accent" onClick={toggleDarkMode}>
                 {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
               </button>
-              <button className="flex h-7 items-center gap-1.5 rounded-full border border-rule px-2.5 text-[10px] font-medium uppercase tracking-[0.1em] transition-colors hover:border-accent hover:text-accent" onClick={toggleDesktopHeaderLayout}>
-                <AlignCenter className="h-3.5 w-3.5" />
-                <span>Center</span>
-              </button>
               <button className="flex items-center cursor-pointer gap-1.5 rounded-full border border-rule px-2.5 h-7 text-text-main hover:border-accent hover:text-accent" onClick={() => setIsSearchOverlayOpen(true)}>
                 <Search className="h-3.5 w-3.5 shrink-0" />
                 <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.1em]">Search</span>
@@ -189,7 +172,7 @@ export default function Header({ compact = false }: { compact?: boolean }) {
                 }`} 
               />
               
-              {!isSucking && !isCenteredDesktopHeader && (
+              {!isSucking && (
                 <div key={`animated-${animationKey}`} className="absolute inset-x-0 bottom-0 h-px overflow-visible pointer-events-none animate-[svgContainerFade_2s_forwards] text-rule-strong">
                   <svg className="absolute left-0 bottom-0 w-full h-px overflow-visible">
                     <path
@@ -215,20 +198,18 @@ export default function Header({ compact = false }: { compact?: boolean }) {
                   src={logoSrc} 
                   alt="The Polytechnic" 
                   fill 
-                  className={`object-contain ${isCenteredDesktopHeader ? 'object-center' : 'object-left'}`} 
+                  className="object-contain object-left"
                   priority 
                 />
               </Link>
 
-              {!isCenteredDesktopHeader && (
-                <nav className="font-meta relative mr-4 flex flex-wrap items-center justify-end gap-x-7 gap-y-1.5 pb-0">
-                  {primaryNavItems.map((item) => (
-                    <Link key={item.label} href={item.href} className="relative py-0.5 text-[16px] font-semibold uppercase tracking-[0.08em] text-text-main hover:text-accent transition-colors">
-                      {item.label}
-                    </Link>
-                  ))}
-                </nav>
-              )}
+              <nav className="font-meta relative mr-4 flex flex-wrap items-center justify-end gap-x-7 gap-y-1.5 pb-0">
+                {primaryNavItems.map((item) => (
+                  <Link key={item.label} href={item.href} className="relative py-0.5 text-[16px] font-semibold uppercase tracking-[0.08em] text-text-main hover:text-accent transition-colors">
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
             </div>
           </div>
         )}
