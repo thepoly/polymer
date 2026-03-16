@@ -31,10 +31,14 @@ const mobileNavItems = [
 export default function Header({ compact = false }: { compact?: boolean }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
+  const [animationKey, setAnimationKey] = useState(0);
+  const [isSucking, setIsSucking] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false); // The global lock
   const [isCenteredDesktopHeader, setIsCenteredDesktopHeader] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("desktop-header-layout") === "centered";
   });
+  
   const { isDarkMode, toggleDarkMode } = useTheme();
   const logoSrc = isDarkMode ? "/logo-dark.svg" : "/logo-light.svg";
   const glowColor = isDarkMode ? "white" : "black";
@@ -44,13 +48,6 @@ export default function Header({ compact = false }: { compact?: boolean }) {
     glowColorRef.current = glowColor;
   }, [glowColor]);
 
-  useEffect(() => {
-    document.body.style.overflow = isMobileMenuOpen ? "hidden" : "unset";
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [isMobileMenuOpen]);
-
   const toggleDesktopHeaderLayout = () => {
     setIsCenteredDesktopHeader((current) => {
       const next = !current;
@@ -59,11 +56,29 @@ export default function Header({ compact = false }: { compact?: boolean }) {
     });
   };
 
+  const handleLogoClick = (e: React.MouseEvent) => {
+    // Bail if we're not on home or if an animation is already in flight
+    if (window.location.pathname !== "/" || isAnimating) return;
+
+    e.preventDefault();
+    setIsAnimating(true);
+    setIsSucking(true);
+    
+    // 1. Wait for "suck" to finish (400ms)
+    setTimeout(() => {
+      setIsSucking(false);
+      setAnimationKey(prev => prev + 1);
+      
+      // 2. Wait for the SVG "shoot" to finish (2000ms) 
+      // Total lock time: 2400ms
+      setTimeout(() => {
+        setIsAnimating(false);
+      }, 2000);
+    }, 400); 
+  };
+
   const currentDate = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
+    weekday: "long", month: "long", day: "numeric", year: "numeric",
   });
 
   return (
@@ -76,66 +91,26 @@ export default function Header({ compact = false }: { compact?: boolean }) {
             <span className="text-accent font-semibold">Vol. XCI No. 22</span>
           </div>
         </div>
-
-        <div className="mx-auto flex h-[56px] max-w-[1280px] items-center justify-between gap-3 px-3 sm:h-[64px]">
-          <button
-            onClick={() => setIsMobileMenuOpen((open) => !open)}
-            className="flex h-9 w-9 items-center justify-center text-text-main transition-colors hover:text-accent"
-            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-          >
+        <div className="mx-auto flex h-[56px] max-w-[1280px] items-center justify-between px-3">
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="flex h-9 w-9 items-center justify-center text-text-main">
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
-
-          <Link href="/" className="relative block h-[40px] w-full max-w-[220px] sm:h-[48px] sm:max-w-[260px]">
-            <Image
-              src={logoSrc}
-              alt="The Polytechnic"
-              fill
-              className="object-contain"
-              priority
-            />
+          <Link href="/" onClick={handleLogoClick} className="relative block h-[40px] w-full max-w-[220px]">
+            <Image src={logoSrc} alt="The Polytechnic" fill className="object-contain" priority />
           </Link>
-
-          <button
-            onClick={() => setIsSearchOverlayOpen(true)}
-            className="flex h-9 w-9 items-center justify-center text-text-main transition-colors hover:text-accent"
-            aria-label="Search"
-          >
+          <button onClick={() => setIsSearchOverlayOpen(true)} className="flex h-9 w-9 items-center justify-center text-text-main">
             <Search className="h-4 w-4" />
           </button>
         </div>
-
-        {isMobileMenuOpen && (
-          <div className="fixed inset-x-0 bottom-0 top-[100px] z-[60] overflow-y-auto border-t border-rule-strong bg-bg-main sm:top-[110px]">
-            <div className="mx-auto flex max-w-[1280px] flex-col px-6 pb-8 pt-6">
-              <nav className="flex flex-col">
-                {mobileNavItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className="font-meta flex items-center justify-between border-b border-rule py-4 text-lg font-semibold uppercase tracking-[0.06em] text-text-main transition-colors hover:text-accent"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {item.label}
-                    <ArrowUpRight className="h-4 w-4 text-text-muted" />
-                  </Link>
-                ))}
-              </nav>
-            </div>
-          </div>
-        )}
       </header>
 
       {/* ── DESKTOP HEADER ── */}
       <header className="hidden lg:block">
-        {/* Top bar: secondary nav + date + search */}
         <div className={`${compact ? "fixed" : "relative"} top-0 left-0 right-0 z-50 bg-bg-main/95 backdrop-blur-md`}>
           <div className="font-meta relative mx-auto flex max-w-[1280px] items-center justify-between gap-6 px-4 pt-1.5 pb-0.5 md:px-6 xl:px-[30px]">
             <div className="flex items-center gap-5 text-[11px] font-medium uppercase tracking-[0.1em] text-text-main">
               {secondaryNavItems.map((item) => (
-                <Link key={item.label} href={item.href} className="transition-colors hover:text-accent">
-                  {item.label}
-                </Link>
+                <Link key={item.label} href={item.href} className="transition-colors hover:text-accent">{item.label}</Link>
               ))}
             </div>
 
@@ -145,211 +120,121 @@ export default function Header({ compact = false }: { compact?: boolean }) {
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                className="flex h-7 w-7 items-center justify-center rounded-full border border-rule text-text-main transition-colors hover:border-accent hover:text-accent"
-                onClick={toggleDarkMode}
-                aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-              >
+              <button className="flex h-7 w-7 items-center justify-center rounded-full border border-rule text-text-main hover:border-accent hover:text-accent" onClick={toggleDarkMode}>
                 {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
               </button>
-
-              <button
-                className={`flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[10px] font-medium uppercase tracking-[0.1em] transition-colors ${
-                  isCenteredDesktopHeader
-                    ? "border-accent text-accent"
-                    : "border-rule text-text-main hover:border-accent hover:text-accent"
-                }`}
-                onClick={toggleDesktopHeaderLayout}
-                aria-label={isCenteredDesktopHeader ? "Switch to flush header layout" : "Switch to centered header layout"}
-              >
+              <button className="flex h-7 items-center gap-1.5 rounded-full border border-rule px-2.5 text-[10px] font-medium uppercase tracking-[0.1em] transition-colors hover:border-accent hover:text-accent" onClick={toggleDesktopHeaderLayout}>
                 <AlignCenter className="h-3.5 w-3.5" />
                 <span>Center</span>
               </button>
-
-              <button
-                className="flex items-center cursor-pointer gap-1.5 rounded-full border border-rule px-2.5 h-7 text-text-main transition-colors hover:border-accent hover:text-accent"
-                onClick={() => setIsSearchOverlayOpen(true)}
-                aria-label="Search"
-              >
+              <button className="flex items-center cursor-pointer gap-1.5 rounded-full border border-rule px-2.5 h-7 text-text-main hover:border-accent hover:text-accent" onClick={() => setIsSearchOverlayOpen(true)}>
                 <Search className="h-3.5 w-3.5 shrink-0" />
-                <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.1em]">
-                  Search
-                </span>
+                <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.1em]">Search</span>
               </button>
             </div>
           </div>
         </div>
 
-        {compact && <div className="h-[38px]" />}
-
         {!compact && (
-          <>
-            {isCenteredDesktopHeader ? (
-              <>
-                <div className="mx-auto flex max-w-[1280px] flex-col items-center px-4 pt-7 pb-5 md:px-6 xl:px-[30px]">
-                  <Link href="/" className="relative block h-[80px] w-[520px] max-w-full">
-                    <Image
-                      src={logoSrc}
-                      alt="The Polytechnic"
-                      fill
-                      className="object-contain"
-                      priority
+          <div className="mx-auto max-w-[1280px] px-4 pt-6 md:px-6 xl:px-[30px]">
+            <style dangerouslySetInnerHTML={{__html: `
+              @keyframes terryWrapDraw {
+                0% { stroke-dashoffset: 620; }
+                35% { stroke-dashoffset: 0; }
+                40% { stroke-dashoffset: 0; }
+                75% { stroke-dashoffset: -620; }
+                100% { stroke-dashoffset: -620; }
+              }
+              @keyframes terryShootDraw {
+                0% { stroke-dashoffset: 100; }
+                35% { stroke-dashoffset: 100; }
+                95% { stroke-dashoffset: 0; }
+                100% { stroke-dashoffset: 0; }
+              }
+              @keyframes terrySuck {
+                from { transform: scaleX(1); opacity: 1; }
+                to { transform: scaleX(0); opacity: 1; }
+              }
+              @keyframes svgContainerFade {
+                0%, 95% { opacity: 1; visibility: visible; }
+                100% { opacity: 0; visibility: hidden; }
+              }
+              @keyframes staticLineFade {
+                0%, 95% { opacity: 0; }
+                100% { opacity: 1; }
+              }
+              .animate-terry-wrap {
+                stroke-dasharray: 620;
+                stroke-dashoffset: 620;
+                animation: terryWrapDraw 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+              }
+              .animate-terry-shoot {
+                stroke-dasharray: 100;
+                stroke-dashoffset: 100;
+                animation: terryShootDraw 2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+              }
+              .animate-terry-suck {
+                animation: terrySuck 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+                transform-origin: 440px 0.5px;
+              }
+            `}} />
+
+            <div className="relative flex items-end justify-between gap-8 pb-1.5">
+              <div 
+                key={`static-${animationKey}`} 
+                className={`absolute -left-1 right-0 bottom-0 h-px bg-rule-strong ${
+                  isSucking 
+                    ? "animate-terry-suck" 
+                    : "opacity-0 animate-[staticLineFade_2s_forwards]"
+                }`} 
+              />
+              
+              {!isSucking && !isCenteredDesktopHeader && (
+                <div key={`animated-${animationKey}`} className="absolute inset-x-0 bottom-0 h-px overflow-visible pointer-events-none animate-[svgContainerFade_2s_forwards] text-rule-strong">
+                  <svg className="absolute left-0 bottom-0 w-full h-px overflow-visible">
+                    <path
+                      d="M 436 0.5 V -89.5 H -4 V 0.5"
+                      className="animate-terry-wrap"
+                      stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="square"
                     />
-                  </Link>
-                </div>
-
-                <div className="mx-auto max-w-[1280px] px-4 md:px-6 xl:px-[30px]">
-                  <div className="relative">
-                    <div className="absolute inset-x-0 bottom-0 h-px bg-rule-strong" />
-                    <nav
-                      className="font-meta relative flex flex-wrap items-center justify-center gap-x-10 py-2"
-                      ref={(nav) => {
-                        if (!nav) return;
-                        const glow = nav.querySelector("[data-glow-bottom]") as HTMLElement;
-                        if (!glow) return;
-
-                        let active = false;
-
-                        const links = nav.querySelectorAll("a");
-                        links.forEach((link) => {
-                          link.addEventListener("mouseenter", () => {
-                            const navRect = nav.getBoundingClientRect();
-                            const linkRect = link.getBoundingClientRect();
-                            const center = linkRect.left + linkRect.width / 2 - navRect.left;
-                            const width = linkRect.width + 60;
-
-                            const c = glowColorRef.current;
-                            const bg = `radial-gradient(ellipse at center, ${c} 0%, transparent 70%)`;
-
-                            if (!active) {
-                              glow.style.transition = "none";
-                              glow.style.background = bg;
-                              glow.style.left = `${center}px`;
-                              glow.style.width = "0px";
-                              glow.style.opacity = "1";
-                              void glow.offsetHeight;
-                              glow.style.transition = "left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease";
-                              glow.style.left = `${center - width / 2}px`;
-                              glow.style.width = `${width}px`;
-                              active = true;
-                            } else {
-                              glow.style.background = bg;
-                              glow.style.left = `${center - width / 2}px`;
-                              glow.style.width = `${width}px`;
-                              glow.style.opacity = "1";
-                            }
-                          });
-                        });
-
-                        nav.addEventListener("mouseleave", () => {
-                          active = false;
-                          glow.style.opacity = "0";
-                        });
-                      }}
-                    >
-                      <span
-                        data-glow-bottom
-                        className="pointer-events-none absolute bottom-0 translate-y-1/2 h-px"
-                        style={{ background: `radial-gradient(ellipse at center, ${glowColor} 0%, transparent 70%)`, opacity: 0, width: 0, transition: "left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease" }}
-                      />
-                      {primaryNavItems.map((item) => (
-                        <Link
-                          key={item.label}
-                          href={item.href}
-                          className="relative py-0.5 text-[13px] font-semibold uppercase tracking-[0.12em] text-text-main"
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </nav>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="mx-auto max-w-[1280px] px-4 pt-6 md:px-6 xl:px-[30px]">
-                <div className="relative flex items-end justify-between gap-8 pb-1.5">
-                  <div className="absolute inset-x-0 bottom-0 h-px bg-rule-strong" />
-                  <Link href="/" className="relative -top-2 block h-[70px] w-[432px] max-w-full shrink-0">
-                    <Image
-                      src={logoSrc}
-                      alt="The Polytechnic"
-                      fill
-                      className="object-contain object-left"
-                      priority
+                    <line
+                      x1="-4" y1="0.5" x2="100%" y2="0.5"
+                      pathLength="100"
+                      className="animate-terry-shoot"
+                      stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="square"
                     />
-                  </Link>
-
-                  <nav
-                    className="font-meta relative mr-4 flex flex-wrap items-center justify-end gap-x-7 gap-y-1.5 pb-0"
-                    ref={(nav) => {
-                      if (!nav) return;
-                      const glow = nav.querySelector("[data-glow-bottom]") as HTMLElement;
-                      if (!glow) return;
-
-                      let active = false;
-
-                      const links = nav.querySelectorAll("a");
-                      links.forEach((link) => {
-                        link.addEventListener("mouseenter", () => {
-                          const navRect = nav.getBoundingClientRect();
-                          const linkRect = link.getBoundingClientRect();
-                          const center = linkRect.left + linkRect.width / 2 - navRect.left;
-                          const width = linkRect.width + 60;
-
-                          const c = glowColorRef.current;
-                          const bg = `radial-gradient(ellipse at center, ${c} 0%, transparent 70%)`;
-
-                          if (!active) {
-                            glow.style.transition = "none";
-                            glow.style.background = bg;
-                            glow.style.left = `${center}px`;
-                            glow.style.width = "0px";
-                            glow.style.opacity = "1";
-                            void glow.offsetHeight;
-                            glow.style.transition = "left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease";
-                            glow.style.left = `${center - width / 2}px`;
-                            glow.style.width = `${width}px`;
-                            active = true;
-                          } else {
-                            glow.style.background = bg;
-                            glow.style.left = `${center - width / 2}px`;
-                            glow.style.width = `${width}px`;
-                            glow.style.opacity = "1";
-                          }
-                        });
-                      });
-
-                      nav.addEventListener("mouseleave", () => {
-                        active = false;
-                        glow.style.opacity = "0";
-                      });
-                    }}
-                  >
-                    <span
-                      data-glow-bottom
-                      className="pointer-events-none absolute bottom-0 translate-y-1/2 h-px"
-                      style={{ background: `radial-gradient(ellipse at center, ${glowColor} 0%, transparent 70%)`, opacity: 0, width: 0, transition: "left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease" }}
-                    />
-                    {primaryNavItems.map((item) => (
-                      <Link
-                        key={item.label}
-                        href={item.href}
-                        className="relative py-0.5 text-[16px] font-semibold uppercase tracking-[0.08em] text-text-main"
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
-                  </nav>
+                  </svg>
                 </div>
-              </div>
-            )}
-          </>
+              )}
+
+              <Link 
+                href="/" onClick={handleLogoClick} 
+                className={`relative -top-2 block h-[70px] w-[432px] max-w-full shrink-0 ${isAnimating ? 'cursor-default' : 'cursor-pointer'}`}
+              >
+                <Image 
+                  src={logoSrc} 
+                  alt="The Polytechnic" 
+                  fill 
+                  className={`object-contain ${isCenteredDesktopHeader ? 'object-center' : 'object-left'}`} 
+                  priority 
+                />
+              </Link>
+
+              {!isCenteredDesktopHeader && (
+                <nav className="font-meta relative mr-4 flex flex-wrap items-center justify-end gap-x-7 gap-y-1.5 pb-0">
+                  {primaryNavItems.map((item) => (
+                    <Link key={item.label} href={item.href} className="relative py-0.5 text-[16px] font-semibold uppercase tracking-[0.08em] text-text-main hover:text-accent transition-colors">
+                      {item.label}
+                    </Link>
+                  ))}
+                </nav>
+              )}
+            </div>
+          </div>
         )}
       </header>
 
-      {isSearchOverlayOpen && (
-        <SearchOverlay onClose={() => setIsSearchOverlayOpen(false)} />
-      )}
+      {isSearchOverlayOpen && <SearchOverlay onClose={() => setIsSearchOverlayOpen(false)} />}
     </>
   );
 }
