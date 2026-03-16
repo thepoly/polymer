@@ -9,7 +9,7 @@ import { Byline } from "@/components/FrontPage/Byline";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import { useTheme } from "@/components/ThemeProvider";
 
-const OVERLAY_TRANSITION_MS = 300;
+const OVERLAY_TRANSITION_MS = 420;
 
 export default function SearchOverlay({ onClose }: { onClose: () => void }) {
   const { isDarkMode } = useTheme();
@@ -19,6 +19,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
   const [searched, setSearched] = useState(false);
   const [hasSearchedOnce, setHasSearchedOnce] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -41,7 +42,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
     measure.textContent = query.slice(0, pos);
     const textWidth = measure.offsetWidth;
     if (query.length > 0) {
-      cursor.style.left = `${12 + textWidth + 4}px`;
+      cursor.style.left = `${12 + textWidth + 2}px`;
     } else {
       cursor.style.left = `${12}px`;
     }
@@ -55,6 +56,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
   const handleClose = useCallback(() => {
     if (closingRef.current) return;
     closingRef.current = true;
+    setIsClosing(true);
     setIsVisible(false);
     closeTimerRef.current = setTimeout(onClose, OVERLAY_TRANSITION_MS);
   }, [onClose]);
@@ -177,10 +179,11 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
       `}</style>
 
       <div
-        className="mx-auto max-w-[1280px] px-4 pb-16 pt-6 transition-[opacity,transform] duration-300 ease-out md:px-6 xl:px-[30px]"
+        className="mx-auto max-w-[1280px] px-4 pb-16 pt-6 transition-[opacity,transform] ease-out md:px-6 xl:px-[30px]"
         style={{
           opacity: isVisible ? 1 : 0,
-          transform: isVisible ? "translateY(0)" : "translateY(8px)",
+          transform: isVisible ? "translateY(0)" : isClosing ? "translateY(0)" : "translateY(8px)",
+          transitionDuration: `${OVERLAY_TRANSITION_MS}ms`,
         }}
       >
         {/* X button */}
@@ -213,7 +216,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
           {stage >= 1 && stage < 3 && (
             <div className="absolute inset-0 z-10 flex items-center py-2 pl-3 pr-36 font-display text-xl md:text-3xl font-bold pointer-events-none">
               <span
-                className="inline-block overflow-hidden whitespace-nowrap text-text-muted/60"
+                className={`inline-block overflow-hidden whitespace-nowrap ${isDarkMode ? "text-white/85" : "text-text-muted/60"}`}
                 style={{ animation: "typeSearch 0.5s steps(9) forwards", width: 0 }}
               >
                 Search...
@@ -228,7 +231,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
             onChange={(e) => setQuery(e.target.value)}
             onSelect={() => updateCursor()}
             placeholder={stage >= 3 ? "Search..." : ""}
-            className="search-caret w-full bg-transparent py-2 pl-3 pr-36 font-display text-xl md:text-3xl font-bold text-text-main placeholder:text-text-muted/60 outline-none"
+            className="search-caret w-full bg-transparent py-2 pl-3 pr-36 font-display text-xl md:text-3xl font-bold text-text-main placeholder:text-text-muted/60 dark:placeholder:text-white/85 outline-none"
             style={{ pointerEvents: stage < 3 ? "none" : undefined }}
           />
 
@@ -247,9 +250,9 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
               style={{
                 left: 12,
                 top: "50%",
-                transform: "translateY(-60%)",
+                transform: "translateY(-48%)",
                 width: 1,
-                height: "1.7em",
+                height: "1.35em",
                 background: "var(--foreground)",
                 animation: "caretPulse 1.1s step-end infinite",
               }}

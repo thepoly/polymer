@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Menu, Search, X } from "lucide-react";
+import { AlignCenter, ArrowUpRight, Menu, Moon, Search, Sun, X } from "lucide-react";
 import SearchOverlay from "@/components/SearchOverlay";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -31,7 +31,11 @@ const mobileNavItems = [
 export default function Header({ compact = false }: { compact?: boolean }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
-  const { isDarkMode } = useTheme();
+  const [isCenteredDesktopHeader, setIsCenteredDesktopHeader] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("desktop-header-layout") === "centered";
+  });
+  const { isDarkMode, toggleDarkMode } = useTheme();
   const logoSrc = isDarkMode ? "/logo-dark.svg" : "/logo-light.svg";
   const glowColor = isDarkMode ? "white" : "black";
   const glowColorRef = useRef(glowColor);
@@ -46,6 +50,14 @@ export default function Header({ compact = false }: { compact?: boolean }) {
       document.body.style.overflow = "unset";
     };
   }, [isMobileMenuOpen]);
+
+  const toggleDesktopHeaderLayout = () => {
+    setIsCenteredDesktopHeader((current) => {
+      const next = !current;
+      window.localStorage.setItem("desktop-header-layout", next ? "centered" : "flush");
+      return next;
+    });
+  };
 
   const currentDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -134,16 +146,39 @@ export default function Header({ compact = false }: { compact?: boolean }) {
               <span className="text-accent font-semibold">Vol. XCI No. 22</span>
             </div>
 
-            <button
-              className="flex items-center cursor-pointer gap-1.5"
-              onClick={() => setIsSearchOverlayOpen(true)}
-              aria-label="Search"
-            >
-              <Search className="h-3.5 w-3.5 shrink-0 text-text-main" />
-              <span className="whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.1em] text-text-main">
-                Search
-              </span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                className="flex h-7 w-7 items-center justify-center rounded-full border border-rule text-text-main transition-colors hover:border-accent hover:text-accent"
+                onClick={toggleDarkMode}
+                aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+              >
+                {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              </button>
+
+              <button
+                className={`flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[10px] font-medium uppercase tracking-[0.1em] transition-colors ${
+                  isCenteredDesktopHeader
+                    ? "border-accent text-accent"
+                    : "border-rule text-text-main hover:border-accent hover:text-accent"
+                }`}
+                onClick={toggleDesktopHeaderLayout}
+                aria-label={isCenteredDesktopHeader ? "Switch to flush header layout" : "Switch to centered header layout"}
+              >
+                <AlignCenter className="h-3.5 w-3.5" />
+                <span>Center</span>
+              </button>
+
+              <button
+                className="flex items-center cursor-pointer gap-1.5 rounded-full border border-rule px-2.5 h-7 text-text-main transition-colors hover:border-accent hover:text-accent"
+                onClick={() => setIsSearchOverlayOpen(true)}
+                aria-label="Search"
+              >
+                <Search className="h-3.5 w-3.5 shrink-0" />
+                <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.1em]">
+                  Search
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -151,86 +186,165 @@ export default function Header({ compact = false }: { compact?: boolean }) {
 
         {!compact && (
           <>
-            {/* Logo + tagline */}
-            <div className="mx-auto flex max-w-[1280px] flex-col items-center px-4 pt-7 pb-5 md:px-6 xl:px-[30px]">
-              <Link href="/" className="relative block h-[80px] w-[520px] max-w-full">
-                <Image
-                  src={logoSrc}
-                  alt="The Polytechnic"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </Link>
-            </div>
+            {isCenteredDesktopHeader ? (
+              <>
+                <div className="mx-auto flex max-w-[1280px] flex-col items-center px-4 pt-7 pb-5 md:px-6 xl:px-[30px]">
+                  <Link href="/" className="relative block h-[80px] w-[520px] max-w-full">
+                    <Image
+                      src={logoSrc}
+                      alt="The Polytechnic"
+                      fill
+                      className="object-contain"
+                      priority
+                    />
+                  </Link>
+                </div>
 
-            {/* Primary nav with thin black border lines that fade at edges */}
-            <div className="mx-auto max-w-[1280px] px-4 md:px-6 xl:px-[30px]">
-              <div className="relative">
-                <div className="absolute inset-x-0 bottom-0 h-[1.5px] bg-rule-strong" />
-                <nav
-                  className="font-meta relative flex flex-wrap items-center justify-center gap-x-10 py-2"
-                  ref={(nav) => {
-                    if (!nav) return;
-                    const glow = nav.querySelector("[data-glow-bottom]") as HTMLElement;
-                    if (!glow) return;
+                <div className="mx-auto max-w-[1280px] px-4 md:px-6 xl:px-[30px]">
+                  <div className="relative">
+                    <div className="absolute inset-x-0 bottom-0 h-px bg-rule-strong" />
+                    <nav
+                      className="font-meta relative flex flex-wrap items-center justify-center gap-x-10 py-2"
+                      ref={(nav) => {
+                        if (!nav) return;
+                        const glow = nav.querySelector("[data-glow-bottom]") as HTMLElement;
+                        if (!glow) return;
 
-                    let active = false;
+                        let active = false;
 
-                    const links = nav.querySelectorAll("a");
-                    links.forEach((link) => {
-                      link.addEventListener("mouseenter", () => {
-                        const navRect = nav.getBoundingClientRect();
-                        const linkRect = link.getBoundingClientRect();
-                        const center = linkRect.left + linkRect.width / 2 - navRect.left;
-                        const width = linkRect.width + 60;
+                        const links = nav.querySelectorAll("a");
+                        links.forEach((link) => {
+                          link.addEventListener("mouseenter", () => {
+                            const navRect = nav.getBoundingClientRect();
+                            const linkRect = link.getBoundingClientRect();
+                            const center = linkRect.left + linkRect.width / 2 - navRect.left;
+                            const width = linkRect.width + 60;
 
-                        const c = glowColorRef.current;
-                        const bg = `radial-gradient(ellipse at center, ${c} 0%, transparent 70%)`;
+                            const c = glowColorRef.current;
+                            const bg = `radial-gradient(ellipse at center, ${c} 0%, transparent 70%)`;
 
-                        if (!active) {
-                          glow.style.transition = "none";
-                          glow.style.background = bg;
-                          glow.style.left = `${center}px`;
-                          glow.style.width = "0px";
-                          glow.style.opacity = "1";
-                          void glow.offsetHeight;
-                          glow.style.transition = "left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease";
-                          glow.style.left = `${center - width / 2}px`;
-                          glow.style.width = `${width}px`;
-                          active = true;
-                        } else {
-                          glow.style.background = bg;
-                          glow.style.left = `${center - width / 2}px`;
-                          glow.style.width = `${width}px`;
-                          glow.style.opacity = "1";
-                        }
-                      });
-                    });
+                            if (!active) {
+                              glow.style.transition = "none";
+                              glow.style.background = bg;
+                              glow.style.left = `${center}px`;
+                              glow.style.width = "0px";
+                              glow.style.opacity = "1";
+                              void glow.offsetHeight;
+                              glow.style.transition = "left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease";
+                              glow.style.left = `${center - width / 2}px`;
+                              glow.style.width = `${width}px`;
+                              active = true;
+                            } else {
+                              glow.style.background = bg;
+                              glow.style.left = `${center - width / 2}px`;
+                              glow.style.width = `${width}px`;
+                              glow.style.opacity = "1";
+                            }
+                          });
+                        });
 
-                    nav.addEventListener("mouseleave", () => {
-                      active = false;
-                      glow.style.opacity = "0";
-                    });
-                  }}
-                >
-                  <span
-                    data-glow-bottom
-                    className="pointer-events-none absolute bottom-0 translate-y-1/2 h-px"
-                    style={{ background: `radial-gradient(ellipse at center, ${glowColor} 0%, transparent 70%)`, opacity: 0, width: 0, transition: "left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease" }}
-                  />
-                  {primaryNavItems.map((item) => (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className="relative py-0.5 text-[13px] font-semibold uppercase tracking-[0.12em] text-text-main"
+                        nav.addEventListener("mouseleave", () => {
+                          active = false;
+                          glow.style.opacity = "0";
+                        });
+                      }}
                     >
-                      {item.label}
-                    </Link>
-                  ))}
-                </nav>
+                      <span
+                        data-glow-bottom
+                        className="pointer-events-none absolute bottom-0 translate-y-1/2 h-px"
+                        style={{ background: `radial-gradient(ellipse at center, ${glowColor} 0%, transparent 70%)`, opacity: 0, width: 0, transition: "left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease" }}
+                      />
+                      {primaryNavItems.map((item) => (
+                        <Link
+                          key={item.label}
+                          href={item.href}
+                          className="relative py-0.5 text-[13px] font-semibold uppercase tracking-[0.12em] text-text-main"
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </nav>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="mx-auto max-w-[1280px] px-4 pt-6 md:px-6 xl:px-[30px]">
+                <div className="relative flex items-end justify-between gap-8 pb-1.5">
+                  <div className="absolute inset-x-0 bottom-0 h-px bg-rule-strong" />
+                  <Link href="/" className="relative -top-2 block h-[70px] w-[432px] max-w-full shrink-0">
+                    <Image
+                      src={logoSrc}
+                      alt="The Polytechnic"
+                      fill
+                      className="object-contain object-left"
+                      priority
+                    />
+                  </Link>
+
+                  <nav
+                    className="font-meta relative mr-4 flex flex-wrap items-center justify-end gap-x-7 gap-y-1.5 pb-0"
+                    ref={(nav) => {
+                      if (!nav) return;
+                      const glow = nav.querySelector("[data-glow-bottom]") as HTMLElement;
+                      if (!glow) return;
+
+                      let active = false;
+
+                      const links = nav.querySelectorAll("a");
+                      links.forEach((link) => {
+                        link.addEventListener("mouseenter", () => {
+                          const navRect = nav.getBoundingClientRect();
+                          const linkRect = link.getBoundingClientRect();
+                          const center = linkRect.left + linkRect.width / 2 - navRect.left;
+                          const width = linkRect.width + 60;
+
+                          const c = glowColorRef.current;
+                          const bg = `radial-gradient(ellipse at center, ${c} 0%, transparent 70%)`;
+
+                          if (!active) {
+                            glow.style.transition = "none";
+                            glow.style.background = bg;
+                            glow.style.left = `${center}px`;
+                            glow.style.width = "0px";
+                            glow.style.opacity = "1";
+                            void glow.offsetHeight;
+                            glow.style.transition = "left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease";
+                            glow.style.left = `${center - width / 2}px`;
+                            glow.style.width = `${width}px`;
+                            active = true;
+                          } else {
+                            glow.style.background = bg;
+                            glow.style.left = `${center - width / 2}px`;
+                            glow.style.width = `${width}px`;
+                            glow.style.opacity = "1";
+                          }
+                        });
+                      });
+
+                      nav.addEventListener("mouseleave", () => {
+                        active = false;
+                        glow.style.opacity = "0";
+                      });
+                    }}
+                  >
+                    <span
+                      data-glow-bottom
+                      className="pointer-events-none absolute bottom-0 translate-y-1/2 h-px"
+                      style={{ background: `radial-gradient(ellipse at center, ${glowColor} 0%, transparent 70%)`, opacity: 0, width: 0, transition: "left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease" }}
+                    />
+                    {primaryNavItems.map((item) => (
+                      <Link
+                        key={item.label}
+                        href={item.href}
+                        className="relative py-0.5 text-[16px] font-semibold uppercase tracking-[0.08em] text-text-main"
+                      >
+                        {item.label}
+                      </Link>
+                    ))}
+                  </nav>
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </header>

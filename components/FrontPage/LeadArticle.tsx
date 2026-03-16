@@ -33,7 +33,7 @@ export const LeadArticle = ({
                     {article.excerpt}
                 </p>
             )}
-            <Byline author={article.author} date={article.date} />
+            <Byline author={article.author} date={article.date} split />
         </div>
         {article.image && (
             <div className="relative mt-4 w-full overflow-hidden">

@@ -50,6 +50,6 @@ export const ArticleCard = ({
         {article.excerpt}
       </p>
     )}
-    <Byline author={article.author} date={article.date} split />
+    <Byline author={article.author} date={article.date} />
   </Link>
 );

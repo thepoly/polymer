@@ -59,7 +59,7 @@ export default function SearchInput({ defaultValue }: { defaultValue?: string })
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search..."
-          className="w-full bg-transparent py-2 pl-3 pr-36 font-display text-xl md:text-3xl font-bold text-text-main placeholder:text-text-muted/30 outline-none"
+          className="w-full bg-transparent py-2 pl-3 pr-36 font-display text-xl md:text-3xl font-bold text-text-main placeholder:text-text-muted/30 dark:placeholder:text-white/85 outline-none"
         />
         <Image
           src="/logo.svg"

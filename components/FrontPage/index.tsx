@@ -127,7 +127,7 @@ function SectionBlock({
   const textColumns = chunkIntoColumns(textOnlyBlocks, 2);
 
   return (
-    <section className="border-t-2 border-rule-strong pt-5">
+    <section className="border-t border-rule-strong pt-5">
       <div className="mb-5">
         <Link href={`/${sectionSlug}`} className="group inline-block">
           <h2 className="font-meta text-[13px] font-bold uppercase tracking-[0.08em] text-accent transition-colors group-hover:text-accent/70 md:text-[14px]">
@@ -226,7 +226,7 @@ function SectionBlock({
         )}
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 flex justify-end">
         <Link
           href={`/${sectionSlug}`}
           className="font-meta text-[11px] font-bold uppercase tracking-[0.06em] text-accent transition-colors hover:text-accent/70"
@@ -283,7 +283,7 @@ export default function FrontPage({
           </div>
         </section>
 
-        <div className="mt-4 flex flex-col gap-10">
+        <div className="mt-4 flex flex-col gap-3">
           <SectionBlock title="News" articles={sections.news} />
           <SectionBlock title="Features" articles={sections.features} />
           <SectionBlock title="Opinion" articles={sections.opinion} />
