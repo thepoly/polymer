@@ -33,6 +33,21 @@ jobs:
         working-directory: /var/www/polymer
         run: pnpm install --no-frozen-lockfile
 
+      # --- ONE-TIME CLEANUP: remove dev migration row that causes interactive prompt ---
+      - name: Clean dev migration row
+        env:
+          DATABASE_URL: "${{ secrets.DATABASE_URL }}"
+        run: |
+          psql "$DATABASE_URL" -c "DELETE FROM payload_migrations WHERE batch = -1;" || true
+          # Self-remove: strip this step from the workflow so it doesn't run again
+          sed -i '/# --- ONE-TIME CLEANUP/,/sed -i.*ONE-TIME CLEANUP/d' .github/workflows/deploy.yml
+          cd ${{ github.workspace }}
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/deploy.yml
+          git diff --cached --quiet || git commit -m "chore: remove one-time dev migration cleanup step"
+          git push origin main || true
+
       - name: Run Migrations
         working-directory: /var/www/polymer
         env:
