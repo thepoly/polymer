@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { X } from "lucide-react";
 import { Article } from "@/components/FrontPage/types";
 import { Byline } from "@/components/FrontPage/Byline";
+import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -293,7 +293,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
             <div className="flex flex-col divide-y divide-rule">
               {articles.map((article) => (
                 <div key={article.id} className="py-4 first:pt-0">
-                  <Link
+                  <TransitionLink
                     href={getArticleUrl(article)}
                     onClick={handleClose}
                     className="flex flex-col group cursor-pointer"
@@ -305,7 +305,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
                       {article.excerpt}
                     </p>
                     <Byline author={article.author} date={article.date} />
-                  </Link>
+                  </TransitionLink>
                 </div>
               ))}
             </div>

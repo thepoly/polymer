@@ -240,3 +240,33 @@ h6.font-display.italic {
 .search-icon-animate {
   animation: search-icon-slide 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
+
+/* ── Theme circle-reveal transition ── */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+  clip-path: circle(0px at var(--theme-x, 50%) var(--theme-y, 50%));
+  animation: theme-circle-reveal 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes theme-circle-reveal {
+  to {
+    clip-path: circle(var(--theme-r, 150vmax) at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+}
+
+/* Hard edge: disable smooth color transitions while the circle wipe is active */
+.theme-switching,
+.theme-switching * {
+  transition: none !important;
+}

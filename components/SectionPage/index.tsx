@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import Link from "next/link";
+import TransitionLink from "@/components/TransitionLink";
 import { Article } from "@/components/FrontPage/types";
 import { Byline } from "@/components/FrontPage/Byline";
 import { getArticleUrl } from "@/utils/getArticleUrl";
@@ -15,7 +15,9 @@ const tc = (article: Article, size: string) =>
         ? "font-normal italic"
         : article.section === "sports"
           ? "italic tracking-[0.015em]"
-          : ""
+          : article.section === "opinion"
+            ? "font-light"
+            : ""
   }`;
 
 /**
@@ -49,7 +51,7 @@ function ColumnCard({
   size?: string;
 }) {
   return (
-    <Link href={getArticleUrl(article)} className="group block">
+    <TransitionLink href={getArticleUrl(article)} className="group block">
       <h3 className={tc(article, size)}>{article.title}</h3>
       {article.excerpt && (
         <p className="font-meta mt-1.5 text-[13px] leading-[1.42] text-text-muted line-clamp-3">
@@ -70,7 +72,7 @@ function ColumnCard({
           </div>
         </div>
       )}
-    </Link>
+    </TransitionLink>
   );
 }
 

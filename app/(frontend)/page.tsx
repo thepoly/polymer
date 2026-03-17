@@ -90,6 +90,7 @@ const formatArticle = (article: PayloadArticle | number | null | undefined): Com
     date: dateString,
     image: (article.featuredImage as Media)?.url || null,
     section: article.section,
+    kicker: article.kicker || null,
     publishedDate: article.publishedDate,
     createdAt: article.createdAt,
   };

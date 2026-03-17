@@ -1,10 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Article } from "@/components/FrontPage/types";
 import { Byline } from "@/components/FrontPage/Byline";
+import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 
 export default function SearchInput({ defaultValue }: { defaultValue?: string }) {
@@ -85,7 +85,7 @@ export default function SearchInput({ defaultValue }: { defaultValue?: string })
           <div className="flex flex-col divide-y divide-rule">
             {articles.map((article) => (
               <div key={article.id} className="py-4 first:pt-0">
-                <Link href={getArticleUrl(article)} className="flex flex-col group cursor-pointer">
+                <TransitionLink href={getArticleUrl(article)} className="flex flex-col group cursor-pointer">
                   <h3 className={`font-display font-bold text-text-main mb-1 text-[16px] md:text-[18px] leading-tight group-hover:text-accent transition-colors ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
                     {article.title}
                   </h3>
@@ -93,7 +93,7 @@ export default function SearchInput({ defaultValue }: { defaultValue?: string })
                     {article.excerpt}
                   </p>
                   <Byline author={article.author} date={article.date} />
-                </Link>
+                </TransitionLink>
               </div>
             ))}
           </div>
