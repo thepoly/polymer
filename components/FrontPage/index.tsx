@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LeadArticle } from "./LeadArticle";
 import { ArticleCard } from "./ArticleCard";
 import { ArticleListItem } from "./ArticleListItem";
+import { DynamicSectionHeader } from "./DynamicSectionHeader";
 import { Article } from "./types";
 
 interface FrontPageProps {
@@ -69,9 +70,15 @@ const arrangeSectionStories = (articles: Article[]): ArrangedSectionStories => {
   }
 
   const featureStory = withImages[0];
-  const additionalImageStories = withImages.slice(1, 1 + MAX_ADDITIONAL_IMAGES);
   const supportingStories = withoutImages.slice(0, MAX_SUPPORTING);
-  const listStories = withoutImages.slice(MAX_SUPPORTING);
+  const remainingList = withoutImages.slice(MAX_SUPPORTING);
+  const remainingImages = withImages.slice(1, 1 + MAX_ADDITIONAL_IMAGES);
+  // Only show additional image cards when there are no list stories;
+  // otherwise fold them into the list
+  const additionalImageStories = remainingList.length > 0 ? [] : remainingImages;
+  const listStories = remainingList.length > 0
+    ? [...remainingImages, ...remainingList]
+    : remainingList;
 
   return {
     featureStory,
@@ -113,15 +120,7 @@ function SectionBlock({
   const textColumns = chunkIntoColumns(textOnlyBlocks, 2);
 
   return (
-    <section className="border-t border-rule-strong pt-5">
-      <div className="mb-5">
-        <Link href={`/${sectionSlug}`} className="group inline-block">
-          <h2 className="font-meta text-[13px] font-bold uppercase tracking-[0.08em] text-accent transition-colors group-hover:text-accent/70 md:text-[14px]">
-            {title}
-          </h2>
-        </Link>
-      </div>
-
+    <section data-section={sectionSlug}>
       <div
         className={`grid gap-6 ${
           hasBlocks && listStories.length > 0
@@ -242,43 +241,53 @@ export default function FrontPage({
   return (
     <div className="w-full bg-bg-main text-text-main transition-colors duration-300">
       <div className="mx-auto max-w-[1280px] px-4 pb-14 md:px-6 xl:px-[30px]">
-        <section className="py-6 md:py-7">
-          <div
-            className={`grid gap-7 ${
-              leadIsCompact
-                ? "lg:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]"
-                : "lg:grid-cols-[minmax(0,0.97fr)_minmax(0,1.03fr)]"
-            }`}
-          >
-            <div>
-              <LeadArticle article={topStories.lead} compact={leadIsCompact} />
+        <div
+          className={`pt-6 md:pt-7 grid gap-7 ${
+            leadIsCompact
+              ? "lg:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]"
+              : "lg:grid-cols-[minmax(0,0.97fr)_minmax(0,1.03fr)]"
+          }`}
+        >
+          <div>
+            <LeadArticle article={topStories.lead} compact={leadIsCompact} />
+          </div>
+          <div className="grid grid-cols-2 gap-4 items-start">
+            <div className="flex flex-col gap-5">
+              {heroStories.left.map((article) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                />
+              ))}
             </div>
-            <div className="grid grid-cols-2 gap-4 items-start">
-              <div className="flex flex-col gap-5">
-                {heroStories.left.map((article) => (
-                  <ArticleCard
-                    key={article.id}
-                    article={article}
-                  />
-                ))}
-              </div>
-              <div className="flex flex-col gap-5">
-                {heroStories.right.map((article) => (
-                  <ArticleCard
-                    key={article.id}
-                    article={article}
-                  />
-                ))}
-              </div>
+            <div className="flex flex-col gap-5">
+              {heroStories.right.map((article) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                />
+              ))}
             </div>
           </div>
-        </section>
+        </div>
 
-        <div className="mt-4 flex flex-col gap-3">
-          <SectionBlock title="News" articles={sections.news} />
-          <SectionBlock title="Features" articles={sections.features} />
-          <SectionBlock title="Opinion" articles={sections.opinion} />
-          <SectionBlock title="Sports" articles={sections.sports} />
+        <div className="mt-6 flex flex-col gap-6">
+          <div>
+            <DynamicSectionHeader title="News" href="/news" />
+            <SectionBlock title="News" articles={sections.news} />
+          </div>
+          <div>
+            <DynamicSectionHeader title="Features" href="/features" />
+            <SectionBlock title="Features" articles={sections.features} />
+          </div>
+          <div>
+            <DynamicSectionHeader title="Opinion" href="/opinion" />
+            <SectionBlock title="Opinion" articles={sections.opinion} />
+          </div>
+          <div>
+            <DynamicSectionHeader title="Sports" href="/sports" />
+            <SectionBlock title="Sports" articles={sections.sports} />
+          </div>
         </div>
       </div>
     </div>
