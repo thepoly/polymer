@@ -110,6 +110,32 @@ export default async function ArticlePage({ params }: Args) {
   const image = article.featuredImage as Media | null;
   const articleUrl = getArticleUrl(article);
 
+  const sectionTitle = article.section.charAt(0).toUpperCase() + article.section.slice(1);
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: '/',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: sectionTitle,
+        item: `/${article.section}`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: article.title,
+      },
+    ],
+  };
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
@@ -139,6 +165,10 @@ export default async function ArticlePage({ params }: Args) {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
