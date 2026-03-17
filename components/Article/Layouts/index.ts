@@ -1,5 +1,6 @@
 import { StandardLayout } from './Standard';
 import { PhotofeatureLayout } from './Photofeature';
+import { OpinionLayout } from './Opinion';
 import { Article } from '@/payload-types';
 import { LexicalNode } from '@/components/Article/RichTextParser';
 
@@ -10,7 +11,7 @@ export const ArticleLayouts = {
   news: StandardLayout,
   sports: StandardLayout,
   features: StandardLayout,
-  opinion: StandardLayout,
+  opinion: OpinionLayout,
 };
 
 export type ArticleLayoutType = keyof typeof ArticleLayouts;

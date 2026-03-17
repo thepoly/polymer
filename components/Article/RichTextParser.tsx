@@ -2,7 +2,7 @@ import React, { Fragment } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import escapeHTML from 'escape-html';
-import { Media } from '@/payload-types';
+import { Media, User } from '@/payload-types';
 
 export type LexicalNode = {
   type: string;
@@ -76,11 +76,14 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
           case 'upload':
             const media = node.value as Media;
             if (!media || !media.url) return null;
+            const fields = node.fields as Record<string, unknown> | undefined;
+            const caption = fields?.caption as string | undefined;
+            const creditUser = (fields?.credit as User | null | undefined) || (media.photographer && typeof media.photographer === 'object' ? media.photographer as User : null);
             return (
               <div
                 key={index}
                 id={`media-${media.id}`}
-                className="my-10 flex flex-col gap-2 scroll-mt-20 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen md:left-auto md:right-auto md:ml-0 md:mr-0 md:w-full md:max-w-[680px]"
+                className="my-10 flex flex-col gap-1 scroll-mt-20 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen md:left-auto md:right-auto md:ml-0 md:mr-0 md:w-full md:max-w-[680px]"
               >
                 <div className="relative aspect-[3/2] w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden transition-colors">
                   <Image
@@ -90,10 +93,17 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
                     className="object-cover"
                   />
                 </div>
-                {media.alt && (
-                  <span className="font-meta text-[12px] text-text-muted italic transition-colors">
-                    {media.alt}
-                  </span>
+                {(caption || creditUser || media.alt) && (
+                  <div className="flex justify-between items-baseline gap-4 mt-1">
+                    <span className="font-meta text-[12px] text-text-muted italic transition-colors">
+                      {caption || media.alt}
+                    </span>
+                    {creditUser && typeof creditUser === 'object' && (
+                      <span className="font-meta text-[11px] text-text-muted transition-colors shrink-0">
+                        Photo Credit: <Link href={`/staff/${creditUser.slug || creditUser.id}`} className="hover:text-accent transition-colors">{creditUser.firstName} {creditUser.lastName}</Link>
+                      </span>
+                    )}
+                  </div>
                 )}
               </div>
             );

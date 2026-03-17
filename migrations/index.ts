@@ -4,6 +4,7 @@ import * as migration_20260217_015404_add_photographer_to_media from './20260217
 import * as migration_20260310_211734_add_user_slug from './20260310_211734_add_user_slug';
 import * as migration_20260316_144021_add_layout_top4 from './20260316_144021_add_layout_top4';
 import * as migration_20260316_145613_remove_editorial_section from './20260316_145613_remove_editorial_section';
+import * as migration_20260317_200000_add_opinion_type_and_caption from './20260317_200000_add_opinion_type_and_caption';
 
 export const migrations = [
   {
@@ -35,5 +36,10 @@ export const migrations = [
     up: migration_20260316_145613_remove_editorial_section.up,
     down: migration_20260316_145613_remove_editorial_section.down,
     name: '20260316_145613_remove_editorial_section'
+  },
+  {
+    up: migration_20260317_200000_add_opinion_type_and_caption.up,
+    down: migration_20260317_200000_add_opinion_type_and_caption.down,
+    name: '20260317_200000_add_opinion_type_and_caption',
   },
 ];

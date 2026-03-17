@@ -4,6 +4,7 @@ import { getPayload } from 'payload';
 import config from '@/payload.config';
 import { getArticleLayout, ArticleLayouts } from '@/components/Article/Layouts';
 import { LexicalNode } from '@/components/Article/RichTextParser';
+import ArticleScrollBar from '@/components/ArticleScrollBar';
 import { getArticleUrl } from '@/utils/getArticleUrl';
 import type { Metadata } from 'next';
 import type { Article, Media, User } from '@/payload-types';
@@ -179,6 +180,7 @@ export default async function ArticlePage({ params }: Args) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
+      <ArticleScrollBar title={article.title} section={article.section} />
       <LayoutComponent article={article} content={cleanContent} />
     </>
   );

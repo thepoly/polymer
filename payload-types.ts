@@ -214,9 +214,26 @@ export interface Article {
   kicker?: string | null;
   subdeck?: string | null;
   section: 'news' | 'sports' | 'features' | 'opinion';
+  opinionType?:
+    | (
+        | 'opinion'
+        | 'column'
+        | 'staff-editorial'
+        | 'editorial-notebook'
+        | 'endorsement'
+        | 'top-hat'
+        | 'candidate-profile'
+        | 'letter-to-the-editor'
+        | 'polys-recommendations'
+        | 'editors-notebook'
+        | 'derby'
+        | 'other'
+      )
+    | null;
   authors: (number | User)[];
   publishedDate?: string | null;
   featuredImage?: (number | null) | Media;
+  imageCaption?: string | null;
   content?: {
     root: {
       type: string;
@@ -408,9 +425,11 @@ export interface ArticlesSelect<T extends boolean = true> {
   kicker?: T;
   subdeck?: T;
   section?: T;
+  opinionType?: T;
   authors?: T;
   publishedDate?: T;
   featuredImage?: T;
+  imageCaption?: T;
   content?: T;
   slug?: T;
   updatedAt?: T;
