@@ -26,11 +26,13 @@ interface HeroColumns {
 interface ArrangedSectionStories {
   featureStory: Article | null;
   supportingStories: Article[];
+  additionalImageStories: Article[];
   listStories: Article[];
 }
 
 const MAX_SECTION_STORIES = 9;
-const MAX_LIST_STORIES = 6;
+const MAX_SUPPORTING = 3;
+const MAX_ADDITIONAL_IMAGES = 3;
 
 const arrangeHeroStories = (articles: Article[]): HeroColumns => {
   const heroStories = articles.slice(0, 4);
@@ -41,18 +43,6 @@ const arrangeHeroStories = (articles: Article[]): HeroColumns => {
   };
 };
 
-const prioritizeImageStory = (articles: Article[]) => {
-  const imageIndex = articles.findIndex((article) => article.image);
-
-  if (imageIndex <= 0) return articles;
-
-  return [
-    articles[imageIndex],
-    ...articles.slice(0, imageIndex),
-    ...articles.slice(imageIndex + 1),
-  ];
-};
-
 const arrangeSectionStories = (articles: Article[]): ArrangedSectionStories => {
   const sectionStories = articles.slice(0, MAX_SECTION_STORIES);
 
@@ -60,37 +50,33 @@ const arrangeSectionStories = (articles: Article[]): ArrangedSectionStories => {
     return {
       featureStory: null,
       supportingStories: [],
+      additionalImageStories: [],
       listStories: [],
     };
   }
 
-  const leftRows = Math.min(2, Math.max(0, Math.floor((sectionStories.length - 1) / 3)));
-  const listTarget = Math.min(MAX_LIST_STORIES, leftRows * 3);
-  const hasImage = sectionStories.some((article) => article.image);
-  const blockCapacity =
-    leftRows === 0
-      ? sectionStories.length
-      : hasImage
-        ? 4
-        : leftRows === 1
-          ? 2
-          : 3;
-  const blockCount =
-    leftRows === 0
-      ? sectionStories.length
-      : Math.min(blockCapacity, Math.max(0, sectionStories.length - listTarget));
-  const prioritizedStories =
-    blockCount > 0 && hasImage ? prioritizeImageStory(sectionStories) : sectionStories;
-  const blockStories = prioritizedStories.slice(0, blockCount);
-  const listStories = prioritizedStories.slice(blockCount, blockCount + listTarget);
-  const useFeatureStory = Boolean(
-    blockStories[0] &&
-      (blockStories[0].image || leftRows !== 1 || blockStories.length === 1),
-  );
+  const withImages = sectionStories.filter((a) => a.image);
+  const withoutImages = sectionStories.filter((a) => !a.image);
+
+  if (withImages.length === 0) {
+    // No images — all text layout
+    return {
+      featureStory: null,
+      supportingStories: sectionStories,
+      additionalImageStories: [],
+      listStories: [],
+    };
+  }
+
+  const featureStory = withImages[0];
+  const additionalImageStories = withImages.slice(1, 1 + MAX_ADDITIONAL_IMAGES);
+  const supportingStories = withoutImages.slice(0, MAX_SUPPORTING);
+  const listStories = withoutImages.slice(MAX_SUPPORTING);
 
   return {
-    featureStory: useFeatureStory ? blockStories[0] : null,
-    supportingStories: useFeatureStory ? blockStories.slice(1) : blockStories,
+    featureStory,
+    supportingStories,
+    additionalImageStories,
     listStories,
   };
 };
@@ -116,7 +102,7 @@ function SectionBlock({
 }) {
   if (articles.length === 0) return null;
 
-  const { featureStory, supportingStories, listStories } = arrangeSectionStories(articles);
+  const { featureStory, supportingStories, additionalImageStories, listStories } = arrangeSectionStories(articles);
   const sectionSlug = title.toLowerCase();
   const hasBlocks = Boolean(featureStory) || supportingStories.length > 0;
   const hasVisualLead = Boolean(featureStory?.image);
@@ -146,55 +132,62 @@ function SectionBlock({
         {hasBlocks ? (
           <div>
             {featureStory && hasVisualLead && supportingStories.length > 0 ? (
-              <div
-                className={`grid gap-5 lg:items-start ${
-                  hasListRail
-                    ? "lg:w-[88%] lg:grid-cols-[minmax(0,0.82fr)_minmax(0,0.68fr)]"
-                    : "lg:grid-cols-[minmax(0,0.92fr)_minmax(0,0.78fr)]"
-                }`}
-              >
-                <ArticleCard
-                  article={featureStory}
-                  showImage
-                  imageAspectClassName="aspect-[5/4]"
-                  titleClassName="text-[18px] md:text-[22px]"
-                  excerptClassName="mt-2.5 line-clamp-4 text-[13px] leading-[1.45]"
-                />
-
-                <div className="flex flex-col gap-5">
-                  {supportingStories.slice(0, 3).map((article) => (
-                    <ArticleCard
-                      key={article.id}
-                      article={article}
-                      showImage={false}
-                      titleClassName="text-[16px] md:text-[18px]"
-                      excerptClassName="mt-2 line-clamp-3 text-[13px] leading-[1.4]"
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-5">
-                {hasVisualLead && featureStory ? (
+              <>
+                <div
+                  className={`grid gap-5 lg:items-start ${
+                    hasListRail
+                      ? "lg:grid-cols-[minmax(0,0.82fr)_minmax(0,0.68fr)]"
+                      : "lg:grid-cols-[minmax(0,0.92fr)_minmax(0,0.78fr)]"
+                  }`}
+                >
                   <ArticleCard
                     article={featureStory}
                     showImage
-                    imageAspectClassName="aspect-[5/4]"
-                    titleClassName="text-[18px] md:text-[22px]"
+                    imageAspectClassName="aspect-[3/2]"
                     excerptClassName="mt-2.5 line-clamp-4 text-[13px] leading-[1.45]"
                   />
+
+                  <div className="flex flex-col gap-5">
+                    {supportingStories.slice(0, 3).map((article) => (
+                      <ArticleCard
+                        key={article.id}
+                        article={article}
+                        showImage={false}
+                      />
+                    ))}
+                  </div>
+                </div>
+                {additionalImageStories.length > 0 && (
+                  <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                    {additionalImageStories.map((article) => (
+                      <ArticleCard
+                        key={article.id}
+                        article={article}
+                        showImage
+                        imageAspectClassName="aspect-[3/2]"
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="space-y-5">
+                {hasVisualLead && featureStory ? (
+                  <div className="lg:max-w-[60%]">
+                    <ArticleCard
+                      article={featureStory}
+                      showImage
+                      imageAspectClassName="aspect-[3/2]"
+                    />
+                  </div>
                 ) : null}
 
                 {textOnlyBlocks.length > 0 && (
                   <div
                     className={
                       textColumns.length > 1
-                        ? hasListRail
-                          ? "grid gap-5 sm:grid-cols-2 lg:w-[86%]"
-                          : "grid gap-5 sm:grid-cols-2"
-                        : hasListRail
-                          ? "lg:w-[42%]"
-                          : "w-full"
+                        ? "grid gap-5 sm:grid-cols-2"
+                        : ""
                     }
                   >
                     {textColumns.map((column, columnIndex) => (
@@ -204,8 +197,6 @@ function SectionBlock({
                             key={article.id}
                             article={article}
                             showImage={false}
-                            titleClassName="text-[16px] md:text-[18px]"
-                            excerptClassName="mt-2 line-clamp-3 text-[13px] leading-[1.4]"
                           />
                         ))}
                       </div>

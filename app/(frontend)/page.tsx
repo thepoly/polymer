@@ -35,9 +35,9 @@ const prioritizeUnusedSectionArticles = (
   count: number,
 ) => {
   const usedSet = new Set(usedIDs.map(String));
-  return articles
-    .filter((article) => !usedSet.has(String(article.id)))
-    .slice(0, count);
+  const unused = articles.filter((article) => !usedSet.has(String(article.id)));
+  const used = articles.filter((article) => usedSet.has(String(article.id)));
+  return [...unused, ...used].slice(0, count);
 };
 
 const formatArticle = (article: PayloadArticle | number | null | undefined): ComponentArticle | null => {

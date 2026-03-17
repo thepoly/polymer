@@ -103,22 +103,22 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
     return () => clearTimeout(timer);
   }, [query, fetchResults]);
 
-  // Animation sequence
+  // Animation sequence — starts immediately, no dead time
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
-    // 0→1: after overlay fades in, start typing
+    // 0→1: start typing immediately
     timers.push(setTimeout(() => {
       if (!closingRef.current) setStage(1);
-    }, 350));
+    }, 0));
     // 1→2: after typing finishes (~500ms), line + logo + X
     timers.push(setTimeout(() => {
       if (!closingRef.current) setStage(2);
-    }, 900));
+    }, 550));
     // 2→3: after line extends (~300ms), cursor blinks and input is live
     timers.push(setTimeout(() => {
       if (closingRef.current) return;
       setStage(3);
-    }, 1250));
+    }, 900));
 
     return () => timers.forEach(clearTimeout);
   }, []);
