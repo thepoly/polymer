@@ -8,6 +8,7 @@ import { Article as PayloadArticle } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
 import { formatArticle } from '@/utils/formatArticle';
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 
 export const revalidate = 60;
 
@@ -16,6 +17,31 @@ type Args = {
     section: string;
   }>;
 };
+
+const sectionDescriptions: Record<string, string> = {
+  news: 'The latest news from Rensselaer Polytechnic Institute and the Troy community.',
+  sports: 'Coverage of RPI varsity athletics, club sports, and intramurals.',
+  features: 'In-depth features, profiles, and longform journalism from the RPI community.',
+  opinion: 'Editorials, columns, and letters to the editor from The Polytechnic.',
+};
+
+export async function generateMetadata({ params }: Args): Promise<Metadata> {
+  const { section } = await params;
+  const title = section.charAt(0).toUpperCase() + section.slice(1);
+  const description = sectionDescriptions[section] || `${title} articles from The Polytechnic.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/${section}` },
+    openGraph: {
+      title: `${title} — The Polytechnic`,
+      description,
+      type: 'website',
+      url: `/${section}`,
+    },
+  };
+}
 
 export default async function SectionPage({ params }: Args) {
   const { section } = await params;

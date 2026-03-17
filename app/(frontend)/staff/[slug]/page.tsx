@@ -1,39 +1,65 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
 import { notFound } from 'next/navigation';
 import { StaffProfile } from '@/components/StaffProfile';
 import { getArticleUrl } from '@/utils/getArticleUrl';
+import type { Media } from '@/payload-types';
 
 export const revalidate = 60;
 
-export default async function StaffProfilePage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+type StaffArgs = { params: Promise<{ slug: string }> };
+
+async function getUser(slug: string) {
   const payload = await getPayload({ config });
-  
-  let user;
-  try {
-    const isNumeric = /^\d+$/.test(slug);
-    const result = await payload.find({
-      collection: 'users',
-      where: {
-        or: [
-          { slug: { equals: slug } },
-          ...(isNumeric ? [{ id: { equals: parseInt(slug, 10) } }] : []),
-        ],
-      },
-      depth: 2,
-      limit: 1,
-    });
-    user = result.docs[0];
-  } catch (error) {
-    console.error('Error fetching user by slug/id:', error);
-    notFound();
-  }
+  const isNumeric = /^\d+$/.test(slug);
+  const result = await payload.find({
+    collection: 'users',
+    where: {
+      or: [
+        { slug: { equals: slug } },
+        ...(isNumeric ? [{ id: { equals: parseInt(slug, 10) } }] : []),
+      ],
+    },
+    depth: 2,
+    limit: 1,
+  });
+  return result.docs[0];
+}
+
+export async function generateMetadata({ params }: StaffArgs): Promise<Metadata> {
+  const { slug } = await params;
+  const user = await getUser(slug);
+  if (!user) return {};
+
+  const name = `${user.firstName} ${user.lastName}`;
+  const headshot = user.headshot as Media | null;
+
+  return {
+    title: name,
+    description: `${name} — staff member at The Polytechnic, RPI's student newspaper.`,
+    alternates: { canonical: `/staff/${user.slug || user.id}` },
+    openGraph: {
+      title: `${name} — The Polytechnic`,
+      type: 'profile',
+      url: `/staff/${user.slug || user.id}`,
+      ...(headshot?.url && {
+        images: [{ url: headshot.url, alt: name }],
+      }),
+    },
+  };
+}
+
+export default async function StaffProfilePage({ params }: StaffArgs) {
+  const { slug } = await params;
+  const user = await getUser(slug);
 
   if (!user) {
     notFound();
   }
+
+  const payload = await getPayload({ config });
 
   // Fetch articles written by this user
   const articles = await payload.find({

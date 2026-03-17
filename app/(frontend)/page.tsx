@@ -1,4 +1,5 @@
 export const revalidate = 0;
+import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FrontPage from "@/components/FrontPage";
@@ -6,6 +7,16 @@ import { getPayload } from "payload";
 import config from "@/payload.config";
 import { Article as PayloadArticle, Media } from "@/payload-types";
 import { Article as ComponentArticle } from "@/components/FrontPage/types";
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+  openGraph: {
+    title: 'The Polytechnic',
+    description: "The Polytechnic is Rensselaer Polytechnic Institute's independent student newspaper, serving the RPI community since 1885.",
+    type: 'website',
+    url: '/',
+  },
+};
 
 const dedupeArticles = (articles: (ComponentArticle | null | undefined)[], excludeIDs: Array<string | number> = []) => {
   const seen = new Set<string>(excludeIDs.map(String));
@@ -177,8 +188,21 @@ export default async function Home() {
   const featuresArticles = prioritizeUnusedSectionArticles(featuresArticlesRaw, homepageUsedIds, 9);
   const sportsArticles = prioritizeUnusedSectionArticles(sportsArticlesRaw, homepageUsedIds, 9);
   const opinionArticles = prioritizeUnusedSectionArticles(opinionArticlesRaw, homepageUsedIds, 9);
+  const organizationJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'The Polytechnic',
+    url: '/',
+    description: "Rensselaer Polytechnic Institute's independent student newspaper, serving the RPI community since 1885.",
+    foundingDate: '1885',
+  };
+
   return (
     <main className="min-h-screen bg-bg-main transition-colors duration-300">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
       <Header />
       <FrontPage
         topStories={topStories}

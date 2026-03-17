@@ -36,8 +36,20 @@ const bebasNeuePro = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "The Polytechnic",
-  description: "Serving Rensselaer Since 1885",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://poly.rpi.edu'),
+  title: {
+    default: "The Polytechnic",
+    template: "%s | The Polytechnic",
+  },
+  description: "The Polytechnic is Rensselaer Polytechnic Institute's independent student newspaper, serving the RPI community since 1885.",
+  openGraph: {
+    type: 'website',
+    siteName: 'The Polytechnic',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
   icons: {
     icon: [
       {

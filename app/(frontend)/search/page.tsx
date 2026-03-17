@@ -1,6 +1,14 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import Header from '@/components/Header';
 import SearchInput from '@/components/SearchInput';
+
+export const metadata: Metadata = {
+  title: 'Search',
+  description: 'Search articles from The Polytechnic, RPI\'s student newspaper.',
+  robots: { index: false },
+  alternates: { canonical: '/search' },
+};
 
 type Args = {
   searchParams: Promise<{ q?: string }>;

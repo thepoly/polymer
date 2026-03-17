@@ -1,4 +1,5 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
 import Image from 'next/image';
@@ -6,6 +7,18 @@ import Link from 'next/link';
 import { Media } from '@/payload-types';
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: 'Staff',
+  description: 'Meet the editorial staff of The Polytechnic, RPI\'s independent student newspaper.',
+  alternates: { canonical: '/staff' },
+  openGraph: {
+    title: 'Staff — The Polytechnic',
+    description: 'Meet the editorial staff of The Polytechnic.',
+    type: 'website',
+    url: '/staff',
+  },
+};
 
 export default async function StaffPage() {
   const payload = await getPayload({ config });
