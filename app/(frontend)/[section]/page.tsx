@@ -122,7 +122,7 @@ export default async function SectionPage({ params }: Args) {
     <main className={`min-h-screen bg-bg-main section-${section} transition-colors duration-300`}>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c') }}
       />
       <Header />
       <HorizontalSection title={sectionTitle} articles={formattedArticles} />

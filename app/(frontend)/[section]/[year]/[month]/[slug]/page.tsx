@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { cache } from 'react';
 import { notFound } from 'next/navigation';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
@@ -19,7 +19,7 @@ type Args = {
   }>;
 };
 
-async function getArticle(slug: string) {
+const getArticle = cache(async (slug: string) => {
   const payload = await getPayload({ config });
   const result = await payload.find({
     collection: 'articles',
@@ -28,6 +28,10 @@ async function getArticle(slug: string) {
     depth: 2,
   });
   return result.docs[0] as Article | undefined;
+});
+
+function safeJsonLd(data: Record<string, unknown>): string {
+  return JSON.stringify(data).replace(/</g, '\\u003c');
 }
 
 export async function generateMetadata({ params }: Args): Promise<Metadata> {
@@ -169,11 +173,11 @@ export default async function ArticlePage({ params }: Args) {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbJsonLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
       <LayoutComponent article={article} content={cleanContent} />
     </>

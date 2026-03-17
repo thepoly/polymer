@@ -201,7 +201,7 @@ export default async function Home() {
     <main className="min-h-screen bg-bg-main transition-colors duration-300">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }}
       />
       <Header />
       <FrontPage

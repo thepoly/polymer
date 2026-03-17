@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { cache } from 'react';
 import type { Metadata } from 'next';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
@@ -11,7 +11,7 @@ export const revalidate = 60;
 
 type StaffArgs = { params: Promise<{ slug: string }> };
 
-async function getUser(slug: string) {
+const getUser = cache(async function getUser(slug: string) {
   const payload = await getPayload({ config });
   const isNumeric = /^\d+$/.test(slug);
   const result = await payload.find({
@@ -26,7 +26,7 @@ async function getUser(slug: string) {
     limit: 1,
   });
   return result.docs[0];
-}
+});
 
 export async function generateMetadata({ params }: StaffArgs): Promise<Metadata> {
   const { slug } = await params;
