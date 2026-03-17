@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Article, Media, User } from '@/payload-types';
 
 type Props = {
@@ -13,24 +14,24 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
     <div className="flex flex-col gap-6 mb-8">
       <div className="flex flex-col gap-4 max-w-[680px] w-full mx-auto">
         {article.kicker && (
-            <span className="text-accent font-bold font-serif uppercase text-lg tracking-wider transition-colors">
+            <span className="font-meta text-accent font-[440] italic text-[15px] md:text-[16px] tracking-[0.06em] transition-colors">
                 {article.kicker}
             </span>
         )}
-        <h1 className="font-serif font-bold text-2xl md:text-3xl lg:text-4xl text-text-main leading-[1.1] transition-colors">
+        <h1 className={`font-display font-bold text-[28px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em] transition-colors ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
           {article.title}
         </h1>
         {article.subdeck && (
-            <h2 className="font-serif text-xl md:text-2xl text-text-muted leading-snug transition-colors">
+            <h2 className="font-meta text-xl md:text-2xl font-normal text-text-muted leading-snug transition-colors">
                 {article.subdeck}
             </h2>
         )}
       </div>
 
       {featuredImage?.url && (
-        <div 
+        <div
           id={`media-${featuredImage.id}`}
-          className="relative aspect-[3/2] w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden rounded-sm max-w-4xl mx-auto scroll-mt-20"
+          className="relative aspect-[3/2] w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden max-w-4xl mx-auto scroll-mt-20"
         >
           <Image
             src={featuredImage.url}
@@ -42,7 +43,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between py-4 font-serif text-text-muted text-sm md:text-base max-w-[680px] w-full mx-auto transition-colors">
+      <div className="flex flex-col gap-3 py-4 border-b border-rule-strong max-w-[680px] w-full mx-auto transition-colors">
         <div className="flex items-center gap-3">
             {/* Author Headshots */}
             <div className="flex -space-x-2">
@@ -51,27 +52,29 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                     const headshot = user.headshot as Media | null;
                     if (!headshot?.url) return null;
                     return (
-                        <div key={user.id} className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 border-2 border-bg-main transition-colors">
+                        <Link href={`/staff/${user.slug || user.id}`} key={user.id} className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 border-2 border-bg-main transition-colors hover:border-accent z-10 hover:z-20">
                             <Image
                                 src={headshot.url}
                                 alt={`${user.firstName} ${user.lastName}`}
                                 fill
                                 className="object-cover"
                             />
-                        </div>
+                        </Link>
                     );
                 })}
             </div>
 
             {/* Author Names */}
-            <div className="font-bold text-text-main transition-colors">
-                By {article.authors && article.authors.length > 0 ? (
+            <div className="font-meta text-[14px] md:text-[15px] font-[440] tracking-[0.08em] text-accent transition-colors">
+                {article.authors && article.authors.length > 0 ? (
                     article.authors.map((author, index) => {
                         const user = author as User;
                         return (
                             <React.Fragment key={user.id}>
-                                {index > 0 && index === article.authors!.length - 1 ? ' and ' : index > 0 ? ', ' : ''}
-                                {user.firstName} {user.lastName}
+                                {index > 0 && index === article.authors!.length - 1 ? ' & ' : index > 0 ? ', ' : ''}
+                                <Link href={`/staff/${user.slug || user.id}`} className="hover:text-accent/70 transition-colors">
+                                    {user.firstName} {user.lastName}
+                                </Link>
                             </React.Fragment>
                         );
                     })
@@ -80,7 +83,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                 )}
             </div>
         </div>
-        <div className="mt-2 sm:mt-0">
+        <div className="font-meta text-[11px] font-medium tracking-[0.06em] text-text-muted">
             {article.publishedDate ? new Date(article.publishedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : ''}
         </div>
       </div>

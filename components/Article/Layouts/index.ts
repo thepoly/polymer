@@ -10,7 +10,6 @@ export const ArticleLayouts = {
   news: StandardLayout,
   sports: StandardLayout,
   features: StandardLayout,
-  editorial: StandardLayout,
   opinion: StandardLayout,
 };
 
@@ -32,7 +31,6 @@ export const getArticleLayout = (article: Article): ArticleLayoutType => {
   if (article.section === 'news') return 'news';
   if (article.section === 'sports') return 'sports';
   if (article.section === 'features') return 'features';
-  if (article.section === 'editorial') return 'editorial';
   if (article.section === 'opinion') return 'opinion';
 
   // Default fallback

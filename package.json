@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:smoke": "playwright test tests/smoke.spec.ts",
     "generate:types": "payload generate:types",
     "postinstall": "node scripts/generate-env.js"
   },
@@ -27,6 +28,7 @@
     "sharp": "^0.34.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/escape-html": "^1.0.4",
     "@types/node": "^20",

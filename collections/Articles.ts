@@ -62,7 +62,6 @@ const Articles: CollectionConfig = {
         { label: 'News', value: 'news' },
         { label: 'Sports', value: 'sports' },
         { label: 'Features', value: 'features' },
-        { label: 'Editorial', value: 'editorial' },
         { label: 'Opinion', value: 'opinion' },
       ],
       required: true,
