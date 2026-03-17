@@ -44,8 +44,10 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const imageUrl = image?.url || undefined;
   const canonicalPath = `/${section}/${year}/${month}/${slug}`;
 
+  const sectionName = section.charAt(0).toUpperCase() + section.slice(1);
+
   return {
-    title: article.title,
+    title: `${sectionName} | ${article.title}`,
     description: article.subdeck || `Read "${article.title}" in The Polytechnic's ${section} section.`,
     authors: authors.map((name) => ({ name })),
     alternates: {
