@@ -30,7 +30,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
 
       {featuredImage?.url && (() => {
         const photographer = featuredImage.photographer && typeof featuredImage.photographer === 'object' ? featuredImage.photographer as User : null;
-        const imageCaption = (article as Record<string, unknown>).imageCaption as string | undefined;
+        const imageCaption = (article as unknown as Record<string, unknown>).imageCaption as string | undefined;
         return (
           <div className="flex flex-col gap-1 max-w-[680px] w-full mx-auto">
             <div

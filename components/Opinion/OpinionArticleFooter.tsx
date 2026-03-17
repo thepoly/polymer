@@ -39,7 +39,7 @@ export const OpinionArticleFooter: React.FC<Props> = async ({ currentArticleId }
         {picks.map((article) => {
           const url = getArticleUrl(article);
           const image = article.featuredImage as Media | null;
-          const opinionType = (article as Record<string, unknown>).opinionType as string | undefined;
+          const opinionType = (article as unknown as Record<string, unknown>).opinionType as string | undefined;
           const label = opinionTypeLabels[opinionType || 'opinion'] || 'Op-Ed';
 
           return (

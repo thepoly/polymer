@@ -10,8 +10,8 @@ type Props = {
 
 export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
   const featuredImage = article.featuredImage as Media | null;
-  const opinionType = (article as Record<string, unknown>).opinionType as string | undefined;
-  const imageCaption = (article as Record<string, unknown>).imageCaption as string | undefined;
+  const opinionType = (article as unknown as Record<string, unknown>).opinionType as string | undefined;
+  const imageCaption = (article as unknown as Record<string, unknown>).imageCaption as string | undefined;
   const typeLabel = opinionTypeLabels[opinionType || 'opinion'] || 'Op-Ed';
 
   return (
