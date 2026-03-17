@@ -33,6 +33,24 @@ jobs:
         working-directory: /var/www/polymer
         run: pnpm install --no-frozen-lockfile
 
+      # --- ONE-TIME CLEANUP: mark existing migrations as applied (remove after first successful deploy) ---
+      - name: Backfill migration history
+        env:
+          DATABASE_URL: "${{ secrets.DATABASE_URL }}"
+        run: |
+          psql "$DATABASE_URL" <<'SQL'
+          DELETE FROM payload_migrations WHERE batch = -1;
+          INSERT INTO payload_migrations (name, batch, updated_at, created_at)
+          VALUES
+            ('20260211_224237_initial_baseline', 1, NOW(), NOW()),
+            ('20260213_223303_remove_copy_workflow', 1, NOW(), NOW()),
+            ('20260217_015404_add_photographer_to_media', 1, NOW(), NOW()),
+            ('20260310_211734_add_user_slug', 1, NOW(), NOW()),
+            ('20260316_144021_add_layout_top4', 1, NOW(), NOW()),
+            ('20260316_145613_remove_editorial_section', 1, NOW(), NOW())
+          ON CONFLICT DO NOTHING;
+          SQL
+
       - name: Run Migrations
         working-directory: /var/www/polymer
         env:
