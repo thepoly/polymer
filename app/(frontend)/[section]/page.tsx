@@ -2,8 +2,8 @@ import React from 'react';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
 import Header from '@/components/Header';
-import { HorizontalSection } from '@/components/FrontPage/HorizontalSection';
 import Footer from '@/components/Footer';
+import SectionPage from '@/components/SectionPage';
 import { Article as PayloadArticle } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
 import { formatArticle } from '@/utils/formatArticle';
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
   };
 }
 
-export default async function SectionPage({ params }: Args) {
+export default async function SectionPageRoute({ params }: Args) {
   const { section } = await params;
   const contentSections = ['news', 'sports', 'features', 'opinion'];
   const placeholderSections = ['about', 'archives', 'checkmate', 'contact', 'submit'];
@@ -72,32 +72,28 @@ export default async function SectionPage({ params }: Args) {
 
   const payload = await getPayload({ config });
 
-  // Fetch articles for this section
   const articlesResponse = await payload.find({
     collection: 'articles',
     where: {
       section: {
-        equals: section as PayloadArticle['section'], 
+        equals: section as PayloadArticle['section'],
       },
       _status: {
         equals: 'published',
-      }
+      },
     },
     sort: '-publishedDate',
-    limit: 10, 
+    limit: 30,
     depth: 2,
   });
 
   const articles = articlesResponse.docs;
 
-  // If no articles, show a placeholder
   if (articles.length === 0) {
     return renderPlaceholder('No articles found in this section yet.');
   }
 
-  // Map to ComponentArticle
   const formattedArticles = articles.map(formatArticle).filter(Boolean) as ComponentArticle[];
-
   const sectionTitle = section.charAt(0).toUpperCase() + section.slice(1);
 
   const breadcrumbJsonLd = {
@@ -125,7 +121,7 @@ export default async function SectionPage({ params }: Args) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c') }}
       />
       <Header />
-      <HorizontalSection title={sectionTitle} articles={formattedArticles} />
+      <SectionPage title={sectionTitle} articles={formattedArticles} />
       <Footer />
     </main>
   );
