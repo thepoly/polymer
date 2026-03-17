@@ -80,7 +80,7 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
               <div
                 key={index}
                 id={`media-${media.id}`}
-                className="my-10 flex flex-col gap-2 scroll-mt-20 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen lg:static lg:ml-0 lg:mr-0 lg:w-full"
+                className="my-10 flex flex-col gap-2 scroll-mt-20 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen md:left-auto md:right-auto md:ml-0 md:mr-0 md:w-full md:max-w-[680px]"
               >
                 <div className="relative aspect-[3/2] w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden transition-colors">
                   <Image

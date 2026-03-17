@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Menu, Moon, Search, Sun, X } from "lucide-react";
 import SearchOverlay from "@/components/SearchOverlay";
 import { useHeaderTransition } from "@/components/HeaderTransitionProvider";
+import { ANIMATED_HEADER_ROUTES } from "@/components/headerAnimationRoutes";
 import { useTheme } from "@/components/ThemeProvider";
 
 const primaryNavItems = [
@@ -263,12 +264,18 @@ function MobileMenuDrawer({
 export default function Header({ compact = false }: { compact?: boolean }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
-  const { animationKey, phase, isAnimating, triggerTransition } = useHeaderTransition();
+  const { animationKey, phase, isAnimating, triggerTransition, suckDurationMs, shootDurationMs } = useHeaderTransition();
   const { isDarkMode, toggleDarkMode } = useTheme();
   const logoSrc = isDarkMode ? "/logo-dark.svg" : "/logo-light.svg";
   const mobileLogoSrc = isDarkMode ? "/logo-dark-mobile.svg" : "/logo-light-mobile.svg";
   const router = useRouter();
   const pathname = usePathname();
+  const currentPath = pathname ?? "";
+  const shouldEnableAnimatedHeaderTransition =
+    phase !== "idle" || ANIMATED_HEADER_ROUTES.has(currentPath);
+  const currentDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long", month: "long", day: "numeric", year: "numeric",
+  });
 
   const prefetchLink = (href: string) => {
     if (!href.startsWith("/")) return;
@@ -287,9 +294,17 @@ export default function Header({ compact = false }: { compact?: boolean }) {
     e.preventDefault();
     setIsMobileMenuOpen(false);
 
+    const currentRoute = pathname ?? window.location.pathname;
+    if (!ANIMATED_HEADER_ROUTES.has(href)) {
+      startTransition(() => {
+        router.push(href);
+      });
+      return;
+    }
+
     triggerTransition({
       href,
-      currentPath: pathname ?? window.location.pathname,
+      currentPath: currentRoute,
       navigate: (nextHref) => {
         startTransition(() => {
           router.push(nextHref);
@@ -299,20 +314,10 @@ export default function Header({ compact = false }: { compact?: boolean }) {
     });
   };
 
-  const currentDate = new Date().toLocaleDateString("en-US", {
-    weekday: "long", month: "long", day: "numeric", year: "numeric",
-  });
-
   return (
     <>
       {/* ── MOBILE HEADER ── */}
       <header className={`${compact ? "sticky top-0" : ""} z-50 bg-bg-main lg:hidden`}>
-        <div className="font-meta px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.12em] text-text-main">
-          <div className="relative mx-auto flex max-w-[1280px] items-center justify-center gap-2.5">
-            <span>{currentDate}</span>
-            <span className="text-accent font-semibold">Vol. XCI No. 22</span>
-          </div>
-        </div>
         <div className="mx-auto flex h-[56px] max-w-[1280px] items-center justify-between px-3">
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="flex h-9 w-9 items-center justify-center text-text-main">
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -416,7 +421,7 @@ export default function Header({ compact = false }: { compact?: boolean }) {
                 to { transform: scaleX(0); opacity: 1; }
               }
               .animate-terry-suck {
-                animation: terrySuck 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+                animation: terrySuck ${suckDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
                 transform-origin: 440px 0.5px;
               }
             `}} />
@@ -424,18 +429,20 @@ export default function Header({ compact = false }: { compact?: boolean }) {
             <div className="relative flex items-end justify-between gap-8 pb-1.5">
               <div
                 className={`absolute -left-1 right-0 bottom-0 h-px bg-rule-strong ${
-                  isAnimating ? "opacity-0" : "opacity-100"
+                  shouldEnableAnimatedHeaderTransition && isAnimating ? "opacity-0" : "opacity-100"
                 }`}
               />
 
               <div 
                 key={`static-${animationKey}`} 
                 className={`absolute -left-1 right-0 bottom-0 h-px bg-rule-strong ${
-                  phase === "sucking" ? "animate-terry-suck" : "opacity-0"
+                  shouldEnableAnimatedHeaderTransition && phase === "sucking"
+                    ? "animate-terry-suck"
+                    : "opacity-0"
                 }`} 
               />
               
-              {phase === "shooting" && (
+              {shouldEnableAnimatedHeaderTransition && phase === "shooting" && (
                 <div key={`animated-${animationKey}`} className="absolute inset-x-0 bottom-0 h-px overflow-visible pointer-events-none text-rule-strong">
                   <svg className="absolute left-0 bottom-0 w-full h-px overflow-visible">
                     <path
@@ -444,7 +451,7 @@ export default function Header({ compact = false }: { compact?: boolean }) {
                       style={{
                         strokeDasharray: 620,
                         strokeDashoffset: 620,
-                        animation: "terryWrapDraw 2s cubic-bezier(0.4, 0, 0.2, 1) forwards",
+                        animation: `terryWrapDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
                       }}
                     />
                     <line
@@ -454,7 +461,7 @@ export default function Header({ compact = false }: { compact?: boolean }) {
                       style={{
                         strokeDasharray: 100,
                         strokeDashoffset: 100,
-                        animation: "terryShootDraw 2s cubic-bezier(0.4, 0, 0.2, 1) forwards",
+                        animation: `terryShootDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
                       }}
                     />
                   </svg>

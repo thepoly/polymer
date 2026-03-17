@@ -5,6 +5,7 @@ import { startTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useHeaderTransition } from "@/components/HeaderTransitionProvider";
+import { ANIMATED_HEADER_ROUTES } from "@/components/headerAnimationRoutes";
 
 type TransitionLinkProps = Omit<ComponentProps<typeof Link>, "href"> & {
   href: string;
@@ -41,6 +42,7 @@ export default function TransitionLink({
     if (
       disableTransition ||
       !isInternalRoute ||
+      !ANIMATED_HEADER_ROUTES.has(href) ||
       event.ctrlKey ||
       event.metaKey ||
       event.shiftKey ||
