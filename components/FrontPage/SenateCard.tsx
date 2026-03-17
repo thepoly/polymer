@@ -6,30 +6,30 @@ import { Byline } from './Byline';
 import { getArticleUrl } from '@/utils/getArticleUrl';
 
 export const SenateCard = ({ article }: { article: Article }) => (
-    <Link href={getArticleUrl(article)} className="flex flex-col md:flex-row gap-6 cursor-pointer group mt-5 border-t border-border-main pt-5 transition-colors">
+    <Link href={getArticleUrl(article)} className="flex flex-col md:flex-row gap-6 cursor-pointer group transition-colors">
         <div className="flex-1 flex flex-col justify-center">
              <div className="mb-2">
-                <span className="text-accent font-bold font-serif uppercase text-xs tracking-wider transition-colors">Student Senate</span>
+                <span className="font-meta text-accent font-[440] italic capitalize text-[11px] md:text-[12px] tracking-[0.04em] transition-colors">Student Senate</span>
             </div>
-            <h3 className="font-serif font-bold text-xl md:text-2xl text-text-main mb-3 leading-tight group-hover:underline decoration-2 underline-offset-2 decoration-text-main transition-colors">
+            <h3 className={`font-display font-bold text-[24px] md:text-[30px] text-text-main mb-3 leading-[1.06] tracking-[-0.018em] group-hover:text-accent transition-colors ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic text-[25px] md:text-[31px]" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
                 {article.title}
             </h3>
-            <p className="font-serif text-text-muted text-[15px] leading-snug mb-3 transition-colors">
+            <p className="font-meta text-text-main text-[13px] font-normal leading-[1.4] mb-3 transition-colors">
                 {article.excerpt}
             </p>
              <Byline author={article.author} date={article.date} />
         </div>
-        <div className="w-full md:w-[350px] shrink-0">
-            <div className="aspect-[16/9] w-full overflow-hidden bg-gray-100 dark:bg-zinc-800 relative transition-colors">
-                {article.image && (
+        {article.image ? (
+            <div className="w-full md:w-[350px] shrink-0">
+                <div className="aspect-[16/9] w-full overflow-hidden bg-gray-100 dark:bg-zinc-800 relative transition-colors">
                     <Image 
                         src={article.image} 
                         alt={article.title} 
                         fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="object-cover"
                     />
-                )}
+                </div>
             </div>
-        </div>
+        ) : null}
     </Link>
 );

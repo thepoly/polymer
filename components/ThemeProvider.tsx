@@ -81,6 +81,14 @@ export default function ThemeProvider({
       document.documentElement.classList.remove("dark");
       document.cookie = "theme=light; path=/; max-age=31536000";
     }
+
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.setAttribute("name", "theme-color");
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute("content", isDarkMode ? "#000000" : "#ffffff");
   }, [isDarkMode]);
 
   const toggleDarkMode = () => setIsDarkMode((prev) => !prev);

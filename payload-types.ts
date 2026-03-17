@@ -128,6 +128,7 @@ export interface User {
   id: number;
   firstName: string;
   lastName: string;
+  slug?: string | null;
   roles?: ('admin' | 'eic' | 'editor' | 'writer')[] | null;
   headshot?: (number | null) | Media;
   /**
@@ -274,6 +275,7 @@ export interface Layout {
   top1?: (number | null) | Article;
   top2?: (number | null) | Article;
   top3?: (number | null) | Article;
+  top4?: (number | null) | Article;
   op1?: (number | null) | Article;
   op2?: (number | null) | Article;
   op3?: (number | null) | Article;
@@ -375,6 +377,7 @@ export interface PayloadMigration {
 export interface UsersSelect<T extends boolean = true> {
   firstName?: T;
   lastName?: T;
+  slug?: T;
   roles?: T;
   headshot?: T;
   oneLiner?: T;
@@ -463,6 +466,7 @@ export interface LayoutSelect<T extends boolean = true> {
   top1?: T;
   top2?: T;
   top3?: T;
+  top4?: T;
   op1?: T;
   op2?: T;
   op3?: T;

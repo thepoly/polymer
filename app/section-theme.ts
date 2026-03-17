@@ -21,11 +21,6 @@ export const sectionThemes: Record<string, SectionTheme> = {
     layout: 'magazine',
     showKicker: true,
   },
-  editorial: {
-    accentColor: 'text-gray-800',
-    layout: 'standard',
-    showKicker: true,
-  },
   opinion: {
     accentColor: 'text-blue-500',
     layout: 'standard',

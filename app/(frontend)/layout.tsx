@@ -1,35 +1,56 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Cinzel, Raleway } from "next/font/google";
+import { Barlow_Condensed, Cinzel } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
+import HeaderTransitionProvider from "@/components/HeaderTransitionProvider";
 import { cookies } from "next/headers";
-// START TEMPORARY OVERLAY IMPORT
-// import AlphaOverlay from "@/components/AlphaOverlay";
-// END TEMPORARY OVERLAY IMPORT
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 const cinzel = Cinzel({
   variable: "--font-cinzel",
   subsets: ["latin"],
 });
 
-const raleway = Raleway({
-  variable: "--font-raleway",
+const barlowCondensed = Barlow_Condensed({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
+  style: ["normal", "italic"],
+  display: "swap",
+});
+
+const bebasNeuePro = localFont({
+  src: [
+    {
+      path: "../../public/fonts/bebas-neue-pro/Bebas Neue Pro Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../public/fonts/bebas-neue-pro/Bebas Neue Pro Bold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  variable: "--font-display-news",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "The Polytechnic",
-  description: "Serving Rensselaer Since 1885",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://poly.rpi.edu'),
+  title: {
+    default: "The Polytechnic",
+    template: "%s | The Polytechnic",
+  },
+  description: "The Polytechnic is Rensselaer Polytechnic Institute's independent student newspaper, serving the RPI community since 1885.",
+  openGraph: {
+    type: 'website',
+    siteName: 'The Polytechnic',
+    locale: 'en_US',
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
   icons: {
     icon: [
       {
@@ -53,20 +74,24 @@ export default async function RootLayout({
 }>) {
   const cookieStore = await cookies();
   const theme = cookieStore.get("theme")?.value;
-  
-  // CHANGED: Now it defaults to false (light) unless the cookie explicitly says "dark"
+
   const isDarkMode = theme === "dark";
 
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""}>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} ${raleway.variable} antialiased`}
+        className={`${cinzel.variable} ${barlowCondensed.variable} ${bebasNeuePro.variable} antialiased`}
       >
-        {/* START TEMPORARY OVERLAY: Remove this component when alpha is over */}
-        {/* <AlphaOverlay /> */}
-        {/* END TEMPORARY OVERLAY */}
         <ThemeProvider initialDarkMode={isDarkMode}>
-          {children}
+          <HeaderTransitionProvider>{children}</HeaderTransitionProvider>
         </ThemeProvider>
       </body>
     </html>

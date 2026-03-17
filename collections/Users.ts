@@ -51,6 +51,29 @@ export const Users: CollectionConfig = {
       ],
     },
     {
+      name: 'slug',
+      type: 'text',
+      unique: true,
+      index: true,
+      admin: {
+        position: 'sidebar',
+      },
+      hooks: {
+        beforeValidate: [
+          ({ data, value }) => {
+            if (value) return value
+            if (data?.firstName && data?.lastName) {
+              return `${data.firstName}-${data.lastName}`
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/(^-|-$)+/g, '')
+            }
+            return value
+          },
+        ],
+      },
+    },
+    {
       name: 'roles',
       type: 'select',
       hasMany: true,

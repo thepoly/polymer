@@ -1,41 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getPayload } from 'payload';
-import config from '@/payload.config';
+import { NextRequest, NextResponse } from "next/server";
+import { getPayload } from "payload";
+import config from "@/payload.config";
+import { formatArticle } from "@/utils/formatArticle";
 
-export async function GET(req: NextRequest) {
-  const q = req.nextUrl.searchParams.get('q')?.trim();
+export async function GET(request: NextRequest) {
+  const q = request.nextUrl.searchParams.get("q")?.trim();
 
-  if (!q || q.length < 2) {
-    return NextResponse.json([]);
+  if (!q) {
+    return NextResponse.json({ articles: [] });
   }
 
   const payload = await getPayload({ config });
 
-  const result = await payload.find({
-    collection: 'articles',
+  const results = await payload.find({
+    collection: "articles",
     where: {
-      title: { like: q },
+      and: [
+        { _status: { equals: "published" } },
+        {
+          or: [
+            { title: { contains: q } },
+            { subdeck: { contains: q } },
+            { kicker: { contains: q } },
+          ],
+        },
+      ],
     },
-    sort: '-publishedDate',
-    limit: 8,
-    depth: 1,
+    sort: "-publishedDate",
+    limit: 20,
+    depth: 2,
   });
 
-  const articles = result.docs.map((article) => {
-    const dateStr = article.publishedDate || article.createdAt;
-    const date = new Date(dateStr);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const slug = article.slug || article.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-');
-    const url = `/${article.section}/${year}/${month}/${slug}`;
+  const articles = results.docs.map(formatArticle).filter(Boolean);
 
-    return {
-      id: article.id,
-      title: article.title,
-      section: article.section,
-      url,
-    };
-  });
-
-  return NextResponse.json(articles);
+  return NextResponse.json({ articles });
 }
