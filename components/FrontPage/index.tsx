@@ -1,10 +1,10 @@
 import React from "react";
-import Link from "next/link";
 import { LeadArticle } from "./LeadArticle";
 import { ArticleCard } from "./ArticleCard";
 import { ArticleListItem } from "./ArticleListItem";
 import { DynamicSectionHeader } from "./DynamicSectionHeader";
 import { Article } from "./types";
+import TransitionLink from "@/components/TransitionLink";
 
 interface FrontPageProps {
   topStories: {
@@ -111,6 +111,12 @@ function SectionBlock({
 
   const { featureStory, supportingStories, additionalImageStories, listStories } = arrangeSectionStories(articles);
   const sectionSlug = title.toLowerCase();
+  const allSectionArticles = [
+    featureStory,
+    ...supportingStories,
+    ...additionalImageStories,
+    ...listStories,
+  ].filter((a): a is Article => Boolean(a));
   const hasBlocks = Boolean(featureStory) || supportingStories.length > 0;
   const hasVisualLead = Boolean(featureStory?.image);
   const hasListRail = listStories.length > 0;
@@ -121,15 +127,30 @@ function SectionBlock({
 
   return (
     <section data-section={sectionSlug}>
+      {/* Mobile: flat list with dividers */}
+      <div className="flex flex-col lg:hidden">
+        {allSectionArticles.map((article, i) => (
+          <div key={article.id} className={i > 0 ? "mt-12" : ""}>
+            <ArticleCard
+              article={article}
+              showImage={Boolean(article.image)}
+              imageAspectClassName="aspect-[3/2]"
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop: rich grid layout */}
       <div
-        className={`grid gap-6 ${
+        data-section-body
+        className={`hidden lg:grid gap-6 ${
           hasBlocks && listStories.length > 0
             ? "lg:grid-cols-[minmax(0,1.7fr)_minmax(280px,1fr)] lg:items-start"
             : ""
         }`}
       >
         {hasBlocks ? (
-          <div>
+          <div data-header-scope="primary">
             {featureStory && hasVisualLead && supportingStories.length > 0 ? (
               <>
                 <div
@@ -217,12 +238,12 @@ function SectionBlock({
       </div>
 
       <div className="mt-4 flex justify-end">
-        <Link
+        <TransitionLink
           href={`/${sectionSlug}`}
           className="font-meta text-[11px] font-bold uppercase tracking-[0.06em] text-accent transition-colors hover:text-accent/70"
         >
           More {title} &rarr;
-        </Link>
+        </TransitionLink>
       </div>
     </section>
   );
@@ -241,14 +262,26 @@ export default function FrontPage({
   return (
     <div className="w-full bg-bg-main text-text-main transition-colors duration-300">
       <div className="mx-auto max-w-[1280px] px-4 pb-14 md:px-6 xl:px-[30px]">
+        {/* Mobile: lead + flat list with dividers */}
+        <div className="pt-6 flex flex-col lg:hidden" data-frontpage-top>
+          <LeadArticle article={topStories.lead} compact={false} />
+          {[...heroStories.left, ...heroStories.right].map((article) => (
+            <div key={article.id} className="mt-20">
+              <ArticleCard article={article} />
+            </div>
+          ))}
+        </div>
+
+        {/* Desktop: two-column hero grid */}
         <div
-          className={`pt-6 md:pt-7 grid gap-7 ${
+          data-frontpage-top
+          className={`hidden pt-6 md:pt-7 lg:grid gap-7 ${
             leadIsCompact
               ? "lg:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]"
               : "lg:grid-cols-[minmax(0,0.97fr)_minmax(0,1.03fr)]"
           }`}
         >
-          <div>
+          <div data-header-scope="primary">
             <LeadArticle article={topStories.lead} compact={leadIsCompact} />
           </div>
           <div className="grid grid-cols-2 gap-4 items-start">
@@ -271,9 +304,9 @@ export default function FrontPage({
           </div>
         </div>
 
-        <div className="mt-6 flex flex-col gap-6">
+        <div className="mt-6 flex flex-col gap-8 lg:gap-6">
           <div>
-            <DynamicSectionHeader title="News" href="/news" />
+            <DynamicSectionHeader title="News" href="/news" mobileOffsetY={1} />
             <SectionBlock title="News" articles={sections.news} />
           </div>
           <div>

@@ -7,6 +7,7 @@ export interface Article {
   date: string | null;
   image: string | null;
   section: string;
+  kicker: string | null;
   publishedDate?: string | null;
   createdAt?: string;
 }

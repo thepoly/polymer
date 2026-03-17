@@ -31,7 +31,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
       {featuredImage?.url && (
         <div
           id={`media-${featuredImage.id}`}
-          className="relative aspect-[3/2] w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden max-w-4xl mx-auto scroll-mt-20"
+          className="relative aspect-[3/2] w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden max-w-4xl mx-auto scroll-mt-20 left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen lg:static lg:ml-auto lg:mr-auto lg:w-full"
         >
           <Image
             src={featuredImage.url}
