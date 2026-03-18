@@ -142,7 +142,7 @@ export default async function Home() {
       limit: 20,
       depth: 2,
     });
-    return res.docs.map(formatArticle).filter(Boolean) as ComponentArticle[];
+    return res.docs.map((a) => formatArticle(a)).filter(Boolean) as ComponentArticle[];
   };
 
   const [newsArticlesRaw, featuresArticlesRaw, sportsArticlesRaw, opinionArticlesRaw] = await Promise.all([

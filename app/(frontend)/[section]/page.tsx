@@ -93,7 +93,7 @@ export default async function SectionPageRoute({ params }: Args) {
     return renderPlaceholder('No articles found in this section yet.');
   }
 
-  const formattedArticles = articles.map(formatArticle).filter(Boolean) as ComponentArticle[];
+  const formattedArticles = articles.map((a) => formatArticle(a)).filter(Boolean) as ComponentArticle[];
   const sectionTitle = section.charAt(0).toUpperCase() + section.slice(1);
 
   const breadcrumbJsonLd = {
