@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import { formatArticle } from "@/utils/formatArticle";
@@ -7,37 +7,38 @@ import { Article as PayloadArticle } from "@/payload-types";
 import { Pool } from "pg";
 
 let legacyPool: Pool | null = null;
-
 function getLegacyPool(): Pool {
-  if (!legacyPool) {
-    legacyPool = new Pool({ connectionString: process.env.LEGACY_DATABASE_URI });
-  }
+  if (!legacyPool) legacyPool = new Pool({ connectionString: process.env.LEGACY_DATABASE_URI });
   return legacyPool;
 }
 
-// Extract plain text from Payload Lexical JSON
+// Generate alternate separator forms of the query so "anti-discrimination",
+// "anti discrimination", and "antidiscrimination" all match each other.
+function queryForms(q: string): string[] {
+  const forms = new Set<string>();
+  forms.add(q);
+  forms.add(q.replace(/-/g, " "));       // hyphens → spaces
+  forms.add(q.replace(/\s+/g, "-"));     // spaces → hyphens
+  forms.add(q.replace(/-/g, ""));        // remove hyphens
+  forms.add(q.replace(/\s+/g, ""));      // remove spaces
+  forms.add(q.replace(/[\s-]+/g, ""));   // remove all separators
+  return [...forms].filter(f => f.trim().length > 0);
+}
+
 function extractLexicalText(node: unknown): string {
   if (!node || typeof node !== "object") return "";
   const obj = node as Record<string, unknown>;
   const parts: string[] = [];
   if (typeof obj.text === "string") parts.push(obj.text);
-  if (Array.isArray(obj.children)) {
-    for (const child of obj.children) parts.push(extractLexicalText(child));
-  }
+  if (Array.isArray(obj.children)) for (const c of obj.children) parts.push(extractLexicalText(c));
   return parts.join(" ");
 }
 
 function stripHtml(s: string): string {
-  return s
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&#x27;/g, "'")
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, "&")
-    .replace(/\s+/g, " ")
-    .trim();
+  return s.replace(/<[^>]*>/g, " ").replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
 }
 
-// Relevance scoring: title=4, kicker=3, excerpt/author=2, body=1
+// Title=4, kicker=3, excerpt/author=2, body=1
 function scoreArticle(article: Article, bodyText: string, ql: string): number {
   let s = 0;
   if (article.title.toLowerCase().includes(ql)) s += 4;
@@ -46,6 +47,12 @@ function scoreArticle(article: Article, bodyText: string, ql: string): number {
   if (article.author?.toLowerCase().includes(ql)) s += 2;
   if (bodyText.toLowerCase().includes(ql)) s += 1;
   return s;
+}
+
+function dateCmp(a: Article, b: Article): number {
+  const ta = a.publishedDate ? new Date(a.publishedDate).getTime() : 0;
+  const tb = b.publishedDate ? new Date(b.publishedDate).getTime() : 0;
+  return tb - ta;
 }
 
 type LegacyRow = {
@@ -65,16 +72,12 @@ function mapLegacyRow(row: LegacyRow): Article {
   const cleanPath = row.url_path.replace(/^\/home/, "");
   const section = cleanPath.split("/").filter(Boolean)[0] || "news";
   const date = row.first_published_at ? new Date(row.first_published_at) : null;
-  const dateString = date
-    ? date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
-    : null;
-  const title = stripHtml(row.headline || row.wagtail_title);
-  const excerpt = stripHtml(row.subdeck || row.summary || "");
+  const dateString = date ? date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : null;
   return {
     id: `legacy-${row.legacy_id}`,
     slug: cleanPath,
-    title,
-    excerpt,
+    title: stripHtml(row.headline || row.wagtail_title),
+    excerpt: stripHtml(row.subdeck || row.summary || ""),
     author: row.authors || null,
     date: dateString,
     image: null,
@@ -85,10 +88,15 @@ function mapLegacyRow(row: LegacyRow): Article {
   };
 }
 
-async function searchLegacy(q: string): Promise<{ article: Article; bodyText: string }[]> {
+async function searchLegacy(forms: string[]): Promise<{ article: Article; bodyText: string }[]> {
   const pool = getLegacyPool();
   const client = await pool.connect();
   try {
+    // $1 = array of ILIKE patterns for all query forms
+    // $2 = bare query (no separators) for normalized column comparison
+    const likePatterns = forms.map(f => `%${f}%`);
+    const bare = `%${forms[forms.length - 1]}%`; // last form is all-separators-stripped
+
     const { rows } = await client.query<LegacyRow>(
       `SELECT
         wp.id AS legacy_id,
@@ -108,22 +116,25 @@ async function searchLegacy(q: string): Promise<{ article: Article; bodyText: st
       LEFT JOIN core_contributor c ON c.id = r.author_id
       WHERE wp.live = true
         AND (
-          a.headline ILIKE $1
-          OR a.summary ILIKE $1
-          OR a.body ILIKE $1
-          OR k.title ILIKE $1
-          OR wp.title ILIKE $1
+          a.headline ILIKE ANY($1::text[])
+          OR a.summary ILIKE ANY($1::text[])
+          OR a.body ILIKE ANY($1::text[])
+          OR k.title ILIKE ANY($1::text[])
+          OR wp.title ILIKE ANY($1::text[])
+          OR REPLACE(REPLACE(a.headline, '-', ''), ' ', '') ILIKE $2
+          OR REPLACE(REPLACE(a.summary, '-', ''), ' ', '') ILIKE $2
+          OR REPLACE(a.body, '-', '') ILIKE $2
           OR EXISTS (
             SELECT 1 FROM core_articleauthorrelationship r2
             JOIN core_contributor c2 ON c2.id = r2.author_id
-            WHERE r2.article_id = a.page_ptr_id AND c2.name ILIKE $1
+            WHERE r2.article_id = a.page_ptr_id AND c2.name ILIKE ANY($1::text[])
           )
         )
       GROUP BY wp.id, a.page_ptr_id, k.title
       ORDER BY wp.first_published_at DESC`,
-      [`%${q}%`],
+      [likePatterns, bare],
     );
-    return rows.map((row) => ({
+    return rows.map(row => ({
       article: mapLegacyRow(row),
       bodyText: stripHtml(row.body || ""),
     }));
@@ -134,108 +145,89 @@ async function searchLegacy(q: string): Promise<{ article: Article; bodyText: st
 
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q")?.trim();
+  const encoder = new TextEncoder();
+  const send = (controller: ReadableStreamDefaultController, articles: Article[]) => {
+    try { controller.enqueue(encoder.encode(JSON.stringify({ articles }) + "\n")); } catch {}
+  };
 
   if (!q) {
-    return NextResponse.json({ articles: [] });
+    return new Response('{"articles":[]}\n', { headers: { "Content-Type": "application/x-ndjson" } });
   }
 
   const ql = q.toLowerCase();
-  const payload = await getPayload({ config });
+  const forms = queryForms(q);
 
-  // Step 1: run title/kicker/subdeck search, user lookup, and legacy search in parallel
-  const [payloadDocs, matchingUsers, legacyRows] = await Promise.all([
-    payload
-      .find({
-        collection: "articles",
-        where: {
-          and: [
-            { _status: { equals: "published" } },
-            {
-              or: [
-                { title: { contains: q } },
-                { subdeck: { contains: q } },
-                { kicker: { contains: q } },
-              ],
-            },
-          ],
-        },
-        sort: "-publishedDate",
-        limit: 0,
-        depth: 2,
-      })
-      .then((r) => r.docs),
-    payload
-      .find({
-        collection: "users",
-        where: {
-          or: [
-            { firstName: { contains: q } },
-            { lastName: { contains: q } },
-          ],
-        },
-        limit: 50,
-        depth: 0,
-      })
-      .then((r) => r.docs)
-      .catch(() => []),
-    searchLegacy(q).catch((err) => {
-      console.error("[search] Legacy DB error:", err);
-      return [] as { article: Article; bodyText: string }[];
-    }),
-  ]);
+  const stream = new ReadableStream({
+    async start(controller) {
+      let pending = 2;
+      const finish = () => { if (--pending === 0) { try { controller.close(); } catch {} } };
 
-  // Step 2: author-based article search (sequential, needs user IDs from step 1)
-  let authorDocs: PayloadArticle[] = [];
-  if (matchingUsers.length > 0) {
-    const authorIds = matchingUsers.map((u) => u.id);
-    authorDocs = await payload
-      .find({
-        collection: "articles",
-        where: {
-          and: [
-            { _status: { equals: "published" } },
-            { authors: { in: authorIds } },
-          ],
-        },
-        sort: "-publishedDate",
-        limit: 0,
-        depth: 2,
-      })
-      .then((r) => r.docs)
-      .catch(() => []);
-  }
+      try {
+        const payload = await getPayload({ config });
 
-  // Merge Payload docs (dedup by ID)
-  const allPayloadDocs = new Map<number, PayloadArticle>();
-  for (const doc of [...payloadDocs, ...authorDocs]) {
-    if (!allPayloadDocs.has(doc.id)) allPayloadDocs.set(doc.id, doc);
-  }
+        // Payload pipeline
+        (async () => {
+          try {
+            const orConditions = ["title", "subdeck", "kicker"].flatMap(field =>
+              forms.map(f => ({ [field]: { contains: f } }))
+            );
+            const [textDocs, users] = await Promise.all([
+              payload.find({
+                collection: "articles",
+                where: { and: [{ _status: { equals: "published" } }, { or: orConditions }] },
+                sort: "-publishedDate", limit: 0, depth: 2,
+              }).then(r => r.docs),
+              payload.find({
+                collection: "users",
+                where: { or: [{ firstName: { contains: q } }, { lastName: { contains: q } }] },
+                limit: 50, depth: 0,
+              }).then(r => r.docs).catch(() => [] as never[]),
+            ]);
 
-  // Score and format Payload results
-  type Scored = { article: Article; score: number };
-  const scored: Scored[] = [];
+            const authorDocs = users.length > 0
+              ? await payload.find({
+                  collection: "articles",
+                  where: { and: [{ _status: { equals: "published" } }, { authors: { in: users.map((u: { id: number }) => u.id) } }] },
+                  sort: "-publishedDate", limit: 0, depth: 2,
+                }).then(r => r.docs).catch(() => [] as PayloadArticle[])
+              : [] as PayloadArticle[];
 
-  for (const doc of allPayloadDocs.values()) {
-    const formatted = formatArticle(doc, { absoluteDate: true });
-    if (!formatted) continue;
-    const bodyText = extractLexicalText(doc.content);
-    const score = scoreArticle(formatted, bodyText, ql);
-    scored.push({ article: formatted, score });
-  }
+            const allDocs = new Map<number, PayloadArticle>();
+            for (const doc of [...textDocs, ...authorDocs]) allDocs.set(doc.id, doc);
 
-  // Score legacy results
-  for (const { article, bodyText } of legacyRows) {
-    const score = scoreArticle(article, bodyText, ql);
-    scored.push({ article, score });
-  }
+            const scored = [...allDocs.values()]
+              .map(doc => {
+                const article = formatArticle(doc, { absoluteDate: true });
+                if (!article) return null;
+                return { article, score: scoreArticle(article, extractLexicalText(doc.content), ql) };
+              })
+              .filter((x): x is { article: Article; score: number } => x !== null);
 
-  // Sort by score desc, then date desc
-  scored.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    const ta = a.article.publishedDate ? new Date(a.article.publishedDate).getTime() : 0;
-    const tb = b.article.publishedDate ? new Date(b.article.publishedDate).getTime() : 0;
-    return tb - ta;
+            scored.sort((a, b) => b.score - a.score || dateCmp(a.article, b.article));
+            send(controller, scored.map(s => s.article));
+          } catch { send(controller, []); }
+          finish();
+        })();
+
+        // Legacy pipeline
+        (async () => {
+          try {
+            const rows = await searchLegacy(forms);
+            const scored = rows
+              .map(({ article, bodyText }) => ({ article, score: scoreArticle(article, bodyText, ql) }));
+            scored.sort((a, b) => b.score - a.score || dateCmp(a.article, b.article));
+            send(controller, scored.map(s => s.article));
+          } catch { send(controller, []); }
+          finish();
+        })();
+
+      } catch {
+        send(controller, []);
+        pending = 0;
+        try { controller.close(); } catch {}
+      }
+    },
   });
 
-  return NextResponse.json({ articles: scored.map((s) => s.article) });
+  return new Response(stream, { headers: { "Content-Type": "application/x-ndjson" } });
 }
