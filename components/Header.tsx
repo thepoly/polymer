@@ -28,6 +28,7 @@ const secondaryNavItems = [
 const DRAWER_WIDTH = 0.78; // fraction of viewport
 const SWIPE_THRESHOLD = 50;
 const EDGE_ZONE = 24;
+const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
 
 function triggerThemeTransition(x: number, y: number, apply: () => void) {
   const root = document.documentElement;
@@ -268,6 +269,7 @@ function MobileMenuDrawer({
 export default function Header({ compact = false }: { compact?: boolean }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
+  const [showDarkModePrompt, setShowDarkModePrompt] = useState(false);
   const { animationKey, phase, isAnimating, triggerTransition, suckDurationMs, shootDurationMs } = useHeaderTransition();
   const { isDarkMode, toggleDarkMode } = useTheme();
   const logoSrc = isDarkMode ? "/logo-dark.svg" : "/logo-light.svg";
@@ -317,6 +319,21 @@ export default function Header({ compact = false }: { compact?: boolean }) {
       prefetch: prefetchLink,
     });
   };
+
+  useEffect(() => {
+    if (compact || currentPath !== "/" || isDarkMode || showDarkModePrompt) return;
+    if (typeof window === "undefined" || !window.matchMedia("(min-width: 1024px)").matches) return;
+    if (document.cookie.includes(`${HOME_DARK_MODE_PROMPT_COOKIE}=1`)) return;
+
+    setShowDarkModePrompt(true);
+    document.cookie = `${HOME_DARK_MODE_PROMPT_COOKIE}=1; path=/; max-age=31536000; SameSite=Lax`;
+
+    const timeout = window.setTimeout(() => {
+      setShowDarkModePrompt(false);
+    }, 7000);
+
+    return () => window.clearTimeout(timeout);
+  }, [compact, currentPath, isDarkMode, showDarkModePrompt]);
 
   return (
     <>
@@ -394,23 +411,44 @@ export default function Header({ compact = false }: { compact?: boolean }) {
             </div>
 
             <div className="flex items-center gap-2">
-              <button
-                className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border transition-colors ${
-                  isDarkMode
-                    ? "border-rule text-text-main hover:border-white hover:bg-white hover:text-black"
-                    : "border-rule text-text-main hover:border-black hover:bg-black hover:text-white"
-                }`}
-                onClick={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  triggerThemeTransition(
-                    rect.left + rect.width / 2,
-                    rect.top + rect.height / 2,
-                    () => toggleDarkMode(),
-                  );
-                }}
-              >
-                {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-              </button>
+              <div className="relative">
+                <button
+                  className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border transition-colors ${
+                    isDarkMode
+                      ? "border-rule text-text-main hover:border-white hover:bg-white hover:text-black"
+                      : "border-rule text-text-main hover:border-black hover:bg-black hover:text-white"
+                  }`}
+                  onClick={(e) => {
+                    setShowDarkModePrompt(false);
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    triggerThemeTransition(
+                      rect.left + rect.width / 2,
+                      rect.top + rect.height / 2,
+                      () => toggleDarkMode(),
+                    );
+                  }}
+                >
+                  {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                </button>
+
+                {showDarkModePrompt && (
+                  <div className="absolute right-0 top-full z-[110] mt-3 w-[280px]">
+                    <div className="absolute -top-[7px] right-2 h-4 w-4 rotate-45 border-l border-t border-border-main bg-bg-main" />
+                    <div className="relative rounded-md border border-border-main bg-bg-main px-4 py-3 shadow-lg">
+                      <button
+                        onClick={() => setShowDarkModePrompt(false)}
+                        className="absolute right-2 top-2 font-meta text-[11px] uppercase tracking-[0.08em] text-text-muted transition-colors hover:text-text-main"
+                        aria-label="Dismiss dark mode prompt"
+                      >
+                        Close
+                      </button>
+                      <p className="pr-12 font-meta text-[13px] leading-[1.35] text-text-main">
+                        Try dark mode. You won&apos;t regret it. It&apos;s better than light mode.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
               <button className="rainbow-search-trigger flex h-7 cursor-pointer items-center gap-1.5 rounded-full px-2.5 text-text-main" onClick={() => setIsSearchOverlayOpen(true)}>
                 <Search className="rainbow-search-trigger__icon h-3.5 w-3.5 shrink-0" />
                 <span className="rainbow-search-trigger__content whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.1em]">Search</span>

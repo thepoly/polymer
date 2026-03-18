@@ -20,6 +20,24 @@ const shareOptions = [
   { label: 'WhatsApp', icon: 'whatsapp' },
   { label: 'Reddit', icon: 'reddit' },
 ];
+function triggerThemeTransition(x: number, y: number, apply: () => void) {
+  const root = document.documentElement;
+  const maxR = Math.hypot(
+    Math.max(x, window.innerWidth - x),
+    Math.max(y, window.innerHeight - y),
+  );
+  root.style.setProperty('--theme-x', `${x}px`);
+  root.style.setProperty('--theme-y', `${y}px`);
+  root.style.setProperty('--theme-r', `${maxR}px`);
+
+  if ('startViewTransition' in document && typeof document.startViewTransition === 'function') {
+    root.classList.add('theme-switching');
+    const t = document.startViewTransition(() => apply());
+    t.finished.then(() => root.classList.remove('theme-switching'));
+  } else {
+    apply();
+  }
+}
 
 function ShareIcon({ type, className }: { type: string; className?: string }) {
   const cls = className || 'w-5 h-5';
@@ -168,26 +186,38 @@ export default function ArticleScrollBar({ title, section }: Props) {
           <span className="text-text-muted truncate">{title}</span>
         </div>
 
-        {/* Right: Mobile theme toggle + share button */}
-        <div className="ml-auto flex items-center gap-1.5">
+        {/* Right: Theme toggle + share button */}
+        <div className="ml-auto flex items-center gap-2">
           <button
-            onClick={toggleDarkMode}
-            className={`cursor-pointer rounded border border-transparent p-2 transition-colors md:hidden ${
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              triggerThemeTransition(
+                rect.left + rect.width / 2,
+                rect.top + rect.height / 2,
+                () => toggleDarkMode(),
+              );
+            }}
+            className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-colors ${
               isDarkMode
-                ? "text-text-muted hover:border-white hover:bg-white hover:text-black"
-                : "text-text-muted hover:border-black hover:bg-black hover:text-white"
+                ? "text-text-main hover:bg-white hover:text-black"
+                : "text-text-main hover:bg-black hover:text-white"
             }`}
             aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {isDarkMode ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
           </button>
 
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShareOpen(!shareOpen)}
-              className="p-2 hover:bg-rule rounded transition-colors shrink-0"
+              className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-colors shrink-0 ${
+                isDarkMode
+                  ? "text-text-main hover:bg-white/10"
+                  : "text-text-main hover:bg-black/6"
+              }`}
+              aria-label="Share article"
             >
-              <svg className="w-[16px] h-[16px] text-text-muted" viewBox="0 0 122.88 98.86" fill="currentColor">
+              <svg className="h-[18px] w-[18px]" viewBox="0 0 122.88 98.86" fill="currentColor">
                 <path fillRule="evenodd" clipRule="evenodd" d="M122.88,49.43L73.95,98.86V74.23C43.01,67.82,18.56,74.89,0,98.42c3.22-48.4,36.29-71.76,73.95-73.31l0-25.11L122.88,49.43L122.88,49.43z" />
               </svg>
             </button>

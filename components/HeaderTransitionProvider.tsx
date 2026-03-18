@@ -89,7 +89,7 @@ export default function HeaderTransitionProvider({
 }) {
   const [animationKey, setAnimationKey] = useState(INITIAL_ANIMATION_KEY);
   const [phase, setPhase] = useState<HeaderAnimationPhase>("shooting");
-  const speed = useSyncExternalStore(
+  const speed = useSyncExternalStore<HeaderAnimationSpeed>(
     subscribeToHeaderAnimationSpeed,
     getStoredHeaderAnimationSpeed,
     () => "initial",
