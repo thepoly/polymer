@@ -8,6 +8,19 @@ type ThemeContextType = {
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const KONAMI_CODE = [
+  "ArrowUp",
+  "ArrowUp",
+  "ArrowDown",
+  "ArrowDown",
+  "ArrowLeft",
+  "ArrowRight",
+  "ArrowLeft",
+  "ArrowRight",
+  "b",
+  "a",
+  "Enter",
+];
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
@@ -27,20 +40,6 @@ export default function ThemeProvider({
   const [isDarkMode, setIsDarkMode] = useState(initialDarkMode);
   const [keySequence, setKeySequence] = useState<string[]>([]);
 
-  const konamiCode = [
-    "ArrowUp",
-    "ArrowUp",
-    "ArrowDown",
-    "ArrowDown",
-    "ArrowLeft",
-    "ArrowRight",
-    "ArrowLeft",
-    "ArrowRight",
-    "b",
-    "a",
-    "Enter",
-  ];
-
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Detect "Up Up" followed by "Down" to prevent scrolling
@@ -58,7 +57,14 @@ export default function ThemeProvider({
 
       setKeySequence((prev) => {
         const newSequence = [...prev, event.key];
-        return newSequence.slice(-konamiCode.length);
+        const trimmedSequence = newSequence.slice(-KONAMI_CODE.length);
+
+        if (trimmedSequence.length === KONAMI_CODE.length && trimmedSequence.every((key, index) => key === KONAMI_CODE[index])) {
+          setIsDarkMode((prevMode) => !prevMode);
+          return [];
+        }
+
+        return trimmedSequence;
       });
     };
 
@@ -67,20 +73,35 @@ export default function ThemeProvider({
   }, [keySequence]);
 
   useEffect(() => {
-    if (keySequence.length === konamiCode.length && keySequence.every((key, index) => key === konamiCode[index])) {
-      setIsDarkMode((prev) => !prev);
-      setKeySequence([]); 
-    }
-  }, [keySequence]);
+    const themeColor = isDarkMode ? "#0a0a0a" : "#ffffff";
 
-  useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add("dark");
+      document.documentElement.style.colorScheme = "dark";
       document.cookie = "theme=dark; path=/; max-age=31536000"; // 1 year
     } else {
       document.documentElement.classList.remove("dark");
+      document.documentElement.style.colorScheme = "light";
       document.cookie = "theme=light; path=/; max-age=31536000";
     }
+
+    let themeMeta = document.querySelector('meta[name="theme-color"][data-runtime-theme-color="true"]');
+    if (!themeMeta) {
+      themeMeta = document.createElement("meta");
+      themeMeta.setAttribute("name", "theme-color");
+      themeMeta.setAttribute("data-runtime-theme-color", "true");
+      document.head.appendChild(themeMeta);
+    }
+
+    themeMeta.setAttribute("content", themeColor);
+
+    let statusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (!statusBarMeta) {
+      statusBarMeta = document.createElement("meta");
+      statusBarMeta.setAttribute("name", "apple-mobile-web-app-status-bar-style");
+      document.head.appendChild(statusBarMeta);
+    }
+    statusBarMeta.setAttribute("content", "black-translucent");
   }, [isDarkMode]);
 
   const toggleDarkMode = () => setIsDarkMode((prev) => !prev);

@@ -56,16 +56,36 @@ const Articles: CollectionConfig = {
       type: 'textarea',
     },
     {
-      name: 'section', 
+      name: 'section',
       type: 'select',
       options: [
         { label: 'News', value: 'news' },
         { label: 'Sports', value: 'sports' },
         { label: 'Features', value: 'features' },
-        { label: 'Editorial', value: 'editorial' },
         { label: 'Opinion', value: 'opinion' },
       ],
       required: true,
+    },
+    {
+      name: 'opinionType',
+      type: 'select',
+      options: [
+        { label: 'Opinion', value: 'opinion' },
+        { label: 'Column', value: 'column' },
+        { label: 'Staff Editorial', value: 'staff-editorial' },
+        { label: 'Editorial Notebook', value: 'editorial-notebook' },
+        { label: 'Endorsement', value: 'endorsement' },
+        { label: 'Top Hat', value: 'top-hat' },
+        { label: 'Candidate Profile', value: 'candidate-profile' },
+        { label: 'Letter to the Editor', value: 'letter-to-the-editor' },
+        { label: "The Poly's Recommendations", value: 'polys-recommendations' },
+        { label: "Editor's Notebook", value: 'editors-notebook' },
+        { label: 'Derby', value: 'derby' },
+        { label: 'Other', value: 'other' },
+      ],
+      admin: {
+        condition: (data) => data?.section === 'opinion',
+      },
     },
     {
       name: 'authors',
@@ -93,6 +113,11 @@ const Articles: CollectionConfig = {
       name: 'featuredImage',
       type: 'upload',
       relationTo: 'media',
+    },
+    {
+      name: 'imageCaption',
+      type: 'text',
+      label: 'Featured Image Caption',
     },
     {
       name: 'content',

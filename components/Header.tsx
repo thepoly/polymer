@@ -1,170 +1,520 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { startTransition, useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronDown, Menu, ChevronRight, Search } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Menu, Moon, Search, Sun, X } from "lucide-react";
+import SearchOverlay from "@/components/SearchOverlay";
+import { useHeaderTransition } from "@/components/HeaderTransitionProvider";
+import { ANIMATED_HEADER_ROUTES } from "@/components/headerAnimationRoutes";
+import { useTheme } from "@/components/ThemeProvider";
 
-export default function Header() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+const primaryNavItems = [
+  { label: "News", href: "/news" },
+  { label: "Features", href: "/features" },
+  { label: "Opinion", href: "/opinion" },
+  { label: "Sports", href: "/sports" },
+];
 
+const secondaryNavItems = [
+  { label: "About", href: "/about" },
+  { label: "Archives", href: "/archives" },
+  { label: "Staff", href: "/staff" },
+  { label: "Contact", href: "/contact" },
+  { label: "Submit", href: "mailto:edop@poly.rpi.edu?subject=Submitting%20Edop%3A%20%22%5BARTICLE%20TITLE%20HERE%5D%22&body=Thank%20you%20for%20submitting%20an%20Editorial%2FOpinion%20article%20to%20%F0%9D%98%9B%F0%9D%98%A9%F0%9D%98%A6%20%F0%9D%98%97%F0%9D%98%B0%F0%9D%98%AD%F0%9D%98%BA%F0%9D%98%B5%F0%9D%98%A6%F0%9D%98%A4%F0%9D%98%A9%F0%9D%98%AF%F0%9D%98%AA%F0%9D%98%A4%21%20Please%20replace%20%5BARTICLE%20TITLE%20HERE%5D%20in%20the%20subject%20line%20with%20the%20title%20of%20your%20article%2C%20and%20sign%20this%20email%20with%20your%20name.%20Attach%20your%20article%20as%20a%20PDF.%20Thanks%21%0A%0A%F0%9D%98%9B%F0%9D%98%A9%F0%9D%98%A6%20%F0%9D%98%97%F0%9D%98%B0%F0%9D%98%AD%F0%9D%98%BA%F0%9D%98%B5%F0%9D%98%A6%F0%9D%98%A4%F0%9D%98%A9%F0%9D%98%AF%F0%9D%98%AA%F0%9D%98%A4" },
+];
+
+const DRAWER_WIDTH = 0.78; // fraction of viewport
+const SWIPE_THRESHOLD = 50;
+const EDGE_ZONE = 24;
+
+function triggerThemeTransition(x: number, y: number, apply: () => void) {
+  const root = document.documentElement;
+  const maxR = Math.hypot(
+    Math.max(x, window.innerWidth - x),
+    Math.max(y, window.innerHeight - y),
+  );
+  root.style.setProperty("--theme-x", `${x}px`);
+  root.style.setProperty("--theme-y", `${y}px`);
+  root.style.setProperty("--theme-r", `${maxR}px`);
+
+  if ("startViewTransition" in document && typeof document.startViewTransition === "function") {
+    root.classList.add("theme-switching");
+    const t = document.startViewTransition(() => apply());
+    t.finished.then(() => root.classList.remove("theme-switching"));
+  } else {
+    apply();
+  }
+}
+
+function MobileMenuDrawer({
+  isOpen,
+  onClose,
+  onOpen,
+  primaryNavItems,
+  secondaryNavItems,
+  handleLinkClick,
+  isDarkMode,
+  onThemeToggle,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onOpen: () => void;
+  primaryNavItems: { label: string; href: string }[];
+  secondaryNavItems: { label: string; href: string }[];
+  handleLinkClick: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
+  isDarkMode: boolean;
+  onThemeToggle: () => void;
+}) {
+  const [dragX, setDragX] = useState<number | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const isDraggingRef = useRef(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Calculate the drawer width in pixels
+  const getDrawerPx = useCallback(() => {
+    if (typeof window === "undefined") return 300;
+    return window.innerWidth * DRAWER_WIDTH;
+  }, []);
+
+  // Edge swipe to open
   useEffect(() => {
-    if (isMobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => { document.body.style.overflow = 'unset'; };
-  }, [isMobileMenuOpen]);
+    if (isOpen) return;
 
-  const currentDate = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric'
+    const onTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (touch.clientX <= EDGE_ZONE) {
+        touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+        isDraggingRef.current = false;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!touchStartRef.current) return;
+      const touch = e.touches[0];
+      const dx = touch.clientX - touchStartRef.current.x;
+      const dy = Math.abs(touch.clientY - touchStartRef.current.y);
+      if (dy > Math.abs(dx) && !isDraggingRef.current) {
+        touchStartRef.current = null;
+        return;
+      }
+      if (dx > 10) {
+        isDraggingRef.current = true;
+        e.preventDefault();
+        setDragX(Math.min(dx, getDrawerPx()));
+      }
+    };
+
+    const onTouchEnd = () => {
+      if (isDraggingRef.current && dragX !== null) {
+        if (dragX > SWIPE_THRESHOLD) {
+          onOpen();
+        }
+        setDragX(null);
+      }
+      touchStartRef.current = null;
+      isDraggingRef.current = false;
+    };
+
+    document.addEventListener("touchstart", onTouchStart, { passive: true });
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    document.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      document.removeEventListener("touchstart", onTouchStart);
+      document.removeEventListener("touchmove", onTouchMove);
+      document.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [isOpen, dragX, onOpen, getDrawerPx]);
+
+  // Swipe to close when open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+      isDraggingRef.current = false;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (!touchStartRef.current) return;
+      const touch = e.touches[0];
+      const dx = touch.clientX - touchStartRef.current.x;
+      const dy = Math.abs(touch.clientY - touchStartRef.current.y);
+      if (dy > Math.abs(dx) && !isDraggingRef.current) {
+        touchStartRef.current = null;
+        return;
+      }
+      if (dx < -10) {
+        isDraggingRef.current = true;
+        e.preventDefault();
+        const drawerPx = getDrawerPx();
+        setDragX(Math.max(0, drawerPx + dx));
+      }
+    };
+
+    const onTouchEnd = () => {
+      if (isDraggingRef.current && dragX !== null) {
+        if (dragX < getDrawerPx() - SWIPE_THRESHOLD) {
+          onClose();
+        }
+        setDragX(null);
+      }
+      touchStartRef.current = null;
+      isDraggingRef.current = false;
+    };
+
+    const panel = panelRef.current;
+    if (!panel) return;
+    panel.addEventListener("touchstart", onTouchStart, { passive: true });
+    panel.addEventListener("touchmove", onTouchMove, { passive: false });
+    panel.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      panel.removeEventListener("touchstart", onTouchStart);
+      panel.removeEventListener("touchmove", onTouchMove);
+      panel.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [isOpen, dragX, onClose, getDrawerPx]);
+
+  // Prevent body scroll when open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = ""; };
+    }
+  }, [isOpen]);
+
+  const showDrawer = isOpen || dragX !== null;
+  if (!showDrawer) return null;
+
+  const drawerPx = getDrawerPx();
+  const translateX = dragX !== null ? dragX - drawerPx : isOpen ? 0 : -drawerPx;
+  const progress = dragX !== null ? dragX / drawerPx : isOpen ? 1 : 0;
+
+  return (
+    <div className="fixed inset-0 z-[60] lg:hidden">
+      {/* Backdrop — blurred right gap */}
+      <div
+        className="absolute inset-0 backdrop-blur-sm"
+        style={{ backgroundColor: `rgba(0,0,0,${0.4 * progress})` }}
+        onClick={onClose}
+      />
+
+      {/* Drawer panel */}
+      <div
+        ref={panelRef}
+        className="absolute top-0 left-0 bottom-0 bg-bg-main shadow-2xl will-change-transform"
+        style={{
+          width: `${DRAWER_WIDTH * 100}vw`,
+          transform: `translateX(${translateX}px)`,
+          transition: dragX !== null ? "none" : "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        }}
+      >
+        <div className="safe-area-mobile-drawer flex h-full flex-col overflow-y-auto">
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="mb-8 flex h-10 w-10 items-center justify-center self-end text-text-main"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          <nav className="flex flex-col gap-1">
+            {primaryNavItems.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={(e) => handleLinkClick(e, item.href)}
+                className="font-display text-[32px] font-bold uppercase tracking-[0.04em] text-text-main transition-colors hover:text-accent py-2"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="mt-8 border-t border-rule pt-6 flex flex-col gap-3">
+            {secondaryNavItems.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                onClick={(e) => handleLinkClick(e, item.href)}
+                className="font-meta text-[15px] font-medium tracking-[0.04em] text-text-muted transition-colors hover:text-accent"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+
+          <div className="mt-8 border-t border-rule pt-6 flex items-center gap-4">
+            <button
+              onClick={onThemeToggle}
+              className="flex items-center gap-2 font-meta text-[14px] font-medium text-text-muted hover:text-accent transition-colors"
+            >
+              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              {isDarkMode ? "Light mode" : "Dark mode"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function Header({ compact = false }: { compact?: boolean }) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
+  const { animationKey, phase, isAnimating, triggerTransition, suckDurationMs, shootDurationMs } = useHeaderTransition();
+  const { isDarkMode, toggleDarkMode } = useTheme();
+  const logoSrc = isDarkMode ? "/logo-dark.svg" : "/logo-light.svg";
+  const mobileLogoSrc = isDarkMode ? "/logo-dark-mobile.svg" : "/logo-light-mobile.svg";
+  const router = useRouter();
+  const pathname = usePathname();
+  const currentPath = pathname ?? "";
+  const shouldEnableAnimatedHeaderTransition =
+    phase !== "idle" || ANIMATED_HEADER_ROUTES.has(currentPath);
+  const currentDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long", month: "long", day: "numeric", year: "numeric",
   });
 
-  const navItems = ['News', 'Features', 'Opinion', 'Sports', 'Staff', 'Editorial', 'Checkmate', 'Archives', 'About'];
-  const desktopNavItems = ['News', 'Features', 'Opinion', 'Sports', 'Staff', 'Contact', 'About', 'Archives', 'Submit'];
+  const prefetchLink = (href: string) => {
+    if (!href.startsWith("/")) return;
+
+    try {
+      router.prefetch(href);
+    } catch {
+      // Prefetch failures should not block navigation.
+    }
+  };
+
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    if (href.startsWith("mailto:")) return;
+
+    e.preventDefault();
+    setIsMobileMenuOpen(false);
+
+    const currentRoute = pathname ?? window.location.pathname;
+    if (!ANIMATED_HEADER_ROUTES.has(href)) {
+      startTransition(() => {
+        router.push(href);
+      });
+      return;
+    }
+
+    triggerTransition({
+      href,
+      currentPath: currentRoute,
+      navigate: (nextHref) => {
+        startTransition(() => {
+          router.push(nextHref);
+        });
+      },
+      prefetch: prefetchLink,
+    });
+  };
 
   return (
     <>
-      {/* ==================================================================
-          MOBILE & TABLET HEADER
-          ================================================================== */}
-      <header className="lg:hidden sticky top-0 z-50 bg-header-nav border-b border-header-border mb-6">
-        <div className="flex items-center justify-between px-3 h-[70px] sm:h-[90px] bg-header-nav relative z-[70]">
-          
-          <div className="flex-shrink-0 min-w-[44px] z-20">
-            <button 
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 -ml-2 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
-            >
-              <Menu className="w-5 h-5 text-header-nav-text" />
-            </button>
-          </div>
-
-          <div className="flex-grow flex justify-center items-center px-0 overflow-visible">
-             <div className="relative h-[50px] sm:h-[70px] w-full max-w-[280px] transform scale-[1.05] -translate-x-2">
-               <Image
-                src="/logo.svg"
-                alt="The Polytechnic"
-                fill
-                style={{ filter: 'var(--logo-filter)' }}
-                className="object-contain"
-                priority
+      {/* ── MOBILE HEADER ── */}
+      <header className={`${compact ? "sticky top-0" : ""} safe-area-top z-50 bg-bg-main lg:hidden`}>
+        <div className="safe-area-mobile-header-x mx-auto flex h-[56px] max-w-[1280px] items-center justify-between">
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="flex h-9 w-9 items-center justify-center overflow-hidden text-text-main">
+            <span className="relative block h-5 w-5">
+              <Menu
+                className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
+                  isMobileMenuOpen ? "-translate-x-6 opacity-0" : "translate-x-0 opacity-100"
+                }`}
               />
-             </div>
-          </div>
-
-          <div className="flex-shrink-0 flex items-center gap-1.5 -mr-1 z-20 bg-header-nav pl-2">
-            <svg className="w-4 h-4 hidden min-[460px]:block" viewBox="0 0 20 20" fill="none">
-              <path d="M10 0.833252V2.49992M10 17.4999V19.1666M3.51671 3.51659L4.70004 4.69992M15.3 15.2999L16.4834 16.4833M0.833374 9.99992H2.50004M17.5 9.99992H19.1667M3.51671 16.4833L4.70004 15.2999M15.3 4.69992L16.4834 3.51659M14.1667 9.99992C14.1667 12.3011 12.3012 14.1666 10 14.1666C7.69885 14.1666 5.83337 12.3011 5.83337 9.99992C5.83337 7.69873 7.69885 5.83325 10 5.83325C12.3012 5.83325 14.1667 7.69873 14.1667 9.99992Z" className="stroke-header-nav-text" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <svg className="w-1.5 h-1.5 hidden min-[515px]:block" viewBox="0 0 8 8" fill="none">
-              <circle cx="4" cy="4" r="4" fill="#17AC3C" />
-            </svg>
-            <span className="text-xs font-bold tracking-wide whitespace-nowrap text-header-nav-text">18° F</span>
-          </div>
+              <X
+                className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
+                  isMobileMenuOpen ? "translate-x-0 opacity-100" : "translate-x-6 opacity-0"
+                }`}
+              />
+            </span>
+          </button>
+          <Link
+            href="/"
+            onClick={(e) => handleLinkClick(e, "/")}
+            onMouseEnter={() => prefetchLink("/")}
+            onFocus={() => prefetchLink("/")}
+            className="relative block h-[56px] w-full max-w-[300px]"
+          >
+            <Image src={mobileLogoSrc} alt="The Polytechnic" fill className="object-contain" priority />
+          </Link>
+          <button onClick={() => setIsSearchOverlayOpen(true)} className="flex h-9 w-9 items-center justify-center text-text-main">
+            <Search className="h-4 w-4" />
+          </button>
         </div>
-        
-        {!isMobileMenuOpen && (
-          <div className="bg-header-nav pb-1 -mt-2 text-center relative z-40">
-             <span className="text-[11px] sm:text-sm font-bold text-header-nav-text tracking-wide">
-              {currentDate}
-             </span>
-          </div>
-        )}
-
-        {isMobileMenuOpen && (
-          <div className="fixed inset-0 top-[70px] sm:top-[90px] z-[60] bg-header-nav overflow-y-auto flex flex-col">
-            <nav className="flex flex-col p-6 gap-0">
-              {navItems.map((item) => (
-                <Link 
-                  key={item} 
-                  href={item === 'Staff' ? '/staff' : `/${item.toLowerCase()}`}
-                  className="flex items-center justify-between text-2xl font-extrabold py-4 border-b border-border-main text-left text-header-nav-text hover:text-accent transition-all group"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {item} <ChevronRight className="w-5 h-5 text-text-muted group-hover:text-accent" />
-                </Link>
-              ))}
-            </nav>
-          </div>
-        )}
       </header>
 
-      {/* ==================================================================
-          DESKTOP HEADER
-          ================================================================== */}
-      <header className="hidden lg:block mb-4">
-        
-        {/* TOP LOGO ROW */}
-        <div className="bg-header-nav pt-2 pb-5">
-          <div className="max-w-[1280px] mx-auto px-4 md:px-6 xl:px-[30px] relative">
-            
-            <div className="relative flex items-center justify-between h-[100px]">
-              
-              {/* Left Column (Search + Weather) */}
-              <div className="relative z-10 flex flex-col items-start justify-between h-full pointer-events-auto w-[250px] py-2"> 
-                {/* Search Icon at Top Left */}
-                <div>
-                   <Search className="w-4 h-4 text-header-nav-text cursor-pointer hover:text-header-nav-text/80 transition-colors" />
-                </div>
-                
-                {/* Weather Block */}
-                <div className="-mt-6">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-header-nav-text" viewBox="0 0 20 20" fill="none"><path d="M10 0.833252V2.49992M10 17.4999V19.1666M3.51671 3.51659L4.70004 4.69992M15.3 15.2999L16.4834 16.4833M0.833374 9.99992H2.50004M17.5 9.99992H19.1667M3.51671 16.4833L4.70004 15.2999M15.3 4.69992L16.4834 3.51659M14.1667 9.99992C14.1667 12.3011 12.3012 14.1666 10 14.1666C7.69885 14.1666 5.83337 12.3011 5.83337 9.99992C5.83337 7.69873 7.69885 5.83325 10 5.83325C12.3012 5.83325 14.1667 7.69873 14.1667 9.99992Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    <span className="text-[15px] font-bold whitespace-nowrap text-header-nav-text">
-                      Sunny 18° F <span className="text-[#17AC3C] text-2xl leading-none relative top-1">•</span>
-                    </span>
-                  </div>
-                  <div className="text-[15px] font-bold text-header-nav-text mt-0.5">Volume XCI No. 22</div>
-                </div>
-              </div>
+      {/* ── MOBILE MENU DRAWER ── */}
+      <MobileMenuDrawer
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        onOpen={() => setIsMobileMenuOpen(true)}
+        primaryNavItems={primaryNavItems}
+        secondaryNavItems={secondaryNavItems}
+        handleLinkClick={handleLinkClick}
+        isDarkMode={isDarkMode}
+        onThemeToggle={() => {
+          triggerThemeTransition(window.innerWidth, 0, () => {
+            setIsMobileMenuOpen(false);
+            toggleDarkMode();
+          });
+        }}
+      />
 
-              {/* CENTER LOGO */}
-              <div className="absolute left-[50%] top-[50%] mt-3 -translate-x-1/2 -translate-y-1/2 h-full w-full max-w-[650px] pointer-events-none">
-                <div className="relative w-full h-full">
-                  <Image 
-                    src="/logo.svg" 
-                    alt="The Polytechnic" 
-                    fill 
-                    style={{ filter: 'var(--header-logo-invert)' }}
-                    className="object-contain" 
-                    priority 
-                  />
-                </div>
-              </div>
+      {/* ── DESKTOP HEADER ── */}
+      <header className="hidden lg:block">
+        <div className={`${compact ? "fixed" : "relative"} top-0 left-0 right-0 z-50 bg-bg-main/95 backdrop-blur-md`}>
+          <div className="font-meta relative mx-auto flex max-w-[1280px] items-center justify-between gap-6 px-4 pt-1.5 pb-0.5 md:px-6 xl:px-[30px]">
+            <div className="flex items-center gap-5 text-[11px] font-medium uppercase tracking-[0.1em] text-text-main">
+              {secondaryNavItems.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  onClick={(e) => handleLinkClick(e, item.href)}
+                  onMouseEnter={() => prefetchLink(item.href)}
+                  onFocus={() => prefetchLink(item.href)}
+                  className="transition-colors hover:text-accent"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
 
-              {/* Right Column (Date) */}
-              <div className="relative z-10 flex items-center justify-end h-full w-[250px] text-[15px] font-bold text-right whitespace-nowrap text-header-nav-text pointer-events-auto">
-                {currentDate}
-              </div>
+            <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 text-[11px] font-medium uppercase tracking-[0.1em]">
+              <span className="text-text-main">{currentDate}</span>
+              <span className="text-accent font-semibold">Vol. XCI No. 22</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                className="flex h-7 w-7 items-center justify-center rounded-full border border-rule text-text-main hover:border-accent hover:text-accent"
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  triggerThemeTransition(
+                    rect.left + rect.width / 2,
+                    rect.top + rect.height / 2,
+                    () => toggleDarkMode(),
+                  );
+                }}
+              >
+                {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              </button>
+              <button className="rainbow-search-trigger flex h-7 cursor-pointer items-center gap-1.5 rounded-full px-2.5 text-text-main" onClick={() => setIsSearchOverlayOpen(true)}>
+                <Search className="rainbow-search-trigger__icon h-3.5 w-3.5 shrink-0" />
+                <span className="rainbow-search-trigger__content whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.1em]">Search</span>
+              </button>
             </div>
           </div>
         </div>
 
-        {/* BOTTOM NAV SECTION */}
-        <div className="bg-header-nav">
-          <div className="max-w-[1280px] mx-auto px-4 md:px-6 xl:px-[30px]">
-            <div className="flex justify-center border-b-[4px] border-double border-header-nav-text -mx-[2.5px]">
-              <nav className="flex flex-wrap items-center py-2 gap-8">
-                {desktopNavItems.map((item, index) => (
-                <Link 
-                  key={`${item}-${index}`} 
-                  href={item === 'Staff' ? '/staff' : `/${item.toLowerCase()}`}
-                  className="flex items-center gap-1 text-[16px] font-bold text-header-nav-text hover:text-accent transition-colors uppercase"
-                >
-                  {item} <ChevronDown className="w-4 h-4 text-text-muted" />
-                </Link>
-              ))}
+        {!compact && (
+          <div className="mx-auto max-w-[1280px] px-4 pt-6 md:px-6 xl:px-[30px]">
+            <style dangerouslySetInnerHTML={{__html: `
+              @keyframes terryWrapDraw {
+                0% { stroke-dashoffset: 620; }
+                35% { stroke-dashoffset: 0; }
+                40% { stroke-dashoffset: 0; }
+                75% { stroke-dashoffset: -620; }
+                100% { stroke-dashoffset: -620; }
+              }
+              @keyframes terryShootDraw {
+                0% { stroke-dashoffset: 100; }
+                35% { stroke-dashoffset: 100; }
+                95% { stroke-dashoffset: 0; }
+                100% { stroke-dashoffset: 0; }
+              }
+              @keyframes terrySuck {
+                from { transform: scaleX(1); opacity: 1; }
+                to { transform: scaleX(0); opacity: 1; }
+              }
+              .animate-terry-suck {
+                animation: terrySuck ${suckDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+                transform-origin: 440px 0.5px;
+              }
+            `}} />
+
+            <div className="relative flex items-end justify-between gap-8 pb-0.5">
+              <div
+                className={`absolute -left-1 right-0 bottom-0 h-px bg-rule-strong ${
+                  shouldEnableAnimatedHeaderTransition && isAnimating ? "opacity-0" : "opacity-100"
+                }`}
+              />
+
+              <div 
+                key={`static-${animationKey}`} 
+                className={`absolute -left-1 right-0 bottom-0 h-px bg-rule-strong ${
+                  shouldEnableAnimatedHeaderTransition && phase === "sucking"
+                    ? "animate-terry-suck"
+                    : "opacity-0"
+                }`} 
+              />
+              
+              {shouldEnableAnimatedHeaderTransition && phase === "shooting" && (
+                <div key={`animated-${animationKey}`} className="absolute inset-x-0 bottom-0 h-px overflow-visible pointer-events-none text-rule-strong">
+                  <svg className="absolute left-0 bottom-0 w-full h-px overflow-visible">
+                    <path
+                      d="M 436 0.5 V -89.5 H -4 V 0.5"
+                      stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="square"
+                      style={{
+                        strokeDasharray: 620,
+                        strokeDashoffset: 620,
+                        animation: `terryWrapDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+                      }}
+                    />
+                    <line
+                      x1="-4" y1="0.5" x2="100%" y2="0.5"
+                      pathLength="100"
+                      stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="square"
+                      style={{
+                        strokeDasharray: 100,
+                        strokeDashoffset: 100,
+                        animation: `terryShootDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+                      }}
+                    />
+                  </svg>
+                </div>
+              )}
+
+              <Link 
+                href="/"
+                onClick={(e) => handleLinkClick(e, "/")}
+                onMouseEnter={() => prefetchLink("/")}
+                onFocus={() => prefetchLink("/")}
+                className={`relative -top-2 block h-[76px] w-[456px] max-w-full shrink-0 ${isAnimating ? 'cursor-default' : 'cursor-pointer'}`}
+              >
+                <Image 
+                  src={logoSrc} 
+                  alt="The Polytechnic" 
+                  fill 
+                  className="object-contain object-left"
+                  priority 
+                />
+              </Link>
+
+              <nav className="font-meta relative mr-4 flex flex-wrap items-center justify-end gap-x-7 gap-y-1.5 pb-0">
+                {primaryNavItems.map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    onClick={(e) => handleLinkClick(e, item.href)}
+                    onMouseEnter={() => prefetchLink(item.href)}
+                    onFocus={() => prefetchLink(item.href)}
+                    className="relative py-0.5 text-[16px] font-semibold uppercase tracking-[0.08em] text-text-main hover:text-accent transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
               </nav>
             </div>
           </div>
-        </div>
+        )}
       </header>
+
+      {isSearchOverlayOpen && <SearchOverlay onClose={() => setIsSearchOverlayOpen(false)} />}
     </>
   );
 }

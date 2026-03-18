@@ -37,6 +37,11 @@ const Layout: CollectionConfig = {
       relationTo: 'articles',
     },
     {
+      name: 'top4',
+      type: 'relationship',
+      relationTo: 'articles',
+    },
+    {
       name: 'op1',
       type: 'relationship',
       relationTo: 'articles',

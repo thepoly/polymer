@@ -1,12 +1,120 @@
 @import "tailwindcss";
 
-@theme {
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Self-hosted fonts ── */
+
+/* Minion Pro */
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-It.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-MediumIt.otf") format("opentype");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-Semibold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-SemiboldIt.otf") format("opentype");
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Minion Pro";
+  src: url("/fonts/minion-pro/MinionPro-BoldIt.otf") format("opentype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Myriad Pro */
+@font-face {
+  font-family: "Myriad Pro";
+  src: url("/fonts/myriad-pro/MyriadPro-Light.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Myriad Pro";
+  src: url("/fonts/myriad-pro/MYRIADPRO-REGULAR.OTF") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Myriad Pro";
+  src: url("/fonts/myriad-pro/MYRIADPRO-SEMIBOLD.OTF") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Myriad Pro";
+  src: url("/fonts/myriad-pro/MYRIADPRO-SEMIBOLDIT.OTF") format("opentype");
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Myriad Pro";
+  src: url("/fonts/myriad-pro/MYRIADPRO-BOLD.OTF") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Myriad Pro";
+  src: url("/fonts/myriad-pro/MYRIADPRO-BOLDIT.OTF") format("opentype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@theme inline {
   --color-bg-main: var(--background);
   --color-text-main: var(--foreground);
   --color-text-muted: var(--foreground-muted);
   --color-accent: var(--accent-color);
   --color-border-main: var(--border-color);
-  
+  --color-rule: var(--rule-color);
+  --color-rule-strong: var(--rule-strong-color);
+
   --color-header-top: var(--header-top-bg);
   --color-header-top-text: var(--header-top-text);
   --color-header-nav: var(--header-nav-bg);
@@ -16,44 +124,217 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #000000; /* Swapped to pure black */
-  --foreground-muted: #6b7280;
+  --foreground: #000000;
+  --foreground-muted: #5f5f5f;
   --accent-color: #D6001C;
-  --border-color: #d1d5db; 
-  
-  --header-top-bg: #ffffff; 
-  --header-top-text: #000000; /* Swapped to pure black */
+  --border-color: #d8d8d8;
+  --rule-color: rgba(0, 0, 0, 0.15);
+  --rule-strong-color: rgba(0, 0, 0, 0.8);
+
+  --header-top-bg: #ffffff;
+  --header-top-text: #000000;
   --header-nav-bg: #ffffff;
-  --header-nav-text: #000000; /* Swapped to pure black */
-  --header-border: #d1d5db; 
-  
+  --header-nav-text: #000000;
+  --header-border: #d8d8d8;
+
   --logo-filter: none;
-  --header-logo-invert: none; 
+  --header-logo-invert: none;
+
+  --font-copy: "Minion Pro", "Iowan Old Style", Georgia, serif;
+  --font-ui: "Myriad Pro", "Helvetica Neue", Arial, sans-serif;
+  --font-meta: "Raleway", "Helvetica Neue", Arial, sans-serif;
+
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
 }
 
 html.dark {
-  --background: #000000;
-  --foreground: #ffffff;
-  --foreground-muted: #9ca3af;
-  --accent-color: #D6001C; 
-  --border-color: #3f3f46; 
-  
-  --header-top-bg: #000000;
-  --header-top-text: #ffffff;
-  --header-nav-bg: #000000;
-  --header-nav-text: #ffffff;
-  --header-border: #3f3f46;
-  
-  --logo-filter: none; 
-  --header-logo-invert: none; 
+  --background: #0a0a0a;
+  --foreground: #e8e8e8;
+  --foreground-muted: #c8ced6;
+  --accent-color: #e8e8e8;
+  --border-color: #1f1f1f;
+
+  --header-top-bg: #0a0a0a;
+  --header-top-text: #e8e8e8;
+  --header-nav-bg: #0a0a0a;
+  --header-nav-text: #e8e8e8;
+  --header-border: #1f1f1f;
+  --rule-color: rgba(255, 255, 255, 0.08);
+  --rule-strong-color: rgba(255, 255, 255, 0.25);
+
+  --logo-filter: none;
+  --header-logo-invert: none;
+}
+
+html {
+  background-color: var(--background);
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
+  font-family: var(--font-copy);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   transition: color 0.3s ease, background-color 0.3s ease;
+  min-height: 100dvh;
 }
 
 * {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-display-news {
+  font-family: var(--font-display-news);
+}
+
+h1.font-display,
+h2.font-display,
+h3.font-display,
+h4.font-display,
+h5.font-display,
+h6.font-display {
+  color: var(--foreground) !important;
+}
+
+h1.font-display.italic,
+h2.font-display.italic,
+h3.font-display.italic,
+h4.font-display.italic,
+h5.font-display.italic,
+h6.font-display.italic {
+  margin-left: -0.1em;
+}
+
+.font-copy {
+  font-family: var(--font-copy);
+}
+
+.font-ui {
+  font-family: var(--font-ui);
+}
+
+.font-cinzel {
+  font-family: var(--font-cinzel);
+}
+
+.font-meta {
+  font-family: var(--font-meta);
+}
+
+.drop-cap::first-letter {
+  float: left;
+  font-size: 3.5em;
+  line-height: 0.8;
+  margin-right: 0.08em;
+  padding-top: 0.11em;
+  font-weight: 400;
+  font-family: var(--font-copy);
+  color: var(--foreground);
+}
+
+@keyframes search-icon-slide {
+  from { transform: translateX(52px); }
+  to   { transform: translateX(0); }
+}
+
+.search-icon-animate {
+  animation: search-icon-slide 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes rainbow-swirl-border {
+  from { background-position: 0% 50%, 0 0; }
+  to { background-position: 200% 50%, 0 0; }
+}
+
+@keyframes rainbow-swirl-color {
+  0% { color: #ff6b6b; }
+  16% { color: #ffb86b; }
+  33% { color: #fff08a; }
+  50% { color: #8de39a; }
+  66% { color: #7fb2ff; }
+  83% { color: #d7a6ff; }
+  100% { color: #ff6b6b; }
+}
+
+.rainbow-search-trigger {
+  border: 1px solid var(--rule-color);
+  background: var(--background);
+}
+
+.rainbow-search-trigger:hover {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--background), var(--background)) padding-box,
+    linear-gradient(120deg, #ff6b6b, #ffb86b, #fff08a, #8de39a, #7fb2ff, #d7a6ff, #ff6b6b) border-box;
+  background-size: 100% 100%, 220% 100%;
+  background-position: 0 0, 0% 50%;
+  background-repeat: no-repeat;
+  animation: rainbow-swirl-border 1.25s linear infinite;
+}
+
+/* ── Theme circle-reveal transition ── */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+  clip-path: circle(0px at var(--theme-x, 50%) var(--theme-y, 50%));
+  animation: theme-circle-reveal 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes theme-circle-reveal {
+  to {
+    clip-path: circle(var(--theme-r, 150vmax) at var(--theme-x, 50%) var(--theme-y, 50%));
+  }
+}
+
+/* Hard edge: disable smooth color transitions while the circle wipe is active */
+.theme-switching,
+.theme-switching * {
+  transition: none !important;
+}
+
+.safe-area-top {
+  padding-top: var(--safe-area-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: var(--safe-area-bottom);
+}
+
+@media (max-width: 1023px) {
+  .safe-area-mobile-header-x {
+    padding-left: calc(0.75rem + var(--safe-area-left));
+    padding-right: calc(0.75rem + var(--safe-area-right));
+  }
+
+  .safe-area-mobile-page-x {
+    padding-left: calc(1rem + var(--safe-area-left));
+    padding-right: calc(1rem + var(--safe-area-right));
+  }
+
+  .safe-area-mobile-drawer {
+    padding-top: calc(1.5rem + var(--safe-area-top));
+    padding-right: calc(1.5rem + var(--safe-area-right));
+    padding-bottom: calc(2.5rem + var(--safe-area-bottom));
+    padding-left: calc(1.5rem + var(--safe-area-left));
+  }
 }

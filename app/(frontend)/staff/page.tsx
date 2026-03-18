@@ -1,4 +1,5 @@
 import React from 'react';
+import type { Metadata } from 'next';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
 import Image from 'next/image';
@@ -6,6 +7,18 @@ import Link from 'next/link';
 import { Media } from '@/payload-types';
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  title: 'Staff',
+  description: 'Meet the editorial staff of The Polytechnic, RPI\'s independent student newspaper.',
+  alternates: { canonical: '/staff' },
+  openGraph: {
+    title: 'Staff — The Polytechnic',
+    description: 'Meet the editorial staff of The Polytechnic.',
+    type: 'website',
+    url: '/staff',
+  },
+};
 
 export default async function StaffPage() {
   const payload = await getPayload({ config });
@@ -22,13 +35,13 @@ export default async function StaffPage() {
   return (
     <>
       {/* Staff Title */}
-      <div className="mb-10 mt-5">
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-text-main transition-colors">
+      <div className="overflow-hidden mb-6 -mt-2">
+        <h1 className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#d6001c]/55 whitespace-nowrap text-[36px] sm:text-[48px] md:text-[56px] lg:text-[65px] transition-colors">
           Staff
         </h1>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-x-4 gap-y-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-8">
         {users.map((user) => {
           const headshot = user.headshot as Media | null;
           
@@ -54,7 +67,7 @@ export default async function StaffPage() {
 
           return (
             <Link 
-              href={`/staff/${user.id}`} 
+              href={`/staff/${user.slug || user.id}`} 
               key={user.id}
               className="group flex flex-col items-start text-left"
             >
@@ -64,7 +77,7 @@ export default async function StaffPage() {
                     src={headshot.url}
                     alt={`${user.firstName} ${user.lastName}`}
                     fill
-                    className="object-cover transition-opacity duration-300 hover:opacity-95"
+                    className="object-cover"
                     sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
                   />
                 ) : (
@@ -76,12 +89,12 @@ export default async function StaffPage() {
                 )}
               </div>
               
-              <h3 className="text-[15px] md:text-[16px] leading-tight font-bold text-text-main mb-1 group-hover:underline decoration-1 underline-offset-2 transition-colors">
+              <h3 className="font-display text-[15px] md:text-[16px] leading-tight font-bold text-text-main mb-1 group-hover:text-accent transition-colors">
                 {user.firstName} {user.lastName}
               </h3>
-              
+
               {titleString && (
-                <p className="text-[13px] md:text-[14px] leading-snug text-text-muted font-light transition-colors">
+                <p className="font-meta text-[11px] leading-snug text-accent font-semibold uppercase tracking-[0.06em] transition-colors">
                   {titleString}
                 </p>
               )}

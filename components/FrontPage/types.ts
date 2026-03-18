@@ -7,6 +7,9 @@ export interface Article {
   date: string | null;
   image: string | null;
   section: string;
+  kicker: string | null;
   publishedDate?: string | null;
   createdAt?: string;
+  /** Absolute URL for legacy articles that live on an external domain */
+  externalUrl?: string;
 }
