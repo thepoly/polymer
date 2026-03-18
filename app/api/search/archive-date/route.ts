@@ -27,7 +27,7 @@ export async function GET() {
       const oldest: Date | null = rows[0]?.oldest ?? null;
       if (oldest) {
         const year = new Date(oldest).getFullYear();
-        return NextResponse.json({ subtitle: `Search archives dating back to ${year}` });
+        return NextResponse.json({ subtitle: `Search archives date back to ${year}` });
       }
     } finally {
       client.release();
@@ -50,7 +50,7 @@ export async function GET() {
     if (oldest) {
       const date = new Date(oldest);
       const label = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-      return NextResponse.json({ subtitle: `Search archives dating back to ${label}` });
+      return NextResponse.json({ subtitle: `Search archives date back to ${label}` });
     }
   } catch (err) {
     console.error("[archive-date] Payload error:", err);
