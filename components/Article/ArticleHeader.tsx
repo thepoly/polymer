@@ -99,7 +99,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
 
                 if (hasTitles) {
                     return (
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-row flex-wrap gap-x-6 gap-y-1">
                             {enriched.map(({ user, title }) => (
                                 <div key={user.id}>
                                     <div className="font-meta text-[14px] md:text-[15px] font-[440] tracking-[0.08em] text-accent transition-colors">
