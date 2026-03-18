@@ -40,15 +40,13 @@ const fillArticles = (
   excludeIDs: Array<string | number> = [],
 ) => dedupeArticles([...preferred, ...fallback], excludeIDs).slice(0, count);
 
-const prioritizeUnusedSectionArticles = (
+const excludeUsedSectionArticles = (
   articles: ComponentArticle[],
   usedIDs: Array<string | number>,
   count: number,
 ) => {
   const usedSet = new Set(usedIDs.map(String));
-  const unused = articles.filter((article) => !usedSet.has(String(article.id)));
-  const used = articles.filter((article) => usedSet.has(String(article.id)));
-  return [...unused, ...used].slice(0, count);
+  return articles.filter((article) => !usedSet.has(String(article.id))).slice(0, count);
 };
 
 const formatArticle = (article: PayloadArticle | number | null | undefined): ComponentArticle | null => {
@@ -176,19 +174,27 @@ export default async function Home() {
     list: topStoryList,
   };
 
-  const heroUsedIds = [
-    mainArticle.id,
-    ...topStoryList.map((article) => article.id),
-  ];
+  const pinnedLayoutArticles = dedupeArticles([
+    mainArticle,
+    formatArticle(layout.top1),
+    formatArticle(layout.top2),
+    formatArticle(layout.top3),
+    formatArticle(layout.top4),
+    formatArticle(layout.op1),
+    formatArticle(layout.op2),
+    formatArticle(layout.op3),
+    formatArticle(layout.op4),
+    formatArticle(layout.special),
+  ]);
 
   const homepageUsedIds = [
-    ...heroUsedIds,
+    ...pinnedLayoutArticles.map((article) => article.id),
   ];
 
-  const newsArticles = prioritizeUnusedSectionArticles(newsArticlesRaw, homepageUsedIds, 9);
-  const featuresArticles = prioritizeUnusedSectionArticles(featuresArticlesRaw, homepageUsedIds, 9);
-  const sportsArticles = prioritizeUnusedSectionArticles(sportsArticlesRaw, homepageUsedIds, 9);
-  const opinionArticles = prioritizeUnusedSectionArticles(opinionArticlesRaw, homepageUsedIds, 9);
+  const newsArticles = excludeUsedSectionArticles(newsArticlesRaw, homepageUsedIds, 9);
+  const featuresArticles = excludeUsedSectionArticles(featuresArticlesRaw, homepageUsedIds, 9);
+  const sportsArticles = excludeUsedSectionArticles(sportsArticlesRaw, homepageUsedIds, 9);
+  const opinionArticles = excludeUsedSectionArticles(opinionArticlesRaw, homepageUsedIds, 9);
   const organizationJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Organization',

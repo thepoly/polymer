@@ -249,7 +249,11 @@ function MobileMenuDrawer({
           <div className="mt-8 border-t border-rule pt-6 flex items-center gap-4">
             <button
               onClick={onThemeToggle}
-              className="flex items-center gap-2 font-meta text-[14px] font-medium text-text-muted hover:text-accent transition-colors"
+              className={`flex items-center gap-2 font-meta text-[14px] font-medium transition-colors ${
+                isDarkMode
+                  ? "cursor-pointer text-text-muted hover:text-white"
+                  : "cursor-pointer text-text-muted hover:text-black"
+              }`}
             >
               {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               {isDarkMode ? "Light mode" : "Dark mode"}
@@ -391,7 +395,11 @@ export default function Header({ compact = false }: { compact?: boolean }) {
 
             <div className="flex items-center gap-2">
               <button
-                className="flex h-7 w-7 items-center justify-center rounded-full border border-rule text-text-main hover:border-accent hover:text-accent"
+                className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border transition-colors ${
+                  isDarkMode
+                    ? "border-rule text-text-main hover:border-white hover:bg-white hover:text-black"
+                    : "border-rule text-text-main hover:border-black hover:bg-black hover:text-white"
+                }`}
                 onClick={(e) => {
                   const rect = e.currentTarget.getBoundingClientRect();
                   triggerThemeTransition(
@@ -433,7 +441,7 @@ export default function Header({ compact = false }: { compact?: boolean }) {
               }
               .animate-terry-suck {
                 animation: terrySuck ${suckDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
-                transform-origin: 440px 0.5px;
+                transform-origin: 468px 0.5px;
               }
             `}} />
 
@@ -457,7 +465,7 @@ export default function Header({ compact = false }: { compact?: boolean }) {
                 <div key={`animated-${animationKey}`} className="absolute inset-x-0 bottom-0 h-px overflow-visible pointer-events-none text-rule-strong">
                   <svg className="absolute left-0 bottom-0 w-full h-px overflow-visible">
                     <path
-                      d="M 436 0.5 V -89.5 H -4 V 0.5"
+                      d="M 464 0.5 V -89.5 H -4 V 0.5"
                       stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="square"
                       style={{
                         strokeDasharray: 620,

@@ -172,7 +172,11 @@ export default function ArticleScrollBar({ title, section }: Props) {
         <div className="ml-auto flex items-center gap-1.5">
           <button
             onClick={toggleDarkMode}
-            className="rounded p-2 text-text-muted transition-colors hover:bg-rule md:hidden"
+            className={`cursor-pointer rounded border border-transparent p-2 transition-colors md:hidden ${
+              isDarkMode
+                ? "text-text-muted hover:border-white hover:bg-white hover:text-black"
+                : "text-text-muted hover:border-black hover:bg-black hover:text-white"
+            }`}
             aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           >
             {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

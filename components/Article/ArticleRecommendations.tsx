@@ -133,20 +133,18 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
             <p className="font-meta text-[11px] font-bold uppercase tracking-[0.12em] text-accent">
               Continue Reading
             </p>
-            <h2 className="mt-2 font-display text-[30px] font-bold leading-[0.98] tracking-[-0.03em] text-text-main md:text-[38px]">
-              {sectionLabel}
-            </h2>
+            <TransitionLink
+              href={`/${currentArticle.section}`}
+              className="group inline-block"
+            >
+              <h2 className="mt-2 font-display text-[30px] font-bold leading-[0.98] tracking-[-0.03em] text-text-main transition-colors group-hover:text-accent md:text-[38px]">
+                {sectionLabel}
+              </h2>
+            </TransitionLink>
             <p className="mt-2 max-w-xl font-meta text-[13px] leading-[1.45] text-text-muted">
               {sectionDescriptions[currentArticle.section]}
             </p>
           </div>
-
-          <TransitionLink
-            href={`/${currentArticle.section}`}
-            className="font-meta text-[11px] font-semibold uppercase tracking-[0.12em] text-text-muted transition-colors hover:text-accent"
-          >
-            Browse {sectionLabel}
-          </TransitionLink>
         </div>
 
         <div className={`grid gap-8 ${supportingArticles.length > 0 ? 'lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-start' : ''}`}>
