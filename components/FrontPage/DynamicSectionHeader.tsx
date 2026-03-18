@@ -5,15 +5,17 @@ import TransitionLink from "@/components/TransitionLink";
 
 const MIN_SIZE = 28;
 const HARD_MIN_SIZE = 20;
-const MAX_SIZE = 120;
+const MAX_SIZE = 90;
 const OVERLAP_MARGIN = 4;
-const FLOAT_BREAKPOINT = 1024;
+const FLOAT_BREAKPOINT = 768;
 const SECTION_BODY_SELECTOR = "[data-section-body]";
 const TOP_BLOCK_SELECTOR = "[data-frontpage-top]";
 const PRIMARY_SCOPE_SELECTOR = "[data-header-scope='primary']";
 const ANCHOR_SELECTOR = "[data-header-anchor]";
-const TEXT_TOP_GAP = 12;
+const TEXT_TOP_GAP = 16;
 const TEXT_BOTTOM_GAP = 12;
+const IMAGE_TOP_INSET = 18; // extra clearance above header when prev content is an image
+const IMAGE_BOT_INSET = 4;  // tight clearance below header when next content is an image
 const HEADER_X_OFFSET = -1;
 const HEADER_Y_OFFSET_RATIO = 0.06;
 const HEADER_LINE_HEIGHT = 0.82;
@@ -242,22 +244,23 @@ export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title
 
     const metrics = measureFontMetrics(title, 100);
     const visualHeightRatio = metrics.visualHeightRatio;
+    const topInset = aboveEdge.isImage ? IMAGE_TOP_INSET : OVERLAP_MARGIN;
+    const botInset = belowEdge.isImage ? IMAGE_BOT_INSET : OVERLAP_MARGIN;
+    const paddedAvailableHeight = availableHeight - topInset - botInset;
     let newSize = Math.max(
       MIN_SIZE,
-      Math.min(MAX_SIZE, availableHeight / Math.max(visualHeightRatio, 0.01)),
+      Math.min(MAX_SIZE, paddedAvailableHeight / Math.max(visualHeightRatio, 0.01)),
     );
     const containerRect = el.getBoundingClientRect();
     const belowRect = belowEdge.element?.getBoundingClientRect();
     const estimatedHeight = newSize * HEADER_LINE_HEIGHT;
-    const minTop = above + topPadding;
-    const maxTop = below - bottomPadding - estimatedHeight;
+    const minTop = above + topPadding + topInset;
+    const maxTop = below - bottomPadding - estimatedHeight - botInset;
 
-    // Perch: if below is image, sit right above it. If above is image, sit right below it. Otherwise center.
+    // Perch: if below is image, sit right above it. Otherwise sit right after the content above.
     const estimatedTargetTop = belowEdge.isImage
       ? below - estimatedHeight
-      : aboveEdge.isImage
-        ? above
-        : above + topPadding + (availableHeight - estimatedHeight) / 2;
+      : above;
     const estimatedFinalTop = Math.min(
       maxTop,
       Math.max(minTop, estimatedTargetTop + newSize * HEADER_Y_OFFSET_RATIO),
@@ -296,16 +299,16 @@ export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title
 
       const headingRect = heading.getBoundingClientRect();
       const wrapperRect = wrapperEl.getBoundingClientRect();
-      const renderedMinTop = above + topPadding + OVERLAP_MARGIN;
-      const renderedMaxTop = below - bottomPadding - headingRect.height - OVERLAP_MARGIN;
+      const renderedTopInset = aboveEdge.isImage ? IMAGE_TOP_INSET : OVERLAP_MARGIN;
+      const renderedBotInset = belowEdge.isImage ? IMAGE_BOT_INSET : OVERLAP_MARGIN;
+      const renderedMinTop = above + topPadding + renderedTopInset;
+      const renderedMaxTop = below - bottomPadding - headingRect.height - renderedBotInset;
       const visualBias = newSize * HEADER_Y_OFFSET_RATIO;
 
-      // Perch on image below, sit on image above, or center
+      // Perch: if below is image, sit right above it. Otherwise sit right after the content above.
       const targetTop = belowEdge.isImage
         ? below - headingRect.height
-        : aboveEdge.isImage
-          ? above
-          : above + topPadding + (availableHeight - headingRect.height) / 2;
+        : above;
       // Clamp to prevent overlap with content above and below
       const finalTop = Math.min(renderedMaxTop, Math.max(renderedMinTop, targetTop + visualBias));
       setTy(finalTop - wrapperRect.top);
@@ -347,7 +350,7 @@ export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title
       >
         <TransitionLink href={href} className="group block">
           <h2
-            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-accent/25 group-hover:text-accent/20 whitespace-nowrap"
+            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-accent/55 group-hover:text-accent/45 whitespace-nowrap"
             style={{ fontSize: `${mobileFontSize}px`, marginLeft: `-${mobileFontSize * 0.06}px` }}
           >
             {title}
@@ -366,7 +369,7 @@ export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title
         <TransitionLink href={href} className="group inline-block">
           <h2
             ref={headingRef}
-            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-accent/25 group-hover:text-accent/20"
+            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-accent/55 group-hover:text-accent/45"
             style={{ fontSize: `${fontSize}px` }}
           >
             {title}

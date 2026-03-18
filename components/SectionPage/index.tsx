@@ -102,34 +102,41 @@ export default function SectionPage({
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-5 md:px-6 md:py-6 xl:px-[30px]">
       {/* Section title */}
-      <h1 className="mb-5 font-meta text-[24px] font-bold uppercase tracking-[0.06em] text-accent md:text-[30px]">
-        {title}
-      </h1>
+      <div className="overflow-hidden mb-4 -mt-2">
+        <h1 className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-accent/55 whitespace-nowrap text-[36px] sm:text-[48px] md:text-[56px] lg:text-[65px] transition-colors">
+          {title}
+        </h1>
+      </div>
 
       {/* 3-column masonry layout */}
       <div className="grid gap-x-5 gap-y-6 sm:grid-cols-2 lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)_minmax(0,4fr)]">
         {/* Column 1 — lead + overflow */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col divide-y divide-rule">
           {col1.map((a, i) => (
-            <ColumnCard
-              key={a.id}
-              article={a}
-              size={i === 0 ? "text-[22px] md:text-[26px]" : "text-[18px] md:text-[20px]"}
-            />
+            <div key={a.id} className={i === 0 ? "pb-5" : "pt-5 pb-5"}>
+              <ColumnCard
+                article={a}
+                size={i === 0 ? "text-[22px] md:text-[26px]" : "text-[18px] md:text-[20px]"}
+              />
+            </div>
           ))}
         </div>
 
         {/* Column 2 */}
-        <div className="flex flex-col gap-6">
-          {col2.map((a) => (
-            <ColumnCard key={a.id} article={a} />
+        <div className="flex flex-col divide-y divide-rule">
+          {col2.map((a, i) => (
+            <div key={a.id} className={i === 0 ? "pb-5" : "pt-5 pb-5"}>
+              <ColumnCard article={a} />
+            </div>
           ))}
         </div>
 
         {/* Column 3 */}
-        <div className="flex flex-col gap-6">
-          {col3.map((a) => (
-            <ColumnCard key={a.id} article={a} />
+        <div className="flex flex-col divide-y divide-rule">
+          {col3.map((a, i) => (
+            <div key={a.id} className={i === 0 ? "pb-5" : "pt-5 pb-5"}>
+              <ColumnCard article={a} />
+            </div>
           ))}
         </div>
       </div>

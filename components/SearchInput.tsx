@@ -6,6 +6,7 @@ import { Article } from "@/components/FrontPage/types";
 import { Byline } from "@/components/FrontPage/Byline";
 import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
+import { useTheme } from "@/components/ThemeProvider";
 
 export default function SearchInput({ defaultValue }: { defaultValue?: string }) {
   const [query, setQuery] = useState(defaultValue || "");
@@ -13,6 +14,8 @@ export default function SearchInput({ defaultValue }: { defaultValue?: string })
   const [searched, setSearched] = useState(!!defaultValue);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const { isDarkMode } = useTheme();
+  const mobileLogo = isDarkMode ? "/logo-dark-mobile.svg" : "/logo-light-mobile.svg";
 
   const fetchResults = useCallback(async (q: string) => {
     abortRef.current?.abort();
@@ -59,14 +62,13 @@ export default function SearchInput({ defaultValue }: { defaultValue?: string })
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search..."
-          className="w-full bg-transparent py-2 pl-3 pr-36 font-display text-xl md:text-3xl font-bold text-text-main placeholder:text-text-muted/30 dark:placeholder:text-white/85 outline-none"
+          className="w-full bg-transparent py-2 pl-3 pr-36 font-meta text-xl md:text-3xl font-bold text-text-main placeholder:text-text-muted/30 dark:placeholder:text-white/85 outline-none"
         />
         <Image
-          src="/logo.svg"
+          src={mobileLogo}
           alt="The Polytechnic"
-          width={160}
-          height={42}
-          style={{ filter: "var(--header-logo-invert)" }}
+          width={120}
+          height={48}
           className="absolute right-2 top-1/2 -translate-y-1/3 opacity-20 pointer-events-none"
         />
       </div>
