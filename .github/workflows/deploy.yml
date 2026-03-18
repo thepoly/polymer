@@ -116,9 +116,12 @@ jobs:
 
           CONFIG_PATH="$DEPLOY_ROOT/current/ecosystem.config.cjs"
 
-          # PM2 zero-downtime reloads require cluster mode. The ecosystem file
-          # pins that behavior while still starting cleanly on first deploy.
-          pm2 startOrReload "$CONFIG_PATH" --only polymer --env production
+          # Replace any stale process definition before starting from the
+          # ecosystem file. A previous "pm2 start \"pnpm start\"" style app
+          # can keep an incompatible script path/interpreter combination that
+          # survives reloads and leaves the process crash-looping.
+          pm2 delete polymer || true
+          pm2 start "$CONFIG_PATH" --only polymer --env production
           pm2 save
 
       - name: Verify Release
@@ -151,7 +154,8 @@ jobs:
           mv -Tf "$DEPLOY_ROOT/current.next" "$DEPLOY_ROOT/current"
 
           CONFIG_PATH="$DEPLOY_ROOT/current/ecosystem.config.cjs"
-          pm2 startOrReload "$CONFIG_PATH" --only polymer --env production
+          pm2 delete polymer || true
+          pm2 start "$CONFIG_PATH" --only polymer --env production
           pm2 save
 
       - name: Prune Old Releases
