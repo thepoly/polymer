@@ -118,21 +118,31 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  // RAF-based count-up animation
-  const animateCount = useCallback((target: number) => {
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    const from = displayCountRef.current;
-    const start = performance.now();
-    const duration = 300;
-    const step = (now: number) => {
-      const t = Math.min(1, (now - start) / duration);
-      const cur = Math.round(from + (target - from) * t);
-      setDisplayCount(cur);
-      displayCountRef.current = cur;
-      if (t < 1) animFrameRef.current = requestAnimationFrame(step);
+  // Smooth count-up: accumulate the real total, then animate toward it
+  const targetCountRef = useRef(0);
+  const countRunningRef = useRef(false);
+
+  const startCountAnimation = useCallback(() => {
+    if (countRunningRef.current) return;
+    countRunningRef.current = true;
+    const step = () => {
+      const from = displayCountRef.current;
+      const target = targetCountRef.current;
+      if (from >= target) { countRunningRef.current = false; return; }
+      const remaining = target - from;
+      const increment = Math.max(1, Math.ceil(remaining * 0.08));
+      const next = Math.min(from + increment, target);
+      displayCountRef.current = next;
+      setDisplayCount(next);
+      animFrameRef.current = requestAnimationFrame(step);
     };
     animFrameRef.current = requestAnimationFrame(step);
   }, []);
+
+  const animateCount = useCallback((target: number) => {
+    targetCountRef.current = target;
+    startCountAnimation();
+  }, [startCountAnimation]);
 
   const fetchResults = useCallback(async (q: string) => {
     abortRef.current?.abort();
