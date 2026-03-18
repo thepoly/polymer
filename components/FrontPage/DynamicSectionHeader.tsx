@@ -15,7 +15,7 @@ const ANCHOR_SELECTOR = "[data-header-anchor]";
 const TEXT_TOP_GAP = 16;
 const TEXT_BOTTOM_GAP = 12;
 const IMAGE_TOP_INSET = 18; // extra clearance above header when prev content is an image
-const IMAGE_BOT_INSET = 4;  // tight clearance below header when next content is an image
+const IMAGE_BOT_INSET = -5; // let the header tuck a bit closer to the image below
 const HEADER_X_OFFSET = -1;
 const HEADER_Y_OFFSET_RATIO = 0.06;
 const HEADER_LINE_HEIGHT = 0.82;
@@ -171,7 +171,17 @@ function measureFontMetrics(text: string, fontSize: number): {
   };
 }
 
-export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title: string; href: string; mobileOffsetY?: number }) {
+export function DynamicSectionHeader({
+  title,
+  href,
+  mobileOffsetY = 0,
+  offsetX = 0,
+}: {
+  title: string;
+  href: string;
+  mobileOffsetY?: number;
+  offsetX?: number;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const mobileRef = useRef<HTMLDivElement>(null);
@@ -319,7 +329,7 @@ export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title
     const el = containerRef.current;
     if (!el) return;
 
-    calculate();
+    requestAnimationFrame(calculate);
     const fontReady = typeof document !== "undefined" && "fonts" in document
       ? document.fonts.ready.then(() => requestAnimationFrame(calculate))
       : null;
@@ -346,12 +356,12 @@ export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title
       <div
         ref={mobileRef}
         className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden"
-        style={{ marginBottom: `-${mobileFontSize * 0.05}px`, marginTop: mobileOffsetY ? `${mobileOffsetY}px` : undefined }}
+        style={{ marginBottom: `-${mobileFontSize * 0.095}px`, marginTop: mobileOffsetY ? `${mobileOffsetY}px` : undefined }}
       >
         <TransitionLink href={href} className="group block">
           <h2
-            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-accent/55 group-hover:text-accent/45 whitespace-nowrap"
-            style={{ fontSize: `${mobileFontSize}px`, marginLeft: `-${mobileFontSize * 0.06}px` }}
+            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#d6001c]/55 group-hover:text-[#d6001c]/45 whitespace-nowrap"
+            style={{ fontSize: `${mobileFontSize}px`, marginLeft: `${-mobileFontSize * 0.06 + offsetX}px` }}
           >
             {title}
           </h2>
@@ -365,11 +375,11 @@ export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title
       ref={containerRef}
       style={{ height: 0, overflow: "visible", position: "relative" }}
     >
-      <div style={{ transform: `translate(${HEADER_X_OFFSET}px, ${ty}px)`, marginLeft: `-${fontSize * 0.06}px` }}>
+      <div style={{ transform: `translate(${HEADER_X_OFFSET + offsetX}px, ${ty}px)`, marginLeft: `-${fontSize * 0.06}px` }}>
         <TransitionLink href={href} className="group inline-block">
           <h2
             ref={headingRef}
-            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-accent/55 group-hover:text-accent/45"
+            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#d6001c]/55 group-hover:text-[#d6001c]/45"
             style={{ fontSize: `${fontSize}px` }}
           >
             {title}

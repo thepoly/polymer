@@ -36,7 +36,7 @@ export default async function StaffPage() {
     <>
       {/* Staff Title */}
       <div className="overflow-hidden mb-6 -mt-2">
-        <h1 className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-accent/55 whitespace-nowrap text-[36px] sm:text-[48px] md:text-[56px] lg:text-[65px] transition-colors">
+        <h1 className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#d6001c]/55 whitespace-nowrap text-[36px] sm:text-[48px] md:text-[56px] lg:text-[65px] transition-colors">
           Staff
         </h1>
       </div>

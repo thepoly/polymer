@@ -58,7 +58,7 @@ export default async function SectionPageRoute({ params }: Args) {
     <main className="min-h-screen bg-bg-main transition-colors duration-300">
       <Header />
       <div className="container mx-auto px-4 py-20 text-center">
-        <h1 className="font-meta text-4xl font-bold mb-4 uppercase tracking-[0.08em] text-accent">
+        <h1 className="font-meta text-4xl font-bold mb-4 uppercase tracking-[0.08em] text-[#d6001c]">
           {section}
         </h1>
         <p className="text-text-muted font-copy">{message}</p>

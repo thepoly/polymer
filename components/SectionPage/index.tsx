@@ -103,7 +103,7 @@ export default function SectionPage({
     <div className="mx-auto max-w-[1280px] px-4 py-5 md:px-6 md:py-6 xl:px-[30px]">
       {/* Section title */}
       <div className="overflow-hidden mb-4 -mt-2">
-        <h1 className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-accent/55 whitespace-nowrap text-[36px] sm:text-[48px] md:text-[56px] lg:text-[65px] transition-colors">
+        <h1 className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#d6001c]/55 whitespace-nowrap text-[36px] sm:text-[48px] md:text-[56px] lg:text-[65px] transition-colors">
           {title}
         </h1>
       </div>
