@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 
 type Props = {
@@ -77,7 +78,7 @@ export default function ArticleScrollBar({ title, section }: Props) {
   const [shareOpen, setShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { isDarkMode } = useTheme();
+  const { isDarkMode, toggleDarkMode } = useTheme();
 
   const logoSrc = isDarkMode ? '/logo-dark-mobile.svg' : '/logo-light-mobile.svg';
   const sectionLabel = section.charAt(0).toUpperCase() + section.slice(1);
@@ -167,41 +168,51 @@ export default function ArticleScrollBar({ title, section }: Props) {
           <span className="text-text-muted truncate">{title}</span>
         </div>
 
-        {/* Right: Share button + dropdown */}
-        <div className="ml-auto relative" ref={dropdownRef}>
+        {/* Right: Mobile theme toggle + share button */}
+        <div className="ml-auto flex items-center gap-1.5">
           <button
-            onClick={() => setShareOpen(!shareOpen)}
-            className="p-2 hover:bg-rule rounded transition-colors shrink-0"
+            onClick={toggleDarkMode}
+            className="rounded p-2 text-text-muted transition-colors hover:bg-rule md:hidden"
+            aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            <svg className="w-[16px] h-[16px] text-text-muted" viewBox="0 0 122.88 98.86" fill="currentColor">
-              <path fillRule="evenodd" clipRule="evenodd" d="M122.88,49.43L73.95,98.86V74.23C43.01,67.82,18.56,74.89,0,98.42c3.22-48.4,36.29-71.76,73.95-73.31l0-25.11L122.88,49.43L122.88,49.43z" />
-            </svg>
+            {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
 
-          {shareOpen && (
-            <div className="absolute right-0 top-full mt-3 w-[220px] bg-bg-main border border-border-main shadow-lg rounded-md z-[100]">
-              <div className="absolute -top-[9px] right-[12px] w-4 h-4 bg-bg-main border-l border-t border-border-main rotate-45" />
-              <div className="relative bg-bg-main rounded-md overflow-hidden">
-                <div className="px-4 pt-4 pb-2">
-                  <h3 className="font-meta font-bold text-[15px] text-text-main">Share options</h3>
-                </div>
-                <div className="flex flex-col pb-1">
-                  {shareOptions.map((opt, i) => (
-                    <div key={opt.icon}>
-                      {i > 0 && <div className="mx-4 border-t border-border-main" />}
-                      <button
-                        onClick={() => handleShare(opt.icon)}
-                        className="flex items-center gap-3 px-4 py-2.5 font-meta text-[15px] text-text-main hover:bg-rule transition-colors text-left w-full"
-                      >
-                        <ShareIcon type={opt.icon} className="w-5 h-5 shrink-0" />
-                        {opt.icon === 'link' && copied ? 'Copied!' : opt.label}
-                      </button>
-                    </div>
-                  ))}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setShareOpen(!shareOpen)}
+              className="p-2 hover:bg-rule rounded transition-colors shrink-0"
+            >
+              <svg className="w-[16px] h-[16px] text-text-muted" viewBox="0 0 122.88 98.86" fill="currentColor">
+                <path fillRule="evenodd" clipRule="evenodd" d="M122.88,49.43L73.95,98.86V74.23C43.01,67.82,18.56,74.89,0,98.42c3.22-48.4,36.29-71.76,73.95-73.31l0-25.11L122.88,49.43L122.88,49.43z" />
+              </svg>
+            </button>
+
+            {shareOpen && (
+              <div className="absolute right-0 top-full mt-3 w-[220px] bg-bg-main border border-border-main shadow-lg rounded-md z-[100]">
+                <div className="absolute -top-[9px] right-[12px] w-4 h-4 bg-bg-main border-l border-t border-border-main rotate-45" />
+                <div className="relative bg-bg-main rounded-md overflow-hidden">
+                  <div className="px-4 pt-4 pb-2">
+                    <h3 className="font-meta font-bold text-[15px] text-text-main">Share options</h3>
+                  </div>
+                  <div className="flex flex-col pb-1">
+                    {shareOptions.map((opt, i) => (
+                      <div key={opt.icon}>
+                        {i > 0 && <div className="mx-4 border-t border-border-main" />}
+                        <button
+                          onClick={() => handleShare(opt.icon)}
+                          className="flex items-center gap-3 px-4 py-2.5 font-meta text-[15px] text-text-main hover:bg-rule transition-colors text-left w-full"
+                        >
+                          <ShareIcon type={opt.icon} className="w-5 h-5 shrink-0" />
+                          {opt.icon === 'link' && copied ? 'Copied!' : opt.label}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>

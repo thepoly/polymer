@@ -211,7 +211,7 @@ function MobileMenuDrawer({
           transition: dragX !== null ? "none" : "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       >
-        <div className="flex h-full flex-col overflow-y-auto px-6 pt-6 pb-10">
+        <div className="safe-area-mobile-drawer flex h-full flex-col overflow-y-auto">
           {/* Close button */}
           <button
             onClick={onClose}
@@ -317,10 +317,21 @@ export default function Header({ compact = false }: { compact?: boolean }) {
   return (
     <>
       {/* ── MOBILE HEADER ── */}
-      <header className={`${compact ? "sticky top-0" : ""} z-50 bg-bg-main lg:hidden`}>
-        <div className="mx-auto flex h-[56px] max-w-[1280px] items-center justify-between px-3">
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="flex h-9 w-9 items-center justify-center text-text-main">
-            {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      <header className={`${compact ? "sticky top-0" : ""} safe-area-top z-50 bg-bg-main lg:hidden`}>
+        <div className="safe-area-mobile-header-x mx-auto flex h-[56px] max-w-[1280px] items-center justify-between">
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="flex h-9 w-9 items-center justify-center overflow-hidden text-text-main">
+            <span className="relative block h-5 w-5">
+              <Menu
+                className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
+                  isMobileMenuOpen ? "-translate-x-6 opacity-0" : "translate-x-0 opacity-100"
+                }`}
+              />
+              <X
+                className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
+                  isMobileMenuOpen ? "translate-x-0 opacity-100" : "translate-x-6 opacity-0"
+                }`}
+              />
+            </span>
           </button>
           <Link
             href="/"
@@ -426,7 +437,7 @@ export default function Header({ compact = false }: { compact?: boolean }) {
               }
             `}} />
 
-            <div className="relative flex items-end justify-between gap-8 pb-1.5">
+            <div className="relative flex items-end justify-between gap-8 pb-0.5">
               <div
                 className={`absolute -left-1 right-0 bottom-0 h-px bg-rule-strong ${
                   shouldEnableAnimatedHeaderTransition && isAnimating ? "opacity-0" : "opacity-100"
@@ -473,7 +484,7 @@ export default function Header({ compact = false }: { compact?: boolean }) {
                 onClick={(e) => handleLinkClick(e, "/")}
                 onMouseEnter={() => prefetchLink("/")}
                 onFocus={() => prefetchLink("/")}
-                className={`relative -top-2 block h-[70px] w-[432px] max-w-full shrink-0 ${isAnimating ? 'cursor-default' : 'cursor-pointer'}`}
+                className={`relative -top-2 block h-[76px] w-[456px] max-w-full shrink-0 ${isAnimating ? 'cursor-default' : 'cursor-pointer'}`}
               >
                 <Image 
                   src={logoSrc} 

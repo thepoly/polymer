@@ -266,7 +266,7 @@ export default function FrontPage({
         <div className="pt-6 flex flex-col md:hidden" data-frontpage-top>
           <LeadArticle article={topStories.lead} compact={false} />
           {[...heroStories.left, ...heroStories.right].map((article) => (
-            <div key={article.id} className="mt-20">
+            <div key={article.id} className="mt-10">
               <ArticleCard article={article} />
             </div>
           ))}
@@ -302,7 +302,7 @@ export default function FrontPage({
           </div>
         </div>
 
-        <div className="relative z-[0] mt-6 flex flex-col gap-8 lg:gap-6">
+        <div className="relative z-[0] mt-16 md:mt-6 flex flex-col gap-8 lg:gap-6">
           <div>
             <DynamicSectionHeader title="News" href="/news" mobileOffsetY={1} />
             <SectionBlock title="News" articles={sections.news} />

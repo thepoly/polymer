@@ -52,7 +52,7 @@ async function readNDJSON(
 
 export default function SearchOverlay({ onClose }: { onClose: () => void }) {
   const { isDarkMode } = useTheme();
-  const logoSrc = isDarkMode ? "/logo-dark.svg" : "/logo-light.svg";
+  const logoSrc = isDarkMode ? "/logo-dark-mobile.svg" : "/logo-light-mobile.svg";
   const [query, setQuery] = useState("");
   const [articles, setArticles] = useState<Article[]>([]);
   const [displayCount, setDisplayCount] = useState(0);
@@ -276,6 +276,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
 
   const displayArticles = articles;
   const totalPages = Math.ceil(displayArticles.length / PAGE_SIZE);
+  const rainbowQueryChars = Array.from(query);
 
   return (
     <div
@@ -316,6 +317,22 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
         @keyframes rainbowHue {
           from { filter: hue-rotate(0deg); }
           to   { filter: hue-rotate(360deg); }
+        }
+        @keyframes rainbowLetterFlash {
+          0% { color: #f4a6a6; }
+          16% { color: #f6c7a1; }
+          33% { color: #f5ecaa; }
+          50% { color: #b9e7b0; }
+          66% { color: #a9cfff; }
+          83% { color: #d8b4f8; }
+          100% { color: #f4a6a6; }
+        }
+        @keyframes logoColorOscillate {
+          0% { filter: hue-rotate(0deg) saturate(1.15) brightness(1.02); }
+          25% { filter: hue-rotate(45deg) saturate(1.12) brightness(1.04); }
+          50% { filter: hue-rotate(90deg) saturate(1.1) brightness(1.05); }
+          75% { filter: hue-rotate(45deg) saturate(1.12) brightness(1.04); }
+          100% { filter: hue-rotate(0deg) saturate(1.15) brightness(1.02); }
         }
       `}</style>
 
@@ -402,6 +419,22 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
+          {showWave && query.length > 0 && (
+            <div className="absolute inset-0 z-10 flex items-center py-2 pl-3 pr-36 font-meta text-xl md:text-3xl font-bold pointer-events-none whitespace-pre text-left">
+              {rainbowQueryChars.map((char, index) => (
+                <span
+                  key={`${char}-${index}`}
+                  style={{
+                    animation: "rainbowLetterFlash 0.42s linear infinite",
+                    animationDelay: `${index * 0.045}s`,
+                  }}
+                >
+                  {char}
+                </span>
+              ))}
+            </div>
+          )}
+
           <input
             ref={inputRef}
             type="text"
@@ -409,7 +442,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
             onChange={(e) => setQuery(e.target.value)}
             onSelect={() => updateCursor()}
             placeholder={stage >= 3 ? "Search..." : ""}
-            className="search-caret w-full bg-transparent py-2 pl-3 pr-36 font-meta text-xl md:text-3xl font-bold text-text-main placeholder:text-text-muted/60 dark:placeholder:text-white/85 outline-none"
+            className={`search-caret w-full bg-transparent py-2 pl-3 pr-36 font-meta text-xl md:text-3xl font-bold placeholder:text-text-muted/60 dark:placeholder:text-white/85 outline-none ${showWave && query.length > 0 ? "text-transparent" : "text-text-main"}`}
           />
 
           {/* Hidden span to measure text width */}
@@ -446,6 +479,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
             style={{
               opacity: stage >= 2 ? 0.5 : 0,
               transition: "opacity 0.3s ease-out",
+              animation: showWave ? "logoColorOscillate 1.2s ease-in-out infinite" : "none",
             }}
           />
         </div>

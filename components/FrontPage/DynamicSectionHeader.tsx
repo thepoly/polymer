@@ -360,7 +360,7 @@ export function DynamicSectionHeader({
       >
         <TransitionLink href={href} className="group block">
           <h2
-            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#d6001c]/55 group-hover:text-[#d6001c]/45 whitespace-nowrap"
+            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#D6001C] dark:text-white group-hover:text-[#D6001C] dark:group-hover:text-white whitespace-nowrap"
             style={{ fontSize: `${mobileFontSize}px`, marginLeft: `${-mobileFontSize * 0.06 + offsetX}px` }}
           >
             {title}
@@ -379,7 +379,7 @@ export function DynamicSectionHeader({
         <TransitionLink href={href} className="group inline-block">
           <h2
             ref={headingRef}
-            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#d6001c]/55 group-hover:text-[#d6001c]/45"
+            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#D6001C] dark:text-white group-hover:text-[#D6001C] dark:group-hover:text-white"
             style={{ fontSize: `${fontSize}px` }}
           >
             {title}

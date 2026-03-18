@@ -194,7 +194,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                 return (
                   <div
                     key={article.id}
-                    className={`${isLast ? '' : 'border-b border-rule'} ${index === 0 ? 'pt-0' : 'pt-5'} pb-5`}
+                    className={`${isLast ? '' : 'border-b border-rule'} ${index === 0 ? 'pt-5 lg:pt-0' : 'pt-5'} pb-5`}
                   >
                     <TransitionLink
                       href={getArticleUrl(article)}

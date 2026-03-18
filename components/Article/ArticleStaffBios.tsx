@@ -11,9 +11,6 @@ type Props = {
 const getAuthors = (article: Article): User[] =>
   (article.authors || []).flatMap((author) => (typeof author === 'number' ? [] : [author as User]));
 
-const getPlaceholderBio = () =>
-  ' is a junior Computer Science and Games and Simulation Arts and Sciences dual major from Robbinsville, New Jersey. They enjoy crocheting. GIVE ME YOUR STAFF BIOS';
-
 export const ArticleStaffBios: React.FC<Props> = ({
   article,
   maxWidthClassName = 'max-w-[680px]',
@@ -58,7 +55,8 @@ export const ArticleStaffBios: React.FC<Props> = ({
                   >
                     {user.firstName} {user.lastName}
                   </Link>
-                  {getPlaceholderBio()}
+                  {' is a junior Computer Science and Games and Simulation Arts and Sciences dual major from Robbinsville, New Jersey. They enjoy crocheting. '}
+                  <strong>GIVE ME YOUR STAFF BIOS</strong>
                 </p>
               </div>
             </div>
