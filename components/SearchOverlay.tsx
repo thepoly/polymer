@@ -8,6 +8,7 @@ import { Byline } from "@/components/FrontPage/Byline";
 import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import { useTheme } from "@/components/ThemeProvider";
+import { DEFAULT_SEARCH_PAGE_SIZE, sanitizeSearchQuery } from "@/utils/search";
 
 const OVERLAY_TRANSITION_MS = 420;
 const WAVE_LAMBDA = 600; // px, wavelength
@@ -26,28 +27,28 @@ const WAVE_PATH = (() => {
   return d;
 })();
 
-/** Read an NDJSON stream, calling onChunk for each parsed line. */
-async function readNDJSON(
-  body: ReadableStream<Uint8Array>,
-  onChunk: (articles: Article[]) => void,
-) {
-  const reader = body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      try {
-        const chunk = JSON.parse(line) as { articles: Article[] };
-        if (Array.isArray(chunk.articles)) onChunk(chunk.articles);
-      } catch {}
-    }
-  }
+type SearchResponse = {
+  articles: Article[];
+  page: number;
+  pageSize: number;
+  query: string;
+  totalPages: number;
+  totalResults: number;
+};
+
+async function fetchSearchResults(
+  q: string,
+  page: number,
+  signal: AbortSignal,
+): Promise<SearchResponse> {
+  const params = new URLSearchParams({
+    q,
+    page: String(page),
+    pageSize: String(DEFAULT_SEARCH_PAGE_SIZE),
+  });
+  const res = await fetch(`/api/search?${params.toString()}`, { signal });
+  if (!res.ok) throw new Error("Search request failed");
+  return res.json() as Promise<SearchResponse>;
 }
 
 export default function SearchOverlay({ onClose }: { onClose: () => void }) {
@@ -63,7 +64,8 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
   const [isLoading, setIsLoading] = useState(false);
   const [archiveSubtitle, setArchiveSubtitle] = useState<string | null>(null);
   const [page, setPage] = useState(0);
-  const PAGE_SIZE = 20;
+  const [totalResults, setTotalResults] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -144,16 +146,19 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
     startCountAnimation();
   }, [startCountAnimation]);
 
-  const fetchResults = useCallback(async (q: string) => {
+  const fetchResults = useCallback(async (rawQuery: string, pageIndex: number) => {
     abortRef.current?.abort();
+    const q = sanitizeSearchQuery(rawQuery);
 
-    if (!q.trim()) {
+    if (!q) {
       setArticles([]);
       setSearched(false);
       setIsLoading(false);
       setDisplayCount(0);
       displayCountRef.current = 0;
       setSpellSuggestion(null);
+      setTotalResults(0);
+      setTotalPages(0);
       return;
     }
 
@@ -165,25 +170,14 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
     setDisplayCount(0);
     displayCountRef.current = 0;
 
-    const accumulated: Article[] = [];
-
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}`, {
-        signal: controller.signal,
-      });
-      if (!res.ok || !res.body) {
-        setIsLoading(false);
-        return;
-      }
+      const data = await fetchSearchResults(q, pageIndex + 1, controller.signal);
 
-      await readNDJSON(res.body, (chunk) => {
-        accumulated.push(...chunk);
-        animateCount(accumulated.length);
-      });
-
-      // Stream complete — show results
-      setArticles(accumulated);
-      setPage(0);
+      setArticles(data.articles);
+      setTotalResults(data.totalResults);
+      setTotalPages(data.totalPages);
+      if (data.page - 1 !== pageIndex) setPage(Math.max(0, data.page - 1));
+      animateCount(data.totalResults);
       setSearched(true);
       if (!hasSearchedOnceRef.current) {
         hasSearchedOnceRef.current = true;
@@ -192,29 +186,25 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
       setIsLoading(false);
 
       // Spell check if 0 results
-      if (accumulated.length === 0) {
+      if (data.totalResults === 0) {
         try {
           const spellRes = await fetch(
-            `/api/search/spellcheck?q=${encodeURIComponent(q.trim())}`,
+            `/api/search/spellcheck?q=${encodeURIComponent(q)}`,
             { signal: controller.signal },
           );
           if (!spellRes.ok) return;
           const data = (await spellRes.json()) as { suggestion: string | null };
-          if (!data.suggestion || data.suggestion.toLowerCase() === q.trim().toLowerCase()) return;
+          if (!data.suggestion || data.suggestion.toLowerCase() === q.toLowerCase()) return;
 
           // Re-search with corrected query
-          const res2 = await fetch(
-            `/api/search?q=${encodeURIComponent(data.suggestion)}`,
-            { signal: controller.signal },
-          );
-          if (!res2.ok || !res2.body) return;
+          const suggestedData = await fetchSearchResults(data.suggestion, 1, controller.signal);
 
-          const suggested: Article[] = [];
-          await readNDJSON(res2.body, (chunk) => suggested.push(...chunk));
-
-          if (suggested.length > 0) {
+          if (suggestedData.totalResults > 0) {
             setSpellSuggestion(data.suggestion);
-            setArticles(suggested);
+            setArticles(suggestedData.articles);
+            setTotalResults(suggestedData.totalResults);
+            setTotalPages(suggestedData.totalPages);
+            animateCount(suggestedData.totalResults);
             setPage(0);
           }
         } catch {}
@@ -226,9 +216,13 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
   }, [animateCount]);
 
   useEffect(() => {
-    const timer = setTimeout(() => fetchResults(query), 250);
+    const timer = setTimeout(() => fetchResults(query, page), 250);
     return () => clearTimeout(timer);
-  }, [query, fetchResults]);
+  }, [query, page, fetchResults]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [query]);
 
   // Animation sequence — starts immediately, no dead time
   useEffect(() => {
@@ -275,7 +269,6 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
   }, [handleClose]);
 
   const displayArticles = articles;
-  const totalPages = Math.ceil(displayArticles.length / PAGE_SIZE);
   const rainbowQueryChars = Array.from(query);
 
   return (
@@ -496,12 +489,12 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
             ) : searched ? (
               spellSuggestion ? (
                 <>
-                  We found <span className="text-accent font-bold">{articles.length}</span> result{articles.length !== 1 ? "s" : ""} for{" "}
+                  We found <span className="text-accent font-bold">{totalResults}</span> result{totalResults !== 1 ? "s" : ""} for{" "}
                   <span className="text-red-500 font-bold">&lsquo;{spellSuggestion}&rsquo;</span>.{" "}
                 </>
               ) : (
                 <>
-                  We found <span className="text-accent font-bold">{articles.length}</span> result{articles.length !== 1 ? "s" : ""} that matched your query.{" "}
+                  We found <span className="text-accent font-bold">{totalResults}</span> result{totalResults !== 1 ? "s" : ""} that matched your query.{" "}
                 </>
               )
             ) : null}
@@ -510,11 +503,10 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
         )}
 
         {searched && displayArticles.length > 0 && (() => {
-          const pageArticles = displayArticles.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-          return (
-            <div className="mt-8">
-              <div className="flex flex-col divide-y divide-rule">
-                {pageArticles.map((article) => (
+        return (
+          <div className="mt-8">
+            <div className="flex flex-col divide-y divide-rule">
+                {displayArticles.map((article) => (
                   <div key={article.id} className="py-4 first:pt-0">
                     <TransitionLink
                       href={article.externalUrl ?? getArticleUrl(article)}

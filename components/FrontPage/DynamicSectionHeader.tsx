@@ -191,6 +191,7 @@ export function DynamicSectionHeader({
   const [mobileFontSize, setMobileFontSize] = useState(64);
   const [ty, setTy] = useState(0);
   const [isFloating, setIsFloating] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const check = () => setIsFloating(window.innerWidth >= FLOAT_BREAKPOINT);
@@ -211,6 +212,7 @@ export function DynamicSectionHeader({
         // Add back the bearing offset we subtract in rendering
         const adjusted = (availableWidth + size * 0.06) / testWidth * testSize;
         setMobileFontSize(Math.floor(adjusted));
+        setIsReady(true);
       }
     };
     fit();
@@ -236,6 +238,7 @@ export function DynamicSectionHeader({
     if (!prevSource || !nextSource) {
       setFontSize(MIN_SIZE);
       setTy(0);
+      setIsReady(true);
       return;
     }
 
@@ -251,6 +254,7 @@ export function DynamicSectionHeader({
       // No room to float — fall back to a small in-flow header
       setFontSize(HARD_MIN_SIZE);
       setTy(0);
+      setIsReady(true);
       return;
     }
 
@@ -324,6 +328,7 @@ export function DynamicSectionHeader({
       // Clamp to prevent overlap with content above and below
       const finalTop = Math.min(renderedMaxTop, Math.max(renderedMinTop, targetTop + visualBias));
       setTy(finalTop - wrapperRect.top + offsetY);
+      setIsReady(true);
     });
   }, [title, isFloating, offsetY]);
 
@@ -357,8 +362,12 @@ export function DynamicSectionHeader({
     return (
       <div
         ref={mobileRef}
-        className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden"
-        style={{ marginBottom: `-${mobileFontSize * 0.095}px`, marginTop: mobileOffsetY || offsetY ? `${mobileOffsetY + offsetY}px` : undefined }}
+        className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden transition-opacity duration-300"
+        style={{
+          marginBottom: `-${mobileFontSize * 0.095}px`,
+          marginTop: mobileOffsetY || offsetY ? `${mobileOffsetY + offsetY}px` : undefined,
+          opacity: isReady ? 1 : 0,
+        }}
       >
         <TransitionLink href={href} className="group block">
           <h2
@@ -375,7 +384,8 @@ export function DynamicSectionHeader({
   return (
     <div
       ref={containerRef}
-      style={{ height: 0, overflow: "visible", position: "relative" }}
+      className="transition-opacity duration-300"
+      style={{ height: 0, overflow: "visible", position: "relative", opacity: isReady ? 1 : 0 }}
     >
       <div style={{ transform: `translate(${HEADER_X_OFFSET + offsetX}px, ${ty}px)`, marginLeft: `-${fontSize * 0.06}px` }}>
         <TransitionLink href={href} className="group inline-block">

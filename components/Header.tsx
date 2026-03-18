@@ -73,13 +73,11 @@ function MobileMenuDrawer({
   const isDraggingRef = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Calculate the drawer width in pixels
   const getDrawerPx = useCallback(() => {
     if (typeof window === "undefined") return 300;
     return window.innerWidth * DRAWER_WIDTH;
   }, []);
 
-  // Edge swipe to open
   useEffect(() => {
     if (isOpen) return;
 
@@ -128,7 +126,6 @@ function MobileMenuDrawer({
     };
   }, [isOpen, dragX, onOpen, getDrawerPx]);
 
-  // Swipe to close when open
   useEffect(() => {
     if (!isOpen) return;
 
@@ -178,7 +175,6 @@ function MobileMenuDrawer({
     };
   }, [isOpen, dragX, onClose, getDrawerPx]);
 
-  // Prevent body scroll when open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -195,14 +191,12 @@ function MobileMenuDrawer({
 
   return (
     <div className="fixed inset-0 z-[60] lg:hidden">
-      {/* Backdrop — blurred right gap */}
       <div
         className="absolute inset-0 backdrop-blur-sm"
         style={{ backgroundColor: `rgba(0,0,0,${0.4 * progress})` }}
         onClick={onClose}
       />
 
-      {/* Drawer panel */}
       <div
         ref={panelRef}
         className="absolute top-0 left-0 bottom-0 bg-bg-main shadow-2xl will-change-transform"
@@ -213,7 +207,6 @@ function MobileMenuDrawer({
         }}
       >
         <div className="safe-area-mobile-drawer flex h-full flex-col overflow-y-auto">
-          {/* Close button */}
           <button
             onClick={onClose}
             className="mb-8 flex h-10 w-10 items-center justify-center self-end text-text-main"
@@ -337,7 +330,6 @@ export default function Header({ compact = false }: { compact?: boolean }) {
 
   return (
     <>
-      {/* ── MOBILE HEADER ── */}
       <header className={`${compact ? "sticky top-0" : ""} safe-area-top z-50 bg-bg-main lg:hidden`}>
         <div className="safe-area-mobile-header-x mx-auto flex h-[56px] max-w-[1280px] items-center justify-between">
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="flex h-9 w-9 items-center justify-center overflow-hidden text-text-main">
@@ -369,7 +361,6 @@ export default function Header({ compact = false }: { compact?: boolean }) {
         </div>
       </header>
 
-      {/* ── MOBILE MENU DRAWER ── */}
       <MobileMenuDrawer
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
@@ -386,7 +377,6 @@ export default function Header({ compact = false }: { compact?: boolean }) {
         }}
       />
 
-      {/* ── DESKTOP HEADER ── */}
       <header className="hidden lg:block">
         <div className={`${compact ? "fixed" : "relative"} top-0 left-0 right-0 z-50 bg-bg-main/95 backdrop-blur-md`}>
           <div className="font-meta relative mx-auto flex max-w-[1280px] items-center justify-between gap-6 px-4 pt-1.5 pb-0.5 md:px-6 xl:px-[30px]">
@@ -449,10 +439,26 @@ export default function Header({ compact = false }: { compact?: boolean }) {
                   </div>
                 )}
               </div>
-              <button className="rainbow-search-trigger flex h-7 cursor-pointer items-center gap-1.5 rounded-full px-2.5 text-text-main" onClick={() => setIsSearchOverlayOpen(true)}>
-                <Search className="rainbow-search-trigger__icon h-3.5 w-3.5 shrink-0" />
-                <span className="rainbow-search-trigger__content whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.1em]">Search</span>
+              
+              <button 
+                className="group relative flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 text-text-main" 
+                onClick={() => setIsSearchOverlayOpen(true)}
+              >
+                <span 
+                  className="pointer-events-none absolute inset-0 overflow-hidden rounded-full p-[1px] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                  style={{
+                    WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                    WebkitMaskComposite: "xor",
+                    maskComposite: "exclude"
+                  }}
+                >
+                  <span className="absolute left-1/2 top-1/2 aspect-square w-[300%] -translate-x-1/2 -translate-y-1/2 animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_0deg,#ef4444,#f59e0b,#10b981,#3b82f6,#8b5cf6,#ef4444)]" />
+                </span>
+                
+                <Search className="relative z-10 h-3.5 w-3.5 shrink-0" />
+                <span className="relative z-10 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.1em]">Search</span>
               </button>
+
             </div>
           </div>
         </div>
@@ -461,7 +467,16 @@ export default function Header({ compact = false }: { compact?: boolean }) {
           <div className="mx-auto max-w-[1280px] px-4 pt-6 md:px-6 xl:px-[30px]">
             <style dangerouslySetInnerHTML={{__html: `
               @keyframes terryWrapDraw {
-                0% { stroke-dashoffset: 620; }
+                0% { stroke-dashoffset: 648; }
+                35% { stroke-dashoffset: 0; }
+                95% { stroke-dashoffset: -648; }
+                100% { stroke-dashoffset: -648; }
+              }
+                35% { stroke-dashoffset: 0; }
+                40% { stroke-dashoffset: 0; }
+                75% { stroke-dashoffset: -648; }
+                100% { stroke-dashoffset: -648; }
+              }
                 35% { stroke-dashoffset: 0; }
                 40% { stroke-dashoffset: 0; }
                 75% { stroke-dashoffset: -620; }
@@ -506,8 +521,8 @@ export default function Header({ compact = false }: { compact?: boolean }) {
                       d="M 464 0.5 V -89.5 H -4 V 0.5"
                       stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="square"
                       style={{
-                        strokeDasharray: 620,
-                        strokeDashoffset: 620,
+                        strokeDasharray: 648,
+                        strokeDashoffset: 648,
                         animation: `terryWrapDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
                       }}
                     />

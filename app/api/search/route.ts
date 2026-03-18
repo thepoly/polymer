@@ -5,6 +5,16 @@ import { formatArticle } from "@/utils/formatArticle";
 import { Article } from "@/components/FrontPage/types";
 import { Article as PayloadArticle } from "@/payload-types";
 import { Pool } from "pg";
+import {
+  DEFAULT_SEARCH_PAGE_SIZE,
+  parseSearchPage,
+  parseSearchPageSize,
+  sanitizeSearchQuery,
+} from "@/utils/search";
+import { checkRateLimit } from "@/utils/rateLimit";
+
+const SEARCH_RATE_LIMIT = 30;
+const SEARCH_RATE_LIMIT_WINDOW_MS = 10_000;
 
 let legacyPool: Pool | null = null;
 function getLegacyPool(): Pool {
@@ -53,6 +63,10 @@ function dateCmp(a: Article, b: Article): number {
   const ta = a.publishedDate ? new Date(a.publishedDate).getTime() : 0;
   const tb = b.publishedDate ? new Date(b.publishedDate).getTime() : 0;
   return tb - ta;
+}
+
+function articleKey(article: Article): string {
+  return article.externalUrl ?? `${article.slug}|${article.publishedDate ?? ""}|${article.id}`;
 }
 
 type LegacyRow = {
@@ -143,91 +157,148 @@ async function searchLegacy(forms: string[]): Promise<{ article: Article; bodyTe
   }
 }
 
+async function searchPayload(q: string, ql: string, forms: string[]) {
+  const payload = await getPayload({ config });
+  const orConditions = ["title", "subdeck", "kicker"].flatMap((field) =>
+    forms.map((form) => ({ [field]: { contains: form } })),
+  );
+  const [textDocs, users] = await Promise.all([
+    payload
+      .find({
+        collection: "articles",
+        where: { and: [{ _status: { equals: "published" } }, { or: orConditions }] },
+        sort: "-publishedDate",
+        limit: 0,
+        depth: 2,
+      })
+      .then((result) => result.docs),
+    payload
+      .find({
+        collection: "users",
+        where: { or: [{ firstName: { contains: q } }, { lastName: { contains: q } }] },
+        limit: 50,
+        depth: 0,
+      })
+      .then((result) => result.docs)
+      .catch(() => [] as never[]),
+  ]);
+
+  const authorDocs =
+    users.length > 0
+      ? await payload
+          .find({
+            collection: "articles",
+            where: {
+              and: [
+                { _status: { equals: "published" } },
+                { authors: { in: users.map((user: { id: number }) => user.id) } },
+              ],
+            },
+            sort: "-publishedDate",
+            limit: 0,
+            depth: 2,
+          })
+          .then((result) => result.docs)
+          .catch(() => [] as PayloadArticle[])
+      : ([] as PayloadArticle[]);
+
+  const allDocs = new Map<number, PayloadArticle>();
+  for (const doc of [...textDocs, ...authorDocs]) allDocs.set(doc.id, doc);
+
+  return [...allDocs.values()]
+    .map((doc) => {
+      const article = formatArticle(doc, { absoluteDate: true });
+      if (!article) return null;
+      return { article, score: scoreArticle(article, extractLexicalText(doc.content), ql) };
+    })
+    .filter((entry): entry is { article: Article; score: number } => entry !== null);
+}
+
 export async function GET(request: NextRequest) {
-  const q = request.nextUrl.searchParams.get("q")?.trim();
-  const encoder = new TextEncoder();
-  const send = (controller: ReadableStreamDefaultController, articles: Article[]) => {
-    try { controller.enqueue(encoder.encode(JSON.stringify({ articles }) + "\n")); } catch {}
-  };
+  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const rateLimitKey = `search:${forwardedFor || "anonymous"}`;
+  const rateLimit = checkRateLimit(
+    rateLimitKey,
+    SEARCH_RATE_LIMIT,
+    SEARCH_RATE_LIMIT_WINDOW_MS,
+  );
+  if (!rateLimit.allowed) {
+    return Response.json(
+      { error: "Too many search requests. Try again shortly." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSeconds),
+        },
+      },
+    );
+  }
+
+  const q = sanitizeSearchQuery(request.nextUrl.searchParams.get("q"));
+  const page = parseSearchPage(request.nextUrl.searchParams.get("page"));
+  const pageSize = parseSearchPageSize(request.nextUrl.searchParams.get("pageSize"));
 
   if (!q) {
-    return new Response('{"articles":[]}\n', { headers: { "Content-Type": "application/x-ndjson" } });
+    return Response.json({
+      articles: [],
+      page,
+      pageSize,
+      query: "",
+      totalPages: 0,
+      totalResults: 0,
+    });
   }
 
   const ql = q.toLowerCase();
   const forms = queryForms(q);
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      let pending = 2;
-      const finish = () => { if (--pending === 0) { try { controller.close(); } catch {} } };
+  try {
+    const [payloadResults, legacyRows] = await Promise.all([
+      searchPayload(q, ql, forms).catch(() => [] as { article: Article; score: number }[]),
+      searchLegacy(forms).catch(() => [] as { article: Article; bodyText: string }[]),
+    ]);
 
-      try {
-        const payload = await getPayload({ config });
-
-        // Payload pipeline
-        (async () => {
-          try {
-            const orConditions = ["title", "subdeck", "kicker"].flatMap(field =>
-              forms.map(f => ({ [field]: { contains: f } }))
-            );
-            const [textDocs, users] = await Promise.all([
-              payload.find({
-                collection: "articles",
-                where: { and: [{ _status: { equals: "published" } }, { or: orConditions }] },
-                sort: "-publishedDate", limit: 0, depth: 2,
-              }).then(r => r.docs),
-              payload.find({
-                collection: "users",
-                where: { or: [{ firstName: { contains: q } }, { lastName: { contains: q } }] },
-                limit: 50, depth: 0,
-              }).then(r => r.docs).catch(() => [] as never[]),
-            ]);
-
-            const authorDocs = users.length > 0
-              ? await payload.find({
-                  collection: "articles",
-                  where: { and: [{ _status: { equals: "published" } }, { authors: { in: users.map((u: { id: number }) => u.id) } }] },
-                  sort: "-publishedDate", limit: 0, depth: 2,
-                }).then(r => r.docs).catch(() => [] as PayloadArticle[])
-              : [] as PayloadArticle[];
-
-            const allDocs = new Map<number, PayloadArticle>();
-            for (const doc of [...textDocs, ...authorDocs]) allDocs.set(doc.id, doc);
-
-            const scored = [...allDocs.values()]
-              .map(doc => {
-                const article = formatArticle(doc, { absoluteDate: true });
-                if (!article) return null;
-                return { article, score: scoreArticle(article, extractLexicalText(doc.content), ql) };
-              })
-              .filter((x): x is { article: Article; score: number } => x !== null);
-
-            scored.sort((a, b) => b.score - a.score || dateCmp(a.article, b.article));
-            send(controller, scored.map(s => s.article));
-          } catch { send(controller, []); }
-          finish();
-        })();
-
-        // Legacy pipeline
-        (async () => {
-          try {
-            const rows = await searchLegacy(forms);
-            const scored = rows
-              .map(({ article, bodyText }) => ({ article, score: scoreArticle(article, bodyText, ql) }));
-            scored.sort((a, b) => b.score - a.score || dateCmp(a.article, b.article));
-            send(controller, scored.map(s => s.article));
-          } catch { send(controller, []); }
-          finish();
-        })();
-
-      } catch {
-        send(controller, []);
-        pending = 0;
-        try { controller.close(); } catch {}
+    const merged = new Map<string, { article: Article; score: number }>();
+    for (const result of payloadResults) {
+      merged.set(articleKey(result.article), result);
+    }
+    for (const row of legacyRows) {
+      const result = {
+        article: row.article,
+        score: scoreArticle(row.article, row.bodyText, ql),
+      };
+      const key = articleKey(result.article);
+      const existing = merged.get(key);
+      if (!existing || result.score > existing.score) {
+        merged.set(key, result);
       }
-    },
-  });
+    }
 
-  return new Response(stream, { headers: { "Content-Type": "application/x-ndjson" } });
+    const allResults = [...merged.values()].sort(
+      (a, b) => b.score - a.score || dateCmp(a.article, b.article),
+    );
+    const totalResults = allResults.length;
+    const totalPages = totalResults === 0 ? 0 : Math.ceil(totalResults / pageSize);
+    const safePage = totalPages === 0 ? 1 : Math.min(page, totalPages);
+    const start = (safePage - 1) * pageSize;
+    const articles = allResults.slice(start, start + pageSize).map((entry) => entry.article);
+
+    return Response.json({
+      articles,
+      page: safePage,
+      pageSize,
+      query: q,
+      totalPages,
+      totalResults,
+    });
+  } catch {
+    return Response.json({
+      articles: [],
+      page,
+      pageSize: DEFAULT_SEARCH_PAGE_SIZE,
+      query: q,
+      totalPages: 0,
+      totalResults: 0,
+    });
+  }
 }

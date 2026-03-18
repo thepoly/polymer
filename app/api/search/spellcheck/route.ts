@@ -2,6 +2,11 @@ import { NextRequest } from "next/server";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import { Pool } from "pg";
+import { sanitizeSearchQuery } from "@/utils/search";
+import { checkRateLimit } from "@/utils/rateLimit";
+
+const SPELLCHECK_RATE_LIMIT = 12;
+const SPELLCHECK_RATE_LIMIT_WINDOW_MS = 10_000;
 
 let legacyPool: Pool | null = null;
 function getLegacyPool(): Pool {
@@ -106,7 +111,26 @@ function correctWord(word: string, corpus: Map<string, number>): string {
 }
 
 export async function GET(request: NextRequest) {
-  const q = request.nextUrl.searchParams.get("q")?.trim();
+  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const rateLimitKey = `spellcheck:${forwardedFor || "anonymous"}`;
+  const rateLimit = checkRateLimit(
+    rateLimitKey,
+    SPELLCHECK_RATE_LIMIT,
+    SPELLCHECK_RATE_LIMIT_WINDOW_MS,
+  );
+  if (!rateLimit.allowed) {
+    return Response.json(
+      { suggestion: null },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSeconds),
+        },
+      },
+    );
+  }
+
+  const q = sanitizeSearchQuery(request.nextUrl.searchParams.get("q"));
   if (!q) return Response.json({ suggestion: null });
 
   try {
