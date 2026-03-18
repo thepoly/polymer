@@ -10,6 +10,21 @@ import { getArticleUrl } from "@/utils/getArticleUrl";
 import { useTheme } from "@/components/ThemeProvider";
 
 const OVERLAY_TRANSITION_MS = 420;
+const WAVE_LAMBDA = 600; // px, wavelength — one ripple travels ~1s across a 1280px bar
+
+// Sine wave approximation via cubic bezier. Each half-period uses control points
+// at 0.3642*half and 0.6358*half for a natural-looking curve.
+const WAVE_PATH = (() => {
+  const cy = 4, A = 2.5, half = WAVE_LAMBDA / 2;
+  const cp = Math.round(0.3642 * half); // ≈ 109
+  let d = `M 0,${cy}`;
+  for (let n = 0; n < 9; n++) {
+    const x = n * WAVE_LAMBDA;
+    d += ` C ${x + cp},${cy - A} ${x + half - cp},${cy - A} ${x + half},${cy}`;
+    d += ` C ${x + half + cp},${cy + A} ${x + WAVE_LAMBDA - cp},${cy + A} ${x + WAVE_LAMBDA},${cy}`;
+  }
+  return d;
+})();
 
 export default function SearchOverlay({ onClose }: { onClose: () => void }) {
   const { isDarkMode } = useTheme();
@@ -18,6 +33,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
   const [articles, setArticles] = useState<Article[]>([]);
   const [searched, setSearched] = useState(false);
   const [hasSearchedOnce, setHasSearchedOnce] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [archiveSubtitle, setArchiveSubtitle] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 20;
@@ -81,24 +97,28 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
     if (!q.trim()) {
       setArticles([]);
       setSearched(false);
+      setIsLoading(false);
       return;
     }
 
     const controller = new AbortController();
     abortRef.current = controller;
+    setIsLoading(true);
 
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q.trim())}`, {
         signal: controller.signal,
       });
-      if (!res.ok) return;
+      if (!res.ok) { setIsLoading(false); return; }
       const data = await res.json();
       setArticles(data.articles);
       setPage(0);
       setSearched(true);
       if (!hasSearchedOnce) setHasSearchedOnce(true);
+      setIsLoading(false);
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return;
+      setIsLoading(false);
     }
   }, [hasSearchedOnce]);
 
@@ -158,6 +178,8 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
     };
   }, [handleClose]);
 
+  const showWave = isLoading && stage >= 2;
+
   return (
     <div
       className="fixed inset-0 z-[100] overflow-y-auto bg-bg-main/95 backdrop-blur-sm transition-opacity ease-out"
@@ -190,6 +212,10 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
           0%, 100% { opacity: 1; }
           50% { opacity: 0; }
         }
+        @keyframes waveTravel {
+          from { transform: translateX(-${WAVE_LAMBDA}px); }
+          to   { transform: translateX(0px); }
+        }
       `}</style>
 
       <div
@@ -217,14 +243,33 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
         </div>
 
         <div data-search-area className="relative flex items-center">
-          {/* Animated line */}
-          <div
-            className="absolute bottom-0 left-0 right-0 h-[2px] bg-accent origin-left"
-            style={{
-              transform: stage >= 2 ? "scaleX(1)" : "scaleX(0)",
-              transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-            }}
-          />
+          {/* Bottom line / loading wave */}
+          <div className="absolute bottom-0 left-0 right-0 h-[8px] overflow-hidden">
+            {showWave ? (
+              <svg
+                className="absolute bottom-0 left-0 text-accent"
+                width={WAVE_LAMBDA * 9}
+                height="8"
+                style={{ animation: `waveTravel ${WAVE_LAMBDA / 1200}s linear infinite` }}
+              >
+                <path
+                  d={WAVE_PATH}
+                  stroke="currentColor"
+                  strokeOpacity="0.45"
+                  strokeWidth="1.5"
+                  fill="none"
+                />
+              </svg>
+            ) : (
+              <div
+                className="absolute bottom-0 left-0 right-0 h-[2px] bg-accent origin-left"
+                style={{
+                  transform: stage >= 2 ? "scaleX(1)" : "scaleX(0)",
+                  transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                }}
+              />
+            )}
+          </div>
 
           {/* Typing overlay */}
           {showTypingOverlay && (
@@ -296,7 +341,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
                 We found <span className="text-accent font-bold">{articles.length}</span> result{articles.length !== 1 ? "s" : ""} that matched your query.{" "}
               </>
             )}
-            Our search algorithm uses title, subtitle, and kicker matching.{archiveSubtitle ? ` ${archiveSubtitle}.` : " You are currently searching our online database, containing articles published after 2009."} You can access older articles in <a href="https://digitalassets.archives.rpi.edu/do/235be3d2-f018-48af-a413-b50e16dd6dc7" target="_blank" rel="noopener noreferrer" className="underline hover:text-accent">our archive at the Richard G. Folsom Library</a>.
+            Our search algorithm uses title, subtitle, kicker, author, and body matching.{archiveSubtitle ? ` ${archiveSubtitle}.` : " You are currently searching our online database, containing articles published after 2009."} You can access older articles in <a href="https://digitalassets.archives.rpi.edu/do/235be3d2-f018-48af-a413-b50e16dd6dc7" target="_blank" rel="noopener noreferrer" className="underline hover:text-accent">our archive at the Richard G. Folsom Library</a>.
           </p>
         )}
 
