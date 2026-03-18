@@ -99,9 +99,13 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
 
                 if (hasTitles) {
                     return (
-                        <div className="flex flex-row flex-wrap gap-x-6 gap-y-1">
-                            {enriched.map(({ user, title }) => (
-                                <div key={user.id}>
+                        <div className="flex flex-row flex-wrap items-start gap-y-1">
+                            {enriched.map(({ user, title }, index) => (
+                                <React.Fragment key={user.id}>
+                                {index > 0 && (
+                                    <span className="font-meta text-[14px] md:text-[15px] font-[440] text-text-muted mx-3 mt-0">&</span>
+                                )}
+                                <div>
                                     <div className="font-meta text-[14px] md:text-[15px] font-[440] tracking-[0.08em] text-accent transition-colors">
                                         <Link href={`/staff/${user.slug || user.id}`} className="hover:text-accent/70 transition-colors">
                                             {user.firstName} {user.lastName}
@@ -113,6 +117,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                                         </p>
                                     )}
                                 </div>
+                                </React.Fragment>
                             ))}
                         </div>
                     );
