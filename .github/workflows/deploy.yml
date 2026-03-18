@@ -28,6 +28,7 @@ jobs:
           # Use '>' to overwrite the old .env with fresh secrets
           echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
           echo "PAYLOAD_SECRET=${{ secrets.PAYLOAD_SECRET }}" >> .env
+          echo "LEGACY_DATABASE_URI=${{ secrets.LEGACY_DATABASE_URI }}" >> .env
 
       - name: Install Dependencies
         working-directory: /var/www/polymer

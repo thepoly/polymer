@@ -18,6 +18,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
   const [articles, setArticles] = useState<Article[]>([]);
   const [searched, setSearched] = useState(false);
   const [hasSearchedOnce, setHasSearchedOnce] = useState(false);
+  const [archiveSubtitle, setArchiveSubtitle] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -123,6 +124,14 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
     return () => timers.forEach(clearTimeout);
   }, []);
 
+  // Fetch archive subtitle on mount
+  useEffect(() => {
+    fetch("/api/search/archive-date")
+      .then((r) => r.ok ? r.json() : Promise.reject())
+      .then((data: { subtitle: string }) => setArchiveSubtitle(data.subtitle))
+      .catch(() => setArchiveSubtitle(null));
+  }, []);
+
   // Lock body scroll and handle Esc
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -216,7 +225,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
 
           {/* Typing overlay */}
           {showTypingOverlay && (
-            <div className="absolute inset-0 z-10 flex items-center py-2 pl-3 pr-36 font-display text-xl md:text-3xl font-bold pointer-events-none">
+            <div className="absolute inset-0 z-10 flex items-center py-2 pl-3 pr-36 font-meta text-xl md:text-3xl font-bold pointer-events-none">
               <span
                 className={`inline-block overflow-hidden whitespace-nowrap ${isDarkMode ? "text-white/85" : "text-text-muted/60"}`}
                 style={{ animation: "typeSearch 0.5s steps(9) forwards", width: 0 }}
@@ -233,13 +242,13 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
             onChange={(e) => setQuery(e.target.value)}
             onSelect={() => updateCursor()}
             placeholder={stage >= 3 ? "Search..." : ""}
-            className="search-caret w-full bg-transparent py-2 pl-3 pr-36 font-display text-xl md:text-3xl font-bold text-text-main placeholder:text-text-muted/60 dark:placeholder:text-white/85 outline-none"
+            className="search-caret w-full bg-transparent py-2 pl-3 pr-36 font-meta text-xl md:text-3xl font-bold text-text-main placeholder:text-text-muted/60 dark:placeholder:text-white/85 outline-none"
           />
 
           {/* Hidden span to measure text width */}
           <span
             ref={measureRef}
-            className="absolute invisible whitespace-pre font-display text-xl md:text-3xl font-bold"
+            className="absolute invisible whitespace-pre font-meta text-xl md:text-3xl font-bold"
             aria-hidden="true"
           />
 
@@ -284,7 +293,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
                 We found <span className="text-accent font-bold">{articles.length}</span> result{articles.length !== 1 ? "s" : ""} that matched your query.{" "}
               </>
             )}
-            Our search algorithm uses title, subtitle, and kicker matching. You are currently searching our online database, containing articles published after 2009. You can access older articles in <a href="https://digitalassets.archives.rpi.edu/do/235be3d2-f018-48af-a413-b50e16dd6dc7" target="_blank" rel="noopener noreferrer" className="underline hover:text-accent">our archive at the Richard G. Folsom Library</a>.
+            Our search algorithm uses title, subtitle, and kicker matching.{archiveSubtitle ? ` ${archiveSubtitle}.` : " You are currently searching our online database, containing articles published after 2009."} You can access older articles in <a href="https://digitalassets.archives.rpi.edu/do/235be3d2-f018-48af-a413-b50e16dd6dc7" target="_blank" rel="noopener noreferrer" className="underline hover:text-accent">our archive at the Richard G. Folsom Library</a>.
           </p>
         )}
 
@@ -294,7 +303,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
               {articles.map((article) => (
                 <div key={article.id} className="py-4 first:pt-0">
                   <TransitionLink
-                    href={getArticleUrl(article)}
+                    href={article.externalUrl ?? getArticleUrl(article)}
                     onClick={handleClose}
                     className="flex flex-col group cursor-pointer"
                   >
