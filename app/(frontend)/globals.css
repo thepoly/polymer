@@ -171,6 +171,7 @@ html.dark {
 
 html {
   background-color: var(--background);
+  color-scheme: light dark;
 }
 
 body {
@@ -337,4 +338,27 @@ h6.font-display.italic {
     padding-bottom: calc(2.5rem + var(--safe-area-bottom));
     padding-left: calc(1.5rem + var(--safe-area-left));
   }
+}
+
+
+/* --- Seamless mobile PWA chrome (top + bottom) --- */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  background: var(--background);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::before {
+  top: 0;
+  height: var(--safe-area-top);
+}
+
+body::after {
+  bottom: 0;
+  height: var(--safe-area-bottom);
 }

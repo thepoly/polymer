@@ -312,7 +312,7 @@ export default function FrontPage({
             <SectionBlock title="Features" articles={sections.features} />
           </div>
           <div>
-            <DynamicSectionHeader title="Opinion" href="/opinion" offsetX={2.5} />
+            <DynamicSectionHeader title="Opinion" href="/opinion" offsetX={2.5} offsetY={-2} />
             <SectionBlock title="Opinion" articles={sections.opinion} />
           </div>
           <div>

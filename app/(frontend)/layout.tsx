@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   description: "The Polytechnic is Rensselaer Polytechnic Institute's independent student newspaper, serving the RPI community since 1885.",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "The Poly",
   },
   formatDetection: {

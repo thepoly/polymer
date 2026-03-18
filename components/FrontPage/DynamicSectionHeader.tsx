@@ -176,11 +176,13 @@ export function DynamicSectionHeader({
   href,
   mobileOffsetY = 0,
   offsetX = 0,
+  offsetY = 0,
 }: {
   title: string;
   href: string;
   mobileOffsetY?: number;
   offsetX?: number;
+  offsetY?: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -321,9 +323,9 @@ export function DynamicSectionHeader({
         : above;
       // Clamp to prevent overlap with content above and below
       const finalTop = Math.min(renderedMaxTop, Math.max(renderedMinTop, targetTop + visualBias));
-      setTy(finalTop - wrapperRect.top);
+      setTy(finalTop - wrapperRect.top + offsetY);
     });
-  }, [title, isFloating]);
+  }, [title, isFloating, offsetY]);
 
   useLayoutEffect(() => {
     const el = containerRef.current;
@@ -356,7 +358,7 @@ export function DynamicSectionHeader({
       <div
         ref={mobileRef}
         className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden"
-        style={{ marginBottom: `-${mobileFontSize * 0.095}px`, marginTop: mobileOffsetY ? `${mobileOffsetY}px` : undefined }}
+        style={{ marginBottom: `-${mobileFontSize * 0.095}px`, marginTop: mobileOffsetY || offsetY ? `${mobileOffsetY + offsetY}px` : undefined }}
       >
         <TransitionLink href={href} className="group block">
           <h2

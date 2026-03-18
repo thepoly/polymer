@@ -101,7 +101,7 @@ export default function ThemeProvider({
       statusBarMeta.setAttribute("name", "apple-mobile-web-app-status-bar-style");
       document.head.appendChild(statusBarMeta);
     }
-    statusBarMeta.setAttribute("content", "black-translucent");
+    statusBarMeta.setAttribute("content", isDarkMode ? "black" : "default");
   }, [isDarkMode]);
 
   const toggleDarkMode = () => setIsDarkMode((prev) => !prev);

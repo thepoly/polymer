@@ -21,7 +21,6 @@ const ACCELERATED_SUCK_DURATION_MS = 250;
 const ACCELERATED_SHOOT_DURATION_MS = 800;
 const NAVIGATION_FALLBACK_MS = 5000;
 const INITIAL_ANIMATION_KEY = 1;
-const HEADER_ANIMATION_SESSION_KEY = "poly-header-animation-seen";
 const HEADER_ANIMATION_EVENT = "poly-header-animation-speed-change";
 type HeaderAnimationPhase = "idle" | "sucking" | "navigating" | "shooting";
 
@@ -58,15 +57,7 @@ function clearTimer(timerRef: MutableRefObject<number | null>) {
 }
 
 function getStoredHeaderAnimationSpeed(): HeaderAnimationSpeed {
-  if (typeof window === "undefined") return "initial";
-
-  try {
-    return window.sessionStorage.getItem(HEADER_ANIMATION_SESSION_KEY) === "1" || hasSeenHeaderAnimationInMemory
-      ? "accelerated"
-      : "initial";
-  } catch {
-    return hasSeenHeaderAnimationInMemory ? "accelerated" : "initial";
-  }
+  return hasSeenHeaderAnimationInMemory ? "accelerated" : "initial";
 }
 
 function subscribeToHeaderAnimationSpeed(onStoreChange: () => void) {
@@ -123,11 +114,6 @@ export default function HeaderTransitionProvider({
 
   const markAnimationSeen = () => {
     hasSeenHeaderAnimationInMemory = true;
-    try {
-      window.sessionStorage.setItem(HEADER_ANIMATION_SESSION_KEY, "1");
-    } catch {
-      // Ignore storage failures and keep using in-memory state.
-    }
     window.dispatchEvent(new Event(HEADER_ANIMATION_EVENT));
   };
 
