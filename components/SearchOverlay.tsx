@@ -19,6 +19,8 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
   const [searched, setSearched] = useState(false);
   const [hasSearchedOnce, setHasSearchedOnce] = useState(false);
   const [archiveSubtitle, setArchiveSubtitle] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 20;
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -92,6 +94,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
       if (!res.ok) return;
       const data = await res.json();
       setArticles(data.articles);
+      setPage(0);
       setSearched(true);
       if (!hasSearchedOnce) setHasSearchedOnce(true);
     } catch (e) {
@@ -297,29 +300,52 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
           </p>
         )}
 
-        {searched && articles.length > 0 && (
-          <div className="mt-8">
-            <div className="flex flex-col divide-y divide-rule">
-              {articles.map((article) => (
-                <div key={article.id} className="py-4 first:pt-0">
-                  <TransitionLink
-                    href={article.externalUrl ?? getArticleUrl(article)}
-                    onClick={handleClose}
-                    className="flex flex-col group cursor-pointer"
+        {searched && articles.length > 0 && (() => {
+          const totalPages = Math.ceil(articles.length / PAGE_SIZE);
+          const pageArticles = articles.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+          return (
+            <div className="mt-8">
+              <div className="flex flex-col divide-y divide-rule">
+                {pageArticles.map((article) => (
+                  <div key={article.id} className="py-4 first:pt-0">
+                    <TransitionLink
+                      href={article.externalUrl ?? getArticleUrl(article)}
+                      onClick={handleClose}
+                      className="flex flex-col group cursor-pointer"
+                    >
+                      <h3 className={`font-display font-bold text-text-main mb-1 text-[16px] md:text-[18px] leading-tight group-hover:text-accent transition-colors ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
+                        {article.title}
+                      </h3>
+                      <p className="font-copy text-text-main text-[13px] md:text-[14px] leading-[1.4] mb-2 transition-colors">
+                        {article.excerpt}
+                      </p>
+                      <Byline author={article.author} date={article.date} />
+                    </TransitionLink>
+                  </div>
+                ))}
+              </div>
+              {totalPages > 1 && (
+                <div className="mt-6 flex items-center gap-4 font-meta text-[12px] text-text-muted">
+                  <button
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                    className="disabled:opacity-30 hover:text-accent transition-colors"
                   >
-                    <h3 className={`font-display font-bold text-text-main mb-1 text-[16px] md:text-[18px] leading-tight group-hover:text-accent transition-colors ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
-                      {article.title}
-                    </h3>
-                    <p className="font-copy text-text-main text-[13px] md:text-[14px] leading-[1.4] mb-2 transition-colors">
-                      {article.excerpt}
-                    </p>
-                    <Byline author={article.author} date={article.date} />
-                  </TransitionLink>
+                    ← Prev
+                  </button>
+                  <span>Page {page + 1} of {totalPages}</span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                    disabled={page === totalPages - 1}
+                    className="disabled:opacity-30 hover:text-accent transition-colors"
+                  >
+                    Next →
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );

@@ -33,11 +33,16 @@ function mapLegacyRow(row: {
     ? date.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
     : null;
 
+  const rawTitle = row.headline || row.wagtail_title;
+  const title = rawTitle.replace(/<[^>]*>/g, "").trim();
+
+  const excerpt = row.subdeck ? row.subdeck.replace(/<[^>]*>/g, "").trim() : "";
+
   return {
     id: `legacy-${row.legacy_id}`,
     slug: cleanPath,
-    title: row.headline || row.wagtail_title,
-    excerpt: row.subdeck || "",
+    title,
+    excerpt,
     author: null,
     date: dateString,
     image: null,
@@ -71,8 +76,7 @@ async function searchLegacy(q: string): Promise<Article[]> {
           OR k.title ILIKE $1
           OR wp.title ILIKE $1
         )
-      ORDER BY wp.first_published_at DESC
-      LIMIT 20`,
+      ORDER BY wp.first_published_at DESC`,
       [`%${q}%`],
     );
     return rows.map(mapLegacyRow);
@@ -107,7 +111,7 @@ export async function GET(request: NextRequest) {
           ],
         },
         sort: "-publishedDate",
-        limit: 20,
+        limit: 0,
         depth: 2,
       })
       .then((r) => r.docs.map((doc) => formatArticle(doc, { absoluteDate: true })).filter((a): a is Article => a !== null)),
