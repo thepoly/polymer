@@ -251,6 +251,37 @@ h6.font-display.italic {
   animation: search-icon-slide 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
+@keyframes rainbow-swirl-border {
+  from { background-position: 0% 50%, 0 0; }
+  to { background-position: 200% 50%, 0 0; }
+}
+
+@keyframes rainbow-swirl-color {
+  0% { color: #ff6b6b; }
+  16% { color: #ffb86b; }
+  33% { color: #fff08a; }
+  50% { color: #8de39a; }
+  66% { color: #7fb2ff; }
+  83% { color: #d7a6ff; }
+  100% { color: #ff6b6b; }
+}
+
+.rainbow-search-trigger {
+  border: 1px solid var(--rule-color);
+  background: var(--background);
+}
+
+.rainbow-search-trigger:hover {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--background), var(--background)) padding-box,
+    linear-gradient(120deg, #ff6b6b, #ffb86b, #fff08a, #8de39a, #7fb2ff, #d7a6ff, #ff6b6b) border-box;
+  background-size: 100% 100%, 220% 100%;
+  background-position: 0 0, 0% 50%;
+  background-repeat: no-repeat;
+  animation: rainbow-swirl-border 1.25s linear infinite;
+}
+
 /* ── Theme circle-reveal transition ── */
 
 ::view-transition-old(root),

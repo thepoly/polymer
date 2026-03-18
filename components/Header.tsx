@@ -403,9 +403,9 @@ export default function Header({ compact = false }: { compact?: boolean }) {
               >
                 {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
               </button>
-              <button className="flex items-center cursor-pointer gap-1.5 rounded-full border border-rule px-2.5 h-7 text-text-main hover:border-accent hover:text-accent" onClick={() => setIsSearchOverlayOpen(true)}>
-                <Search className="h-3.5 w-3.5 shrink-0" />
-                <span className="whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.1em]">Search</span>
+              <button className="rainbow-search-trigger flex h-7 cursor-pointer items-center gap-1.5 rounded-full px-2.5 text-text-main" onClick={() => setIsSearchOverlayOpen(true)}>
+                <Search className="rainbow-search-trigger__icon h-3.5 w-3.5 shrink-0" />
+                <span className="rainbow-search-trigger__content whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.1em]">Search</span>
               </button>
             </div>
           </div>
