@@ -4,7 +4,7 @@ import { getPayload } from 'payload';
 import config from '@/payload.config';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Media } from '@/payload-types';
+import { User } from '@/payload-types';
 
 export const revalidate = 60;
 
@@ -20,6 +20,45 @@ export const metadata: Metadata = {
   },
 };
 
+type PublicStaffCard = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  slug?: string | null;
+  roles?: User['roles'];
+  headshot?: {
+    url?: string | null;
+  } | null;
+  positions?:
+    | {
+        jobTitle?: {
+          title?: string | null;
+        } | null;
+        startDate: string;
+        endDate?: string | null;
+      }[]
+    | null;
+};
+
+type PublicStaffCardSource = Pick<
+  User,
+  'id' | 'firstName' | 'lastName' | 'slug' | 'roles' | 'headshot' | 'positions'
+>;
+
+const toPublicStaffCard = (user: PublicStaffCardSource): PublicStaffCard => ({
+  id: user.id,
+  firstName: user.firstName,
+  lastName: user.lastName,
+  slug: user.slug,
+  roles: user.roles,
+  headshot: typeof user.headshot === 'object' && user.headshot ? { url: user.headshot.url } : null,
+  positions: user.positions?.map((position) => ({
+    startDate: position.startDate,
+    endDate: position.endDate,
+    jobTitle: typeof position.jobTitle === 'object' && position.jobTitle ? { title: position.jobTitle.title } : null,
+  })) || null,
+});
+
 export default async function StaffPage() {
   const payload = await getPayload({ config });
 
@@ -27,10 +66,18 @@ export default async function StaffPage() {
     collection: 'users',
     limit: 100,
     sort: 'lastName',
-    depth: 2,
+    depth: 1,
+    select: {
+      firstName: true,
+      lastName: true,
+      slug: true,
+      roles: true,
+      headshot: true,
+      positions: true,
+    },
   });
 
-  const users = usersResponse.docs;
+  const users = usersResponse.docs.map((user) => toPublicStaffCard(user));
 
   return (
     <>
@@ -43,8 +90,6 @@ export default async function StaffPage() {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-8">
         {users.map((user) => {
-          const headshot = user.headshot as Media | null;
-          
           const currentPosition = user.positions?.find(p => !p.endDate) || user.positions?.[0];
           const jobTitle = currentPosition?.jobTitle;
           let titleString = typeof jobTitle === 'object' && jobTitle ? jobTitle.title : '';
@@ -72,9 +117,9 @@ export default async function StaffPage() {
               className="group flex flex-col items-start text-left"
             >
               <div className="relative w-full aspect-[3/4] mb-3 bg-gray-100 dark:bg-zinc-800 overflow-hidden transition-colors">
-                {headshot?.url ? (
+                {user.headshot?.url ? (
                   <Image
-                    src={headshot.url}
+                    src={user.headshot.url}
                     alt={`${user.firstName} ${user.lastName}`}
                     fill
                     className="object-cover"

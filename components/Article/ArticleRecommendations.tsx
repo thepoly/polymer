@@ -26,26 +26,52 @@ const sectionDescriptions: Record<Article['section'], string> = {
   opinion: 'Recent editorials, columns, and letters from The Poly.',
 };
 
-const getOpinionType = (article: Article) =>
-  (article as unknown as Record<string, unknown>).opinionType as string | undefined;
-
-const getFeaturedImage = (value: Article['featuredImage'] | Media | number | null | undefined): Media | null => {
-  if (!value || typeof value === 'number') return null;
-  return value as Media;
+type RecommendationAuthor = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  slug?: string | null;
 };
 
-const getAuthorString = (article: Article) => {
+type RecommendationImage = {
+  id: number;
+  url?: string | null;
+  alt?: string | null;
+};
+
+type RecommendationArticle = {
+  id: number;
+  title: string;
+  slug?: string | null;
+  subdeck?: string | null;
+  section: Article['section'];
+  kicker?: string | null;
+  publishedDate?: string | null;
+  createdAt: string;
+  authors: RecommendationAuthor[];
+  featuredImage?: RecommendationImage | null;
+  opinionType?: string | null;
+};
+
+const getOpinionType = (article: RecommendationArticle | Article) =>
+  (article as unknown as Record<string, unknown>).opinionType as string | undefined;
+
+const getFeaturedImage = (value: RecommendationArticle['featuredImage'] | Media | number | null | undefined): RecommendationImage | null => {
+  if (!value || typeof value === 'number') return null;
+  return value as RecommendationImage;
+};
+
+const getAuthorString = (article: RecommendationArticle) => {
   const names = (article.authors || []).flatMap((author) => {
     if (typeof author === 'number') return [];
 
-    const user = author as User;
-    return [`${user.firstName} ${user.lastName}`];
+    return [`${author.firstName} ${author.lastName}`];
   });
 
   return names.length > 0 ? names.join(' AND ') : null;
 };
 
-const formatDate = (article: Article) => {
+const formatDate = (article: RecommendationArticle) => {
   const dateValue = article.publishedDate || article.createdAt;
   if (!dateValue) return null;
 
@@ -56,7 +82,7 @@ const formatDate = (article: Article) => {
   });
 };
 
-const getArticleLabel = (article: Article) => {
+const getArticleLabel = (article: RecommendationArticle) => {
   if (article.section === 'opinion') {
     const opinionType = getOpinionType(article);
     return opinionTypeLabels[opinionType || 'opinion'] || 'Opinion';
@@ -65,7 +91,7 @@ const getArticleLabel = (article: Article) => {
   return article.kicker?.trim() || sectionLabels[article.section];
 };
 
-const getHeadlineClasses = (article: Article, variant: 'lead' | 'list') => {
+const getHeadlineClasses = (article: RecommendationArticle, variant: 'lead' | 'list') => {
   const base =
     variant === 'lead'
       ? 'font-display text-[28px] font-bold leading-[1.02] tracking-[-0.02em] md:text-[34px]'
@@ -87,7 +113,7 @@ const getHeadlineClasses = (article: Article, variant: 'lead' | 'list') => {
   return `${base} text-text-main transition-colors group-hover:text-accent ${sectionStyles}`;
 };
 
-const prioritizeRecommendations = (articles: Article[], currentArticle: Article) => {
+const prioritizeRecommendations = (articles: RecommendationArticle[], currentArticle: Article) => {
   if (currentArticle.section !== 'opinion') return articles;
 
   const currentOpinionType = getOpinionType(currentArticle);
@@ -99,7 +125,37 @@ const prioritizeRecommendations = (articles: Article[], currentArticle: Article)
   return [...matching, ...rest];
 };
 
-const hasImage = (article: Article) => Boolean(getFeaturedImage(article.featuredImage)?.url);
+const hasImage = (article: RecommendationArticle) => Boolean(getFeaturedImage(article.featuredImage)?.url);
+
+const toPublicRecommendationAuthor = (author: User): RecommendationAuthor => ({
+  id: author.id,
+  firstName: author.firstName,
+  lastName: author.lastName,
+  slug: author.slug,
+});
+
+const toPublicRecommendationArticle = (article: Article): RecommendationArticle => ({
+  id: article.id,
+  title: article.title,
+  slug: article.slug,
+  subdeck: article.subdeck,
+  section: article.section,
+  kicker: article.kicker,
+  publishedDate: article.publishedDate,
+  createdAt: article.createdAt,
+  authors: (article.authors || [])
+    .filter((author): author is User => typeof author !== 'number')
+    .map(toPublicRecommendationAuthor),
+  featuredImage:
+    article.featuredImage && typeof article.featuredImage !== 'number'
+      ? {
+          id: article.featuredImage.id,
+          url: article.featuredImage.url,
+          alt: article.featuredImage.alt,
+        }
+      : null,
+  opinionType: (article as unknown as Record<string, unknown>).opinionType as string | null | undefined,
+});
 
 export async function ArticleRecommendations({ currentArticle }: Props) {
   const payload = await getPayload({ config });
@@ -108,16 +164,32 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
     collection: 'articles',
     where: {
       and: [
+        { _status: { equals: 'published' } },
         { section: { equals: currentArticle.section } },
         { id: { not_equals: currentArticle.id } },
       ],
     },
     sort: '-publishedDate',
     limit: 10,
-    depth: 2,
+    depth: 1,
+    select: {
+      title: true,
+      slug: true,
+      subdeck: true,
+      featuredImage: true,
+      section: true,
+      kicker: true,
+      publishedDate: true,
+      createdAt: true,
+      authors: true,
+      opinionType: true,
+    },
   });
 
-  const pool = prioritizeRecommendations(result.docs as Article[], currentArticle);
+  const pool = prioritizeRecommendations(
+    (result.docs as Article[]).map(toPublicRecommendationArticle),
+    currentArticle,
+  );
   if (pool.length === 0) return null;
 
   const leadArticle = pool.find(hasImage) || pool[0];

@@ -1,6 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const baseURL = process.env.BASE_URL || "http://127.0.0.1:3000";
+const useWebServer = process.env.PLAYWRIGHT_WEB_SERVER !== "0";
 
 export default defineConfig({
   testDir: "./tests",
@@ -17,6 +18,14 @@ export default defineConfig({
     video: "off",
     ignoreHTTPSErrors: true,
   },
+  webServer: useWebServer
+    ? {
+        command: process.env.PLAYWRIGHT_WEB_SERVER_COMMAND || "pnpm dev",
+        url: baseURL,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120_000,
+      }
+    : undefined,
   projects: [
     {
       name: "desktop-chromium",

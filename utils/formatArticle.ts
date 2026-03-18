@@ -1,11 +1,33 @@
-import { Article as PayloadArticle, Media } from '@/payload-types';
+import { Media } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
 
+type PublicAuthorLike = {
+  firstName: string;
+  lastName: string;
+};
+
+type PublicMediaLike = Pick<Media, 'url'>;
+
+type FormatArticleInput = {
+  id: number | string;
+  slug?: string | null;
+  title: string;
+  subdeck?: string | null;
+  featuredImage?: number | PublicMediaLike | null;
+  section: string;
+  kicker?: string | null;
+  publishedDate?: string | null;
+  createdAt?: string;
+  authors?: Array<number | PublicAuthorLike> | null;
+  _status?: string | null;
+};
+
 export const formatArticle = (
-  article: PayloadArticle | number | null | undefined,
+  article: FormatArticleInput | number | null | undefined,
   { absoluteDate = false }: { absoluteDate?: boolean } = {},
 ): ComponentArticle | null => {
   if (!article || typeof article === 'number') return null;
+  if (article._status && article._status !== 'published') return null;
 
   const authors = article.authors
     ?.map((author) => {

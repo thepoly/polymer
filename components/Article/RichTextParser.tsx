@@ -6,7 +6,7 @@ import { Media, User } from '@/payload-types';
 
 export type LexicalNode = {
   type: string;
-  value?: any;
+  value?: unknown;
   text?: string;
   children?: LexicalNode[];
   url?: string;
@@ -33,7 +33,7 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
     <Fragment>
       {nodes?.map((node, index) => {
         if (node.type === 'text') {
-          let text = <span key={index} dangerouslySetInnerHTML={{ __html: escapeHTML(node.text) }} />;
+          let text = <span key={index} dangerouslySetInnerHTML={{ __html: escapeHTML(node.text || "") }} />;
           const format = node.format || 0;
           if (format & 1) text = <strong key={index}>{text}</strong>;
           if (format & 2) text = <em key={index}>{text}</em>;
@@ -68,7 +68,7 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
 
           case 'link':
             return (
-              <Link key={index} href={escapeHTML(node.url)} className="text-accent hover:underline decoration-1 underline-offset-2 transition-colors">
+              <Link key={index} href={escapeHTML(node.url || "")} className="text-accent hover:underline decoration-1 underline-offset-2 transition-colors">
                 {serializedChildren}
               </Link>
             );

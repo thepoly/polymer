@@ -318,20 +318,25 @@ export default function Header({ compact = false }: { compact?: boolean }) {
     if (typeof window === "undefined" || !window.matchMedia("(min-width: 1024px)").matches) return;
     if (document.cookie.includes(`${HOME_DARK_MODE_PROMPT_COOKIE}=1`)) return;
 
-    setShowDarkModePrompt(true);
     document.cookie = `${HOME_DARK_MODE_PROMPT_COOKIE}=1; path=/; max-age=31536000; SameSite=Lax`;
+    const showTimeout = window.setTimeout(() => {
+      setShowDarkModePrompt(true);
+    }, 0);
 
     const timeout = window.setTimeout(() => {
       setShowDarkModePrompt(false);
     }, 7000);
 
-    return () => window.clearTimeout(timeout);
+    return () => {
+      window.clearTimeout(showTimeout);
+      window.clearTimeout(timeout);
+    };
   }, [compact, currentPath, isDarkMode, showDarkModePrompt]);
 
   return (
     <>
       <header className={`${compact ? "sticky top-0" : ""} safe-area-top z-50 bg-bg-main lg:hidden`}>
-        <div className="safe-area-mobile-header-x mx-auto flex h-[56px] max-w-[1280px] items-center justify-between">
+        <div className="mobile-chrome-header-inner safe-area-mobile-header-x mx-auto flex h-[56px] max-w-[1280px] items-center justify-between">
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="flex h-9 w-9 items-center justify-center overflow-hidden text-text-main">
             <span className="relative block h-5 w-5">
               <Menu

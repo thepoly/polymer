@@ -13,8 +13,16 @@ const Articles: CollectionConfig = {
       const roles = (user)?.roles || []
       return roles.some((role: string) => ['admin', 'eic', 'editor'].includes(role))
     },
-    // Everyone can read (or you can restrict this if needed)
-    read: () => true,
+    // Anonymous readers can only see published articles. Authenticated staff keep full access
+    // so the admin UI and editorial workflows can still inspect drafts.
+    read: ({ req: { user } }) => {
+      if (user) return true
+      return {
+        _status: {
+          equals: 'published',
+        },
+      }
+    },
     create: ({ req: { user } }) => {
       if (!user) return false
       const roles = (user)?.roles || []

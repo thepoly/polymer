@@ -287,14 +287,14 @@ export default function FrontPage({
           <div className="grid grid-cols-2 gap-4 items-start">
             <div className="flex flex-col divide-y divide-rule">
               {heroStories.left.map((article, i) => (
-                <div key={article.id} className={i > 0 ? "pt-5" : "pb-5"}>
+                <div key={article.id} className={i > 0 ? "pt-3" : "pb-3"}>
                   <ArticleCard article={article} />
                 </div>
               ))}
             </div>
             <div className="flex flex-col divide-y divide-rule">
               {heroStories.right.map((article, i) => (
-                <div key={article.id} className={i > 0 ? "pt-5" : "pb-5"}>
+                <div key={article.id} className={i > 0 ? "pt-3" : "pb-3"}>
                   <ArticleCard article={article} />
                 </div>
               ))}

@@ -84,7 +84,18 @@ export default async function SectionPageRoute({ params }: Args) {
     },
     sort: '-publishedDate',
     limit: 30,
-    depth: 2,
+    depth: 1,
+    select: {
+      title: true,
+      slug: true,
+      subdeck: true,
+      featuredImage: true,
+      section: true,
+      kicker: true,
+      publishedDate: true,
+      createdAt: true,
+      authors: true,
+    },
   });
 
   const articles = articlesResponse.docs;

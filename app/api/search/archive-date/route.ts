@@ -3,6 +3,10 @@ import { getPayload } from "payload";
 import config from "@/payload.config";
 import { Pool } from "pg";
 
+const responseHeaders = {
+  "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+};
+
 let legacyPool: Pool | null = null;
 
 function getLegacyPool(): Pool {
@@ -27,7 +31,10 @@ export async function GET() {
       const oldest: Date | null = rows[0]?.oldest ?? null;
       if (oldest) {
         const year = new Date(oldest).getFullYear();
-        return NextResponse.json({ subtitle: `Search archives date back to ${year}` });
+        return NextResponse.json(
+          { subtitle: `Search archives date back to ${year}` },
+          { headers: responseHeaders },
+        );
       }
     } finally {
       client.release();
@@ -50,11 +57,14 @@ export async function GET() {
     if (oldest) {
       const date = new Date(oldest);
       const label = date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-      return NextResponse.json({ subtitle: `Search archives date back to ${label}` });
+      return NextResponse.json(
+        { subtitle: `Search archives date back to ${label}` },
+        { headers: responseHeaders },
+      );
     }
   } catch (err) {
     console.error("[archive-date] Payload error:", err);
   }
 
-  return NextResponse.json({ subtitle: null });
+  return NextResponse.json({ subtitle: null }, { headers: responseHeaders });
 }

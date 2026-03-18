@@ -77,6 +77,9 @@ async function getCorpus(): Promise<Map<string, number>> {
       where: { _status: { equals: "published" } },
       limit: 0,
       depth: 0,
+      select: {
+        title: true,
+      },
     });
     for (const doc of docs) {
       for (const w of extractWords(doc.title)) {

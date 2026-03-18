@@ -1,12 +1,12 @@
-export const revalidate = 0;
+export const revalidate = 60;
 import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FrontPage from "@/components/FrontPage";
 import { getPayload } from "payload";
 import config from "@/payload.config";
-import { Article as PayloadArticle, Media } from "@/payload-types";
 import { Article as ComponentArticle } from "@/components/FrontPage/types";
+import { formatArticle } from "@/utils/formatArticle";
 
 export const metadata: Metadata = {
   alternates: { canonical: '/' },
@@ -49,50 +49,51 @@ const excludeUsedSectionArticles = (
   return articles.filter((article) => !usedSet.has(String(article.id))).slice(0, count);
 };
 
-const formatArticle = (article: PayloadArticle | number | null | undefined): ComponentArticle | null => {
-  if (!article || typeof article === 'number') return null;
-  
-  const authors = article.authors
-    ?.map((author) => {
-      if (typeof author === 'number') return '';
-      return `${author.firstName} ${author.lastName}`;
-    })
-    .filter(Boolean)
-    .join(' AND ');
+const ARTICLE_CARD_SELECT = {
+  title: true,
+  slug: true,
+  subdeck: true,
+  featuredImage: true,
+  section: true,
+  kicker: true,
+  publishedDate: true,
+  createdAt: true,
+  authors: true,
+} as const;
 
-  const date = article.publishedDate ? new Date(article.publishedDate) : null;
+type LayoutArticleRelation = number | { id: number } | null | undefined;
 
-  let dateString: string | null = null;
-  if (date) {
-    const now = new Date().getTime();
-    const diffMs = now - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffMins < 60) {
-      dateString = `${diffMins} MINUTE${diffMins !== 1 ? 'S' : ''} AGO`;
-    } else if (diffHours < 24) {
-      dateString = `${diffHours} HOUR${diffHours !== 1 ? 'S' : ''} AGO`;
-    } else if (diffDays < 7) {
-      dateString = `${diffDays} DAY${diffDays !== 1 ? 'S' : ''} AGO`;
-    }
-  }
-
-  return {
-    id: article.id,
-    slug: article.slug || '#',
-    title: article.title,
-    excerpt: article.subdeck || '',
-    author: authors || null,
-    date: dateString,
-    image: (article.featuredImage as Media)?.url || null,
-    section: article.section,
-    kicker: article.kicker || null,
-    publishedDate: article.publishedDate,
-    createdAt: article.createdAt,
-  };
+type HomepageLayout = {
+  mainArticle?: LayoutArticleRelation;
+  top1?: LayoutArticleRelation;
+  top2?: LayoutArticleRelation;
+  top3?: LayoutArticleRelation;
+  top4?: LayoutArticleRelation;
+  op1?: LayoutArticleRelation;
+  op2?: LayoutArticleRelation;
+  op3?: LayoutArticleRelation;
+  op4?: LayoutArticleRelation;
+  special?: LayoutArticleRelation;
 };
+
+const getRelationId = (value: LayoutArticleRelation) =>
+  typeof value === "number" ? value : value && typeof value.id === "number" ? value.id : null;
+
+const getLayoutArticleIds = (layout: HomepageLayout) =>
+  [
+    layout.mainArticle,
+    layout.top1,
+    layout.top2,
+    layout.top3,
+    layout.top4,
+    layout.op1,
+    layout.op2,
+    layout.op3,
+    layout.op4,
+    layout.special,
+  ]
+    .map(getRelationId)
+    .filter((value): value is number => typeof value === "number");
 
 export default async function Home() {
   const payload = await getPayload({ config });
@@ -100,10 +101,22 @@ export default async function Home() {
   const layoutResponse = await payload.find({
     collection: 'layout',
     limit: 1,
-    depth: 2,
+    depth: 0,
+    select: {
+      mainArticle: true,
+      top1: true,
+      top2: true,
+      top3: true,
+      top4: true,
+      op1: true,
+      op2: true,
+      op3: true,
+      op4: true,
+      special: true,
+    },
   });
 
-  const layout = layoutResponse.docs[0];
+  const layout = layoutResponse.docs[0] as HomepageLayout | undefined;
 
   if (!layout) {
     return (
@@ -113,10 +126,36 @@ export default async function Home() {
             <p className="text-text-muted font-copy">Please configure the layout in the admin panel.</p>
         </div>
       </main>
-    );
+      );
   }
 
-  const mainArticle = formatArticle(layout.mainArticle);
+  const layoutArticleIds = getLayoutArticleIds(layout);
+  const layoutArticles = layoutArticleIds.length > 0
+    ? await payload.find({
+        collection: "articles",
+        where: {
+          and: [
+            { id: { in: layoutArticleIds } },
+            { _status: { equals: "published" } },
+          ],
+        },
+        sort: "-publishedDate",
+        limit: layoutArticleIds.length,
+        depth: 1,
+        select: ARTICLE_CARD_SELECT,
+      })
+    : { docs: [] };
+
+  const layoutArticleMap = new Map(
+    layoutArticles.docs.map((article) => [article.id, formatArticle(article)]),
+  );
+
+  const getLayoutArticle = (value: LayoutArticleRelation) => {
+    const relationId = getRelationId(value);
+    return relationId ? layoutArticleMap.get(relationId) ?? null : null;
+  };
+
+  const mainArticle = getLayoutArticle(layout.mainArticle);
 
   if (!mainArticle) {
     return (
@@ -138,7 +177,8 @@ export default async function Home() {
       },
       sort: '-publishedDate',
       limit: 20,
-      depth: 2,
+      depth: 1,
+      select: ARTICLE_CARD_SELECT,
     });
     return res.docs.map((a) => formatArticle(a)).filter(Boolean) as ComponentArticle[];
   };
@@ -159,10 +199,10 @@ export default async function Home() {
 
   const topStoryList = fillArticles(
     [
-      formatArticle(layout.top1),
-      formatArticle(layout.top2),
-      formatArticle(layout.top3),
-      formatArticle(layout.top4),
+      getLayoutArticle(layout.top1),
+      getLayoutArticle(layout.top2),
+      getLayoutArticle(layout.top3),
+      getLayoutArticle(layout.top4),
     ],
     recentPool,
     4,
@@ -176,15 +216,15 @@ export default async function Home() {
 
   const pinnedLayoutArticles = dedupeArticles([
     mainArticle,
-    formatArticle(layout.top1),
-    formatArticle(layout.top2),
-    formatArticle(layout.top3),
-    formatArticle(layout.top4),
-    formatArticle(layout.op1),
-    formatArticle(layout.op2),
-    formatArticle(layout.op3),
-    formatArticle(layout.op4),
-    formatArticle(layout.special),
+    getLayoutArticle(layout.top1),
+    getLayoutArticle(layout.top2),
+    getLayoutArticle(layout.top3),
+    getLayoutArticle(layout.top4),
+    getLayoutArticle(layout.op1),
+    getLayoutArticle(layout.op2),
+    getLayoutArticle(layout.op3),
+    getLayoutArticle(layout.op4),
+    getLayoutArticle(layout.special),
   ]);
 
   const homepageUsedIds = [

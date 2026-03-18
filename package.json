@@ -8,7 +8,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "test:smoke": "playwright test tests/smoke.spec.ts",
+    "test:search-limit": "playwright test --project=desktop-chromium tests/search-limit.spec.ts",
+    "test:deploy-smoke": "node scripts/deploy-smoke.mjs",
     "generate:types": "payload generate:types",
     "postinstall": "node scripts/generate-env.js"
   },

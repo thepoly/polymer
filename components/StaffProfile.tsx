@@ -2,22 +2,62 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Media, User, Article } from '@/payload-types';
-import { SerializeLexical } from '@/components/Article/RichTextParser';
+import { LexicalNode, SerializeLexical } from '@/components/Article/RichTextParser';
+
+export interface StaffProfileUser {
+  id: number;
+  firstName: string;
+  lastName: string;
+  slug?: string | null;
+  headshot?: {
+    url?: string | null;
+  } | null;
+  bio?: {
+    root?: {
+      children?: LexicalNode[];
+    };
+  } | null;
+  positions?:
+    | {
+        jobTitle?: {
+          title?: string | null;
+        } | null;
+        startDate: string;
+        endDate?: string | null;
+      }[]
+    | null;
+}
+
+export interface StaffProfileArticle {
+  id: number;
+  slug?: string | null;
+  title: string;
+  section: string;
+  publishedDate?: string | null;
+}
+
+export interface StaffProfilePhoto {
+  id: number;
+  url?: string | null;
+  alt?: string | null;
+  width?: number | null;
+  height?: number | null;
+}
 
 interface StaffProfileProps {
-  user: User;
-  articles?: Article[];
-  photos?: Media[];
+  user: StaffProfileUser;
+  articles?: StaffProfileArticle[];
+  photos?: StaffProfilePhoto[];
   photoToArticleMap?: Record<number, string>;
 }
 
+const INITIAL_ARTICLE_COUNT = 8;
+
 export function StaffProfile({ user, articles = [], photos = [], photoToArticleMap = {} }: StaffProfileProps) {
-  const headshot = user.headshot as Media | null;
-  const bio = user.bio as any;
+  const headshot = user.headshot || null;
+  const bio = user.bio;
   const [showAllArticles, setShowAllArticles] = useState(false);
 
-  const INITIAL_ARTICLE_COUNT = 8;
   const displayedArticles = showAllArticles ? articles : articles.slice(0, INITIAL_ARTICLE_COUNT);
   const hasMoreArticles = articles.length > INITIAL_ARTICLE_COUNT;
 
@@ -87,20 +127,26 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
             <section>
               <h2 className="font-meta text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted mb-6 border-b border-rule pb-2 transition-colors">Recent Articles</h2>
               <div className="space-y-6">
-                {displayedArticles.map((article) => (
-                  <div key={article.id} className="group">
-                    <Link href={`/${article.section}/${new Date(article.publishedDate!).getFullYear()}/${(new Date(article.publishedDate!).getMonth() + 1).toString().padStart(2, '0')}/${article.slug}`} className="block">
-                      <h3 className="text-lg font-bold group-hover:text-accent transition-colors leading-tight mb-1">
-                        {article.title}
-                      </h3>
-                    </Link>
-                    <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-text-muted transition-colors">
-                      <span className="font-meta font-bold text-accent">{article.section}</span>
-                      <span>•</span>
-                      <span>{new Date(article.publishedDate!).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                {displayedArticles.map((article) => {
+                  const publishedDate = new Date(article.publishedDate!);
+                  const year = publishedDate.getFullYear();
+                  const month = (publishedDate.getMonth() + 1).toString().padStart(2, '0');
+
+                  return (
+                    <div key={article.id} className="group">
+                      <Link href={`/${article.section}/${year}/${month}/${article.slug}`} className="block">
+                        <h3 className="text-lg font-bold group-hover:text-accent transition-colors leading-tight mb-1">
+                          {article.title}
+                        </h3>
+                      </Link>
+                      <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-text-muted transition-colors">
+                        <span className="font-meta font-bold text-accent">{article.section}</span>
+                        <span>•</span>
+                        <span>{publishedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               {hasMoreArticles && !showAllArticles && (
                 <button 

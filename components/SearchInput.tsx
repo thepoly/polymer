@@ -7,7 +7,11 @@ import { Byline } from "@/components/FrontPage/Byline";
 import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import { useTheme } from "@/components/ThemeProvider";
-import { DEFAULT_SEARCH_PAGE_SIZE, sanitizeSearchQuery } from "@/utils/search";
+import {
+  DEFAULT_SEARCH_PAGE_SIZE,
+  MAX_SEARCH_QUERY_LENGTH,
+  sanitizeSearchQuery,
+} from "@/utils/search";
 
 const WAVE_LAMBDA = 600; // px, wavelength
 
@@ -82,6 +86,11 @@ export default function SearchInput({ defaultValue, autoFocus = false }: { defau
 
   const showTypingOverlay = query.length === 0 && stage >= 1 && stage < 3;
   const showWave = isLoading && stage >= 2;
+
+  const handleQueryChange = (nextQuery: string) => {
+    setQuery(sanitizeSearchQuery(nextQuery));
+    setPage(0);
+  };
 
   const updateCursor = useCallback(() => {
     const input = inputRef.current;
@@ -198,10 +207,6 @@ export default function SearchInput({ defaultValue, autoFocus = false }: { defau
     const timer = setTimeout(() => fetchResults(query, page), 250);
     return () => clearTimeout(timer);
   }, [query, page, fetchResults]);
-
-  useEffect(() => {
-    setPage(0);
-  }, [query]);
 
   // Animation sequence
   useEffect(() => {
@@ -345,9 +350,10 @@ export default function SearchInput({ defaultValue, autoFocus = false }: { defau
           ref={inputRef}
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => handleQueryChange(e.target.value)}
           onSelect={() => updateCursor()}
           autoFocus={autoFocus}
+          maxLength={MAX_SEARCH_QUERY_LENGTH}
           placeholder={stage >= 3 ? "Search..." : ""}
           className={`search-caret w-full bg-transparent py-2 pl-3 pr-36 font-meta text-xl md:text-3xl font-bold placeholder:text-text-muted/60 dark:placeholder:text-white/85 outline-none ${showWave && query.length > 0 ? "text-transparent" : "text-text-main"}`}
         />

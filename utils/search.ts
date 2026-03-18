@@ -1,6 +1,6 @@
 export const DEFAULT_SEARCH_PAGE_SIZE = 20;
 export const MAX_SEARCH_PAGE_SIZE = 50;
-export const MAX_SEARCH_QUERY_LENGTH = 120;
+export const MAX_SEARCH_QUERY_LENGTH = 35;
 
 export function sanitizeSearchQuery(query: string | null | undefined): string {
   if (!query) return "";

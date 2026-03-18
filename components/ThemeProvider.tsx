@@ -38,7 +38,32 @@ export default function ThemeProvider({
   initialDarkMode?: boolean;
 }) {
   const [isDarkMode, setIsDarkMode] = useState(initialDarkMode);
+  const [isStandalonePwa, setIsStandalonePwa] = useState(false);
   const [keySequence, setKeySequence] = useState<string[]>([]);
+
+  useEffect(() => {
+    const standaloneQuery = window.matchMedia("(display-mode: standalone)");
+    const navigatorWithStandalone = window.navigator as Navigator & {
+      standalone?: boolean;
+    };
+
+    const updateStandaloneState = () => {
+      const standalone = standaloneQuery.matches || navigatorWithStandalone.standalone === true;
+      setIsStandalonePwa(standalone);
+      document.documentElement.classList.toggle("standalone-pwa", standalone);
+      document.body.classList.toggle("standalone-pwa", standalone);
+    };
+
+    updateStandaloneState();
+
+    standaloneQuery.addEventListener("change", updateStandaloneState);
+    window.addEventListener("pageshow", updateStandaloneState);
+
+    return () => {
+      standaloneQuery.removeEventListener("change", updateStandaloneState);
+      window.removeEventListener("pageshow", updateStandaloneState);
+    };
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -101,8 +126,11 @@ export default function ThemeProvider({
       statusBarMeta.setAttribute("name", "apple-mobile-web-app-status-bar-style");
       document.head.appendChild(statusBarMeta);
     }
-    statusBarMeta.setAttribute("content", isDarkMode ? "black" : "default");
-  }, [isDarkMode]);
+    statusBarMeta.setAttribute(
+      "content",
+      isStandalonePwa ? "black-translucent" : isDarkMode ? "black" : "default",
+    );
+  }, [isDarkMode, isStandalonePwa]);
 
   const toggleDarkMode = () => setIsDarkMode((prev) => !prev);
 

@@ -3,7 +3,6 @@ import { getPayload } from "payload";
 import config from "@/payload.config";
 import { formatArticle } from "@/utils/formatArticle";
 import { Article } from "@/components/FrontPage/types";
-import { Article as PayloadArticle } from "@/payload-types";
 import { Pool } from "pg";
 import {
   DEFAULT_SEARCH_PAGE_SIZE,
@@ -80,6 +79,21 @@ type LegacyRow = {
   url_path: string;
   first_published_at: string | null;
   authors: string | null;
+};
+
+type PayloadSearchArticle = {
+  id: number;
+  title: string;
+  slug?: string | null;
+  subdeck?: string | null;
+  featuredImage?: number | { url?: string | null } | null;
+  section: string;
+  kicker?: string | null;
+  publishedDate?: string | null;
+  createdAt: string;
+  authors?: Array<number | { firstName: string; lastName: string }> | null;
+  content?: unknown;
+  _status?: string | null;
 };
 
 function mapLegacyRow(row: LegacyRow): Article {
@@ -159,6 +173,18 @@ async function searchLegacy(forms: string[]): Promise<{ article: Article; bodyTe
 
 async function searchPayload(q: string, ql: string, forms: string[]) {
   const payload = await getPayload({ config });
+  const articleSearchSelect = {
+    title: true,
+    slug: true,
+    subdeck: true,
+    featuredImage: true,
+    section: true,
+    kicker: true,
+    publishedDate: true,
+    createdAt: true,
+    authors: true,
+    content: true,
+  } as const;
   const orConditions = ["title", "subdeck", "kicker"].flatMap((field) =>
     forms.map((form) => ({ [field]: { contains: form } })),
   );
@@ -169,7 +195,8 @@ async function searchPayload(q: string, ql: string, forms: string[]) {
         where: { and: [{ _status: { equals: "published" } }, { or: orConditions }] },
         sort: "-publishedDate",
         limit: 0,
-        depth: 2,
+        depth: 1,
+        select: articleSearchSelect,
       })
       .then((result) => result.docs),
     payload
@@ -196,13 +223,14 @@ async function searchPayload(q: string, ql: string, forms: string[]) {
             },
             sort: "-publishedDate",
             limit: 0,
-            depth: 2,
+            depth: 1,
+            select: articleSearchSelect,
           })
-          .then((result) => result.docs)
-          .catch(() => [] as PayloadArticle[])
-      : ([] as PayloadArticle[]);
+          .then((result) => result.docs as PayloadSearchArticle[])
+          .catch(() => [] as PayloadSearchArticle[])
+      : ([] as PayloadSearchArticle[]);
 
-  const allDocs = new Map<number, PayloadArticle>();
+  const allDocs = new Map<number, PayloadSearchArticle>();
   for (const doc of [...textDocs, ...authorDocs]) allDocs.set(doc.id, doc);
 
   return [...allDocs.values()]
