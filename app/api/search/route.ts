@@ -19,6 +19,7 @@ function mapLegacyRow(row: {
   wagtail_title: string;
   headline: string;
   subdeck: string | null;
+  summary: string | null;
   kicker_text: string | null;
   url_path: string;
   first_published_at: string | null;
@@ -36,7 +37,8 @@ function mapLegacyRow(row: {
   const rawTitle = row.headline || row.wagtail_title;
   const title = rawTitle.replace(/<[^>]*>/g, "").trim();
 
-  const excerpt = row.subdeck ? row.subdeck.replace(/<[^>]*>/g, "").trim() : "";
+  const rawExcerpt = row.subdeck || row.summary || "";
+  const excerpt = rawExcerpt.replace(/<[^>]*>/g, "").replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&").trim();
 
   return {
     id: `legacy-${row.legacy_id}`,
@@ -63,6 +65,7 @@ async function searchLegacy(q: string): Promise<Article[]> {
         wp.title AS wagtail_title,
         a.headline,
         a.subdeck,
+        a.summary,
         k.title AS kicker_text,
         wp.url_path,
         wp.first_published_at
