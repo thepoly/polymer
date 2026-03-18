@@ -23,6 +23,7 @@ function mapLegacyRow(row: {
   kicker_text: string | null;
   url_path: string;
   first_published_at: string | null;
+  authors: string | null;
 }): Article {
   // url_path looks like /home/news/2026/03/grace-meehan-candidate-profile/
   // Strip leading /home to get /{section}/{year}/{month}/{slug}/
@@ -45,7 +46,7 @@ function mapLegacyRow(row: {
     slug: cleanPath,
     title,
     excerpt,
-    author: null,
+    author: row.authors || null,
     date: dateString,
     image: null,
     section,
@@ -68,10 +69,13 @@ async function searchLegacy(q: string): Promise<Article[]> {
         a.summary,
         k.title AS kicker_text,
         wp.url_path,
-        wp.first_published_at
+        wp.first_published_at,
+        STRING_AGG(c.name, ' & ' ORDER BY r.id) AS authors
       FROM core_articlepage a
       JOIN wagtailcore_page wp ON a.page_ptr_id = wp.id
       LEFT JOIN core_kicker k ON a.kicker_id = k.id
+      LEFT JOIN core_articleauthorrelationship r ON r.article_id = a.page_ptr_id
+      LEFT JOIN core_contributor c ON c.id = r.author_id
       WHERE wp.live = true
         AND (
           a.headline ILIKE $1
@@ -79,6 +83,7 @@ async function searchLegacy(q: string): Promise<Article[]> {
           OR k.title ILIKE $1
           OR wp.title ILIKE $1
         )
+      GROUP BY wp.id, a.page_ptr_id, k.title
       ORDER BY wp.first_published_at DESC`,
       [`%${q}%`],
     );
