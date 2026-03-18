@@ -99,11 +99,11 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
 
                 if (hasTitles) {
                     return (
-                        <div className="flex flex-row flex-wrap items-start gap-y-1">
+                        <div className="flex flex-row flex-wrap items-stretch gap-y-1">
                             {enriched.map(({ user, title }, index) => (
                                 <React.Fragment key={user.id}>
                                 {index > 0 && (
-                                    <span className="font-meta text-[14px] md:text-[15px] font-[440] text-text-muted mx-3 mt-0">&</span>
+                                    <div className="w-px bg-rule-strong mx-4 self-stretch" />
                                 )}
                                 <div>
                                     <div className="font-meta text-[14px] md:text-[15px] font-[440] tracking-[0.08em] text-accent transition-colors">
