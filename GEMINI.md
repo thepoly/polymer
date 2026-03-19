@@ -1,79 +1,183 @@
-# Project Context: Polymer (Next.js + Payload CMS)
+# GEMINI.md
 
-## Overview
-This project, likely named "Polymer" (based on directory name), is a web application built with **Next.js 16** and **Payload CMS 3.x**. It serves as the digital platform for **The Rensselaer Polytechnic** (also known as **The Polytechnic** or **The Poly**), a **professional-looking student newspaper**.
+This document is the canonical project + operations reference for Gemini/Codex-style agents in this repository.
 
-The application combines a modern React frontend with a robust, headless CMS backend (Payload) integrated directly into the Next.js server, aiming to deliver a high-quality, trustworthy digital reading experience comparable to major news outlets, while managing the specific needs of a student editorial team.
+## Project Overview
 
-## Tech Stack
-*   **Framework:** Next.js 16.1.6 (App Router)
-*   **CMS:** Payload CMS 3.75.0
-*   **Language:** TypeScript
-*   **Database:** PostgreSQL (via `@payloadcms/db-postgres`)
-*   **Styling:** Tailwind CSS (inferred from dependencies)
-*   **Package Manager:** pnpm (inferred from `pnpm-lock.yaml`)
+Polymer is The Polytechnic's web platform (public newspaper site + Payload CMS admin) built on Next.js + Payload + PostgreSQL.
 
-## Key Features & Architecture
+## Stack
 
-### 1. Payload CMS Configuration
-*   **Config File:** `payload.config.ts`
-*   **Database:** Configured to use PostgreSQL.
-*   **Admin UI:**
-    *   Custom branding (Logo, Icon).
-    *   Custom Dashboard view (`@/components/Dashboard`).
-    *   Custom Edit View components (Save/Publish buttons).
-*   **Editor:** Lexical Editor.
+- Next.js `16.1.6` (App Router, Turbopack build)
+- React `19.2.3`
+- Payload CMS `3.75.0`
+- PostgreSQL (`@payloadcms/db-postgres`)
+- TypeScript
+- Tailwind CSS 4
+- pnpm
 
-### 2. Data Models (Collections)
-Located in `collections/`:
-*   **Articles:** The core content type.
-    *   **Workflow:** Complex status workflow (`draft` -> `needs-copy` -> `needs-1st/2nd/3rd` -> `ready`).
-    *   **Access Control:** Strict role-based access (admin, eic, copy-editor, editor, writer).
-    *   **Logic:** Enforces assignment of 3 copy editors before starting the copy process.
-    *   **Fields:** Title, Kicker, Subdeck, Section (News, Sports, Features, etc.), Authors, Featured Image.
-*   **Users:** Manages authentication and roles.
-*   **Media:** Handles file uploads.
-*   **JobTitles, Layout:** Helper collections.
+## Repository Layout
 
-### 3. Frontend Architecture
-*   **App Router:** Uses the `app/` directory structure.
-    *   `app/(payload)/`: Routes for the CMS Admin UI and API.
-    *   `app/(frontend)/`: Public-facing frontend routes.
-*   **Components:**
-    *   `components/Dashboard/`: Custom UI components for the Payload Admin panel (badges, buttons, sidebar elements).
-    *   `components/FrontPage/`: Components for the public-facing site (Article cards, Section headers).
+- `app/(frontend)/`: public site routes (`/`, section pages, article pages, staff, search)
+- `app/(payload)/`: Payload admin/app API integration routes
+- `app/api/`: custom API routes (`/api/health`, search, weather, etc.)
+- `collections/`: Payload collection definitions
+- `components/`: UI + article layout components
+- `migrations/`: migration assets
+- `scripts/`: deploy/runtime scripts (`run_deploy_sql_migrations.sh`, `deploy-smoke.mjs`)
+- `.github/workflows/`: CI and production deployment workflows
 
-## Development Workflow
+## Core Behavior
 
-### Scripts
-*   `pnpm dev`: Starts the development server (Next.js + Payload).
-*   `pnpm build`: Builds the application for production.
-*   `pnpm generate:types`: Generates TypeScript types from Payload collections.
-*   `pnpm lint`: Runs ESLint.
+- Article URL format: `/:section/:year/:month/:slug`
+- Homepage composition comes from `layout` + recent section stories (`app/(frontend)/page.tsx`)
+- Article layouts:
+  - standard/news/sports/features -> `StandardLayout`
+  - opinion -> `OpinionLayout`
+  - `#photofeature#` flag in first content paragraph -> `PhotofeatureLayout`
 
-### Environment Setup
-*   **Auto-Generation:** A `postinstall` script (`scripts/generate-env.js`) automatically checks for a `.env` file.
-*   If missing, it creates one with a generated `PAYLOAD_SECRET`.
-*   **Database:** You must manually update the `DATABASE_URI` in `.env` to point to your PostgreSQL instance.
+## Data Model (Current)
 
-## Deployment
-Defined in `.github/workflows/deploy.yml`:
-*   **Infrastructure:** Self-hosted Linux server (likely Arch Linux based on workflow name).
-*   **Trigger:** Pushes to `main`.
-*   **Process:**
-    1.  **Sync:** Uses `rsync` to mirror code to `/var/www/polymer`.
-        *   Excludes: `.git`, `node_modules`, `.next`, `media`.
-        *   **Persistence:** Media is symlinked from `/var/www/polymer-media` to ensure uploads persist across deploys.
-    2.  **Configuration:** Generates `.env` dynamically from GitHub Secrets (`DATABASE_URL`, `PAYLOAD_SECRET`).
-    3.  **Build:**
-        *   Installs dependencies (`pnpm install --no-frozen-lockfile`).
-        *   Runs database migrations (`pnpm payload migrate`).
-        *   Builds the Next.js app (`pnpm run build`).
-    4.  **Process Management:** Uses **PM2**.
-        *   Service Name: `polymer`
-        *   Strategy: Tries `pm2 reload polymer` (zero downtime), falls back to `pm2 start`.
+- `articles`: draft/publish enabled (`versions.drafts: true`), `publishedDate` set on first publish in a `beforeChange` hook
+- `layout`: homepage slot/pinning collection
+- `users`: staff/auth/roles
+- `media`: uploaded assets
+- `job-titles`: staff position metadata
 
-## Conventions
-*   **Role-Based Access:** Logic often checks `user.roles` (e.g., `['admin', 'eic', 'copy-editor', ...].includes(role)`).
-*   **Custom Admin Views:** The project heavily customizes the Payload Admin experience to fit a specific editorial workflow (e.g., 3-stage copy editing).
-*   **Path Aliases:** Uses `@/` to resolve paths to the project root (e.g., `@/components/...`).
+Role access in `articles`:
+- update: `admin`, `eic`, `editor`
+- create: `admin`, `eic`, `editor`, `writer`
+- delete: `admin`
+- anonymous read: published only
+
+## Local Development
+
+### Prerequisites
+
+- Node 20+
+- pnpm
+- PostgreSQL
+
+### Environment
+
+Required:
+- `DATABASE_URL`
+- `PAYLOAD_SECRET`
+
+Optional:
+- `LEGACY_DATABASE_URI`
+- `NEXT_PUBLIC_SITE_URL`
+- `BASE_URL`
+- `PLAYWRIGHT_WEB_SERVER`
+- `PLAYWRIGHT_WEB_SERVER_COMMAND`
+
+`pnpm install` runs `scripts/generate-env.js` to create `.env` if missing.
+
+### Common Commands
+
+- `pnpm dev`
+- `pnpm build`
+- `pnpm start`
+- `pnpm lint`
+- `pnpm typecheck`
+- `pnpm test:smoke`
+- `pnpm test:search-limit`
+- `pnpm test:deploy-smoke` (manual smoke script; not used by deploy workflow)
+- `pnpm generate:types`
+
+## CI (Current)
+
+Workflow: `.github/workflows/ci.yml`
+
+Runs on PRs + pushes to `main`:
+1. Postgres service (`postgres:16`)
+2. `pnpm install --frozen-lockfile`
+3. `pnpm exec payload migrate`
+4. `pnpm lint`
+5. `pnpm typecheck`
+6. `pnpm build`
+
+Playwright is not part of current CI runtime path.
+
+## Production Deployment (Arch Linux)
+
+Workflow: `.github/workflows/deploy.yml`  
+Trigger: successful `CI` workflow on push to `main` (`workflow_run`)
+
+### Server Paths
+
+- deploy root: `/var/www/polymer`
+- current symlink: `/var/www/polymer/current`
+- releases: `/var/www/polymer/releases/<sha>-<attempt>`
+- shared runtime env: `/var/www/polymer/shared/.env`
+- persistent media: `/var/www/polymer-media` (symlinked as `current/media`)
+
+### Arch Linux Host Setup (One-Time)
+
+Required host state:
+- GitHub Actions self-hosted runner installed and active as `actions-runner`
+- Node.js 20+, pnpm 10, `psql` client, and PM2 available to `actions-runner`
+- deployment directories created:
+  - `/var/www/polymer`
+  - `/var/www/polymer/releases`
+  - `/var/www/polymer/shared`
+  - `/var/www/polymer-media`
+- write access:
+  - `actions-runner` must be able to create/update release directories and `/var/www/polymer/shared/.env`
+  - runtime process must be able to read `/var/www/polymer/shared/.env` and read/write `/var/www/polymer-media` as needed
+- PM2 persistence configured for `actions-runner` (`pm2 startup` + `pm2 save`)
+
+Operator rule:
+- when managing production PM2 manually, run `sudo -u actions-runner pm2 ...`
+
+### Deploy Sequence
+
+1. Rsync source into fresh release directory
+2. Write shared `.env` from GitHub secrets
+3. `chmod 644 /var/www/polymer/shared/.env`
+4. Install deps in release (`pnpm install --frozen-lockfile`)
+5. Link shared `.env` and media symlink into release
+6. Run SQL migrations (`scripts/run_deploy_sql_migrations.sh`)
+7. Build app (`pnpm run build`)
+8. Record previous release target
+9. Atomically switch `current` symlink
+10. Restart PM2 app from ecosystem file
+11. Verify readiness with health endpoint (`curl` retries against `HEALTHCHECK_URL`)
+12. On failure, roll back `current` symlink and restart PM2
+13. Prune old releases (keep 5)
+
+### PM2 Ownership Rule (Critical)
+
+Use a single PM2 control plane: `actions-runner`.
+
+- Allowed: `sudo -u actions-runner pm2 ...`
+- Avoid: running app PM2 commands as `poly`
+
+Mixing PM2 users creates split daemons/process lists and inconsistent runtime ownership on port 3000.
+
+### Runtime Process Config
+
+`ecosystem.config.cjs`:
+- app name: `polymer`
+- cwd: `/var/www/polymer/current`
+- script: `node_modules/next/dist/bin/next`
+- args: `start`
+- mode: `cluster`, `instances: 1`
+- env: `NODE_ENV=production`, `PORT=3000`
+
+## Health & Verification
+
+- readiness endpoint: `GET /api/health`
+- implementation: `app/api/health/route.ts`
+- behavior:
+  - returns `200` with `{ status: "ok" }` when app + DB/Payload check succeeds
+  - returns `503` with `{ status: "error", checks.database: "error" }` on DB/Payload failure
+
+## Incident Guardrails
+
+- If you see `missing secret key` / Payload init errors:
+  - verify `/var/www/polymer/shared/.env` readability for runtime user
+  - verify app was started by `actions-runner` PM2
+- If deploy says success but site looks wrong:
+  - check for competing PM2 daemons/users
+  - verify who owns port 3000 with `ss -ltnp '( sport = :3000 )'`
