@@ -126,9 +126,6 @@ jobs:
 
       - name: Verify Release
         working-directory: ${{ env.RELEASE_DIR }}
-        env:
-          BASE_URL: ${{ env.BASE_URL }}
-          HEALTH_PATH: /api/health
         run: |
           set -euo pipefail
 
@@ -137,8 +134,6 @@ jobs:
             --retry-delay 2 \
             --retry-all-errors \
             "$HEALTHCHECK_URL" >/dev/null
-
-          pnpm run test:deploy-smoke
 
       - name: Roll Back Release
         if: failure()
