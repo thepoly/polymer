@@ -338,6 +338,11 @@ h6.font-display.italic {
 }
 
 @media (max-width: 1023px) {
+  .safe-area-top {
+    padding-top: calc(var(--safe-area-top) + 0.25rem);
+    padding-bottom: 0.875rem;
+  }
+
   .mobile-chrome-header-inner {
     padding-top: 0.375rem;
   }

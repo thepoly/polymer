@@ -18,7 +18,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                 {article.kicker}
             </span>
         )}
-        <h1 className={`font-display font-bold text-[28px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em] transition-colors ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
+        <h1 className={`font-display font-bold text-[39px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em] transition-colors ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
           {article.title}
         </h1>
         {article.subdeck && (

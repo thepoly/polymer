@@ -32,7 +32,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
       <div className="w-8 border-t border-rule-strong mb-6" />
 
       {/* Title */}
-      <h1 className="font-copy font-medium text-[28px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center max-w-[600px] mx-auto px-4 mb-4">
+      <h1 className="font-copy font-medium text-[39px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center max-w-[600px] mx-auto px-4 mb-4">
         {article.title}
       </h1>
 

@@ -26,8 +26,9 @@ const secondaryNavItems = [
 ];
 
 const DRAWER_WIDTH = 0.78; // fraction of viewport
-const SWIPE_THRESHOLD = 50;
-const EDGE_ZONE = 24;
+const DRAWER_TRANSITION_MS = 220;
+const SWIPE_THRESHOLD = 36;
+const DRAG_START_THRESHOLD = 6;
 const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
 
 function triggerThemeTransition(x: number, y: number, apply: () => void) {
@@ -69,7 +70,10 @@ function MobileMenuDrawer({
   onThemeToggle: () => void;
 }) {
   const [dragX, setDragX] = useState<number | null>(null);
+  const [isRendered, setIsRendered] = useState(isOpen);
+  const [isVisible, setIsVisible] = useState(isOpen);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const gestureModeRef = useRef<"open" | "close" | null>(null);
   const isDraggingRef = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -79,115 +83,117 @@ function MobileMenuDrawer({
   }, []);
 
   useEffect(() => {
-    if (isOpen) return;
+    if (isOpen) {
+      setIsRendered(true);
+      const frame = window.requestAnimationFrame(() => {
+        setIsVisible(true);
+      });
+      return () => window.cancelAnimationFrame(frame);
+    }
 
+    setIsVisible(false);
+    if (dragX !== null) return;
+
+    const timeout = window.setTimeout(() => {
+      setIsRendered(false);
+    }, DRAWER_TRANSITION_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [isOpen, dragX]);
+
+  useEffect(() => {
     const onTouchStart = (e: TouchEvent) => {
       const touch = e.touches[0];
-      if (touch.clientX <= EDGE_ZONE) {
-        touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
-        isDraggingRef.current = false;
-      }
+      touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+      gestureModeRef.current = isOpen ? "close" : "open";
+      isDraggingRef.current = false;
     };
 
     const onTouchMove = (e: TouchEvent) => {
-      if (!touchStartRef.current) return;
+      if (!touchStartRef.current || !gestureModeRef.current) return;
+
       const touch = e.touches[0];
       const dx = touch.clientX - touchStartRef.current.x;
       const dy = Math.abs(touch.clientY - touchStartRef.current.y);
+
       if (dy > Math.abs(dx) && !isDraggingRef.current) {
         touchStartRef.current = null;
+        gestureModeRef.current = null;
+        if (!isOpen) {
+          setIsRendered(false);
+        }
         return;
       }
-      if (dx > 10) {
+
+      const drawerPx = getDrawerPx();
+
+      if (gestureModeRef.current === "open" && dx > DRAG_START_THRESHOLD) {
         isDraggingRef.current = true;
         e.preventDefault();
-        setDragX(Math.min(dx, getDrawerPx()));
+        setIsRendered(true);
+        setIsVisible(false);
+        setDragX(Math.min(dx, drawerPx));
+        return;
+      }
+
+      if (gestureModeRef.current === "close" && dx < -DRAG_START_THRESHOLD) {
+        isDraggingRef.current = true;
+        e.preventDefault();
+        setDragX(Math.max(0, drawerPx + dx));
       }
     };
 
-    const onTouchEnd = () => {
+    const finishGesture = () => {
+      const drawerPx = getDrawerPx();
+
       if (isDraggingRef.current && dragX !== null) {
-        if (dragX > SWIPE_THRESHOLD) {
-          onOpen();
+        if (gestureModeRef.current === "open") {
+          if (dragX > SWIPE_THRESHOLD) {
+            onOpen();
+          } else {
+            setIsRendered(false);
+          }
+        } else if (gestureModeRef.current === "close") {
+          if (dragX < drawerPx - SWIPE_THRESHOLD) {
+            onClose();
+          }
         }
-        setDragX(null);
+      } else if (!isOpen) {
+        setIsRendered(false);
       }
+
+      setDragX(null);
       touchStartRef.current = null;
+      gestureModeRef.current = null;
       isDraggingRef.current = false;
     };
 
     document.addEventListener("touchstart", onTouchStart, { passive: true });
     document.addEventListener("touchmove", onTouchMove, { passive: false });
-    document.addEventListener("touchend", onTouchEnd, { passive: true });
+    document.addEventListener("touchend", finishGesture, { passive: true });
+    document.addEventListener("touchcancel", finishGesture, { passive: true });
+
     return () => {
       document.removeEventListener("touchstart", onTouchStart);
       document.removeEventListener("touchmove", onTouchMove);
-      document.removeEventListener("touchend", onTouchEnd);
+      document.removeEventListener("touchend", finishGesture);
+      document.removeEventListener("touchcancel", finishGesture);
     };
-  }, [isOpen, dragX, onOpen, getDrawerPx]);
+  }, [dragX, getDrawerPx, isOpen, onClose, onOpen]);
 
   useEffect(() => {
-    if (!isOpen) return;
-
-    const onTouchStart = (e: TouchEvent) => {
-      const touch = e.touches[0];
-      touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
-      isDraggingRef.current = false;
-    };
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (!touchStartRef.current) return;
-      const touch = e.touches[0];
-      const dx = touch.clientX - touchStartRef.current.x;
-      const dy = Math.abs(touch.clientY - touchStartRef.current.y);
-      if (dy > Math.abs(dx) && !isDraggingRef.current) {
-        touchStartRef.current = null;
-        return;
-      }
-      if (dx < -10) {
-        isDraggingRef.current = true;
-        e.preventDefault();
-        const drawerPx = getDrawerPx();
-        setDragX(Math.max(0, drawerPx + dx));
-      }
-    };
-
-    const onTouchEnd = () => {
-      if (isDraggingRef.current && dragX !== null) {
-        if (dragX < getDrawerPx() - SWIPE_THRESHOLD) {
-          onClose();
-        }
-        setDragX(null);
-      }
-      touchStartRef.current = null;
-      isDraggingRef.current = false;
-    };
-
-    const panel = panelRef.current;
-    if (!panel) return;
-    panel.addEventListener("touchstart", onTouchStart, { passive: true });
-    panel.addEventListener("touchmove", onTouchMove, { passive: false });
-    panel.addEventListener("touchend", onTouchEnd, { passive: true });
-    return () => {
-      panel.removeEventListener("touchstart", onTouchStart);
-      panel.removeEventListener("touchmove", onTouchMove);
-      panel.removeEventListener("touchend", onTouchEnd);
-    };
-  }, [isOpen, dragX, onClose, getDrawerPx]);
-
-  useEffect(() => {
-    if (isOpen) {
+    if (isOpen || dragX !== null) {
       document.body.style.overflow = "hidden";
       return () => { document.body.style.overflow = ""; };
     }
-  }, [isOpen]);
+  }, [dragX, isOpen]);
 
-  const showDrawer = isOpen || dragX !== null;
+  const showDrawer = isRendered || dragX !== null;
   if (!showDrawer) return null;
 
   const drawerPx = getDrawerPx();
-  const translateX = dragX !== null ? dragX - drawerPx : isOpen ? 0 : -drawerPx;
-  const progress = dragX !== null ? dragX / drawerPx : isOpen ? 1 : 0;
+  const translateX = dragX !== null ? dragX - drawerPx : isVisible ? 0 : -drawerPx;
+  const progress = dragX !== null ? dragX / drawerPx : isVisible ? 1 : 0;
 
   return (
     <div className="fixed inset-0 z-[60] lg:hidden">
@@ -203,7 +209,7 @@ function MobileMenuDrawer({
         style={{
           width: `${DRAWER_WIDTH * 100}vw`,
           transform: `translateX(${translateX}px)`,
-          transition: dragX !== null ? "none" : "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          transition: dragX !== null ? "none" : `transform ${DRAWER_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
         }}
       >
         <div className="safe-area-mobile-drawer flex h-full flex-col overflow-y-auto">
@@ -336,7 +342,12 @@ export default function Header({ compact = false }: { compact?: boolean }) {
   return (
     <>
       <header className={`${compact ? "sticky top-0" : ""} safe-area-top z-50 bg-bg-main lg:hidden`}>
-        <div className="mobile-chrome-header-inner safe-area-mobile-header-x mx-auto flex h-[56px] max-w-[1280px] items-center justify-between">
+        <div className="mobile-chrome-header-inner safe-area-mobile-header-x mx-auto max-w-[1280px]">
+          <div className="font-meta mb-2 flex items-center justify-center gap-2 text-[10px] font-medium uppercase tracking-[0.1em]">
+            <span className="text-text-main">{currentDate}</span>
+            <span className="text-accent font-semibold">Vol. XCI No. 22</span>
+          </div>
+          <div className="flex h-[56px] items-center justify-between">
           <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="flex h-9 w-9 items-center justify-center overflow-hidden text-text-main">
             <span className="relative block h-5 w-5">
               <Menu
@@ -363,6 +374,7 @@ export default function Header({ compact = false }: { compact?: boolean }) {
           <button onClick={() => setIsSearchOverlayOpen(true)} className="flex h-9 w-9 items-center justify-center text-text-main">
             <Search className="h-4 w-4" />
           </button>
+          </div>
         </div>
       </header>
 

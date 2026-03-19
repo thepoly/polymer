@@ -10,7 +10,7 @@ export const ArticleCard = ({
   caption,
   showImage = Boolean(article.image),
   imageAspectClassName = "aspect-[4/3]",
-  titleClassName = "text-[21px] md:text-[24px]",
+  titleClassName = "text-[27px] md:text-[24px]",
   excerptClassName = "mt-1.5 line-clamp-3 text-[13px] leading-[1.38]",
 }: {
   article: Article;
@@ -46,7 +46,7 @@ export const ArticleCard = ({
     )}
     <div data-header-anchor="text">
       <h3
-        className={`font-display font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors group-hover:text-accent ${titleClassName} ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic text-[22px] md:text-[25px]" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
+        className={`font-display font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors group-hover:text-accent ${titleClassName} ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic text-[28px] md:text-[25px]" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
       >
         {article.title}
       </h3>
