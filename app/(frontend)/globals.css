@@ -106,6 +106,22 @@
   font-display: swap;
 }
 
+/* Raleway */
+@font-face {
+  font-family: "Raleway";
+  src: url("/fonts/raleway/Raleway-Variable.ttf") format("truetype");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Raleway";
+  src: url("/fonts/raleway/Raleway-Italic-Variable.ttf") format("truetype");
+  font-weight: 300 700;
+  font-style: italic;
+  font-display: swap;
+}
+
 @theme inline {
   --color-bg-main: var(--background);
   --color-text-main: var(--foreground);
