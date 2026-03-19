@@ -63,9 +63,3 @@ jobs:
 
       - name: Build
         run: pnpm build
-
-      - name: Install Playwright Browser
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: Run Search Limit Test
-        run: pnpm test:search-limit

@@ -59,7 +59,10 @@ jobs:
             "LEGACY_DATABASE_URI=${{ secrets.LEGACY_DATABASE_URI }}" \
             > "$SHARED_DIR/.env"
 
-          chmod 600 "$SHARED_DIR/.env"
+          # Runtime may not use the same UNIX user as the deploy runner.
+          # Keep the file readable by the app process user to avoid startup
+          # failures like "missing secret key" caused by EACCES on .env.
+          chmod 644 "$SHARED_DIR/.env"
 
       - name: Install Dependencies
         working-directory: ${{ env.RELEASE_DIR }}
