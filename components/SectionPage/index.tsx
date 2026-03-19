@@ -89,7 +89,6 @@ export default function SectionPage({
   title: string;
   articles: Article[];
 }) {
-  if (articles.length === 0) return null;
   const kickerRowRef = useRef<HTMLDivElement>(null);
   const kickerMeasureRef = useRef<HTMLDivElement>(null);
 
@@ -175,6 +174,8 @@ export default function SectionPage({
   const rest = ordered.slice(1);
   const [col1Rest, col2, col3] = distributeToColumns(rest, 3);
   const col1 = [lead, ...col1Rest];
+
+  if (articles.length === 0) return null;
 
   return (
     <div className="mx-auto max-w-[1280px] px-4 pb-14 pt-5 md:px-6 md:py-6 xl:px-[30px]">

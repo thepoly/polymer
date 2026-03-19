@@ -46,13 +46,6 @@ type PublicArticleMedia = {
   photographer?: PublicArticleUser | null;
 };
 
-type PublicArticle = Omit<Article, 'authors' | 'featuredImage'> & {
-  authors: PublicArticleUser[];
-  featuredImage?: PublicArticleMedia | null;
-  imageCaption?: string | null;
-  opinionType?: Article['opinionType'];
-};
-
 const toPublicArticleUser = (user: User): PublicArticleUser => ({
   id: user.id,
   firstName: user.firstName,

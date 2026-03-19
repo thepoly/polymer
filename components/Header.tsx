@@ -70,8 +70,6 @@ function MobileMenuDrawer({
   onThemeToggle: () => void;
 }) {
   const [dragX, setDragX] = useState<number | null>(null);
-  const [isRendered, setIsRendered] = useState(isOpen);
-  const [isVisible, setIsVisible] = useState(isOpen);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const gestureModeRef = useRef<"open" | "close" | null>(null);
   const isDraggingRef = useRef(false);
@@ -81,25 +79,6 @@ function MobileMenuDrawer({
     if (typeof window === "undefined") return 300;
     return window.innerWidth * DRAWER_WIDTH;
   }, []);
-
-  useEffect(() => {
-    if (isOpen) {
-      setIsRendered(true);
-      const frame = window.requestAnimationFrame(() => {
-        setIsVisible(true);
-      });
-      return () => window.cancelAnimationFrame(frame);
-    }
-
-    setIsVisible(false);
-    if (dragX !== null) return;
-
-    const timeout = window.setTimeout(() => {
-      setIsRendered(false);
-    }, DRAWER_TRANSITION_MS);
-
-    return () => window.clearTimeout(timeout);
-  }, [isOpen, dragX]);
 
   useEffect(() => {
     const onTouchStart = (e: TouchEvent) => {
@@ -119,9 +98,6 @@ function MobileMenuDrawer({
       if (dy > Math.abs(dx) && !isDraggingRef.current) {
         touchStartRef.current = null;
         gestureModeRef.current = null;
-        if (!isOpen) {
-          setIsRendered(false);
-        }
         return;
       }
 
@@ -130,8 +106,6 @@ function MobileMenuDrawer({
       if (gestureModeRef.current === "open" && dx > DRAG_START_THRESHOLD) {
         isDraggingRef.current = true;
         e.preventDefault();
-        setIsRendered(true);
-        setIsVisible(false);
         setDragX(Math.min(dx, drawerPx));
         return;
       }
@@ -148,18 +122,12 @@ function MobileMenuDrawer({
 
       if (isDraggingRef.current && dragX !== null) {
         if (gestureModeRef.current === "open") {
-          if (dragX > SWIPE_THRESHOLD) {
-            onOpen();
-          } else {
-            setIsRendered(false);
-          }
+          if (dragX > SWIPE_THRESHOLD) onOpen();
         } else if (gestureModeRef.current === "close") {
           if (dragX < drawerPx - SWIPE_THRESHOLD) {
             onClose();
           }
         }
-      } else if (!isOpen) {
-        setIsRendered(false);
       }
 
       setDragX(null);
@@ -188,15 +156,13 @@ function MobileMenuDrawer({
     }
   }, [dragX, isOpen]);
 
-  const showDrawer = isRendered || dragX !== null;
-  if (!showDrawer) return null;
-
   const drawerPx = getDrawerPx();
-  const translateX = dragX !== null ? dragX - drawerPx : isVisible ? 0 : -drawerPx;
-  const progress = dragX !== null ? dragX / drawerPx : isVisible ? 1 : 0;
+  const showDrawer = isOpen || dragX !== null;
+  const translateX = dragX !== null ? dragX - drawerPx : isOpen ? 0 : -drawerPx;
+  const progress = dragX !== null ? dragX / drawerPx : isOpen ? 1 : 0;
 
   return (
-    <div className="fixed inset-0 z-[60] lg:hidden">
+    <div className={`fixed inset-0 z-[60] lg:hidden ${showDrawer ? "pointer-events-auto" : "pointer-events-none"}`}>
       <div
         className="absolute inset-0 backdrop-blur-sm"
         style={{ backgroundColor: `rgba(0,0,0,${0.4 * progress})` }}

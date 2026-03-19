@@ -17,7 +17,10 @@ export const LeadArticle = ({
     hideKicker?: boolean;
 }) => (
     <TransitionLink href={getArticleUrl(article)} className="flex h-full flex-col group cursor-pointer">
-        <div data-header-anchor="text" className={imageFirstOnMobile && article.image ? "order-2 md:order-1" : ""}>
+        <div
+            data-header-anchor="text"
+            className={imageFirstOnMobile && article.image ? "order-2 mt-4 md:order-1 md:mt-0" : ""}
+        >
             {!hideKicker && (
                 <p className="font-meta mb-2 text-[11px] md:text-[12px] font-[440] italic capitalize tracking-[0.04em] text-accent">
                     {article.section}
