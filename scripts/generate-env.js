@@ -13,7 +13,7 @@ if (!fs.existsSync(envPath)) {
 # LEGACY_DATABASE_URI=postgres://user:password@host:port/legacy_database_name
 # NEXT_PUBLIC_SITE_URL=http://localhost:3000
 # NEXT_PUBLIC_POSTHOG_KEY=phc_your_project_key
-# NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
+# NEXT_PUBLIC_POSTHOG_HOST=https://t.poly.rpi.edu
 `;
   
   fs.writeFileSync(envPath, content);

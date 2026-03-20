@@ -1,4 +1,4 @@
-const DEFAULT_POSTHOG_HOST = "https://us.i.posthog.com";
+const DEFAULT_POSTHOG_HOST = "https://t.poly.rpi.edu";
 
 const ARTICLE_PATH_PATTERN = /^\/(news|features|sports|opinion)\/\d{4}\/\d{2}\/([^/?#]+)\/?$/;
 const SECTION_PATH_PATTERN = /^\/(news|features|sports|opinion)\/?$/;

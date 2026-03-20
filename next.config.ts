@@ -2,15 +2,16 @@ import { withPayload } from "@payloadcms/next/withPayload";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  skipTrailingSlashRedirect: true,
   async rewrites() {
     return [
       {
         source: "/ingest/static/:path*",
-        destination: "https://us-assets.i.posthog.com/static/:path*",
+        destination: "https://t.poly.rpi.edu/static/:path*",
       },
       {
         source: "/ingest/:path*",
-        destination: "https://us.i.posthog.com/:path*",
+        destination: "https://t.poly.rpi.edu/:path*",
       },
     ];
   },
