@@ -18,13 +18,19 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
     <div className="flex flex-col items-center mb-8">
       {/* Kicker + Opinion Type */}
       <div className="flex flex-col items-center gap-1 mb-4">
-        <span className="font-meta text-accent font-bold uppercase text-sm tracking-widest">
-          Opinion
-        </span>
-        {opinionType && opinionType !== 'opinion' && (
-          <span className="font-meta font-bold uppercase text-sm tracking-wide text-text-main">
-            {typeLabel}
+        {opinionType === 'opinion' || !opinionType ? (
+          <span className="font-meta text-text-main font-bold uppercase text-base tracking-widest">
+            Opinion
           </span>
+        ) : (
+          <>
+            <span className="font-meta text-text-main font-bold uppercase text-sm tracking-widest">
+              Opinion
+            </span>
+            <span className="font-meta font-bold uppercase text-sm tracking-wide text-[#D6001C]">
+              {typeLabel}
+            </span>
+          </>
         )}
       </div>
 
