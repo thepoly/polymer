@@ -1,17 +1,19 @@
 import { withPayload } from "@payloadcms/next/withPayload";
 import type { NextConfig } from "next";
 
+const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://t.poly.rpi.edu";
+
 const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
   async rewrites() {
     return [
       {
         source: "/ingest/static/:path*",
-        destination: "https://t.poly.rpi.edu/static/:path*",
+        destination: `${posthogHost}/static/:path*`,
       },
       {
         source: "/ingest/:path*",
-        destination: "https://t.poly.rpi.edu/:path*",
+        destination: `${posthogHost}/:path*`,
       },
     ];
   },

@@ -64,7 +64,7 @@ export const ArticleStaffBios: React.FC<Props> = ({
         })}
       </div>
 
-      <div className="mt-8 border-t border-rule-strong" />
+      <div className="mt-3 border-t border-rule-strong" />
     </section>
   );
 };

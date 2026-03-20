@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Article, Media, User } from '@/payload-types';
 import { opinionTypeLabels } from './opinionTypeLabels';
+import { ArticleByline } from '@/components/Article';
 
 type Props = {
   article: Article;
@@ -35,17 +36,6 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
       <h1 className="font-copy font-medium text-[39px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center max-w-[600px] mx-auto px-4 mb-4">
         {article.title}
       </h1>
-
-      {/* Date */}
-      <div className="font-meta text-text-main text-[15px] mb-8">
-        {article.publishedDate
-          ? new Date(article.publishedDate).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })
-          : ''}
-      </div>
 
       {/* Featured Image + Caption + Credit */}
       {featuredImage?.url && (() => {
@@ -81,27 +71,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
       })()}
 
       {/* Author byline */}
-      <div className="max-w-[600px] w-full mx-auto">
-        <hr className="border-rule-strong mb-4" />
-        <div className="font-meta font-bold text-text-muted text-[15px]">
-          By {article.authors && article.authors.length > 0 ? (
-            article.authors.map((author, index) => {
-              const user = author as User;
-              return (
-                <React.Fragment key={user.id}>
-                  {index > 0 && index === article.authors!.length - 1 ? ' and ' : index > 0 ? ', ' : ''}
-                  <Link href={`/staff/${user.slug || user.id}`} className="hover:text-accent transition-colors">
-                    {user.firstName} {user.lastName}
-                  </Link>
-                </React.Fragment>
-              );
-            })
-          ) : (
-            'The Poly Staff'
-          )}
-        </div>
-        <hr className="border-rule-strong mt-4" />
-      </div>
+      <ArticleByline article={article} />
     </div>
   );
 };

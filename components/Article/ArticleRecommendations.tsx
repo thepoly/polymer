@@ -199,10 +199,10 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
 
   return (
     <section
-      className="mx-auto mt-16 max-w-[1200px] px-4 md:px-6"
+      className="mx-auto mt-5 max-w-[1200px] px-4 md:px-6"
       data-article-recommendations
     >
-      <div className="pt-8 md:pt-10">
+      <div className="pt-2 md:pt-3">
         <div className="mb-8 flex flex-col gap-4 border-b border-rule pb-6 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
             <p className="font-meta text-[11px] font-bold uppercase tracking-[0.12em] text-accent">

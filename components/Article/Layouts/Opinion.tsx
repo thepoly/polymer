@@ -11,11 +11,9 @@ export const OpinionLayout = ({ article, content }: { article: Article, content?
       <Header mobileTight />
       <article className="container mx-auto px-4 md:px-6 mt-8 md:mt-12">
         <OpinionArticleHeader article={article} />
-        <div className="max-w-[600px] mx-auto">
-          <ArticleContent content={content || article.content} />
-          <ArticleDivider maxWidthClassName="max-w-full" />
-          <ArticleStaffBios article={article} maxWidthClassName="max-w-full" />
-        </div>
+        <ArticleContent content={content || article.content} />
+        <ArticleDivider />
+        <ArticleStaffBios article={article} />
       </article>
       <ArticleRecommendations currentArticle={article} />
       <Footer />
