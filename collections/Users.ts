@@ -71,7 +71,7 @@ export const Users: CollectionConfig = {
     afterLogin: [
       async ({ user }) => {
         const posthog = getPostHogClient()
-        const doc = user as Record<string, any>;
+        const doc = user as import('../payload-types').User;
         if (posthog && doc && doc.id) {
           posthog.identify({
             distinctId: String(doc.id),
