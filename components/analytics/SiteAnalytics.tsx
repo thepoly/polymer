@@ -14,14 +14,9 @@ import {
 } from "@/lib/posthog-config";
 import { useTheme } from "@/components/ThemeProvider";
 
-const HOME_SCROLL_THRESHOLDS = Array.from({ length: 20 }, (_, index) => (index + 1) * 5);
-const PAGE_SCROLL_THRESHOLDS = [10, 25, 50, 75, 90, 100];
-const PAGE_ACTIVE_TIME_THRESHOLDS = [15, 30, 60, 120, 300, 600];
-const SITE_ACTIVE_TIME_THRESHOLDS = [60, 300, 600, 900, 1800];
 const ACTIVE_WINDOW_MS = 30_000;
 const TICK_SECONDS = 5;
 const SITE_ACTIVE_SECONDS_STORAGE_KEY = "posthog_site_active_seconds";
-const SITE_ACTIVE_THRESHOLDS_STORAGE_KEY = "posthog_site_active_time_thresholds";
 
 function getDocumentScrollPercentage() {
   const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -71,32 +66,14 @@ function getClickContext(anchor: HTMLAnchorElement, currentPath: string) {
   return getPageType(currentPath);
 }
 
-function loadStoredThresholds(key: string) {
-  if (typeof window === "undefined") {
-    return new Set<number>();
-  }
-
-  try {
-    const rawValue = window.sessionStorage.getItem(key);
-    if (!rawValue) return new Set<number>();
-
-    const parsed = JSON.parse(rawValue);
-    if (!Array.isArray(parsed)) return new Set<number>();
-
-    return new Set(
-      parsed.filter((value): value is number => typeof value === "number" && Number.isFinite(value)),
-    );
-  } catch {
-    return new Set<number>();
-  }
-}
-
-function saveStoredThresholds(key: string, thresholds: Set<number>) {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.sessionStorage.setItem(key, JSON.stringify([...thresholds].sort((a, b) => a - b)));
+function getPageArea(element: HTMLElement | null): string {
+  if (!element) return "unknown";
+  if (element.closest("h1")) return "headline";
+  if (element.closest(".article-body") || element.closest("main")) return "body";
+  if (element.closest(".section-name")) return "section_name";
+  if (element.closest("footer")) return "footer";
+  if (element.closest("header")) return "header";
+  return "other";
 }
 
 function loadStoredActiveSeconds() {
@@ -135,12 +112,15 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
   const pathname = normalizePath(usePathname() ?? "/");
   const pathRef = useRef(pathname);
   const maxScrollRef = useRef(0);
-  const pageScrollThresholdsRef = useRef<Set<number>>(new Set());
   const pageActiveSecondsRef = useRef(0);
-  const pageActiveThresholdsRef = useRef<Set<number>>(new Set());
   const siteActiveSecondsRef = useRef(0);
-  const siteActiveThresholdsRef = useRef<Set<number>>(new Set());
-  const lastActivityAtRef = useRef(0);
+  const lastActivityAtRef = useRef(Date.now());
+  const sentSummaryRef = useRef(false);
+
+  // Deep engagement refs
+  const highlightCountRef = useRef(0);
+  const totalCharsCopiedRef = useRef(0);
+  const lastSelectionRef = useRef<string | null>(null);
 
   useEffect(() => {
     themeRef.current = isDarkMode ? "dark" : "light";
@@ -176,7 +156,6 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
 
   useEffect(() => {
     siteActiveSecondsRef.current = loadStoredActiveSeconds();
-    siteActiveThresholdsRef.current = loadStoredThresholds(SITE_ACTIVE_THRESHOLDS_STORAGE_KEY);
     lastActivityAtRef.current = Date.now();
   }, []);
 
@@ -189,11 +168,15 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
     }
 
     posthog.opt_in_capturing();
+    
+    // Reset page metrics for new path
     maxScrollRef.current = 0;
-    pageScrollThresholdsRef.current = new Set();
     pageActiveSecondsRef.current = 0;
-    pageActiveThresholdsRef.current = new Set();
     lastActivityAtRef.current = Date.now();
+    sentSummaryRef.current = false;
+    highlightCountRef.current = 0;
+    totalCharsCopiedRef.current = 0;
+    lastSelectionRef.current = null;
 
     if (pathname === "/") {
       posthog.capture("homepage_viewed", {
@@ -204,34 +187,47 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
   }, [pathname]);
 
   useEffect(() => {
-    const emitScrollEvents = () => {
+    const updateScrollMetrics = () => {
       const currentPath = pathRef.current;
       if (!shouldTrackPath(currentPath)) return;
 
       const scrollPercentage = getDocumentScrollPercentage();
       maxScrollRef.current = Math.max(maxScrollRef.current, scrollPercentage);
-
-      const isHomepage = currentPath === "/";
-      const thresholds = isHomepage ? HOME_SCROLL_THRESHOLDS : PAGE_SCROLL_THRESHOLDS;
-      const eventName = isHomepage ? "homepage_scroll_depth_reached" : "page_scroll_depth_reached";
-
-      for (const threshold of thresholds) {
-        if (scrollPercentage < threshold || pageScrollThresholdsRef.current.has(threshold)) {
-          continue;
-        }
-
-        pageScrollThresholdsRef.current.add(threshold);
-        posthog.capture(eventName, {
-          ...getPageEventProperties(currentPath),
-          theme: themeRef.current,
-          depth_percentage: threshold,
-          max_scroll_percentage: scrollPercentage,
-        });
-      }
     };
 
     const markActivity = () => {
       lastActivityAtRef.current = Date.now();
+    };
+
+    const handleCopy = () => {
+      const currentPath = pathRef.current;
+      if (isArticlePath(currentPath)) return; // Handled by ArticleAnalytics
+
+      const selection = window.getSelection();
+      const text = selection?.toString().trim();
+      if (!text) return;
+
+      const area = getPageArea(selection?.anchorNode?.parentElement || null);
+      totalCharsCopiedRef.current += text.length;
+
+      posthog.capture("page_text_copied", {
+        ...getPageEventProperties(currentPath),
+        text_copied: text,
+        char_count: text.length,
+        page_area: area,
+      });
+    };
+
+    const handleSelectionChange = () => {
+      const currentPath = pathRef.current;
+      if (isArticlePath(currentPath)) return; // Handled by ArticleAnalytics
+
+      const selection = window.getSelection();
+      const text = selection?.toString().trim();
+      if (text && text.length > 5 && text !== lastSelectionRef.current) {
+        highlightCountRef.current++;
+        lastSelectionRef.current = text;
+      }
     };
 
     const handleDocumentClick = (event: MouseEvent) => {
@@ -298,6 +294,30 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
       }
     };
 
+    const sendSummary = () => {
+      if (sentSummaryRef.current) return;
+      
+      const currentPath = pathRef.current;
+      if (!shouldTrackPath(currentPath)) return;
+
+      sentSummaryRef.current = true;
+      posthog.capture("page_session_summary", {
+        ...getPageEventProperties(currentPath),
+        theme: themeRef.current,
+        total_active_seconds: pageActiveSecondsRef.current,
+        site_total_active_seconds: siteActiveSecondsRef.current,
+        max_scroll_percentage: maxScrollRef.current,
+        text_highlight_count: highlightCountRef.current,
+        total_chars_copied: totalCharsCopiedRef.current,
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        sendSummary();
+      }
+    };
+
     const intervalId = window.setInterval(() => {
       const currentPath = pathRef.current;
       if (!shouldTrackPath(currentPath) || document.hidden) {
@@ -316,61 +336,38 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
         SITE_ACTIVE_SECONDS_STORAGE_KEY,
         String(siteActiveSecondsRef.current),
       );
-
-      for (const threshold of PAGE_ACTIVE_TIME_THRESHOLDS) {
-        if (pageActiveSecondsRef.current < threshold || pageActiveThresholdsRef.current.has(threshold)) {
-          continue;
-        }
-
-        pageActiveThresholdsRef.current.add(threshold);
-        posthog.capture("page_active_time_reached", {
-          ...getPageEventProperties(currentPath),
-          theme: themeRef.current,
-          active_seconds_reached: threshold,
-          max_scroll_percentage: maxScrollRef.current,
-        });
-      }
-
-      for (const threshold of SITE_ACTIVE_TIME_THRESHOLDS) {
-        if (siteActiveSecondsRef.current < threshold || siteActiveThresholdsRef.current.has(threshold)) {
-          continue;
-        }
-
-        siteActiveThresholdsRef.current.add(threshold);
-        saveStoredThresholds(SITE_ACTIVE_THRESHOLDS_STORAGE_KEY, siteActiveThresholdsRef.current);
-        posthog.capture("site_active_time_reached", {
-          ...getPageEventProperties(currentPath),
-          theme: themeRef.current,
-          active_seconds_reached: threshold,
-          total_active_seconds: siteActiveSecondsRef.current,
-        });
-      }
     }, TICK_SECONDS * 1000);
 
-    window.addEventListener("scroll", emitScrollEvents, { passive: true });
-    window.addEventListener("resize", emitScrollEvents);
+    window.addEventListener("scroll", updateScrollMetrics, { passive: true });
+    window.addEventListener("resize", updateScrollMetrics);
     window.addEventListener("focus", markActivity);
     window.addEventListener("keydown", markActivity);
     window.addEventListener("mousemove", markActivity, { passive: true });
     window.addEventListener("pointerdown", markActivity, { passive: true });
     window.addEventListener("touchstart", markActivity, { passive: true });
-    document.addEventListener("visibilitychange", markActivity);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     document.addEventListener("click", handleDocumentClick, true);
+    document.addEventListener("copy", handleCopy);
+    document.addEventListener("selectionchange", handleSelectionChange);
 
-    const rafId = window.requestAnimationFrame(emitScrollEvents);
+    const rafId = window.requestAnimationFrame(updateScrollMetrics);
 
     return () => {
       window.cancelAnimationFrame(rafId);
       window.clearInterval(intervalId);
-      window.removeEventListener("scroll", emitScrollEvents);
-      window.removeEventListener("resize", emitScrollEvents);
+      window.removeEventListener("scroll", updateScrollMetrics);
+      window.removeEventListener("resize", updateScrollMetrics);
       window.removeEventListener("focus", markActivity);
       window.removeEventListener("keydown", markActivity);
       window.removeEventListener("mousemove", markActivity);
       window.removeEventListener("pointerdown", markActivity);
       window.removeEventListener("touchstart", markActivity);
-      document.removeEventListener("visibilitychange", markActivity);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       document.removeEventListener("click", handleDocumentClick, true);
+      document.removeEventListener("copy", handleCopy);
+      document.removeEventListener("selectionchange", handleSelectionChange);
+      
+      sendSummary();
     };
   }, []);
 

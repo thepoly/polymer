@@ -6,6 +6,7 @@ import { getArticleLayout, ArticleLayouts } from '@/components/Article/Layouts';
 import { LexicalNode } from '@/components/Article/RichTextParser';
 import ArticleScrollBar from '@/components/ArticleScrollBar';
 import ArticleAnalytics from '@/components/analytics/ArticleAnalytics';
+import { calculateWordCount } from '@/utils/wordCount';
 import { getArticleUrl } from '@/utils/getArticleUrl';
 import type { Metadata } from 'next';
 import type { Article, Media, User } from '@/payload-types';
@@ -189,6 +190,11 @@ export default async function ArticlePage({ params }: Args) {
   const layoutType = getArticleLayout(article);
   const LayoutComponent = ArticleLayouts[layoutType];
 
+  const payload = await getPayload({ config });
+  const { user: authUser } = await payload.auth();
+  const wordCount = calculateWordCount(article.content);
+  const isStaff = !!authUser;
+
   // Prepare content (clean up flags if necessary)
   let cleanContent = article.content;
 
@@ -282,6 +288,8 @@ export default async function ArticlePage({ params }: Args) {
         section={article.section}
         slug={article.slug}
         title={article.title}
+        wordCount={wordCount}
+        isStaff={isStaff}
       />
       <ArticleScrollBar title={article.title} section={article.section} />
       <LayoutComponent article={article as unknown as Article} content={cleanContent} />
