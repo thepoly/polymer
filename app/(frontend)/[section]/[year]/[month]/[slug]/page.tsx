@@ -1,5 +1,6 @@
 import React, { cache } from 'react';
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
 import { getArticleLayout, ArticleLayouts } from '@/components/Article/Layouts';
@@ -191,7 +192,7 @@ export default async function ArticlePage({ params }: Args) {
   const LayoutComponent = ArticleLayouts[layoutType];
 
   const payload = await getPayload({ config });
-  const { user: authUser } = await payload.auth();
+  const { user: authUser } = await payload.auth({ headers: await headers() });
   const wordCount = calculateWordCount(article.content);
   const isStaff = !!authUser;
 
