@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useState, useRef, useEffect, useCallback } from "react";
+import { startTransition, useState, useRef, useEffect, useCallback, useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -30,6 +30,23 @@ const DRAWER_TRANSITION_MS = 220;
 const SWIPE_THRESHOLD = 36;
 const DRAG_START_THRESHOLD = 6;
 const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
+
+function formatCurrentDate() {
+  return new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function useCurrentDate() {
+  return useSyncExternalStore(
+    () => () => {},
+    formatCurrentDate,
+    () => "",
+  );
+}
 
 function triggerThemeTransition(x: number, y: number, apply: () => void) {
   const root = document.documentElement;
@@ -304,7 +321,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
   const [showDarkModePrompt, setShowDarkModePrompt] = useState(false);
-  const [currentDate, setCurrentDate] = useState("");
+  const currentDate = useCurrentDate();
   const { animationKey, phase, isAnimating, triggerTransition, suckDurationMs, shootDurationMs } = useHeaderTransition();
   const { isDarkMode, toggleDarkMode } = useTheme();
   const logoSrc = isDarkMode ? "/logo-dark.svg" : "/logo-light.svg";
@@ -320,16 +337,6 @@ export default function Header({ compact = false, mobileTight = false }: { compa
   const logoBaselineY = 0.5;
   const shootWrapPathLength = (logoOutlineRightX - logoOutlineLeftX) + (logoBaselineY - logoOutlineTopY) * 2;
   const shootWrapPathD = `M ${logoOutlineRightX} ${logoBaselineY} V ${logoOutlineTopY} H ${logoOutlineLeftX} V ${logoBaselineY}`;
-  useEffect(() => {
-    setCurrentDate(
-      new Date().toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }),
-    );
-  }, []);
 
   const prefetchLink = (href: string) => {
     if (!href.startsWith("/")) return;
