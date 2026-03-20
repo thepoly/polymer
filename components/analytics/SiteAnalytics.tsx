@@ -312,6 +312,10 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
       });
     };
 
+    const handleBeforeUnload = () => {
+      sendSummary();
+    };
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         sendSummary();
@@ -345,7 +349,11 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
     window.addEventListener("mousemove", markActivity, { passive: true });
     window.addEventListener("pointerdown", markActivity, { passive: true });
     window.addEventListener("touchstart", markActivity, { passive: true });
+    
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handleBeforeUnload);
+
     document.addEventListener("click", handleDocumentClick, true);
     document.addEventListener("copy", handleCopy);
     document.addEventListener("selectionchange", handleSelectionChange);
@@ -362,7 +370,11 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
       window.removeEventListener("mousemove", markActivity);
       window.removeEventListener("pointerdown", markActivity);
       window.removeEventListener("touchstart", markActivity);
+      
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handleBeforeUnload);
+
       document.removeEventListener("click", handleDocumentClick, true);
       document.removeEventListener("copy", handleCopy);
       document.removeEventListener("selectionchange", handleSelectionChange);

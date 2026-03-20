@@ -55,6 +55,7 @@ export default function ArticleAnalytics({
   
   const startTimeRef = useRef(0);
   const maxReadDepthRef = useRef(0);
+  const currentScrollRef = useRef(0);
   const engagedSecondsRef = useRef(0);
   const lastActivityAtRef = useRef(0);
   const hasCapturedCompletionRef = useRef(false);
@@ -72,13 +73,8 @@ export default function ArticleAnalytics({
   const lastSelectionRef = useRef<string | null>(null);
 
   // Tracking the exit
-  const exitMethodRef = useRef<"internal_link" | "external_link" | "tab_hidden" | "unmount">("unmount");
+  const exitMethodRef = useRef<"internal_link" | "external_link" | "tab_hidden" | "browser_closed" | "unmount">("unmount");
   const exitDestinationRef = useRef<string | null>(null);
-
-  const propsRef = useRef({ articleId, pathname, publishedDate, section, slug, title, wordCount, isStaff });
-  useEffect(() => {
-    propsRef.current = { articleId, pathname, publishedDate, section, slug, title, wordCount, isStaff };
-  }, [articleId, pathname, publishedDate, section, slug, title, wordCount, isStaff]);
 
   useEffect(() => {
     const newTheme = isDarkMode ? "dark" : "light";
@@ -107,7 +103,9 @@ export default function ArticleAnalytics({
   }, [articleId, pathname, publishedDate, section, slug, title, isStaff]);
 
   useEffect(() => {
+    // Reset session state on mount
     maxReadDepthRef.current = 0;
+    currentScrollRef.current = 0;
     engagedSecondsRef.current = 0;
     lastActivityAtRef.current = Date.now();
     startTimeRef.current = Date.now();
@@ -118,6 +116,7 @@ export default function ArticleAnalytics({
     linkClicksRef.current = { internal: 0, external: 0 };
     highlightCountRef.current = 0;
     totalCharsCopiedRef.current = 0;
+    lastSelectionRef.current = null;
     exitMethodRef.current = "unmount";
     exitDestinationRef.current = null;
 
@@ -125,31 +124,30 @@ export default function ArticleAnalytics({
     
     const getSummaryProperties = () => {
       const now = Date.now();
-      const totalSecondsOnPage = Math.round((now - startTimeRef.current) / 1000);
-      const currentScroll = articleBody instanceof HTMLElement ? getArticleReadDepth(articleBody) : 0;
+      const totalSecondsOnPage = Math.max(0, Math.round((now - startTimeRef.current) / 1000));
       
-      const finalThemeElapsed = Math.round((now - themeStartTimeRef.current) / 1000);
+      const finalThemeElapsed = Math.max(0, Math.round((now - themeStartTimeRef.current) / 1000));
       const finalThemeSeconds = { ...themeSecondsRef.current };
       if (currentThemeRef.current === "dark") finalThemeSeconds.dark += finalThemeElapsed;
       else finalThemeSeconds.light += finalThemeElapsed;
 
       const wpm = engagedSecondsRef.current > 0 
-        ? Math.round((propsRef.current.wordCount / (engagedSecondsRef.current / 60))) 
+        ? Math.round((wordCount / (engagedSecondsRef.current / 60))) 
         : 0;
 
       return {
-        article_id: propsRef.current.articleId,
-        article_section: propsRef.current.section,
-        article_slug: propsRef.current.slug,
-        article_title: propsRef.current.title,
-        pathname: propsRef.current.pathname,
-        word_count: propsRef.current.wordCount,
-        is_staff_viewer: propsRef.current.isStaff,
+        article_id: articleId,
+        article_section: section,
+        article_slug: slug,
+        article_title: title,
+        pathname: pathname,
+        word_count: wordCount,
+        is_staff_viewer: isStaff,
         
         // Performance
         words_per_minute: wpm,
         max_scroll_percentage: maxReadDepthRef.current, 
-        exit_scroll_percentage: currentScroll,
+        exit_scroll_percentage: currentScrollRef.current, // Safely use the tracked state instead of DOM query
         total_engaged_seconds: engagedSecondsRef.current,
         total_seconds_on_page: totalSecondsOnPage,
 
@@ -175,6 +173,13 @@ export default function ArticleAnalytics({
       posthog.capture("article_session_summary", getSummaryProperties());
     };
 
+    const handleBeforeUnload = () => {
+      if (exitMethodRef.current === "unmount") {
+        exitMethodRef.current = "browser_closed";
+      }
+      sendSummary();
+    };
+
     const handleCopy = () => {
       const selection = window.getSelection();
       const text = selection?.toString().trim();
@@ -184,12 +189,12 @@ export default function ArticleAnalytics({
       totalCharsCopiedRef.current += text.length;
 
       posthog.capture("article_text_copied", {
-        article_id: propsRef.current.articleId,
-        article_title: propsRef.current.title,
+        article_id: articleId,
+        article_title: title,
         text_copied: text,
         char_count: text.length,
         page_area: area,
-        pathname: propsRef.current.pathname,
+        pathname: pathname,
       });
     };
 
@@ -221,6 +226,7 @@ export default function ArticleAnalytics({
     const updateMetrics = () => {
       if (!(articleBody instanceof HTMLElement)) return;
       const readDepth = getArticleReadDepth(articleBody);
+      currentScrollRef.current = readDepth;
       maxReadDepthRef.current = Math.max(maxReadDepthRef.current, readDepth);
       if (!hasCapturedCompletionRef.current && readDepth >= READ_COMPLETION_THRESHOLD) {
         hasCapturedCompletionRef.current = true;
@@ -233,12 +239,26 @@ export default function ArticleAnalytics({
       updateMetrics();
     }, TICK_SECONDS * 1000);
 
+    const markActivity = () => { lastActivityAtRef.current = Date.now(); };
+
     window.addEventListener("scroll", updateMetrics, { passive: true });
     window.addEventListener("resize", updateMetrics);
-    window.addEventListener("focus", () => lastActivityAtRef.current = Date.now());
-    window.addEventListener("keydown", () => lastActivityAtRef.current = Date.now());
-    window.addEventListener("mousemove", () => lastActivityAtRef.current = Date.now(), { passive: true });
-    document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && sendSummary());
+    window.addEventListener("focus", markActivity);
+    window.addEventListener("keydown", markActivity);
+    window.addEventListener("mousemove", markActivity, { passive: true });
+    
+    // Robust exit listeners
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        if (exitMethodRef.current === "unmount") exitMethodRef.current = "tab_hidden";
+        sendSummary();
+      }
+    };
+    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handleBeforeUnload);
+
     document.addEventListener("click", handleGlobalClick);
     document.addEventListener("copy", handleCopy);
     document.addEventListener("selectionchange", handleSelectionChange);
@@ -247,13 +267,21 @@ export default function ArticleAnalytics({
       window.clearInterval(intervalId);
       window.removeEventListener("scroll", updateMetrics);
       window.removeEventListener("resize", updateMetrics);
-      document.removeEventListener("visibilitychange", sendSummary);
+      window.removeEventListener("focus", markActivity);
+      window.removeEventListener("keydown", markActivity);
+      window.removeEventListener("mousemove", markActivity);
+      
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handleBeforeUnload);
+      
       document.removeEventListener("click", handleGlobalClick);
       document.removeEventListener("copy", handleCopy);
       document.removeEventListener("selectionchange", handleSelectionChange);
+      
       sendSummary();
     };
-  }, [articleId, pathname, publishedDate, section, slug, title]);
+  }, [articleId, pathname, publishedDate, section, slug, title, wordCount, isStaff]);
 
   return null;
 }
