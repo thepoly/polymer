@@ -140,6 +140,11 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
 
   useEffect(() => {
     if (user) {
+      const currentId = posthog.get_distinct_id();
+      if (currentId && currentId !== String(user.id)) {
+        posthog.reset();
+      }
+
       posthog.identify(String(user.id), {
         email: user.email,
         firstName: user.firstName,
@@ -156,8 +161,6 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
           initial_email: user.email,
         },
       });
-    } else {
-      posthog.reset();
     }
   }, [user]);
 
