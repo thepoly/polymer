@@ -12,6 +12,7 @@ import {
   normalizePath,
   shouldTrackPath,
 } from "@/lib/posthog-config";
+import { useTheme } from "@/components/ThemeProvider";
 
 const HOME_SCROLL_THRESHOLDS = Array.from({ length: 20 }, (_, index) => (index + 1) * 5);
 const PAGE_SCROLL_THRESHOLDS = [10, 25, 50, 75, 90, 100];
@@ -128,6 +129,9 @@ type SiteAnalyticsProps = {
 };
 
 export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
+  const { isDarkMode } = useTheme();
+  const themeRef = useRef(isDarkMode ? "dark" : "light");
+
   const pathname = normalizePath(usePathname() ?? "/");
   const pathRef = useRef(pathname);
   const maxScrollRef = useRef(0);
@@ -139,9 +143,14 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
   const lastActivityAtRef = useRef(0);
 
   useEffect(() => {
+    themeRef.current = isDarkMode ? "dark" : "light";
+  }, [isDarkMode]);
+
+  useEffect(() => {
     if (user) {
       const currentId = posthog.get_distinct_id();
-      if (currentId && currentId !== String(user.id)) {
+      const isNumeric = /^\d+$/.test(currentId);
+      if (currentId && isNumeric && currentId !== String(user.id)) {
         posthog.reset();
       }
 
@@ -157,12 +166,13 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
         position_count: user.position_count,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        current_theme: isDarkMode ? "dark" : "light",
         $set_once: {
           initial_email: user.email,
         },
       });
     }
-  }, [user]);
+  }, [user, isDarkMode]);
 
   useEffect(() => {
     siteActiveSecondsRef.current = loadStoredActiveSeconds();
@@ -186,7 +196,10 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
     lastActivityAtRef.current = Date.now();
 
     if (pathname === "/") {
-      posthog.capture("homepage_viewed", getPageEventProperties(pathname));
+      posthog.capture("homepage_viewed", {
+        ...getPageEventProperties(pathname),
+        theme: themeRef.current,
+      });
     }
   }, [pathname]);
 
@@ -210,6 +223,7 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
         pageScrollThresholdsRef.current.add(threshold);
         posthog.capture(eventName, {
           ...getPageEventProperties(currentPath),
+          theme: themeRef.current,
           depth_percentage: threshold,
           max_scroll_percentage: scrollPercentage,
         });
@@ -242,6 +256,7 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
       const linkText = getLinkLabel(anchor);
       const baseProperties = {
         ...getPageEventProperties(currentPath),
+        theme: themeRef.current,
         click_context: clickContext,
         link_text: linkText,
       };
@@ -308,6 +323,7 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
         pageActiveThresholdsRef.current.add(threshold);
         posthog.capture("page_active_time_reached", {
           ...getPageEventProperties(currentPath),
+          theme: themeRef.current,
           active_seconds_reached: threshold,
           max_scroll_percentage: maxScrollRef.current,
         });
@@ -322,6 +338,7 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
         saveStoredThresholds(SITE_ACTIVE_THRESHOLDS_STORAGE_KEY, siteActiveThresholdsRef.current);
         posthog.capture("site_active_time_reached", {
           ...getPageEventProperties(currentPath),
+          theme: themeRef.current,
           active_seconds_reached: threshold,
           total_active_seconds: siteActiveSecondsRef.current,
         });

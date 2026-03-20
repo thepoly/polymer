@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import posthog from "posthog-js";
+import { useTheme } from "@/components/ThemeProvider";
 
 const READ_DEPTH_THRESHOLDS = [10, 25, 50, 75, 90, 100];
 const ARTICLE_ENGAGEMENT_THRESHOLDS = [30, 60, 120, 300];
@@ -36,12 +37,19 @@ export default function ArticleAnalytics({
   slug,
   title,
 }: Props) {
+  const { isDarkMode } = useTheme();
+  const themeRef = useRef(isDarkMode ? "dark" : "light");
+  
   const maxReadDepthRef = useRef(0);
   const readDepthThresholdsRef = useRef<Set<number>>(new Set());
   const engagementThresholdsRef = useRef<Set<number>>(new Set());
   const engagedSecondsRef = useRef(0);
   const lastActivityAtRef = useRef(0);
   const hasCapturedCompletionRef = useRef(false);
+
+  useEffect(() => {
+    themeRef.current = isDarkMode ? "dark" : "light";
+  }, [isDarkMode]);
 
   useEffect(() => {
     posthog.capture("article_viewed", {
@@ -51,6 +59,7 @@ export default function ArticleAnalytics({
       article_title: title,
       pathname,
       published_date: publishedDate,
+      theme: themeRef.current,
     });
   }, [articleId, pathname, publishedDate, section, slug, title]);
 
@@ -74,6 +83,7 @@ export default function ArticleAnalytics({
       article_title: title,
       pathname,
       published_date: publishedDate,
+      theme: themeRef.current,
     });
 
     const emitReadDepth = () => {
