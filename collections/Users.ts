@@ -45,58 +45,58 @@ export const Users: CollectionConfig = {
   },
   hooks: {
     afterChange: [
-      ({ doc }) => {
+      async ({ doc }) => {
         const posthog = getPostHogClient()
         if (posthog) {
-          posthog.capture({
+          posthog.identify({
             distinctId: String(doc.id),
-            event: '$set',
             properties: {
-              $set: {
-                email: doc.email,
-                firstName: doc.firstName,
-                lastName: doc.lastName,
-                name: `${doc.firstName || ''} ${doc.lastName || ''}`.trim() || undefined,
-                slug: doc.slug,
-                roles: doc.roles,
-                blackTheme: doc.blackTheme,
-                has_bio: !!doc.bio,
-                position_count: doc.positions?.length || 0,
-                updatedAt: doc.updatedAt,
-                createdAt: doc.createdAt,
-              },
+              email: doc.email,
+              firstName: doc.firstName,
+              lastName: doc.lastName,
+              name: `${doc.firstName || ''} ${doc.lastName || ''}`.trim() || undefined,
+              slug: doc.slug,
+              roles: doc.roles,
+              blackTheme: doc.blackTheme,
+              has_bio: !!doc.bio,
+              position_count: doc.positions?.length || 0,
+              updatedAt: doc.updatedAt,
+              createdAt: doc.createdAt,
             },
           })
+          await posthog.flush()
         }
       },
     ],
     afterLogin: [
-      ({ user }) => {
+      async ({ user }) => {
         const posthog = getPostHogClient()
         const doc = user as Record<string, any>;
         if (posthog && doc && doc.id) {
-          posthog.capture({
+          posthog.identify({
             distinctId: String(doc.id),
-            event: 'user_logged_in',
             properties: {
-              $set: {
-                email: doc.email,
-                firstName: doc.firstName,
-                lastName: doc.lastName,
-                name: `${doc.firstName || ''} ${doc.lastName || ''}`.trim() || undefined,
-                slug: doc.slug,
-                roles: doc.roles,
-                blackTheme: doc.blackTheme,
-                has_bio: !!doc.bio,
-                position_count: doc.positions?.length || 0,
-                updatedAt: doc.updatedAt,
-                createdAt: doc.createdAt,
-              },
+              email: doc.email,
+              firstName: doc.firstName,
+              lastName: doc.lastName,
+              name: `${doc.firstName || ''} ${doc.lastName || ''}`.trim() || undefined,
+              slug: doc.slug,
+              roles: doc.roles,
+              blackTheme: doc.blackTheme,
+              has_bio: !!doc.bio,
+              position_count: doc.positions?.length || 0,
+              updatedAt: doc.updatedAt,
+              createdAt: doc.createdAt,
               $set_once: {
                 initial_email: doc.email,
               },
             },
           })
+          posthog.capture({
+            distinctId: String(doc.id),
+            event: 'user_logged_in',
+          })
+          await posthog.flush()
         }
       },
     ],
