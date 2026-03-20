@@ -9,6 +9,7 @@ import SearchOverlay from "@/components/SearchOverlay";
 import { useHeaderTransition } from "@/components/HeaderTransitionProvider";
 import { ANIMATED_HEADER_ROUTES } from "@/components/headerAnimationRoutes";
 import { useTheme } from "@/components/ThemeProvider";
+import posthog from "posthog-js";
 
 const primaryNavItems = [
   { label: "News", href: "/news" },
@@ -40,12 +41,17 @@ function formatCurrentDate() {
   });
 }
 
+function subscribeToHydration(callback: () => void) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const timeout = window.setTimeout(callback, 0);
+  return () => window.clearTimeout(timeout);
+}
+
 function useCurrentDate() {
-  return useSyncExternalStore(
-    () => () => {},
-    formatCurrentDate,
-    () => "",
-  );
+  return useSyncExternalStore(subscribeToHydration, formatCurrentDate, () => "");
 }
 
 function triggerThemeTransition(x: number, y: number, apply: () => void) {
@@ -220,10 +226,10 @@ function MobileMenuDrawer({
     }
   }, [dragX, isOpen]);
 
-  const drawerPx = getDrawerPx();
   const showDrawer = isOpen || dragX !== null;
-  const translateX = dragX !== null ? dragX - drawerPx : isOpen ? 0 : -drawerPx - 12;
-  const progress = dragX !== null ? dragX / drawerPx : isOpen ? 1 : 0;
+  const drawerPx = dragX !== null ? getDrawerPx() : null;
+  const translateX = dragX !== null && drawerPx !== null ? `${dragX - drawerPx}px` : isOpen ? "0px" : "calc(-100% - 12px)";
+  const progress = dragX !== null && drawerPx !== null ? dragX / drawerPx : isOpen ? 1 : 0;
 
   return (
     <div className={`fixed inset-0 z-[60] lg:hidden ${showDrawer ? "pointer-events-auto" : "pointer-events-none"}`}>
@@ -241,7 +247,7 @@ function MobileMenuDrawer({
         className={`absolute top-0 left-0 bottom-0 bg-bg-main will-change-transform ${showDrawer ? "shadow-2xl" : "shadow-none"}`}
         style={{
           width: `${DRAWER_WIDTH * 100}vw`,
-          transform: `translate3d(${translateX}px, 0, 0)`,
+          transform: `translate3d(${translateX}, 0, 0)`,
           transition: dragX !== null ? "none" : `transform ${DRAWER_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
         }}
       >
@@ -338,6 +344,11 @@ export default function Header({ compact = false, mobileTight = false }: { compa
   const shootWrapPathLength = (logoOutlineRightX - logoOutlineLeftX) + (logoBaselineY - logoOutlineTopY) * 2;
   const shootWrapPathD = `M ${logoOutlineRightX} ${logoBaselineY} V ${logoOutlineTopY} H ${logoOutlineLeftX} V ${logoBaselineY}`;
 
+  const openSearchOverlay = () => {
+    setIsSearchOverlayOpen(true);
+    posthog.capture("search_overlay_opened");
+  };
+
   const prefetchLink = (href: string) => {
     if (!href.startsWith("/")) return;
 
@@ -350,7 +361,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
 
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) return;
-    if (href.startsWith("mailto:")) return;
+    if (!href.startsWith("/")) return;
 
     e.preventDefault();
     setIsMobileMenuOpen(false);
@@ -426,7 +437,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
               <Image src={mobileLogoSrc} alt="The Polytechnic" fill className="object-contain" priority />
             </Link>
             <div className="flex justify-end">
-              <button onClick={() => setIsSearchOverlayOpen(true)} className="relative -top-[2px] flex h-9 w-9 items-center justify-center text-text-main">
+              <button onClick={openSearchOverlay} className="relative -top-[2px] flex h-9 w-9 items-center justify-center text-text-main">
                 <span className="relative block h-5 w-5">
                   <Search className="absolute inset-0 m-auto h-4 w-4" />
                 </span>
@@ -458,7 +469,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
         }}
         onSearchOpen={() => {
           setIsMobileMenuOpen(false);
-          setIsSearchOverlayOpen(true);
+          openSearchOverlay();
         }}
       />
 
@@ -481,7 +492,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
             </div>
 
             <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 text-[11px] font-medium uppercase tracking-[0.1em]">
-              <span className="text-text-main">{currentDate}</span>
+              <span className="text-text-main" suppressHydrationWarning>{currentDate}</span>
               <span className="text-accent font-semibold">Vol. XCI No. 22</span>
             </div>
 
@@ -527,7 +538,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
               
               <button 
                 className="group relative flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 text-text-main" 
-                onClick={() => setIsSearchOverlayOpen(true)}
+                onClick={openSearchOverlay}
               >
                 <span 
                   className="pointer-events-none absolute inset-0 overflow-hidden rounded-full p-[1px] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -576,7 +587,9 @@ export default function Header({ compact = false, mobileTight = false }: { compa
 
             <div className="relative flex items-end justify-between gap-8 pb-0.5">
               <div
-                className={`absolute -left-1 right-0 bottom-0 h-px overflow-visible pointer-events-none text-rule-strong ${
+                className={`absolute -left-1 right-0 bottom-0 h-px overflow-visible pointer-events-none ${
+                  isDarkMode ? "text-[#DDDDDD]" : "text-rule-strong"
+                } ${
                   isAnimating ? "opacity-0" : "opacity-100"
                 }`}
               >
@@ -596,7 +609,9 @@ export default function Header({ compact = false, mobileTight = false }: { compa
 
               <div
                 key={`static-${animationKey}`}
-                className={`absolute -left-1 right-0 bottom-0 h-px overflow-visible pointer-events-none text-rule-strong ${
+                className={`absolute -left-1 right-0 bottom-0 h-px overflow-visible pointer-events-none ${
+                  isDarkMode ? "text-[#DDDDDD]" : "text-rule-strong"
+                } ${
                   shouldEnableAnimatedHeaderTransition && phase === "sucking"
                     ? "animate-terry-suck"
                     : "opacity-0"
@@ -619,7 +634,9 @@ export default function Header({ compact = false, mobileTight = false }: { compa
               {shouldEnableAnimatedHeaderTransition && phase === "shooting" && (
                 <div
                   key={`animated-${animationKey}`}
-                  className="absolute inset-x-0 bottom-0 h-px overflow-visible pointer-events-none text-rule-strong"
+                  className={`absolute inset-x-0 bottom-0 h-px overflow-visible pointer-events-none ${
+                    isDarkMode ? "text-[#DDDDDD]" : "text-rule-strong"
+                  }`}
                 >
                   <svg className="absolute left-0 bottom-0 w-full h-px overflow-visible">
                     <path

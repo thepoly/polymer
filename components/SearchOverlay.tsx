@@ -13,6 +13,7 @@ import {
   MAX_SEARCH_QUERY_LENGTH,
   sanitizeSearchQuery,
 } from "@/utils/search";
+import posthog from "posthog-js";
 
 const OVERLAY_TRANSITION_MS = 420;
 const WAVE_LAMBDA = 600; // px, wavelength
@@ -292,6 +293,12 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
       setTotalPages(primaryData.totalPages);
       if (primaryData.page - 1 !== pageIndex) setPage(Math.max(0, primaryData.page - 1));
       animateCount(primaryData.totalResults);
+      posthog.capture("search_performed", {
+        query: q,
+        total_results: primaryData.totalResults,
+        page: pageIndex + 1,
+        source: "overlay",
+      });
       setRateLimitError(null);
       setRateLimitUntil(null);
       setRateLimitSecondsRemaining(0);
@@ -720,7 +727,8 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
                   <div key={article.id} className="py-4 first:pt-0">
                     <TransitionLink
                       href={article.externalUrl ?? getArticleUrl(article)}
-                      onClick={handleClose}
+                      data-analytics-context="search-overlay"
+                      onClick={() => { posthog.capture("search_result_clicked", { query, article_title: article.title, article_section: article.section, source: "overlay" }); handleClose(); }}
                       className="flex flex-col group cursor-pointer"
                     >
                       <h3 className={`font-display font-bold text-text-main mb-1 text-[16px] md:text-[18px] leading-tight group-hover:text-accent transition-colors ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>

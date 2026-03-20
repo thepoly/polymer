@@ -11,6 +11,7 @@ import {
   sanitizeSearchQuery,
 } from "@/utils/search";
 import { checkRateLimit } from "@/utils/rateLimit";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 const SEARCH_RATE_LIMIT = 40;
 const SEARCH_RATE_LIMIT_WINDOW_MS = 10_000;
@@ -289,6 +290,17 @@ export async function GET(request: NextRequest) {
     const safePage = totalPages === 0 ? 1 : Math.min(page, totalPages);
     const start = (safePage - 1) * pageSize;
     const articles = allResults.slice(start, start + pageSize).map((entry) => entry.article);
+
+    const posthog = getPostHogClient();
+    posthog?.capture({
+      distinctId: forwardedFor || "anonymous",
+      event: "search_api_called",
+      properties: {
+        query: q,
+        total_results: totalResults,
+        page: safePage,
+      },
+    });
 
     return Response.json({
       articles,

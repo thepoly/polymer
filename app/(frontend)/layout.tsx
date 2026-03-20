@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import HeaderTransitionProvider from "@/components/HeaderTransitionProvider";
+import SiteAnalytics from "@/components/analytics/SiteAnalytics";
 import { cookies } from "next/headers";
 
 const cinzel = Cinzel({
@@ -119,6 +120,7 @@ export default async function RootLayout({
         className={`${cinzel.variable} ${barlowCondensed.variable} ${bebasNeuePro.variable} antialiased`}
       >
         <ThemeProvider initialDarkMode={isDarkMode}>
+          <SiteAnalytics />
           <HeaderTransitionProvider>{children}</HeaderTransitionProvider>
         </ThemeProvider>
       </body>

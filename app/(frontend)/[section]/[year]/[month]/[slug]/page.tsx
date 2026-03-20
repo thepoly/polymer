@@ -5,6 +5,7 @@ import config from '@/payload.config';
 import { getArticleLayout, ArticleLayouts } from '@/components/Article/Layouts';
 import { LexicalNode } from '@/components/Article/RichTextParser';
 import ArticleScrollBar from '@/components/ArticleScrollBar';
+import ArticleAnalytics from '@/components/analytics/ArticleAnalytics';
 import { getArticleUrl } from '@/utils/getArticleUrl';
 import type { Metadata } from 'next';
 import type { Article, Media, User } from '@/payload-types';
@@ -273,6 +274,14 @@ export default async function ArticlePage({ params }: Args) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
+      />
+      <ArticleAnalytics
+        articleId={article.id}
+        pathname={`/${section}/${year}/${month}/${slug}`}
+        publishedDate={article.publishedDate || article.createdAt}
+        section={article.section}
+        slug={article.slug}
+        title={article.title}
       />
       <ArticleScrollBar title={article.title} section={article.section} />
       <LayoutComponent article={article as unknown as Article} content={cleanContent} />

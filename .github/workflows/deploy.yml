@@ -57,6 +57,9 @@ jobs:
             "DATABASE_URL=${{ secrets.DATABASE_URL }}" \
             "PAYLOAD_SECRET=${{ secrets.PAYLOAD_SECRET }}" \
             "LEGACY_DATABASE_URI=${{ secrets.LEGACY_DATABASE_URI }}" \
+            "NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}" \
+            "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}" \
+            "NEXT_PUBLIC_POSTHOG_HOST=${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}" \
             > "$SHARED_DIR/.env"
 
           # Runtime may not use the same UNIX user as the deploy runner.

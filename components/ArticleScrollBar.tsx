@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
+import posthog from 'posthog-js';
 
 type Props = {
   title: string;
@@ -138,6 +139,11 @@ export default function ArticleScrollBar({ title, section }: Props) {
         navigator.clipboard.writeText(url);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+        posthog.capture("article_shared", {
+          share_method: "link",
+          article_title: title,
+          article_section: section,
+        });
         return;
       case 'email':
         window.open(`mailto:?subject=${encodeURIComponent(text)}&body=${encodeURIComponent(url)}`);
@@ -158,6 +164,11 @@ export default function ArticleScrollBar({ title, section }: Props) {
         window.open(`https://www.reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(text)}`);
         break;
     }
+    posthog.capture("article_shared", {
+      share_method: type,
+      article_title: title,
+      article_section: section,
+    });
     setShareOpen(false);
   };
 

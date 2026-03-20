@@ -198,7 +198,10 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
   const sectionLabel = sectionLabels[currentArticle.section];
 
   return (
-    <section className="mx-auto mt-16 max-w-[1200px] px-4 md:px-6">
+    <section
+      className="mx-auto mt-16 max-w-[1200px] px-4 md:px-6"
+      data-article-recommendations
+    >
       <div className="pt-8 md:pt-10">
         <div className="mb-8 flex flex-col gap-4 border-b border-rule pb-6 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
@@ -220,7 +223,11 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
         </div>
 
         <div className={`grid gap-8 ${supportingArticles.length > 0 ? 'lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:items-start' : ''}`}>
-          <TransitionLink href={getArticleUrl(leadArticle)} className="group block">
+          <TransitionLink
+            href={getArticleUrl(leadArticle)}
+            className="group block"
+            data-analytics-context="article-recommendation"
+          >
             <div className="flex flex-col gap-4">
               {leadImage?.url ? (
                 <div className="relative aspect-[16/10] overflow-hidden bg-gray-100 dark:bg-zinc-800">
@@ -268,6 +275,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                   >
                     <TransitionLink
                       href={getArticleUrl(article)}
+                      data-analytics-context="article-recommendation"
                       className={`group ${image?.url ? 'grid gap-4 sm:grid-cols-[104px_minmax(0,1fr)] sm:items-start' : 'block'}`}
                     >
                       {image?.url ? (

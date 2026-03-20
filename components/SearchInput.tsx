@@ -12,6 +12,7 @@ import {
   MAX_SEARCH_QUERY_LENGTH,
   sanitizeSearchQuery,
 } from "@/utils/search";
+import posthog from "posthog-js";
 
 const WAVE_LAMBDA = 600; // px, wavelength
 const WAVE_PERSIST_MS = 250;
@@ -282,6 +283,11 @@ export default function SearchInput({
       setRateLimitError(null);
       setRateLimitUntil(null);
       setRateLimitSecondsRemaining(0);
+      posthog.capture("search_performed", {
+        query: q,
+        total_results: primaryData.totalResults,
+        page: pageIndex + 1,
+      });
       setSearched(true);
       if (!hasSearchedOnceRef.current) {
         hasSearchedOnceRef.current = true;
@@ -643,6 +649,8 @@ export default function SearchInput({
                   <TransitionLink
                     href={article.externalUrl ?? getArticleUrl(article)}
                     className="flex flex-col group cursor-pointer"
+                    data-analytics-context="search-inline"
+                    onClick={() => posthog.capture("search_result_clicked", { query, article_title: article.title, article_section: article.section })}
                   >
                     <h3 className={`font-display font-bold text-text-main mb-1 text-[16px] md:text-[18px] leading-tight group-hover:text-accent transition-colors ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
                       {article.title}

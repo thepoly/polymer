@@ -45,3 +45,4 @@ media/
 
 # scraping
 scripts/scraper/
+.env
