@@ -11,8 +11,8 @@ export function getPostHogClient() {
   if (!posthogClient) {
     posthogClient = new PostHog(POSTHOG_KEY, {
       host: POSTHOG_HOST,
-      flushAt: 1,
-      flushInterval: 0,
+      flushAt: 10,
+      flushInterval: 10000, // 10 seconds
     });
   }
 

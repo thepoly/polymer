@@ -4,6 +4,7 @@ import { POSTHOG_KEY, POSTHOG_UI_HOST, shouldTrackPath } from "@/lib/posthog-con
 if (POSTHOG_KEY) {
   posthog.init(POSTHOG_KEY, {
     api_host: "/ingest",
+    person_profiles: "identified_only",
     capture_exceptions: true,
     capture_pageleave: "if_capture_pageview",
     capture_pageview: "history_change",

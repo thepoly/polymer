@@ -292,13 +292,19 @@ export async function GET(request: NextRequest) {
     const articles = allResults.slice(start, start + pageSize).map((entry) => entry.article);
 
     const posthog = getPostHogClient();
+    const payload = await getPayload({ config });
+    const { user: authUser } = await payload.auth({ headers: request.headers });
+    const distinctId = authUser ? String(authUser.id) : (forwardedFor || "anonymous");
+
     posthog?.capture({
-      distinctId: forwardedFor || "anonymous",
+      distinctId,
       event: "search_api_called",
       properties: {
         query: q,
         total_results: totalResults,
         page: safePage,
+        is_authenticated: !!authUser,
+        $process_person_profile: !!authUser,
       },
     });
 

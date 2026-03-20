@@ -1,4 +1,5 @@
 import type { CollectionConfig, FieldAccess, Access } from 'payload'
+import { getPostHogClient } from '../lib/posthog-server'
 
 type UserWithRoles = {
   id: string | number
@@ -41,6 +42,64 @@ export const Users: CollectionConfig = {
     create: isAdmin,
     update: isSelfOrAdmin,
     delete: isAdmin,
+  },
+  hooks: {
+    afterChange: [
+      ({ doc }) => {
+        const posthog = getPostHogClient()
+        if (posthog) {
+          posthog.capture({
+            distinctId: String(doc.id),
+            event: '$set',
+            properties: {
+              $set: {
+                email: doc.email,
+                firstName: doc.firstName,
+                lastName: doc.lastName,
+                name: `${doc.firstName || ''} ${doc.lastName || ''}`.trim() || undefined,
+                slug: doc.slug,
+                roles: doc.roles,
+                blackTheme: doc.blackTheme,
+                has_bio: !!doc.bio,
+                position_count: doc.positions?.length || 0,
+                updatedAt: doc.updatedAt,
+                createdAt: doc.createdAt,
+              },
+            },
+          })
+        }
+      },
+    ],
+    afterLogin: [
+      ({ user }) => {
+        const posthog = getPostHogClient()
+        const doc = user as Record<string, any>;
+        if (posthog && doc && doc.id) {
+          posthog.capture({
+            distinctId: String(doc.id),
+            event: 'user_logged_in',
+            properties: {
+              $set: {
+                email: doc.email,
+                firstName: doc.firstName,
+                lastName: doc.lastName,
+                name: `${doc.firstName || ''} ${doc.lastName || ''}`.trim() || undefined,
+                slug: doc.slug,
+                roles: doc.roles,
+                blackTheme: doc.blackTheme,
+                has_bio: !!doc.bio,
+                position_count: doc.positions?.length || 0,
+                updatedAt: doc.updatedAt,
+                createdAt: doc.createdAt,
+              },
+              $set_once: {
+                initial_email: doc.email,
+              },
+            },
+          })
+        }
+      },
+    ],
   },
   fields: [
     {

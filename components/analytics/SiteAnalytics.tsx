@@ -109,7 +109,25 @@ function loadStoredActiveSeconds() {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export default function SiteAnalytics() {
+export type AnalyticsUser = {
+  id: string | number;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  roles?: string[] | null;
+  slug?: string | null;
+  blackTheme?: boolean | null;
+  has_bio?: boolean;
+  position_count?: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type SiteAnalyticsProps = {
+  user?: AnalyticsUser | null;
+};
+
+export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
   const pathname = normalizePath(usePathname() ?? "/");
   const pathRef = useRef(pathname);
   const maxScrollRef = useRef(0);
@@ -119,6 +137,29 @@ export default function SiteAnalytics() {
   const siteActiveSecondsRef = useRef(0);
   const siteActiveThresholdsRef = useRef<Set<number>>(new Set());
   const lastActivityAtRef = useRef(0);
+
+  useEffect(() => {
+    if (user) {
+      posthog.identify(String(user.id), {
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || undefined,
+        roles: user.roles,
+        slug: user.slug,
+        blackTheme: user.blackTheme,
+        has_bio: user.has_bio,
+        position_count: user.position_count,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        $set_once: {
+          initial_email: user.email,
+        },
+      });
+    } else {
+      posthog.reset();
+    }
+  }, [user]);
 
   useEffect(() => {
     siteActiveSecondsRef.current = loadStoredActiveSeconds();

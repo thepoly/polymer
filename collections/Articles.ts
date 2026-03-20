@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { getPostHogClient } from '../lib/posthog-server'
 
 const Articles: CollectionConfig = {
   slug: 'articles',
@@ -38,6 +39,26 @@ const Articles: CollectionConfig = {
     drafts: true,
   },
   hooks: {
+    afterChange: [
+      ({ doc, previousDoc, req }) => {
+        const isNowPublished = doc._status === 'published'
+        const wasPublished = previousDoc?._status === 'published'
+
+        if (isNowPublished && !wasPublished) {
+          const posthog = getPostHogClient()
+          posthog?.capture({
+            distinctId: String(req.user?.id || 'unknown'),
+            event: 'article_published',
+            properties: {
+              article_id: doc.id,
+              article_title: doc.title,
+              article_section: doc.section,
+              article_slug: doc.slug,
+            },
+          })
+        }
+      },
+    ],
     beforeChange: [
       ({ data, originalDoc }) => {
         // LOGIC: If transitioning to 'published' via Payload's internal _status, set the publishedDate

@@ -4,8 +4,11 @@ import localFont from "next/font/local";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import HeaderTransitionProvider from "@/components/HeaderTransitionProvider";
-import SiteAnalytics from "@/components/analytics/SiteAnalytics";
-import { cookies } from "next/headers";
+import SiteAnalytics, { AnalyticsUser } from "@/components/analytics/SiteAnalytics";
+import { cookies, headers } from "next/headers";
+import { getPayload } from "payload";
+import configPromise from "@/payload.config";
+import { User } from "@/payload-types";
 
 const cinzel = Cinzel({
   variable: "--font-cinzel",
@@ -98,6 +101,41 @@ export default async function RootLayout({
 
   const isDarkMode = theme === "dark";
 
+  // Fetch current user if logged in
+  const payload = await getPayload({ config: configPromise });
+  const headersList = await headers();
+  const { user: authUser } = await payload.auth({ headers: headersList });
+
+  let analyticsUser: AnalyticsUser | null = null;
+  if (authUser) {
+    try {
+      const user = await payload.findByID({
+        collection: "users",
+        id: authUser.id,
+        depth: 0,
+        disableErrors: true,
+      }) as User | null;
+
+      if (user) {
+        analyticsUser = {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          roles: user.roles,
+          slug: user.slug,
+          blackTheme: user.blackTheme,
+          has_bio: !!user.bio,
+          position_count: user.positions?.length || 0,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        };
+      }
+    } catch (err) {
+      console.error("[RootLayout] Failed to fetch user for analytics:", err);
+    }
+  }
+
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""}>
       <head>
@@ -120,7 +158,7 @@ export default async function RootLayout({
         className={`${cinzel.variable} ${barlowCondensed.variable} ${bebasNeuePro.variable} antialiased`}
       >
         <ThemeProvider initialDarkMode={isDarkMode}>
-          <SiteAnalytics />
+          <SiteAnalytics user={analyticsUser} />
           <HeaderTransitionProvider>{children}</HeaderTransitionProvider>
         </ThemeProvider>
       </body>
