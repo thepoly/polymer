@@ -59,6 +59,7 @@ function MobileMenuDrawer({
   handleLinkClick,
   isDarkMode,
   onThemeToggle,
+  onSearchOpen,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -68,9 +69,12 @@ function MobileMenuDrawer({
   handleLinkClick: (e: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
   isDarkMode: boolean;
   onThemeToggle: () => void;
+  onSearchOpen: () => void;
 }) {
   const [dragX, setDragX] = useState<number | null>(null);
+  const dragXRef = useRef<number | null>(null);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const activeTouchIdRef = useRef<number | null>(null);
   const gestureModeRef = useRef<"open" | "close" | null>(null);
   const isDraggingRef = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -80,9 +84,33 @@ function MobileMenuDrawer({
     return window.innerWidth * DRAWER_WIDTH;
   }, []);
 
+  const resetGesture = useCallback(() => {
+    setDragX(null);
+    dragXRef.current = null;
+    activeTouchIdRef.current = null;
+    touchStartRef.current = null;
+    gestureModeRef.current = null;
+    isDraggingRef.current = false;
+  }, []);
+
+  const commitDrag = useCallback((nextDragX: number | null) => {
+    dragXRef.current = nextDragX;
+    setDragX(nextDragX);
+  }, []);
+
   useEffect(() => {
+    const getActiveTouch = (e: TouchEvent) => {
+      if (activeTouchIdRef.current === null) return null;
+      for (let i = 0; i < e.touches.length; i += 1) {
+        const touch = e.touches[i];
+        if (touch.identifier === activeTouchIdRef.current) return touch;
+      }
+      return null;
+    };
+
     const onTouchStart = (e: TouchEvent) => {
       const touch = e.touches[0];
+      activeTouchIdRef.current = touch.identifier;
       touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
       gestureModeRef.current = isOpen ? "close" : "open";
       isDraggingRef.current = false;
@@ -91,63 +119,82 @@ function MobileMenuDrawer({
     const onTouchMove = (e: TouchEvent) => {
       if (!touchStartRef.current || !gestureModeRef.current) return;
 
-      const touch = e.touches[0];
+      const touch = getActiveTouch(e);
+      if (!touch) return;
       const dx = touch.clientX - touchStartRef.current.x;
       const dy = Math.abs(touch.clientY - touchStartRef.current.y);
+      const absDx = Math.abs(dx);
 
-      if (dy > Math.abs(dx) && !isDraggingRef.current) {
-        touchStartRef.current = null;
-        gestureModeRef.current = null;
+      if (!isDraggingRef.current && absDx < DRAG_START_THRESHOLD) {
+        return;
+      }
+
+      if (dy > absDx && !isDraggingRef.current) {
+        resetGesture();
         return;
       }
 
       const drawerPx = getDrawerPx();
 
-      if (gestureModeRef.current === "open" && dx > DRAG_START_THRESHOLD) {
+      if (gestureModeRef.current === "open" && dx > 0) {
         isDraggingRef.current = true;
         e.preventDefault();
-        setDragX(Math.min(dx, drawerPx));
+        commitDrag(Math.min(dx, drawerPx));
         return;
       }
 
-      if (gestureModeRef.current === "close" && dx < -DRAG_START_THRESHOLD) {
+      if (gestureModeRef.current === "close" && dx < 0) {
         isDraggingRef.current = true;
         e.preventDefault();
-        setDragX(Math.max(0, drawerPx + dx));
+        commitDrag(Math.max(0, drawerPx + dx));
       }
     };
 
     const finishGesture = () => {
       const drawerPx = getDrawerPx();
+      const currentDragX = dragXRef.current;
 
-      if (isDraggingRef.current && dragX !== null) {
+      if (isDraggingRef.current && currentDragX !== null) {
         if (gestureModeRef.current === "open") {
-          if (dragX > SWIPE_THRESHOLD) onOpen();
+          if (currentDragX > Math.max(SWIPE_THRESHOLD, drawerPx * 0.25)) onOpen();
         } else if (gestureModeRef.current === "close") {
-          if (dragX < drawerPx - SWIPE_THRESHOLD) {
+          if (currentDragX < drawerPx - Math.max(SWIPE_THRESHOLD, drawerPx * 0.25)) {
             onClose();
           }
         }
       }
 
-      setDragX(null);
-      touchStartRef.current = null;
-      gestureModeRef.current = null;
-      isDraggingRef.current = false;
+      resetGesture();
+    };
+
+    const forceCloseTransientState = () => {
+      if (!isOpen) {
+        resetGesture();
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        resetGesture();
+      }
     };
 
     document.addEventListener("touchstart", onTouchStart, { passive: true });
     document.addEventListener("touchmove", onTouchMove, { passive: false });
     document.addEventListener("touchend", finishGesture, { passive: true });
     document.addEventListener("touchcancel", finishGesture, { passive: true });
+    window.addEventListener("blur", forceCloseTransientState);
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
       document.removeEventListener("touchstart", onTouchStart);
       document.removeEventListener("touchmove", onTouchMove);
       document.removeEventListener("touchend", finishGesture);
       document.removeEventListener("touchcancel", finishGesture);
+      window.removeEventListener("blur", forceCloseTransientState);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [dragX, getDrawerPx, isOpen, onClose, onOpen]);
+  }, [commitDrag, getDrawerPx, isOpen, onClose, onOpen, resetGesture]);
 
   useEffect(() => {
     if (isOpen || dragX !== null) {
@@ -158,72 +205,94 @@ function MobileMenuDrawer({
 
   const drawerPx = getDrawerPx();
   const showDrawer = isOpen || dragX !== null;
-  const translateX = dragX !== null ? dragX - drawerPx : isOpen ? 0 : -drawerPx;
+  const translateX = dragX !== null ? dragX - drawerPx : isOpen ? 0 : -drawerPx - 12;
   const progress = dragX !== null ? dragX / drawerPx : isOpen ? 1 : 0;
 
   return (
     <div className={`fixed inset-0 z-[60] lg:hidden ${showDrawer ? "pointer-events-auto" : "pointer-events-none"}`}>
       <div
-        className="absolute inset-0 backdrop-blur-sm"
-        style={{ backgroundColor: `rgba(0,0,0,${0.4 * progress})` }}
+        className="absolute inset-0"
+        style={{
+          backgroundColor: `rgba(0,0,0,${0.4 * progress})`,
+          backdropFilter: progress > 0 ? `blur(${Math.min(4, 4 * progress)}px)` : "none",
+        }}
         onClick={onClose}
       />
 
       <div
         ref={panelRef}
-        className="absolute top-0 left-0 bottom-0 bg-bg-main shadow-2xl will-change-transform"
+        className={`absolute top-0 left-0 bottom-0 bg-bg-main will-change-transform ${showDrawer ? "shadow-2xl" : "shadow-none"}`}
         style={{
           width: `${DRAWER_WIDTH * 100}vw`,
-          transform: `translateX(${translateX}px)`,
+          transform: `translate3d(${translateX}px, 0, 0)`,
           transition: dragX !== null ? "none" : `transform ${DRAWER_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
         }}
       >
-        <div className="safe-area-mobile-drawer flex h-full flex-col overflow-y-auto">
-          <button
-            onClick={onClose}
-            className="mb-8 flex h-10 w-10 items-center justify-center self-end text-text-main"
-          >
-            <X className="h-6 w-6" />
-          </button>
+        <div className="safe-area-mobile-drawer flex h-full flex-col overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col justify-evenly">
+            <nav className="flex flex-col gap-0">
+              {primaryNavItems.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  onClick={(e) => handleLinkClick(e, item.href)}
+                  className="font-meta text-[28px] font-bold leading-[1.02] uppercase tracking-[0.04em] text-text-main transition-colors hover:text-accent py-1"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
 
-          <nav className="flex flex-col gap-1">
-            {primaryNavItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={(e) => handleLinkClick(e, item.href)}
-                className="font-display text-[32px] font-bold uppercase tracking-[0.04em] text-text-main transition-colors hover:text-accent py-2"
+            <div className="border-t border-rule pt-4 flex flex-col gap-2">
+              {secondaryNavItems.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  onClick={(e) => handleLinkClick(e, item.href)}
+                  className="font-meta text-[14px] font-medium tracking-[0.04em] text-text-muted transition-colors hover:text-accent"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+            <div className="border-t border-rule pt-4 flex items-center gap-4">
+              <button
+                onClick={onThemeToggle}
+                className={`flex items-center gap-2 font-meta text-[14px] font-medium transition-colors ${
+                  isDarkMode
+                    ? "cursor-pointer text-text-muted hover:text-white"
+                    : "cursor-pointer text-text-muted hover:text-black"
+                }`}
               >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+                {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                {isDarkMode ? "Light mode" : "Dark mode"}
+              </button>
+            </div>
 
-          <div className="mt-8 border-t border-rule pt-6 flex flex-col gap-3">
-            {secondaryNavItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={(e) => handleLinkClick(e, item.href)}
-                className="font-meta text-[15px] font-medium tracking-[0.04em] text-text-muted transition-colors hover:text-accent"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
+            <div className="border-t border-rule pt-4">
+              <p className="font-meta text-[14px] leading-[1.35] text-text-muted">
+                Or{" "}
+                <button
+                  onClick={onSearchOpen}
+                  className="group relative inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-4 align-middle text-text-main"
+                >
+                  <span
+                    className="pointer-events-none absolute inset-0 overflow-hidden rounded-full p-[1px] opacity-100"
+                    style={{
+                      WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+                      WebkitMaskComposite: "xor",
+                      maskComposite: "exclude",
+                    }}
+                  >
+                    <span className="absolute left-1/2 top-1/2 aspect-square w-[300%] -translate-x-1/2 -translate-y-1/2 animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_0deg,#ef4444,#f59e0b,#10b981,#3b82f6,#8b5cf6,#ef4444)]" />
+                  </span>
 
-          <div className="mt-8 border-t border-rule pt-6 flex items-center gap-4">
-            <button
-              onClick={onThemeToggle}
-              className={`flex items-center gap-2 font-meta text-[14px] font-medium transition-colors ${
-                isDarkMode
-                  ? "cursor-pointer text-text-muted hover:text-white"
-                  : "cursor-pointer text-text-muted hover:text-black"
-              }`}
-            >
-              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              {isDarkMode ? "Light mode" : "Dark mode"}
-            </button>
+                  <Search className="relative z-10 h-3.5 w-3.5 shrink-0" />
+                  <span className="relative z-10 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.1em]">Search</span>
+                </button>{" "}
+                our archives.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -231,10 +300,11 @@ function MobileMenuDrawer({
   );
 }
 
-export default function Header({ compact = false }: { compact?: boolean }) {
+export default function Header({ compact = false, mobileTight = false }: { compact?: boolean; mobileTight?: boolean }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
   const [showDarkModePrompt, setShowDarkModePrompt] = useState(false);
+  const [currentDate, setCurrentDate] = useState("");
   const { animationKey, phase, isAnimating, triggerTransition, suckDurationMs, shootDurationMs } = useHeaderTransition();
   const { isDarkMode, toggleDarkMode } = useTheme();
   const logoSrc = isDarkMode ? "/logo-dark.svg" : "/logo-light.svg";
@@ -244,9 +314,22 @@ export default function Header({ compact = false }: { compact?: boolean }) {
   const currentPath = pathname ?? "";
   const shouldEnableAnimatedHeaderTransition =
     phase !== "idle" || ANIMATED_HEADER_ROUTES.has(currentPath);
-  const currentDate = new Date().toLocaleDateString("en-US", {
-    weekday: "long", month: "long", day: "numeric", year: "numeric",
-  });
+  const logoOutlineLeftX = -4;
+  const logoOutlineRightX = 464;
+  const logoOutlineTopY = -89.5;
+  const logoBaselineY = 0.5;
+  const shootWrapPathLength = (logoOutlineRightX - logoOutlineLeftX) + (logoBaselineY - logoOutlineTopY) * 2;
+  const shootWrapPathD = `M ${logoOutlineRightX} ${logoBaselineY} V ${logoOutlineTopY} H ${logoOutlineLeftX} V ${logoBaselineY}`;
+  useEffect(() => {
+    setCurrentDate(
+      new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      }),
+    );
+  }, []);
 
   const prefetchLink = (href: string) => {
     if (!href.startsWith("/")) return;
@@ -307,39 +390,47 @@ export default function Header({ compact = false }: { compact?: boolean }) {
 
   return (
     <>
-      <header className={`${compact ? "sticky top-0" : ""} safe-area-top z-50 bg-bg-main lg:hidden`}>
+      <header className={`${compact ? "sticky top-0" : ""} ${mobileTight ? "mobile-header-tight" : ""} safe-area-top z-50 bg-bg-main lg:hidden`}>
         <div className="mobile-chrome-header-inner safe-area-mobile-header-x mx-auto max-w-[1280px]">
-          <div className="font-meta mb-2 flex items-center justify-center gap-2 text-[10px] font-medium uppercase tracking-[0.1em]">
-            <span className="text-text-main">{currentDate}</span>
-            <span className="text-accent font-semibold">Vol. XCI No. 22</span>
+          <div className="grid h-[56px] grid-cols-[1fr_auto_1fr] items-center">
+            <div className="flex justify-start">
+              <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="relative -top-[2px] flex h-9 w-9 items-center justify-center overflow-hidden text-text-main">
+                <span className="relative block h-5 w-5">
+                  <Menu
+                    className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
+                      isMobileMenuOpen ? "-translate-x-6 opacity-0" : "translate-x-0 opacity-100"
+                    }`}
+                  />
+                  <X
+                    className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
+                      isMobileMenuOpen ? "translate-x-0 opacity-100" : "translate-x-6 opacity-0"
+                    }`}
+                  />
+                </span>
+              </button>
+            </div>
+            <Link
+              href="/"
+              onClick={(e) => handleLinkClick(e, "/")}
+              onMouseEnter={() => prefetchLink("/")}
+              onFocus={() => prefetchLink("/")}
+              className="relative block h-[56px] w-[min(72vw,300px)] justify-self-center"
+            >
+              <Image src={mobileLogoSrc} alt="The Polytechnic" fill className="object-contain" priority />
+            </Link>
+            <div className="flex justify-end">
+              <button onClick={() => setIsSearchOverlayOpen(true)} className="relative -top-[2px] flex h-9 w-9 items-center justify-center text-text-main">
+                <span className="relative block h-5 w-5">
+                  <Search className="absolute inset-0 m-auto h-4 w-4" />
+                </span>
+              </button>
+            </div>
           </div>
-          <div className="flex h-[56px] items-center justify-between">
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="flex h-9 w-9 items-center justify-center overflow-hidden text-text-main">
-            <span className="relative block h-5 w-5">
-              <Menu
-                className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
-                  isMobileMenuOpen ? "-translate-x-6 opacity-0" : "translate-x-0 opacity-100"
-                }`}
-              />
-              <X
-                className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
-                  isMobileMenuOpen ? "translate-x-0 opacity-100" : "translate-x-6 opacity-0"
-                }`}
-              />
-            </span>
-          </button>
-          <Link
-            href="/"
-            onClick={(e) => handleLinkClick(e, "/")}
-            onMouseEnter={() => prefetchLink("/")}
-            onFocus={() => prefetchLink("/")}
-            className="relative block h-[56px] w-full max-w-[300px]"
-          >
-            <Image src={mobileLogoSrc} alt="The Polytechnic" fill className="object-contain" priority />
-          </Link>
-          <button onClick={() => setIsSearchOverlayOpen(true)} className="flex h-9 w-9 items-center justify-center text-text-main">
-            <Search className="h-4 w-4" />
-          </button>
+        </div>
+        <div className="mt-3 border-y border-black">
+          <div className="font-meta safe-area-mobile-header-x mx-auto flex max-w-[1280px] items-center justify-center gap-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.1em]">
+            <span className="text-text-main" suppressHydrationWarning>{currentDate}</span>
+            <span className="text-accent font-semibold">Vol. XCI No. 22</span>
           </div>
         </div>
       </header>
@@ -357,6 +448,10 @@ export default function Header({ compact = false }: { compact?: boolean }) {
             setIsMobileMenuOpen(false);
             toggleDarkMode();
           });
+        }}
+        onSearchOpen={() => {
+          setIsMobileMenuOpen(false);
+          setIsSearchOverlayOpen(true);
         }}
       />
 
@@ -450,20 +545,11 @@ export default function Header({ compact = false }: { compact?: boolean }) {
           <div className="mx-auto max-w-[1280px] px-4 pt-6 md:px-6 xl:px-[30px]">
             <style dangerouslySetInnerHTML={{__html: `
               @keyframes terryWrapDraw {
-                0% { stroke-dashoffset: 648; }
-                35% { stroke-dashoffset: 0; }
-                95% { stroke-dashoffset: -648; }
-                100% { stroke-dashoffset: -648; }
-              }
+                0% { stroke-dashoffset: ${shootWrapPathLength}; }
                 35% { stroke-dashoffset: 0; }
                 40% { stroke-dashoffset: 0; }
-                75% { stroke-dashoffset: -648; }
-                100% { stroke-dashoffset: -648; }
-              }
-                35% { stroke-dashoffset: 0; }
-                40% { stroke-dashoffset: 0; }
-                75% { stroke-dashoffset: -620; }
-                100% { stroke-dashoffset: -620; }
+                75% { stroke-dashoffset: -${shootWrapPathLength}; }
+                100% { stroke-dashoffset: -${shootWrapPathLength}; }
               }
               @keyframes terryShootDraw {
                 0% { stroke-dashoffset: 100; }
@@ -483,34 +569,63 @@ export default function Header({ compact = false }: { compact?: boolean }) {
 
             <div className="relative flex items-end justify-between gap-8 pb-0.5">
               <div
-                className={`absolute -left-1 right-0 bottom-0 h-px bg-rule-strong ${
-                  shouldEnableAnimatedHeaderTransition && isAnimating ? "opacity-0" : "opacity-100"
+                className={`absolute -left-1 right-0 bottom-0 h-px overflow-visible pointer-events-none text-rule-strong ${
+                  isAnimating ? "opacity-0" : "opacity-100"
                 }`}
-              />
+              >
+                <svg className="absolute left-0 bottom-0 w-full h-px overflow-visible">
+                  <line
+                    x1={logoOutlineLeftX}
+                    y1={logoBaselineY}
+                    x2="100%"
+                    y2={logoBaselineY}
+                    stroke="currentColor"
+                    strokeWidth="1"
+                    fill="none"
+                    strokeLinecap="square"
+                  />
+                </svg>
+              </div>
 
-              <div 
-                key={`static-${animationKey}`} 
-                className={`absolute -left-1 right-0 bottom-0 h-px bg-rule-strong ${
+              <div
+                key={`static-${animationKey}`}
+                className={`absolute -left-1 right-0 bottom-0 h-px overflow-visible pointer-events-none text-rule-strong ${
                   shouldEnableAnimatedHeaderTransition && phase === "sucking"
                     ? "animate-terry-suck"
                     : "opacity-0"
-                }`} 
-              />
+                }`}
+              >
+                <svg className="absolute left-0 bottom-0 w-full h-px overflow-visible">
+                  <line
+                    x1={logoOutlineLeftX}
+                    y1={logoBaselineY}
+                    x2="100%"
+                    y2={logoBaselineY}
+                    stroke="currentColor"
+                    strokeWidth="1"
+                    fill="none"
+                    strokeLinecap="square"
+                  />
+                </svg>
+              </div>
               
               {shouldEnableAnimatedHeaderTransition && phase === "shooting" && (
-                <div key={`animated-${animationKey}`} className="absolute inset-x-0 bottom-0 h-px overflow-visible pointer-events-none text-rule-strong">
+                <div
+                  key={`animated-${animationKey}`}
+                  className="absolute inset-x-0 bottom-0 h-px overflow-visible pointer-events-none text-rule-strong"
+                >
                   <svg className="absolute left-0 bottom-0 w-full h-px overflow-visible">
                     <path
-                      d="M 464 0.5 V -89.5 H -4 V 0.5"
+                      d={shootWrapPathD}
                       stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="square"
                       style={{
-                        strokeDasharray: 648,
-                        strokeDashoffset: 648,
+                        strokeDasharray: shootWrapPathLength,
+                        strokeDashoffset: shootWrapPathLength,
                         animation: `terryWrapDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
                       }}
                     />
                     <line
-                      x1="-4" y1="0.5" x2="100%" y2="0.5"
+                      x1={logoOutlineLeftX} y1={logoBaselineY} x2="100%" y2={logoBaselineY}
                       pathLength="100"
                       stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="square"
                       style={{

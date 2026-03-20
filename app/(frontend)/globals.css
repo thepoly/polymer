@@ -339,17 +339,21 @@ h6.font-display.italic {
 
 @media (max-width: 1023px) {
   .safe-area-top {
-    padding-top: calc(var(--safe-area-top) + 0.25rem);
-    padding-bottom: 0.875rem;
+    padding-top: calc(var(--safe-area-top) + 0.75rem);
+    padding-bottom: 1.1rem;
+  }
+
+  .safe-area-top.mobile-header-tight {
+    padding-bottom: 0.88rem;
   }
 
   .mobile-chrome-header-inner {
-    padding-top: 0.375rem;
+    padding-top: 0;
   }
 
   .safe-area-mobile-header-x {
     padding-left: calc(0.75rem + var(--safe-area-left));
-    padding-right: calc(0.75rem + var(--safe-area-right));
+    padding-right: calc(0.35rem + var(--safe-area-right));
   }
 
   .safe-area-mobile-page-x {
@@ -358,10 +362,10 @@ h6.font-display.italic {
   }
 
   .safe-area-mobile-drawer {
-    padding-top: calc(1.5rem + var(--safe-area-top));
-    padding-right: calc(1.5rem + var(--safe-area-right));
-    padding-bottom: calc(2.5rem + var(--safe-area-bottom));
-    padding-left: calc(1.5rem + var(--safe-area-left));
+    padding-top: calc(0.875rem + var(--safe-area-top));
+    padding-right: calc(1.125rem + var(--safe-area-right));
+    padding-bottom: calc(1.25rem + var(--safe-area-bottom));
+    padding-left: calc(1.125rem + var(--safe-area-left));
   }
 }
 

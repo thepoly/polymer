@@ -12,7 +12,7 @@ import {
 } from "@/utils/search";
 import { checkRateLimit } from "@/utils/rateLimit";
 
-const SEARCH_RATE_LIMIT = 30;
+const SEARCH_RATE_LIMIT = 40;
 const SEARCH_RATE_LIMIT_WINDOW_MS = 10_000;
 
 let legacyPool: Pool | null = null;
@@ -47,21 +47,35 @@ function stripHtml(s: string): string {
   return s.replace(/<[^>]*>/g, " ").replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
 }
 
+function textIncludesAny(text: string | null | undefined, queryFormsLower: string[]): boolean {
+  if (!text) return false;
+  const normalized = text.toLowerCase();
+  return queryFormsLower.some((query) => query.length > 0 && normalized.includes(query));
+}
+
 // Title=4, kicker=3, excerpt/author=2, body=1
-function scoreArticle(article: Article, bodyText: string, ql: string): number {
+function scoreArticle(article: Article, bodyText: string, queryFormsLower: string[]): number {
   let s = 0;
-  if (article.title.toLowerCase().includes(ql)) s += 4;
-  if (article.kicker?.toLowerCase().includes(ql)) s += 3;
-  if (article.excerpt?.toLowerCase().includes(ql)) s += 2;
-  if (article.author?.toLowerCase().includes(ql)) s += 2;
-  if (bodyText.toLowerCase().includes(ql)) s += 1;
+  if (textIncludesAny(article.title, queryFormsLower)) s += 4;
+  if (textIncludesAny(article.kicker, queryFormsLower)) s += 3;
+  if (textIncludesAny(article.excerpt, queryFormsLower)) s += 2;
+  if (textIncludesAny(article.author, queryFormsLower)) s += 2;
+  if (textIncludesAny(bodyText, queryFormsLower)) s += 1;
   return s;
 }
 
+function articleTimestamp(article: Article): number {
+  const candidates = [article.publishedDate, article.createdAt, article.date];
+  for (const value of candidates) {
+    if (!value) continue;
+    const t = new Date(value).getTime();
+    if (Number.isFinite(t)) return t;
+  }
+  return 0;
+}
+
 function dateCmp(a: Article, b: Article): number {
-  const ta = a.publishedDate ? new Date(a.publishedDate).getTime() : 0;
-  const tb = b.publishedDate ? new Date(b.publishedDate).getTime() : 0;
-  return tb - ta;
+  return articleTimestamp(b) - articleTimestamp(a);
 }
 
 function articleKey(article: Article): string {
@@ -171,7 +185,7 @@ async function searchLegacy(forms: string[]): Promise<{ article: Article; bodyTe
   }
 }
 
-async function searchPayload(q: string, ql: string, forms: string[]) {
+async function searchPayload(queryFormsLower: string[]) {
   const payload = await getPayload({ config });
   const articleSearchSelect = {
     title: true,
@@ -185,59 +199,24 @@ async function searchPayload(q: string, ql: string, forms: string[]) {
     authors: true,
     content: true,
   } as const;
-  const orConditions = ["title", "subdeck", "kicker"].flatMap((field) =>
-    forms.map((form) => ({ [field]: { contains: form } })),
-  );
-  const [textDocs, users] = await Promise.all([
-    payload
-      .find({
-        collection: "articles",
-        where: { and: [{ _status: { equals: "published" } }, { or: orConditions }] },
-        sort: "-publishedDate",
-        limit: 0,
-        depth: 1,
-        select: articleSearchSelect,
-      })
-      .then((result) => result.docs),
-    payload
-      .find({
-        collection: "users",
-        where: { or: [{ firstName: { contains: q } }, { lastName: { contains: q } }] },
-        limit: 50,
-        depth: 0,
-      })
-      .then((result) => result.docs)
-      .catch(() => [] as never[]),
-  ]);
+  const allDocs = await payload
+    .find({
+      collection: "articles",
+      where: { _status: { equals: "published" } },
+      sort: "-publishedDate",
+      limit: 0,
+      depth: 1,
+      select: articleSearchSelect,
+    })
+    .then((result) => result.docs as PayloadSearchArticle[]);
 
-  const authorDocs =
-    users.length > 0
-      ? await payload
-          .find({
-            collection: "articles",
-            where: {
-              and: [
-                { _status: { equals: "published" } },
-                { authors: { in: users.map((user: { id: number }) => user.id) } },
-              ],
-            },
-            sort: "-publishedDate",
-            limit: 0,
-            depth: 1,
-            select: articleSearchSelect,
-          })
-          .then((result) => result.docs as PayloadSearchArticle[])
-          .catch(() => [] as PayloadSearchArticle[])
-      : ([] as PayloadSearchArticle[]);
-
-  const allDocs = new Map<number, PayloadSearchArticle>();
-  for (const doc of [...textDocs, ...authorDocs]) allDocs.set(doc.id, doc);
-
-  return [...allDocs.values()]
+  return allDocs
     .map((doc) => {
       const article = formatArticle(doc, { absoluteDate: true });
       if (!article) return null;
-      return { article, score: scoreArticle(article, extractLexicalText(doc.content), ql) };
+      const score = scoreArticle(article, extractLexicalText(doc.content), queryFormsLower);
+      if (score <= 0) return null;
+      return { article, score };
     })
     .filter((entry): entry is { article: Article; score: number } => entry !== null);
 }
@@ -277,12 +256,12 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const ql = q.toLowerCase();
   const forms = queryForms(q);
+  const queryFormsLower = forms.map((form) => form.toLowerCase()).filter((form) => form.length > 0);
 
   try {
     const [payloadResults, legacyRows] = await Promise.all([
-      searchPayload(q, ql, forms).catch(() => [] as { article: Article; score: number }[]),
+      searchPayload(queryFormsLower).catch(() => [] as { article: Article; score: number }[]),
       searchLegacy(forms).catch(() => [] as { article: Article; bodyText: string }[]),
     ]);
 
@@ -293,7 +272,7 @@ export async function GET(request: NextRequest) {
     for (const row of legacyRows) {
       const result = {
         article: row.article,
-        score: scoreArticle(row.article, row.bodyText, ql),
+        score: scoreArticle(row.article, row.bodyText, queryFormsLower),
       };
       const key = articleKey(result.article);
       const existing = merged.get(key);
@@ -303,7 +282,7 @@ export async function GET(request: NextRequest) {
     }
 
     const allResults = [...merged.values()].sort(
-      (a, b) => b.score - a.score || dateCmp(a.article, b.article),
+      (a, b) => dateCmp(a.article, b.article) || a.article.title.localeCompare(b.article.title),
     );
     const totalResults = allResults.length;
     const totalPages = totalResults === 0 ? 0 : Math.ceil(totalResults / pageSize);

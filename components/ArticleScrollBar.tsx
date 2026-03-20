@@ -100,12 +100,16 @@ export default function ArticleScrollBar({ title, section }: Props) {
 
   const logoSrc = isDarkMode ? '/logo-dark-mobile.svg' : '/logo-light-mobile.svg';
   const sectionLabel = section.charAt(0).toUpperCase() + section.slice(1);
+  const sectionHref = `/${section.toLowerCase()}`;
 
   useEffect(() => {
     const handleScroll = () => {
       setVisible(prev => {
         if (!prev && window.scrollY > 400) return true;
-        if (prev && window.scrollY < 300) return false;
+        if (prev && window.scrollY < 300) {
+          setShareOpen(false);
+          return false;
+        }
         return prev;
       });
     };
@@ -181,7 +185,12 @@ export default function ArticleScrollBar({ title, section }: Props) {
 
         {/* Center: Section | Title */}
         <div className="hidden md:flex items-center gap-2 font-meta text-[13px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[50%]">
-          <span className="font-bold uppercase tracking-wide text-text-main shrink-0">{sectionLabel}</span>
+          <a
+            href={sectionHref}
+            className="font-bold uppercase tracking-wide text-text-main shrink-0 transition-colors hover:text-accent"
+          >
+            {sectionLabel}
+          </a>
           <span className="text-rule-strong shrink-0">|</span>
           <span className="text-text-muted truncate">{title}</span>
         </div>
@@ -223,9 +232,9 @@ export default function ArticleScrollBar({ title, section }: Props) {
             </button>
 
             {shareOpen && (
-              <div className="absolute right-0 top-full mt-3 w-[220px] bg-bg-main border border-border-main shadow-lg rounded-md z-[100]">
-                <div className="absolute -top-[9px] right-[12px] w-4 h-4 bg-bg-main border-l border-t border-border-main rotate-45" />
-                <div className="relative bg-bg-main rounded-md overflow-hidden">
+              <div className="absolute right-0 top-full mt-7 w-[220px] rounded-xl border border-border-main bg-bg-main shadow-[0_18px_44px_rgba(0,0,0,0.42)] z-[100]">
+                <div className="absolute -top-[11px] right-[14px] h-5 w-5 rotate-45 border-l border-t border-border-main bg-bg-main" />
+                <div className="relative overflow-hidden rounded-xl bg-bg-main">
                   <div className="px-4 pt-4 pb-2">
                     <h3 className="font-meta font-bold text-[15px] text-text-main">Share options</h3>
                   </div>

@@ -16,6 +16,7 @@ import {
 
 const OVERLAY_TRANSITION_MS = 420;
 const WAVE_LAMBDA = 600; // px, wavelength
+const WAVE_PERSIST_MS = 250;
 
 // Sine wave approximation via cubic bezier. Each half-period uses control points
 // at 0.3642*half and 0.6358*half for a natural-looking curve.
@@ -40,6 +41,25 @@ type SearchResponse = {
   totalResults: number;
 };
 
+type SearchRequestError = Error & {
+  status?: number;
+  retryAfterSeconds?: number;
+};
+
+type SpellCorrectionState = {
+  originalQuery: string;
+  originalResults: number;
+  suggestedQuery: string;
+  suggestedResults: number;
+};
+
+function formatRetryCountdown(totalSeconds: number): string {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  if (mins === 0) return `${secs}s`;
+  return `${mins}:${String(secs).padStart(2, "0")}`;
+}
+
 async function fetchSearchResults(
   q: string,
   page: number,
@@ -51,7 +71,27 @@ async function fetchSearchResults(
     pageSize: String(DEFAULT_SEARCH_PAGE_SIZE),
   });
   const res = await fetch(`/api/search?${params.toString()}`, { signal });
-  if (!res.ok) throw new Error("Search request failed");
+  if (!res.ok) {
+    let errorMessage = "Search request failed";
+    try {
+      const body = (await res.json()) as { error?: string };
+      if (typeof body.error === "string" && body.error.trim()) {
+        errorMessage = body.error.trim();
+      }
+    } catch {
+      // Keep fallback message.
+    }
+
+    const retryAfterRaw = res.headers.get("Retry-After") ?? res.headers.get("retry-after");
+    const retryAfterParsed = retryAfterRaw ? Number.parseInt(retryAfterRaw, 10) : NaN;
+
+    const error = new Error(errorMessage) as SearchRequestError;
+    error.status = res.status;
+    if (Number.isFinite(retryAfterParsed) && retryAfterParsed > 0) {
+      error.retryAfterSeconds = retryAfterParsed;
+    }
+    throw error;
+  }
   return res.json() as Promise<SearchResponse>;
 }
 
@@ -78,9 +118,17 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
   const measureRef = useRef<HTMLSpanElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const animFrameRef = useRef<number | null>(null);
+  const waveTypingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Spell check
-  const [spellSuggestion, setSpellSuggestion] = useState<string | null>(null);
+  const [spellCorrection, setSpellCorrection] = useState<SpellCorrectionState | null>(null);
+  const [rateLimitError, setRateLimitError] = useState<string | null>(null);
+  const [rateLimitUntil, setRateLimitUntil] = useState<number | null>(null);
+  const [rateLimitSecondsRemaining, setRateLimitSecondsRemaining] = useState(0);
+  const [isWaveTypingActive, setIsWaveTypingActive] = useState(false);
+  const [characterLimitStage, setCharacterLimitStage] = useState<"idle" | "hiding" | "showing">("idle");
+  const characterLimitHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const characterLimitResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [stage, setStage] = useState(0);
   // 0: blank (overlay fading in)
@@ -89,10 +137,57 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
   // 3: cursor starts blinking, input is live
 
   const showTypingOverlay = query.length === 0 && stage >= 1 && stage < 3;
-  const showWave = isLoading && stage >= 2;
+  const showWave = (isWaveTypingActive || isLoading) && stage >= 2;
+
+  const clearWaveTypingTimer = useCallback(() => {
+    if (waveTypingTimerRef.current) {
+      clearTimeout(waveTypingTimerRef.current);
+      waveTypingTimerRef.current = null;
+    }
+  }, []);
+
+  const clearCharacterLimitTimers = useCallback(() => {
+    if (characterLimitHideTimerRef.current) {
+      clearTimeout(characterLimitHideTimerRef.current);
+      characterLimitHideTimerRef.current = null;
+    }
+    if (characterLimitResetTimerRef.current) {
+      clearTimeout(characterLimitResetTimerRef.current);
+      characterLimitResetTimerRef.current = null;
+    }
+  }, []);
+
+  const triggerCharacterLimitNotice = useCallback(() => {
+    clearCharacterLimitTimers();
+    setCharacterLimitStage("hiding");
+    characterLimitHideTimerRef.current = setTimeout(() => {
+      setCharacterLimitStage("showing");
+    }, 120);
+    characterLimitResetTimerRef.current = setTimeout(() => {
+      setCharacterLimitStage("idle");
+      characterLimitHideTimerRef.current = null;
+      characterLimitResetTimerRef.current = null;
+    }, 2120);
+  }, [clearCharacterLimitTimers]);
+
+  const bumpTypingWave = useCallback(() => {
+    clearWaveTypingTimer();
+    setIsWaveTypingActive(true);
+    waveTypingTimerRef.current = setTimeout(() => {
+      setIsWaveTypingActive(false);
+      waveTypingTimerRef.current = null;
+    }, WAVE_PERSIST_MS);
+  }, [clearWaveTypingTimer]);
 
   const handleQueryChange = (nextQuery: string) => {
-    setQuery(sanitizeSearchQuery(nextQuery));
+    bumpTypingWave();
+    const normalized = nextQuery
+      .normalize("NFKC")
+      .replace(/[\u0000-\u001F\u007F]+/g, " ");
+    if (normalized.length > MAX_SEARCH_QUERY_LENGTH) {
+      triggerCharacterLimitNotice();
+    }
+    setQuery(normalized.slice(0, MAX_SEARCH_QUERY_LENGTH));
     setPage(0);
   };
 
@@ -101,11 +196,18 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
     const cursor = cursorRef.current;
     const measure = measureRef.current;
     if (!input || !cursor || !measure) return;
-    measure.style.font = getComputedStyle(input).font;
+    const computed = getComputedStyle(input);
+    measure.style.font = computed.font;
     const pos = input.selectionStart ?? query.length;
     measure.textContent = query.slice(0, pos);
     const textWidth = measure.offsetWidth;
-    cursor.style.left = query.length > 0 ? `${12 + textWidth + 2}px` : `${12}px`;
+    const paddingLeft = Number.parseFloat(computed.paddingLeft) || 12;
+    const paddingRight = Number.parseFloat(computed.paddingRight) || 0;
+    const rawLeft = paddingLeft + textWidth - input.scrollLeft + 2;
+    const minLeft = paddingLeft;
+    const maxLeft = Math.max(minLeft, input.clientWidth - paddingRight - 1);
+    const clampedLeft = Math.min(maxLeft, Math.max(minLeft, rawLeft));
+    cursor.style.left = `${clampedLeft}px`;
   }, [query]);
 
   useEffect(() => {
@@ -165,7 +267,10 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
       setIsLoading(false);
       setDisplayCount(0);
       displayCountRef.current = 0;
-      setSpellSuggestion(null);
+      setSpellCorrection(null);
+      setRateLimitError(null);
+      setRateLimitUntil(null);
+      setRateLimitSecondsRemaining(0);
       setTotalResults(0);
       setTotalPages(0);
       return;
@@ -175,18 +280,21 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
     abortRef.current = controller;
     setIsLoading(true);
     setSearched(false);
-    setSpellSuggestion(null);
+    setSpellCorrection(null);
     setDisplayCount(0);
     displayCountRef.current = 0;
 
     try {
-      const data = await fetchSearchResults(q, pageIndex + 1, controller.signal);
+      const primaryData = await fetchSearchResults(q, pageIndex + 1, controller.signal);
 
-      setArticles(data.articles);
-      setTotalResults(data.totalResults);
-      setTotalPages(data.totalPages);
-      if (data.page - 1 !== pageIndex) setPage(Math.max(0, data.page - 1));
-      animateCount(data.totalResults);
+      setArticles(primaryData.articles);
+      setTotalResults(primaryData.totalResults);
+      setTotalPages(primaryData.totalPages);
+      if (primaryData.page - 1 !== pageIndex) setPage(Math.max(0, primaryData.page - 1));
+      animateCount(primaryData.totalResults);
+      setRateLimitError(null);
+      setRateLimitUntil(null);
+      setRateLimitSecondsRemaining(0);
       setSearched(true);
       if (!hasSearchedOnceRef.current) {
         hasSearchedOnceRef.current = true;
@@ -194,22 +302,28 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
       }
       setIsLoading(false);
 
-      // Spell check if 0 results
-      if (data.totalResults === 0) {
+      // Spellcheck fallback only applies when the original query has zero results.
+      if (pageIndex === 0 && primaryData.totalResults === 0) {
         try {
           const spellRes = await fetch(
             `/api/search/spellcheck?q=${encodeURIComponent(q)}`,
             { signal: controller.signal },
           );
           if (!spellRes.ok) return;
-          const data = (await spellRes.json()) as { suggestion: string | null };
-          if (!data.suggestion || data.suggestion.toLowerCase() === q.toLowerCase()) return;
+          const spellcheckData = (await spellRes.json()) as { suggestion: string | null };
+          if (!spellcheckData.suggestion || spellcheckData.suggestion.toLowerCase() === q.toLowerCase()) return;
 
           // Re-search with corrected query
-          const suggestedData = await fetchSearchResults(data.suggestion, 1, controller.signal);
+          const suggestedData = await fetchSearchResults(spellcheckData.suggestion, 1, controller.signal);
+
+          setSpellCorrection({
+            originalQuery: q,
+            originalResults: primaryData.totalResults,
+            suggestedQuery: spellcheckData.suggestion,
+            suggestedResults: suggestedData.totalResults,
+          });
 
           if (suggestedData.totalResults > 0) {
-            setSpellSuggestion(data.suggestion);
             setArticles(suggestedData.articles);
             setTotalResults(suggestedData.totalResults);
             setTotalPages(suggestedData.totalPages);
@@ -220,14 +334,70 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
       }
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return;
+
+      const requestError = e as SearchRequestError;
+      if (requestError.status === 429) {
+        const retryAfter = Math.max(1, requestError.retryAfterSeconds ?? 10);
+        setRateLimitError(requestError.message || "Too many search requests. Try again shortly.");
+        setRateLimitUntil(Date.now() + retryAfter * 1000);
+        setRateLimitSecondsRemaining(retryAfter);
+      } else {
+        setRateLimitError("Search failed. Please try again.");
+        setRateLimitUntil(null);
+        setRateLimitSecondsRemaining(0);
+      }
       setIsLoading(false);
     }
   }, [animateCount]);
 
   useEffect(() => {
+    if (rateLimitUntil && rateLimitUntil > Date.now()) return;
     const timer = setTimeout(() => fetchResults(query, page), 250);
     return () => clearTimeout(timer);
-  }, [query, page, fetchResults]);
+  }, [query, page, fetchResults, rateLimitUntil]);
+
+  useEffect(() => {
+    if (!rateLimitUntil) return;
+
+    const tick = () => {
+      const next = Math.max(0, Math.ceil((rateLimitUntil - Date.now()) / 1000));
+      setRateLimitSecondsRemaining(next);
+      if (next === 0) {
+        setRateLimitUntil(null);
+        setRateLimitError(null);
+      }
+    };
+
+    tick();
+    const interval = window.setInterval(tick, 250);
+    return () => window.clearInterval(interval);
+  }, [rateLimitUntil]);
+
+  useEffect(() => {
+    return () => {
+      clearWaveTypingTimer();
+    };
+  }, [clearWaveTypingTimer]);
+
+  useEffect(() => {
+    const stopTypingWave = () => {
+      clearWaveTypingTimer();
+      setIsWaveTypingActive(false);
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopTypingWave();
+      }
+    };
+
+    window.addEventListener("blur", stopTypingWave);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      window.removeEventListener("blur", stopTypingWave);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [clearWaveTypingTimer]);
 
   // Animation sequence — starts immediately, no dead time
   useEffect(() => {
@@ -265,16 +435,17 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
     return () => {
       abortRef.current?.abort();
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      clearWaveTypingTimer();
+      clearCharacterLimitTimers();
       if (closeTimerRef.current) {
         clearTimeout(closeTimerRef.current);
       }
       document.body.style.overflow = "unset";
       window.removeEventListener("keydown", handleKey, true);
     };
-  }, [handleClose]);
+  }, [clearCharacterLimitTimers, clearWaveTypingTimer, handleClose]);
 
   const displayArticles = articles;
-  const rainbowQueryChars = Array.from(query);
 
   return (
     <div
@@ -303,6 +474,11 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
         }
         .search-caret {
           caret-color: transparent;
+        }
+        @media (max-width: 767px) {
+          .search-caret {
+            caret-color: currentColor;
+          }
         }
         @keyframes caretPulse {
           0%, 100% { opacity: 1; }
@@ -335,7 +511,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
       `}</style>
 
       <div
-        className="mx-auto max-w-[1280px] px-4 pb-16 pt-6 transition-[opacity,transform] ease-out md:px-6 xl:px-[30px]"
+        className="relative mx-auto max-w-[1280px] px-4 pb-16 pt-3 transition-[opacity,transform] ease-out md:px-6 md:pt-6 xl:px-[30px]"
         style={{
           opacity: isVisible ? 1 : 0,
           transform: isVisible ? "translateY(0)" : isClosing ? "translateY(0)" : "translateY(8px)",
@@ -343,20 +519,18 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
         }}
       >
         {/* X button */}
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={handleClose}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-rule-strong/70 text-text-muted transition-colors hover:border-accent hover:text-accent"
-            style={{
-              opacity: stage >= 2 ? 1 : 0,
-              transform: stage >= 2 ? "translateY(0)" : "translateY(-20px)",
-              transition: "opacity 0.3s ease-out, transform 0.3s ease-out",
-            }}
-            aria-label="Close search"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+        <button
+          onClick={handleClose}
+          className="fixed top-[calc(var(--safe-area-top)+0.2rem)] right-3 z-20 flex h-7 w-7 items-center justify-center text-text-muted transition-colors hover:text-accent md:absolute md:top-6 md:right-6 md:h-10 md:w-10 xl:right-[30px]"
+          style={{
+            opacity: stage >= 2 ? 1 : 0,
+            transform: stage >= 2 ? "translateY(0)" : "translateY(-20px)",
+            transition: "opacity 0.3s ease-out, transform 0.3s ease-out",
+          }}
+          aria-label="Close search"
+        >
+          <X className="h-3.5 w-3.5 md:h-5 md:w-5" />
+        </button>
 
         <div data-search-area className="relative flex items-center">
           {/* Bottom line / loading wave */}
@@ -417,21 +591,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {showWave && query.length > 0 && (
-            <div className="absolute inset-0 z-10 flex items-center py-2 pl-3 pr-36 font-meta text-xl md:text-3xl font-bold pointer-events-none whitespace-pre text-left">
-              {rainbowQueryChars.map((char, index) => (
-                <span
-                  key={`${char}-${index}`}
-                  style={{
-                    animation: "rainbowLetterFlash 0.42s linear infinite",
-                    animationDelay: `${index * 0.045}s`,
-                  }}
-                >
-                  {char}
-                </span>
-              ))}
-            </div>
-          )}
+          {/* Rainbow text overlay intentionally disabled for now. */}
 
           <input
             ref={inputRef}
@@ -439,9 +599,12 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
             value={query}
             onChange={(e) => handleQueryChange(e.target.value)}
             onSelect={() => updateCursor()}
-            maxLength={MAX_SEARCH_QUERY_LENGTH}
+            onKeyUp={() => updateCursor()}
+            onClick={() => updateCursor()}
+            onFocus={() => updateCursor()}
+            onScroll={() => updateCursor()}
             placeholder={stage >= 3 ? "Search..." : ""}
-            className={`search-caret w-full bg-transparent py-2 pl-3 pr-36 font-meta text-xl md:text-3xl font-bold placeholder:text-text-muted/60 dark:placeholder:text-white/85 outline-none ${showWave && query.length > 0 ? "text-transparent" : "text-text-main"}`}
+            className="search-caret w-full bg-transparent py-2 pl-3 pr-36 font-meta text-xl md:text-3xl font-bold placeholder:text-text-muted/60 dark:placeholder:text-white/85 outline-none text-text-main"
           />
 
           {/* Hidden span to measure text width */}
@@ -455,7 +618,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
           {stage >= 3 && (
             <div
               ref={cursorRef}
-              className="absolute pointer-events-none"
+              className="absolute pointer-events-none hidden md:block"
               style={{
                 left: 12,
                 top: "50%",
@@ -483,30 +646,71 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
           />
         </div>
 
-        {hasSearchedOnce && (
-          <p
-            className="mt-3 font-meta text-[12px] text-text-muted"
-            style={{ animation: "textFadeIn 0.3s ease-out forwards" }}
+        <div className="relative mt-2">
+          <div
+            className={`transition-all duration-180 ${
+              characterLimitStage === "idle"
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 -translate-y-1 pointer-events-none"
+            }`}
           >
-            {isLoading ? (
-              <>
-                Searching... <span className="text-accent font-bold">{displayCount}</span> result{displayCount !== 1 ? "s" : ""} found so far.{" "}
-              </>
-            ) : searched ? (
-              spellSuggestion ? (
-                <>
-                  We found <span className="text-accent font-bold">{totalResults}</span> result{totalResults !== 1 ? "s" : ""} for{" "}
-                  <span className="text-red-500 font-bold">&lsquo;{spellSuggestion}&rsquo;</span>.{" "}
-                </>
-              ) : (
-                <>
-                  We found <span className="text-accent font-bold">{totalResults}</span> result{totalResults !== 1 ? "s" : ""} that matched your query.{" "}
-                </>
-              )
-            ) : null}
-            Our search algorithm uses title, subtitle, kicker, author, and body matching.{archiveSubtitle ? ` ${archiveSubtitle}.` : " You are currently searching our online database, containing articles published after 2009."} You can access older articles in <a href="https://digitalassets.archives.rpi.edu/do/235be3d2-f018-48af-a413-b50e16dd6dc7" target="_blank" rel="noopener noreferrer" className="underline hover:text-accent">our archive at the Richard G. Folsom Library</a>.
+            {rateLimitError && rateLimitSecondsRemaining > 0 && (
+              <p className="font-meta text-[12px] text-red-500" role="alert">
+                {rateLimitError} Restores in{" "}
+                <span className="font-bold">{formatRetryCountdown(rateLimitSecondsRemaining)}</span>.
+              </p>
+            )}
+
+            {hasSearchedOnce && (
+              <p
+                className={`${rateLimitError && rateLimitSecondsRemaining > 0 ? "mt-2" : "mt-1"} font-meta text-[12px] text-text-muted`}
+                style={{ animation: "textFadeIn 0.3s ease-out forwards" }}
+              >
+                {isLoading ? (
+                  <>
+                    Searching... <span className="text-accent font-bold">{displayCount}</span> result{displayCount !== 1 ? "s" : ""} found so far.{" "}
+                  </>
+                ) : searched ? (
+                  spellCorrection ? (
+                    spellCorrection.suggestedResults > 0 ? (
+                      <>
+                        We found <span className="text-accent font-bold">{spellCorrection.originalResults}</span> result{spellCorrection.originalResults !== 1 ? "s" : ""} for{" "}
+                        <span className="text-red-500 font-bold">&lsquo;{spellCorrection.originalQuery}&rsquo;</span>. However, we did find{" "}
+                        <span className="text-accent font-bold">{spellCorrection.suggestedResults}</span> result{spellCorrection.suggestedResults !== 1 ? "s" : ""} that matched{" "}
+                        <span className="text-red-500 font-bold">&lsquo;{spellCorrection.suggestedQuery}&rsquo;</span>, if that&apos;s what you meant.{" "}
+                      </>
+                    ) : (
+                      <>
+                        We found <span className="text-accent font-bold">{spellCorrection.originalResults}</span> result{spellCorrection.originalResults !== 1 ? "s" : ""} for{" "}
+                        <span className="text-red-500 font-bold">&lsquo;{spellCorrection.originalQuery}&rsquo;</span>. We didn&apos;t find any results for{" "}
+                        <span className="text-red-500 font-bold">&lsquo;{spellCorrection.suggestedQuery}&rsquo;</span> either.{" "}
+                      </>
+                    )
+                  ) : (
+                    <>
+                      We found <span className="text-accent font-bold">{totalResults}</span> result{totalResults !== 1 ? "s" : ""} that matched your query.{" "}
+                    </>
+                  )
+                ) : null}
+                <span className="hidden md:inline">
+                  Our search algorithm uses title, subtitle, kicker, author, and body matching.{archiveSubtitle ? ` ${archiveSubtitle}.` : " You are currently searching our online database, containing articles published after 2009."} You can access older articles in <a href="https://digitalassets.archives.rpi.edu/do/235be3d2-f018-48af-a413-b50e16dd6dc7" target="_blank" rel="noopener noreferrer" className="underline hover:text-accent">our archive at the Richard G. Folsom Library</a>.
+                </span>
+              </p>
+            )}
+          </div>
+
+          <p
+            className={`pointer-events-none absolute left-0 top-0 font-meta text-[12px] font-semibold text-red-500 transition-all duration-180 ${
+              characterLimitStage === "showing"
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 -translate-y-1"
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            {MAX_SEARCH_QUERY_LENGTH} character limit.
           </p>
-        )}
+        </div>
 
         {searched && displayArticles.length > 0 && (() => {
         return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 type ThemeContextType = {
   isDarkMode: boolean;
@@ -39,7 +39,7 @@ export default function ThemeProvider({
 }) {
   const [isDarkMode, setIsDarkMode] = useState(initialDarkMode);
   const [isStandalonePwa, setIsStandalonePwa] = useState(false);
-  const [keySequence, setKeySequence] = useState<string[]>([]);
+  const konamiIndexRef = useRef(0);
 
   useEffect(() => {
     const standaloneQuery = window.matchMedia("(display-mode: standalone)");
@@ -66,36 +66,39 @@ export default function ThemeProvider({
   }, []);
 
   useEffect(() => {
+    const normalizeKonamiKey = (key: string) => {
+      if (key.startsWith("Arrow")) return key;
+      if (key === "Enter") return key;
+      return key.length === 1 ? key.toLowerCase() : key;
+    };
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Detect "Up Up" followed by "Down" to prevent scrolling
-      const lastTwo = keySequence.slice(-2);
-      const lastThree = keySequence.slice(-3);
-      
-      if (event.key === "ArrowDown") {
-        const isFirstDownAfterUpUp = lastTwo.length === 2 && lastTwo[0] === "ArrowUp" && lastTwo[1] === "ArrowUp";
-        const isSecondDownAfterUpUp = lastThree.length === 3 && lastThree[0] === "ArrowUp" && lastThree[1] === "ArrowUp" && lastThree[2] === "ArrowDown";
-        
-        if (isFirstDownAfterUpUp || isSecondDownAfterUpUp) {
-          event.preventDefault();
-        }
+      const key = normalizeKonamiKey(event.key);
+      const currentIndex = konamiIndexRef.current;
+
+      // Prevent page scroll when entering the down/down part of the code.
+      if (key === "ArrowDown" && (currentIndex === 2 || currentIndex === 3)) {
+        event.preventDefault();
       }
 
-      setKeySequence((prev) => {
-        const newSequence = [...prev, event.key];
-        const trimmedSequence = newSequence.slice(-KONAMI_CODE.length);
+      let nextIndex = 0;
+      if (key === KONAMI_CODE[currentIndex]) {
+        nextIndex = currentIndex + 1;
+      } else if (key === KONAMI_CODE[0]) {
+        nextIndex = 1;
+      }
 
-        if (trimmedSequence.length === KONAMI_CODE.length && trimmedSequence.every((key, index) => key === KONAMI_CODE[index])) {
-          setIsDarkMode((prevMode) => !prevMode);
-          return [];
-        }
+      if (nextIndex === KONAMI_CODE.length) {
+        setIsDarkMode((prevMode) => !prevMode);
+        nextIndex = 0;
+      }
 
-        return trimmedSequence;
-      });
+      konamiIndexRef.current = nextIndex;
     };
 
     window.addEventListener("keydown", handleKeyDown, { passive: false });
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [keySequence]);
+  }, []);
 
   useEffect(() => {
     const themeColor = isDarkMode ? "#0a0a0a" : "#ffffff";

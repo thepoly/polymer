@@ -18,7 +18,7 @@ export default function NotFound() {
             The page you&apos;re looking for doesn&apos;t exist. Try searching for what you need below, or read <Link href="/" className="underline hover:opacity-70 transition-opacity">today&apos;s paper</Link>.
           </p>
         </div>
-        <SearchInput autoFocus />
+        <SearchInput autoFocus forceRainbow />
       </div>
     </main>
   );

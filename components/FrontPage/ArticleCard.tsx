@@ -10,7 +10,7 @@ export const ArticleCard = ({
   caption,
   showImage = Boolean(article.image),
   imageAspectClassName = "aspect-[4/3]",
-  titleClassName = "text-[27px] md:text-[24px]",
+  titleClassName = "text-[32px] md:text-[24px]",
   excerptClassName = "mt-1.5 line-clamp-3 text-[13px] leading-[1.38]",
 }: {
   article: Article;
@@ -20,7 +20,7 @@ export const ArticleCard = ({
   titleClassName?: string;
   excerptClassName?: string;
 }) => (
-  <TransitionLink href={getArticleUrl(article)} className="group block">
+  <TransitionLink href={getArticleUrl(article)} className="group block min-w-0">
     {showImage && article.image && (
       <figure data-header-anchor="image" className="mb-3 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen lg:static lg:ml-0 lg:mr-0 lg:w-full">
         <div className={`relative w-full overflow-hidden ${imageAspectClassName}`}>
@@ -40,18 +40,18 @@ export const ArticleCard = ({
       </figure>
     )}
     {article.kicker && (
-      <p className="font-meta text-[13px] md:text-[14px] font-[440] italic tracking-[0.04em] text-accent mb-2 lg:hidden">
+      <p className="font-meta text-[14px] md:text-[14px] font-[600] md:font-[440] italic tracking-[0.04em] text-accent mb-1 lg:hidden [overflow-wrap:anywhere] break-words">
         {article.kicker}
       </p>
     )}
     <div data-header-anchor="text">
       <h3
-        className={`font-display font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors group-hover:text-accent ${titleClassName} ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic text-[28px] md:text-[25px]" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
+        className={`font-display font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors group-hover:text-accent [overflow-wrap:anywhere] break-words ${titleClassName} ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic text-[33px] md:text-[25px]" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
       >
         {article.title}
       </h3>
       {article.excerpt && (
-        <p className={`font-meta font-normal text-text-muted ${excerptClassName}`}>
+        <p className={`font-meta font-normal text-text-muted [overflow-wrap:anywhere] break-words ${excerptClassName}`}>
           {article.excerpt}
         </p>
       )}

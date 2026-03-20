@@ -24,6 +24,15 @@ const tc = (article: Article, size: string) =>
             : ""
   }`;
 
+const normalizeKicker = (rawKicker?: string | null): string | null => {
+  const normalized = rawKicker?.trim().replace(/\s+/g, " ");
+  if (!normalized) return null;
+  // Ignore punctuation-only or placeholder-like values so the mobile header row
+  // doesn't render broken glyphs.
+  if (!/[A-Za-z0-9]/.test(normalized)) return null;
+  return normalized;
+};
+
 /**
  * Distribute articles into columns, balancing "weight" so columns
  * end up roughly the same visual height. Image articles are heavier.
@@ -96,7 +105,7 @@ export default function SectionPage({
     () =>
       Array.from(
         articles.slice(0, 10).reduce((map, article, index) => {
-          const kicker = article.kicker?.trim();
+          const kicker = normalizeKicker(article.kicker);
           if (!kicker) return map;
 
           const existing = map.get(kicker);
@@ -178,8 +187,8 @@ export default function SectionPage({
   if (articles.length === 0) return null;
 
   return (
-    <div className="mx-auto max-w-[1280px] px-4 pb-14 pt-5 md:px-6 md:py-6 xl:px-[30px]">
-      <div className="overflow-hidden mb-4 mt-8 md:hidden">
+    <div className="mx-auto max-w-[1280px] overflow-x-clip px-4 pb-14 pt-5 md:px-6 md:py-6 xl:px-[30px]">
+      <div className="relative overflow-hidden mb-4 mt-8 md:hidden">
         <h1 className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#D6001C] dark:text-white text-[52px] transition-colors">
           {title}
         </h1>
@@ -187,7 +196,9 @@ export default function SectionPage({
           <>
             <div
               ref={kickerRowRef}
-              className="font-meta mt-2 flex flex-nowrap items-center gap-2 overflow-hidden text-[13px] font-medium uppercase tracking-[0.08em] text-text-muted transition-colors"
+              className={`font-meta mt-2 flex flex-nowrap items-center gap-2 overflow-hidden text-[13px] font-medium uppercase tracking-[0.08em] text-text-muted transition-colors ${
+                visibleKickers.length === 0 ? "h-0" : ""
+              }`}
             >
               {visibleKickers.map((kicker, index) => (
                 <React.Fragment key={kicker}>
@@ -203,7 +214,7 @@ export default function SectionPage({
             </div>
             <div
               ref={kickerMeasureRef}
-              className="pointer-events-none absolute left-0 top-0 flex flex-nowrap gap-2 opacity-0"
+              className="pointer-events-none fixed -left-[9999px] top-0 flex flex-nowrap gap-2 opacity-0"
               aria-hidden="true"
             >
               {commonKickers.map((kicker, index) => (

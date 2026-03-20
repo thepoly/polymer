@@ -16,20 +16,20 @@ export const LeadArticle = ({
     imageFirstOnMobile?: boolean;
     hideKicker?: boolean;
 }) => (
-    <TransitionLink href={getArticleUrl(article)} className="flex h-full flex-col group cursor-pointer">
+    <TransitionLink href={getArticleUrl(article)} className="flex h-full flex-col group cursor-pointer min-w-0">
         <div
             data-header-anchor="text"
             className={imageFirstOnMobile && article.image ? "order-2 mt-4 md:order-1 md:mt-0" : ""}
         >
             {!hideKicker && (
-                <p className="font-meta mb-2 text-[11px] md:text-[12px] font-[440] italic capitalize tracking-[0.04em] text-accent">
+                <p className="font-meta mb-1 text-[13px] md:text-[12px] font-[600] md:font-[440] italic capitalize tracking-[0.04em] text-accent">
                     {article.section}
                 </p>
             )}
             <h3
-                className={`font-display mb-3 font-bold leading-[1.04] tracking-[-0.018em] text-text-main transition-colors group-hover:text-accent ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""} ${
-                    compact ? "text-[24px] md:text-[29px] xl:text-[31px]" : "text-[27px] md:text-[33px] xl:text-[36px]"
-                } ${article.section === "features" ? (compact ? "text-[25px] md:text-[30px] xl:text-[32px]" : "text-[28px] md:text-[34px] xl:text-[37px]") : ""}`}
+                className={`font-display mb-2 md:mb-3 font-bold leading-[1.04] tracking-[-0.018em] text-text-main transition-colors group-hover:text-accent [overflow-wrap:anywhere] break-words ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""} ${
+                    compact ? "text-[29px] md:text-[29px] xl:text-[31px]" : "text-[32px] md:text-[33px] xl:text-[36px]"
+                } ${article.section === "features" ? (compact ? "text-[30px] md:text-[30px] xl:text-[32px]" : "text-[33px] md:text-[34px] xl:text-[37px]") : ""}`}
             >
                 {article.title}
             </h3>
@@ -37,7 +37,7 @@ export const LeadArticle = ({
                 <p
                     className={`font-meta font-normal text-text-main transition-colors ${
                         compact ? "max-w-[36rem] text-[13px] leading-[1.42] md:text-[14px]" : "max-w-[40rem] text-[14px] leading-[1.45] md:text-[15px]"
-                    }`}
+                    } [overflow-wrap:anywhere] break-words`}
                 >
                     {article.excerpt}
                 </p>
