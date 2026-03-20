@@ -1,0 +1,11 @@
+.two-columns-container {
+  display: flex; /* Enables flexbox layout */
+  flex-direction: row; 
+  padding: 0 150px 100px;
+  gap: 150px;
+}
+
+.column {
+  flex: 1; /* Distributes available space equally to both columns */
+  padding: 20px; /* Adds some spacing */
+}
