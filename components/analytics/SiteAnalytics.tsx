@@ -289,9 +289,11 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
       }
 
       if (isStaffPath(destinationPath) && destinationPath !== "/staff") {
+        const staffSlug = destinationPath.replace(/^\/staff\//, "").replace(/\/$/, "");
         posthog.capture("staff_profile_clicked", {
           ...baseProperties,
           destination_pathname: destinationPath,
+          staff_slug: staffSlug,
         });
       }
     };

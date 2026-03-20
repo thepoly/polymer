@@ -4,9 +4,9 @@ import { useEffect, useRef } from "react";
 import posthog from "posthog-js";
 import { useTheme } from "@/components/ThemeProvider";
 
-const READ_DEPTH_THRESHOLDS = [10, 25, 50, 75, 90, 100];
-const ARTICLE_ENGAGEMENT_THRESHOLDS = [30, 60, 120, 300];
-const READ_COMPLETION_THRESHOLD = 95;
+const READ_DEPTH_THRESHOLDS = Array.from({ length: 20 }, (_, index) => (index + 1) * 5);
+const ARTICLE_ENGAGEMENT_THRESHOLDS = [10, 20, 30, 45, 60, 90, 120, 180, 240, 300, 420, 600];
+const READ_COMPLETION_THRESHOLD = 85;
 const ACTIVE_WINDOW_MS = 30_000;
 const TICK_SECONDS = 5;
 

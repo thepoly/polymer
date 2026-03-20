@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import posthog from 'posthog-js';
