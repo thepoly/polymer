@@ -173,6 +173,10 @@ Mixing PM2 users creates split daemons/process lists and inconsistent runtime ow
   - returns `200` with `{ status: "ok" }` when app + DB/Payload check succeeds
   - returns `503` with `{ status: "error", checks.database: "error" }` on DB/Payload failure
 
+## Agent Operations
+
+- **Linting & Code Quality:** You must ensure that any code changes you make are lint-safe before completing your task. Either review your code rigorously for common ESLint and React purity warnings, or execute `pnpm lint` to automatically verify.
+
 ## Incident Guardrails
 
 - If you see `missing secret key` / Payload init errors:

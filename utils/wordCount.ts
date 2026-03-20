@@ -1,11 +1,23 @@
-export function calculateWordCount(content: any): number {
+export type LexicalNode = {
+  text?: string;
+  children?: LexicalNode[];
+  [key: string]: unknown;
+};
+
+export type LexicalRoot = {
+  root?: {
+    children?: LexicalNode[];
+  };
+};
+
+export function calculateWordCount(content: LexicalRoot | null | undefined): number {
   if (!content || !content.root || !content.root.children) {
     return 0;
   }
 
   let text = "";
 
-  function extractText(node: any) {
+  function extractText(node: LexicalNode) {
     if (node.text) {
       text += " " + node.text;
     }

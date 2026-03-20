@@ -114,7 +114,7 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
   const maxScrollRef = useRef(0);
   const pageActiveSecondsRef = useRef(0);
   const siteActiveSecondsRef = useRef(0);
-  const lastActivityAtRef = useRef(Date.now());
+  const lastActivityAtRef = useRef(0);
   const sentSummaryRef = useRef(false);
 
   // Deep engagement refs

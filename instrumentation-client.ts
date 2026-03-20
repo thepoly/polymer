@@ -1,5 +1,5 @@
 import posthog from "posthog-js";
-import { POSTHOG_HOST, POSTHOG_KEY, POSTHOG_UI_HOST, shouldTrackPath } from "@/lib/posthog-config";
+import { POSTHOG_KEY, POSTHOG_UI_HOST, shouldTrackPath } from "@/lib/posthog-config";
 
 if (POSTHOG_KEY) {
   posthog.init(POSTHOG_KEY, {

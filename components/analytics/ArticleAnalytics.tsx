@@ -53,16 +53,16 @@ export default function ArticleAnalytics({
 }: Props) {
   const { isDarkMode } = useTheme();
   
-  const startTimeRef = useRef(Date.now());
+  const startTimeRef = useRef(0);
   const maxReadDepthRef = useRef(0);
   const engagedSecondsRef = useRef(0);
-  const lastActivityAtRef = useRef(Date.now());
+  const lastActivityAtRef = useRef(0);
   const hasCapturedCompletionRef = useRef(false);
   const sentSummaryRef = useRef(false);
   const linkClicksRef = useRef({ internal: 0, external: 0 });
   
   // Theme tracking
-  const themeStartTimeRef = useRef(Date.now());
+  const themeStartTimeRef = useRef(0);
   const themeSecondsRef = useRef({ light: 0, dark: 0 });
   const currentThemeRef = useRef(isDarkMode ? "dark" : "light");
 
@@ -103,6 +103,7 @@ export default function ArticleAnalytics({
       theme: isDarkMode ? "dark" : "light",
       is_staff_viewer: isStaff,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [articleId, pathname, publishedDate, section, slug, title, isStaff]);
 
   useEffect(() => {
