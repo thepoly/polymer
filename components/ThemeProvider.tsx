@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import posthog from "posthog-js";
 
 type ThemeContextType = {
   isDarkMode: boolean;
@@ -137,11 +136,7 @@ export default function ThemeProvider({
   }, [isDarkMode, isStandalonePwa]);
 
   const toggleDarkMode = () => {
-    setIsDarkMode((prev) => {
-      const newMode = !prev;
-      posthog.capture("theme_toggled", { theme: newMode ? "dark" : "light" });
-      return newMode;
-    });
+    setIsDarkMode((prev) => !prev);
   };
 
   return (

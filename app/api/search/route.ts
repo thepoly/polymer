@@ -11,7 +11,6 @@ import {
   sanitizeSearchQuery,
 } from "@/utils/search";
 import { checkRateLimit } from "@/utils/rateLimit";
-import { getPostHogClient } from "@/lib/posthog-server";
 
 const SEARCH_RATE_LIMIT = 40;
 const SEARCH_RATE_LIMIT_WINDOW_MS = 10_000;
@@ -290,23 +289,6 @@ export async function GET(request: NextRequest) {
     const safePage = totalPages === 0 ? 1 : Math.min(page, totalPages);
     const start = (safePage - 1) * pageSize;
     const articles = allResults.slice(start, start + pageSize).map((entry) => entry.article);
-
-    const posthog = getPostHogClient();
-    const payload = await getPayload({ config });
-    const { user: authUser } = await payload.auth({ headers: request.headers });
-    const distinctId = authUser ? String(authUser.id) : (forwardedFor || "anonymous");
-
-    posthog?.capture({
-      distinctId,
-      event: "search_api_called",
-      properties: {
-        query: q,
-        total_results: totalResults,
-        page: safePage,
-        is_authenticated: !!authUser,
-        $process_person_profile: !!authUser,
-      },
-    });
 
     return Response.json({
       articles,

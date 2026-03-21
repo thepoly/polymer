@@ -5,7 +5,7 @@ import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import HeaderTransitionProvider from "@/components/HeaderTransitionProvider";
 import SiteAnalytics, { AnalyticsUser } from "@/components/analytics/SiteAnalytics";
-import DevBanner from "@/components/DevBanner";
+import WebVitals from "@/components/analytics/WebVitals";
 import { cookies, headers } from "next/headers";
 import { getPayload } from "payload";
 import configPromise from "@/payload.config";
@@ -160,8 +160,8 @@ export default async function RootLayout({
       >
         <ThemeProvider initialDarkMode={isDarkMode}>
           <SiteAnalytics user={analyticsUser} />
-          <DevBanner />
-          <HeaderTransitionProvider>{children}</HeaderTransitionProvider>
+          <WebVitals />
+<HeaderTransitionProvider>{children}</HeaderTransitionProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -9,7 +9,6 @@ import SearchOverlay from "@/components/SearchOverlay";
 import { useHeaderTransition } from "@/components/HeaderTransitionProvider";
 import { ANIMATED_HEADER_ROUTES } from "@/components/headerAnimationRoutes";
 import { useTheme } from "@/components/ThemeProvider";
-import posthog from "posthog-js";
 
 const primaryNavItems = [
   { label: "News", href: "/news" },
@@ -346,7 +345,6 @@ export default function Header({ compact = false, mobileTight = false }: { compa
 
   const openSearchOverlay = () => {
     setIsSearchOverlayOpen(true);
-    posthog.capture("search_overlay_opened");
   };
 
   const prefetchLink = (href: string) => {

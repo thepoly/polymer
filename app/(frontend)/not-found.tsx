@@ -2,10 +2,12 @@ import React from 'react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import SearchInput from '@/components/SearchInput';
+import NotFoundAnalytics from '@/components/analytics/NotFoundAnalytics';
 
 export default function NotFound() {
   return (
     <main className="min-h-screen bg-bg-main transition-colors duration-300">
+      <NotFoundAnalytics />
       <Header compact />
       <div className="mx-auto max-w-[1280px] px-4 md:px-6 pt-3 pb-16">
         <div className="mb-14 pt-16 text-center">

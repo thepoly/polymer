@@ -16,6 +16,7 @@ import { useTheme } from "@/components/ThemeProvider";
 
 const ACTIVE_WINDOW_MS = 30_000;
 const TICK_SECONDS = 5;
+const READ_COMPLETION_THRESHOLD = 85;
 const SITE_ACTIVE_SECONDS_STORAGE_KEY = "posthog_site_active_seconds";
 
 function getDocumentScrollPercentage() {
@@ -26,6 +27,16 @@ function getDocumentScrollPercentage() {
   }
 
   return Math.max(0, Math.min(100, Math.round((window.scrollY / scrollableHeight) * 100)));
+}
+
+function getArticleReadDepth(element: HTMLElement) {
+  const rect = element.getBoundingClientRect();
+  const articleTop = window.scrollY + rect.top;
+  const articleHeight = Math.max(rect.height, element.scrollHeight, 1);
+  const viewportBottom = window.scrollY + window.innerHeight;
+  const readDepth = ((viewportBottom - articleTop) / articleHeight) * 100;
+
+  return Math.max(0, Math.min(100, Math.round(readDepth)));
 }
 
 function getLinkLabel(anchor: HTMLAnchorElement) {
@@ -66,11 +77,17 @@ function getClickContext(anchor: HTMLAnchorElement, currentPath: string) {
   return getPageType(currentPath);
 }
 
-function getPageArea(element: HTMLElement | null): string {
+function getCopyArea(element: HTMLElement | null): string {
   if (!element) return "unknown";
-  if (element.closest("h1")) return "headline";
-  if (element.closest(".article-body") || element.closest("main")) return "body";
+  if (element.closest(".article-body")) return "body";
+  if (element.closest(".article-header")) return "header";
+  if (element.closest(".article-subdeck")) return "subdeck";
+  if (element.closest(".article-byline")) return "byline";
+  if (element.closest(".article-caption")) return "caption";
+  if (element.closest(".article-staff-bio")) return "staff_bio";
   if (element.closest(".section-name")) return "section_name";
+  if (element.closest("h1")) return "headline";
+  if (element.closest("main")) return "body";
   if (element.closest("footer")) return "footer";
   if (element.closest("header")) return "header";
   return "other";
@@ -85,6 +102,24 @@ function loadStoredActiveSeconds() {
   const parsed = Number.parseInt(rawValue || "0", 10);
 
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+// Module-level article metadata — set by ArticlePageAnalytics, read by SiteAnalytics
+export type ArticleMeta = {
+  articleId: number;
+  title: string;
+  section: string;
+  slug?: string | null;
+  pathname: string;
+  publishedDate?: string | null;
+  wordCount: number;
+  isStaff: boolean;
+};
+
+let currentArticleMeta: ArticleMeta | null = null;
+
+export function setArticleMeta(meta: ArticleMeta | null) {
+  currentArticleMeta = meta;
 }
 
 export type AnalyticsUser = {
@@ -112,18 +147,43 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
   const pathname = normalizePath(usePathname() ?? "/");
   const pathRef = useRef(pathname);
   const maxScrollRef = useRef(0);
+  const currentScrollRef = useRef(0);
   const pageActiveSecondsRef = useRef(0);
   const siteActiveSecondsRef = useRef(0);
+  const startTimeRef = useRef(0);
   const lastActivityAtRef = useRef(0);
   const sentSummaryRef = useRef(false);
 
-  // Deep engagement refs
+  // Exit tracking
+  const exitMethodRef = useRef<"internal_link" | "external_link" | "tab_hidden" | "browser_closed" | "unmount">("unmount");
+  const exitDestinationRef = useRef<string | null>(null);
+
+  // Deep engagement
   const highlightCountRef = useRef(0);
   const totalCharsCopiedRef = useRef(0);
   const lastSelectionRef = useRef<string | null>(null);
 
+  // Article-specific: read depth from article body element
+  const maxReadDepthRef = useRef(0);
+  const currentReadDepthRef = useRef(0);
+  const hasCapturedCompletionRef = useRef(false);
+
+  // Theme time tracking (for article pages)
+  const themeStartTimeRef = useRef(0);
+  const themeSecondsRef = useRef({ light: 0, dark: 0 });
+  const currentThemeRef = useRef(isDarkMode ? "dark" : "light");
+
   useEffect(() => {
-    themeRef.current = isDarkMode ? "dark" : "light";
+    const newTheme = isDarkMode ? "dark" : "light";
+    themeRef.current = newTheme;
+    if (newTheme !== currentThemeRef.current) {
+      const now = Date.now();
+      const elapsed = Math.round((now - themeStartTimeRef.current) / 1000);
+      if (currentThemeRef.current === "dark") themeSecondsRef.current.dark += elapsed;
+      else themeSecondsRef.current.light += elapsed;
+      currentThemeRef.current = newTheme;
+      themeStartTimeRef.current = now;
+    }
   }, [isDarkMode]);
 
   useEffect(() => {
@@ -168,22 +228,24 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
     }
 
     posthog.opt_in_capturing();
-    
-    // Reset page metrics for new path
+
+    // Reset all page metrics
     maxScrollRef.current = 0;
+    currentScrollRef.current = 0;
     pageActiveSecondsRef.current = 0;
+    startTimeRef.current = Date.now();
     lastActivityAtRef.current = Date.now();
     sentSummaryRef.current = false;
+    exitMethodRef.current = "unmount";
+    exitDestinationRef.current = null;
     highlightCountRef.current = 0;
     totalCharsCopiedRef.current = 0;
     lastSelectionRef.current = null;
-
-    if (pathname === "/") {
-      posthog.capture("homepage_viewed", {
-        ...getPageEventProperties(pathname),
-        theme: themeRef.current,
-      });
-    }
+    maxReadDepthRef.current = 0;
+    currentReadDepthRef.current = 0;
+    hasCapturedCompletionRef.current = false;
+    themeStartTimeRef.current = Date.now();
+    themeSecondsRef.current = { light: 0, dark: 0 };
   }, [pathname]);
 
   useEffect(() => {
@@ -192,7 +254,21 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
       if (!shouldTrackPath(currentPath)) return;
 
       const scrollPercentage = getDocumentScrollPercentage();
+      currentScrollRef.current = scrollPercentage;
       maxScrollRef.current = Math.max(maxScrollRef.current, scrollPercentage);
+
+      // Article-specific read depth
+      if (isArticlePath(currentPath)) {
+        const articleBody = document.querySelector(".article-body");
+        if (articleBody instanceof HTMLElement) {
+          const readDepth = getArticleReadDepth(articleBody);
+          currentReadDepthRef.current = readDepth;
+          maxReadDepthRef.current = Math.max(maxReadDepthRef.current, readDepth);
+          if (!hasCapturedCompletionRef.current && readDepth >= READ_COMPLETION_THRESHOLD) {
+            hasCapturedCompletionRef.current = true;
+          }
+        }
+      }
     };
 
     const markActivity = () => {
@@ -200,28 +276,27 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
     };
 
     const handleCopy = () => {
-      const currentPath = pathRef.current;
-      if (isArticlePath(currentPath)) return; // Handled by ArticleAnalytics
-
       const selection = window.getSelection();
       const text = selection?.toString().trim();
       if (!text) return;
 
-      const area = getPageArea(selection?.anchorNode?.parentElement || null);
+      const currentPath = pathRef.current;
+      const area = getCopyArea(selection?.anchorNode?.parentElement || null);
       totalCharsCopiedRef.current += text.length;
 
-      posthog.capture("page_text_copied", {
+      posthog.capture("text_copied", {
         ...getPageEventProperties(currentPath),
         text_copied: text,
         char_count: text.length,
         page_area: area,
+        ...(currentArticleMeta ? {
+          article_id: currentArticleMeta.articleId,
+          article_title: currentArticleMeta.title,
+        } : {}),
       });
     };
 
     const handleSelectionChange = () => {
-      const currentPath = pathRef.current;
-      if (isArticlePath(currentPath)) return; // Handled by ArticleAnalytics
-
       const selection = window.getSelection();
       const text = selection?.toString().trim();
       if (text && text.length > 5 && text !== lastSelectionRef.current) {
@@ -257,7 +332,11 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
         link_text: linkText,
       };
 
-      if (destination.origin !== window.location.origin) {
+      const isExternal = destination.origin !== window.location.origin;
+      exitMethodRef.current = isExternal ? "external_link" : "internal_link";
+      exitDestinationRef.current = isExternal ? destination.toString() : destinationPath;
+
+      if (isExternal) {
         posthog.capture("outbound_link_clicked", {
           ...baseProperties,
           destination_url: destination.toString(),
@@ -267,20 +346,13 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
 
       if (isArticlePath(destinationPath)) {
         const article = getArticlePathDetails(destinationPath);
-        const articleClickProperties = {
+        posthog.capture("article_clicked", {
           ...baseProperties,
           destination_pathname: destinationPath,
           destination_page_type: getPageType(destinationPath),
           article_section: article?.section,
           article_slug: article?.slug,
-        };
-
-        posthog.capture("article_clicked", articleClickProperties);
-
-        if (clickContext === "article-recommendation") {
-          posthog.capture("article_recommendation_clicked", articleClickProperties);
-        }
-
+        });
         return;
       }
 
@@ -296,28 +368,67 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
 
     const sendSummary = () => {
       if (sentSummaryRef.current) return;
-      
+
       const currentPath = pathRef.current;
       if (!shouldTrackPath(currentPath)) return;
 
       sentSummaryRef.current = true;
+      const now = Date.now();
+      const totalSecondsOnPage = Math.max(0, Math.round((now - startTimeRef.current) / 1000));
+
+      // Finalize theme seconds
+      const finalThemeElapsed = Math.max(0, Math.round((now - themeStartTimeRef.current) / 1000));
+      const finalThemeSeconds = { ...themeSecondsRef.current };
+      if (currentThemeRef.current === "dark") finalThemeSeconds.dark += finalThemeElapsed;
+      else finalThemeSeconds.light += finalThemeElapsed;
+
+      const meta = currentArticleMeta;
+      const isArticle = isArticlePath(currentPath) && meta;
+      const wpm = isArticle && meta.wordCount > 0 && pageActiveSecondsRef.current > 0
+        ? Math.round(meta.wordCount / (pageActiveSecondsRef.current / 60))
+        : undefined;
+
       posthog.capture("page_session_summary", {
         ...getPageEventProperties(currentPath),
         theme: themeRef.current,
         total_active_seconds: pageActiveSecondsRef.current,
+        total_seconds_on_page: totalSecondsOnPage,
         site_total_active_seconds: siteActiveSecondsRef.current,
         max_scroll_percentage: maxScrollRef.current,
+        exit_scroll_percentage: currentScrollRef.current,
+        exit_method: exitMethodRef.current,
+        exit_destination: exitDestinationRef.current,
+        engagement_ratio: totalSecondsOnPage > 0
+          ? Number((pageActiveSecondsRef.current / totalSecondsOnPage).toFixed(2))
+          : 0,
         text_highlight_count: highlightCountRef.current,
         total_chars_copied: totalCharsCopiedRef.current,
+        seconds_spent_in_light_mode: finalThemeSeconds.light,
+        seconds_spent_in_dark_mode: finalThemeSeconds.dark,
+
+        // Article-specific fields (null/absent on non-article pages)
+        ...(isArticle ? {
+          article_id: meta.articleId,
+          article_title: meta.title,
+          article_slug: meta.slug,
+          word_count: meta.wordCount,
+          is_staff_viewer: meta.isStaff,
+          words_per_minute: wpm,
+          max_read_depth: maxReadDepthRef.current,
+          exit_read_depth: currentReadDepthRef.current,
+          read_completed: hasCapturedCompletionRef.current,
+        } : {}),
       });
     };
 
     const handleBeforeUnload = () => {
+      exitMethodRef.current = "browser_closed";
       sendSummary();
     };
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
+        if (exitMethodRef.current === "unmount") exitMethodRef.current = "tab_hidden";
         sendSummary();
       }
     };
@@ -340,6 +451,19 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
         SITE_ACTIVE_SECONDS_STORAGE_KEY,
         String(siteActiveSecondsRef.current),
       );
+
+      // Update article read depth on tick too
+      if (isArticlePath(pathRef.current)) {
+        const articleBody = document.querySelector(".article-body");
+        if (articleBody instanceof HTMLElement) {
+          const readDepth = getArticleReadDepth(articleBody);
+          currentReadDepthRef.current = readDepth;
+          maxReadDepthRef.current = Math.max(maxReadDepthRef.current, readDepth);
+          if (!hasCapturedCompletionRef.current && readDepth >= READ_COMPLETION_THRESHOLD) {
+            hasCapturedCompletionRef.current = true;
+          }
+        }
+      }
     }, TICK_SECONDS * 1000);
 
     window.addEventListener("scroll", updateScrollMetrics, { passive: true });
@@ -349,7 +473,7 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
     window.addEventListener("mousemove", markActivity, { passive: true });
     window.addEventListener("pointerdown", markActivity, { passive: true });
     window.addEventListener("touchstart", markActivity, { passive: true });
-    
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("beforeunload", handleBeforeUnload);
     window.addEventListener("pagehide", handleBeforeUnload);
@@ -370,7 +494,7 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
       window.removeEventListener("mousemove", markActivity);
       window.removeEventListener("pointerdown", markActivity);
       window.removeEventListener("touchstart", markActivity);
-      
+
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("pagehide", handleBeforeUnload);
@@ -378,7 +502,7 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
       document.removeEventListener("click", handleDocumentClick, true);
       document.removeEventListener("copy", handleCopy);
       document.removeEventListener("selectionchange", handleSelectionChange);
-      
+
       sendSummary();
     };
   }, []);

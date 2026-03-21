@@ -287,6 +287,7 @@ export default function SearchInput({
         query: q,
         total_results: primaryData.totalResults,
         page: pageIndex + 1,
+        source: "inline",
       });
       setSearched(true);
       if (!hasSearchedOnceRef.current) {
