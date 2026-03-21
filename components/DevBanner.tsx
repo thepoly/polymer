@@ -1,52 +1,58 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import posthog from "posthog-js";
 
 const DEV_HOSTNAME = "dev.poly.rpi.edu";
 const BANNER_DISMISSED_KEY = "dev_banner_dismissed";
 
 function isDevSite() {
-  if (typeof window === "undefined") return false;
-  return window.location.hostname === DEV_HOSTNAME;
+  return typeof window !== "undefined" && window.location.hostname === DEV_HOSTNAME;
+}
+
+function getClientSnapshot(): "banner" | "opted-out" | "hidden" {
+  if (!isDevSite()) return "hidden";
+  if (posthog.has_opted_out_capturing()) return "opted-out";
+  if (sessionStorage.getItem(BANNER_DISMISSED_KEY)) return "hidden";
+  return "banner";
+}
+
+function getServerSnapshot(): "hidden" {
+  return "hidden";
+}
+
+// No-op subscribe — state only changes via user-driven events, not external push
+function subscribe() {
+  return () => {};
 }
 
 export default function DevBanner() {
-  // null = loading, "banner" = show notice, "opted-out" = show opted-out bar, "hidden" = nothing
-  const [state, setState] = useState<"loading" | "banner" | "opted-out" | "hidden">("loading");
+  // useSyncExternalStore returns server snapshot during SSR and client snapshot on the client,
+  // avoiding hydration mismatches without requiring setState-in-effect.
+  const persistedState = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
 
-  useEffect(() => {
-    if (!isDevSite()) {
-      setState("hidden");
-      return;
-    }
+  // Local override driven exclusively by user interaction (event handlers, not effects)
+  const [override, setOverride] = useState<"opted-out" | "hidden" | null>(null);
 
-    if (posthog.has_opted_out_capturing()) {
-      setState("opted-out");
-      return;
-    }
-
-    const dismissed = sessionStorage.getItem(BANNER_DISMISSED_KEY);
-    setState(dismissed ? "hidden" : "banner");
-  }, []);
+  const state = override ?? persistedState;
 
   function handleOptOut() {
     posthog.opt_out_capturing();
-    setState("opted-out");
+    setOverride("opted-out");
   }
 
   function handleDismiss() {
     sessionStorage.setItem(BANNER_DISMISSED_KEY, "1");
-    setState("hidden");
+    setOverride("hidden");
   }
 
   function handleOptIn() {
     posthog.opt_in_capturing();
     sessionStorage.removeItem(BANNER_DISMISSED_KEY);
-    setState("banner");
+    setOverride("banner");
   }
 
-  if (state === "loading" || state === "hidden") return null;
+  if (state === "hidden") return null;
 
   if (state === "opted-out") {
     return (
