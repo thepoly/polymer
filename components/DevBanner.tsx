@@ -32,7 +32,7 @@ export default function DevBanner() {
   const persistedState = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
 
   // Local override driven exclusively by user interaction (event handlers, not effects)
-  const [override, setOverride] = useState<"opted-out" | "hidden" | null>(null);
+  const [override, setOverride] = useState<"banner" | "opted-out" | "hidden" | null>(null);
 
   const state = override ?? persistedState;
 
