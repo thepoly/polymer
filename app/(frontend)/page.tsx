@@ -120,13 +120,15 @@ export default async function Home() {
 
   if (!layout) {
     return (
-      <main className="min-h-screen bg-white">
+      <main className="min-h-screen flex flex-col bg-bg-main transition-colors duration-300">
         <Header />
-        <div className="flex items-center justify-center h-[50vh]">
-            <p className="text-text-muted font-copy">Please configure the layout in the admin panel.</p>
+        <div className="flex flex-col items-center justify-center flex-1 px-4 text-center">
+          <h1 className="font-display text-[28px] md:text-[36px] font-bold text-text-main mb-3">We&apos;ll be right back</h1>
+          <p className="font-copy text-[15px] md:text-[17px] text-text-muted max-w-md">The Polytechnic is currently under maintenance. Please check back shortly.</p>
         </div>
+        <Footer />
       </main>
-      );
+    );
   }
 
   const layoutArticleIds = getLayoutArticleIds(layout);
@@ -159,13 +161,15 @@ export default async function Home() {
 
   if (!mainArticle) {
     return (
-        <main className="min-h-screen bg-white">
-          <Header />
-          <div className="flex items-center justify-center h-[50vh]">
-              <p className="text-text-muted font-copy">Please assign a main article in the layout configuration.</p>
-          </div>
-        </main>
-      );
+      <main className="min-h-screen flex flex-col bg-bg-main transition-colors duration-300">
+        <Header />
+        <div className="flex flex-col items-center justify-center flex-1 px-4 text-center">
+          <h1 className="font-display text-[28px] md:text-[36px] font-bold text-text-main mb-3">We&apos;ll be right back</h1>
+          <p className="font-copy text-[15px] md:text-[17px] text-text-muted max-w-md">The Polytechnic is currently under maintenance. Please check back shortly.</p>
+        </div>
+        <Footer />
+      </main>
+    );
   }
 
   const fetchRecent = async (section: 'news' | 'features' | 'sports' | 'opinion') => {
