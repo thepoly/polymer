@@ -151,7 +151,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                       );
                     })
                   ) : (
-                    'The Poly Staff'
+                    <><em>The Polytechnic</em> Editorial Board</>
                   )}
                 </div>
               </div>

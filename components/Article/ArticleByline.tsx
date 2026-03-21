@@ -93,7 +93,7 @@ export const ArticleByline: React.FC<Props> = ({
           );
         })() : (
           <div className="font-meta text-[14px] md:text-[15px] font-[440] tracking-[0.08em] text-accent transition-colors">
-            The Poly Staff
+            By <em>The Polytechnic</em> Editorial Board
           </div>
         )}
       </div>
