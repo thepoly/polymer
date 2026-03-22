@@ -99,6 +99,7 @@ export default async function SectionPageRoute({ params }: Args) {
       kicker: true,
       publishedDate: true,
       createdAt: true,
+      updatedAt: true,
       authors: true,
       ...(isOpinion && { opinionType: true }),
       writeInAuthors: true,
@@ -157,7 +158,7 @@ export default async function SectionPageRoute({ params }: Args) {
       // Table may not exist yet if migration hasn't run
     }
     if (layout) {
-      if (layout.editorsChoiceLabel) editorsChoiceLabel = layout.editorsChoiceLabel;
+      if (layout.editorsChoiceLabel) editorsChoiceLabel = layout.editorsChoiceLabel as string;
 
       // Resolve editor's choice article relationships
       const choiceSlots = [layout.editorsChoice1, layout.editorsChoice2, layout.editorsChoice3];
