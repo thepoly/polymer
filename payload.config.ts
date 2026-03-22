@@ -45,6 +45,7 @@ import { Media } from './collections/Media.ts'
 import Articles from './collections/Articles.ts'
 import JobTitles from './collections/JobTitles.ts'
 import Layout from './collections/Layout.ts'
+import OpinionPageLayout from './collections/OpinionPageLayout.ts'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -77,7 +78,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Media, Articles, JobTitles, Layout], 
+  collections: [Users, Media, Articles, JobTitles, Layout, OpinionPageLayout],
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [
       ...defaultFeatures,
@@ -111,7 +112,7 @@ export default buildConfig({
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
   db: postgresAdapter({
-    push: false,
+    push: true,
     pool: {
       connectionString: process.env.DATABASE_URL || '',
     },

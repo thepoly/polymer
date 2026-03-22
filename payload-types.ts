@@ -72,6 +72,7 @@ export interface Config {
     articles: Article;
     'job-titles': JobTitle;
     layout: Layout;
+    'opinion-page-layout': OpinionPageLayout;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -84,6 +85,7 @@ export interface Config {
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
     'job-titles': JobTitlesSelect<false> | JobTitlesSelect<true>;
     layout: LayoutSelect<false> | LayoutSelect<true>;
+    'opinion-page-layout': OpinionPageLayoutSelect<false> | OpinionPageLayoutSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -215,10 +217,10 @@ export interface JobTitle {
  */
 export interface Article {
   id: number;
+  section: 'news' | 'sports' | 'features' | 'opinion';
   title: string;
   kicker?: string | null;
   subdeck?: string | null;
-  section: 'news' | 'sports' | 'features' | 'opinion';
   opinionType?:
     | (
         | 'opinion'
@@ -233,6 +235,7 @@ export interface Article {
         | 'editors-notebook'
         | 'derby'
         | 'other'
+        | 'more'
       )
     | null;
   authors?: (number | User)[] | null;
@@ -323,6 +326,48 @@ export interface Layout {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "opinion-page-layout".
+ */
+export interface OpinionPageLayout {
+  id: number;
+  name: string;
+  /**
+   * Heading displayed above the curated picks (e.g. "Opinion's Choice")
+   */
+  editorsChoiceLabel?: string | null;
+  /**
+   * First handpicked opinion article
+   */
+  editorsChoice1?: (number | null) | Article;
+  /**
+   * Second handpicked opinion article
+   */
+  editorsChoice2?: (number | null) | Article;
+  /**
+   * Third handpicked opinion article
+   */
+  editorsChoice3?: (number | null) | Article;
+  /**
+   * Up to 3 pull quotes shown inline on the opinion page
+   */
+  quotes?:
+    | {
+        /**
+         * The quote text
+         */
+        text: string;
+        /**
+         * The article this quote belongs to
+         */
+        article: number | Article;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -364,6 +409,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'layout';
         value: number | Layout;
+      } | null)
+    | ({
+        relationTo: 'opinion-page-layout';
+        value: number | OpinionPageLayout;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -470,10 +519,10 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "articles_select".
  */
 export interface ArticlesSelect<T extends boolean = true> {
+  section?: T;
   title?: T;
   kicker?: T;
   subdeck?: T;
-  section?: T;
   opinionType?: T;
   authors?: T;
   writeInAuthors?:
@@ -524,6 +573,26 @@ export interface LayoutSelect<T extends boolean = true> {
   op3?: T;
   op4?: T;
   special?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "opinion-page-layout_select".
+ */
+export interface OpinionPageLayoutSelect<T extends boolean = true> {
+  name?: T;
+  editorsChoiceLabel?: T;
+  editorsChoice1?: T;
+  editorsChoice2?: T;
+  editorsChoice3?: T;
+  quotes?:
+    | T
+    | {
+        text?: T;
+        article?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

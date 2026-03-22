@@ -69,6 +69,27 @@ const Articles: CollectionConfig = {
           data.publishedDate = new Date().toISOString()
         }
 
+        // Auto-derive opinionType from kicker for opinion articles
+        if (data.section === 'opinion' && data.kicker) {
+          const kickerLower = data.kicker.toLowerCase().trim()
+          const typeMap: Record<string, string> = {
+            'opinion': 'opinion',
+            'column': 'column',
+            'staff editorial': 'staff-editorial',
+            'editorial notebook': 'editorial-notebook',
+            'endorsement': 'endorsement',
+            'top hat': 'top-hat',
+            'candidate profile': 'candidate-profile',
+            'letter to the editor': 'letter-to-the-editor',
+            "the poly's recommendations": 'polys-recommendations',
+            "editor's notebook": 'editors-notebook',
+            'derby': 'derby',
+            'other': 'other',
+          }
+          const matched = typeMap[kickerLower]
+          data.opinionType = matched || 'more'
+        }
+
         // Auto-generate slug from title if not set
         if (!data.slug && data.title) {
           data.slug = data.title
@@ -84,17 +105,6 @@ const Articles: CollectionConfig = {
     ],
   },
   fields: [
-    { name: 'title', type: 'text', required: true },
-
-
-    {
-      name: 'kicker', // e.g. "News", "The Poly"
-      type: 'text',
-    },
-    {
-      name: 'subdeck', // The summary/subtitle
-      type: 'textarea',
-    },
     {
       name: 'section',
       type: 'select',
@@ -105,6 +115,20 @@ const Articles: CollectionConfig = {
         { label: 'Opinion', value: 'opinion' },
       ],
       required: true,
+    },
+    { name: 'title', type: 'text', required: true },
+    {
+      name: 'kicker',
+      type: 'text',
+      admin: {
+        components: {
+          Field: '@/components/admin/KickerField#KickerField',
+        },
+      },
+    },
+    {
+      name: 'subdeck',
+      type: 'textarea',
     },
     {
       name: 'opinionType',
@@ -122,9 +146,10 @@ const Articles: CollectionConfig = {
         { label: "Editor's Notebook", value: 'editors-notebook' },
         { label: 'Derby', value: 'derby' },
         { label: 'Other', value: 'other' },
+        { label: 'More', value: 'more' },
       ],
       admin: {
-        condition: (data) => data?.section === 'opinion',
+        hidden: true,
       },
     },
     {

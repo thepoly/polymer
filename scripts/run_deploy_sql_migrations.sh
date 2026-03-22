@@ -19,7 +19,10 @@ VALUES
   ('20260320_200000_add_write_in_authors', 3, NOW(), NOW()),
   ('20260321_200000_add_layout_template', 4, NOW(), NOW()),
   ('20260321_210000_add_layout_sections_and_volume', 4, NOW(), NOW()),
-  ('20260322_210000_add_media_source_url', 5, NOW(), NOW())
+  ('20260321_055436_add_opinion_page_layout', 5, NOW(), NOW()),
+  ('20260322_200000_add_seo_fields', 5, NOW(), NOW()),
+  ('20260322_210000_add_media_source_url', 5, NOW(), NOW()),
+  ('20260322_220000_add_more_to_opinion_type_enum', 6, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -103,10 +106,61 @@ ALTER TABLE "layout" ADD COLUMN IF NOT EXISTS "edition" numeric;
 -- 20260321: Add section field to users (for section editor assignment)
 ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "section" varchar;
 
+-- 20260321: Add opinion_page_layout tables
+CREATE TABLE IF NOT EXISTS "opinion_page_layout" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "name" varchar NOT NULL,
+  "editors_choice_label" varchar,
+  "editors_choice1_id" integer,
+  "editors_choice2_id" integer,
+  "editors_choice3_id" integer,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+CREATE TABLE IF NOT EXISTS "opinion_page_layout_quotes" (
+  "_order" integer NOT NULL,
+  "_parent_id" integer NOT NULL,
+  "id" varchar PRIMARY KEY NOT NULL,
+  "text" varchar NOT NULL,
+  "article_id" integer NOT NULL
+);
+DO $$ BEGIN
+  ALTER TABLE "opinion_page_layout" ADD CONSTRAINT "opinion_page_layout_editors_choice1_id_articles_id_fk" FOREIGN KEY ("editors_choice1_id") REFERENCES "public"."articles"("id") ON DELETE set null ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN
+  ALTER TABLE "opinion_page_layout" ADD CONSTRAINT "opinion_page_layout_editors_choice2_id_articles_id_fk" FOREIGN KEY ("editors_choice2_id") REFERENCES "public"."articles"("id") ON DELETE set null ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN
+  ALTER TABLE "opinion_page_layout" ADD CONSTRAINT "opinion_page_layout_editors_choice3_id_articles_id_fk" FOREIGN KEY ("editors_choice3_id") REFERENCES "public"."articles"("id") ON DELETE set null ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN
+  ALTER TABLE "opinion_page_layout_quotes" ADD CONSTRAINT "opinion_page_layout_quotes_article_id_articles_id_fk" FOREIGN KEY ("article_id") REFERENCES "public"."articles"("id") ON DELETE set null ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+DO $$ BEGIN
+  ALTER TABLE "opinion_page_layout_quotes" ADD CONSTRAINT "opinion_page_layout_quotes_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."opinion_page_layout"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+CREATE INDEX IF NOT EXISTS "opinion_page_layout_editors_choice1_idx" ON "opinion_page_layout" USING btree ("editors_choice1_id");
+CREATE INDEX IF NOT EXISTS "opinion_page_layout_editors_choice2_idx" ON "opinion_page_layout" USING btree ("editors_choice2_id");
+CREATE INDEX IF NOT EXISTS "opinion_page_layout_editors_choice3_idx" ON "opinion_page_layout" USING btree ("editors_choice3_id");
+CREATE INDEX IF NOT EXISTS "opinion_page_layout_created_at_idx" ON "opinion_page_layout" USING btree ("created_at");
+CREATE INDEX IF NOT EXISTS "opinion_page_layout_quotes_order_idx" ON "opinion_page_layout_quotes" USING btree ("_order");
+CREATE INDEX IF NOT EXISTS "opinion_page_layout_quotes_parent_id_idx" ON "opinion_page_layout_quotes" USING btree ("_parent_id");
+CREATE INDEX IF NOT EXISTS "opinion_page_layout_quotes_article_idx" ON "opinion_page_layout_quotes" USING btree ("article_id");
+
+-- 20260322: Add SEO fields to articles
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "seo_title" varchar;
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "search_description" varchar;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_seo_title" varchar;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_search_description" varchar;
+
 -- 20260322: Add source_url to media and backfill legacy remote media
 ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "source_url" varchar;
 UPDATE "media"
 SET "source_url" = "url"
 WHERE "url" LIKE 'http://10.10.10.22:8080/media/%'
   AND ("source_url" IS NULL OR "source_url" = '');
+
+-- 20260322: Add 'more' to opinion_type enums
+ALTER TYPE "public"."enum_articles_opinion_type" ADD VALUE IF NOT EXISTS 'more';
+ALTER TYPE "public"."enum__articles_v_version_opinion_type" ADD VALUE IF NOT EXISTS 'more';
 SQL

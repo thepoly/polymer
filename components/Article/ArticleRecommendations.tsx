@@ -215,7 +215,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
               href={`/${currentArticle.section}`}
               className="group inline-block"
             >
-              <h2 className="mt-2 font-display text-[30px] font-bold leading-[0.98] tracking-[-0.03em] text-text-main transition-colors group-hover:text-accent md:text-[38px]">
+              <h2 className={`mt-2 font-display text-[30px] leading-[0.98] tracking-[-0.03em] text-text-main transition-colors group-hover:text-accent md:text-[38px] ${currentArticle.section === 'opinion' ? 'font-medium' : 'font-bold'}`}>
                 {sectionLabel}
               </h2>
             </TransitionLink>

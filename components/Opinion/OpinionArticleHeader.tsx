@@ -16,7 +16,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
   const typeLabel = opinionTypeLabels[opinionType || 'opinion'] || 'Op-Ed';
 
   return (
-    <div className="flex flex-col items-center mb-8">
+    <div className="flex flex-col items-center mb-8" style={{ paddingTop: '40px' }}>
       {/* Kicker + Opinion Type */}
       <div className="flex flex-col items-center gap-1 mb-4">
         <span className="font-meta text-accent font-bold uppercase text-sm tracking-widest">
@@ -36,6 +36,8 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
       <h1 data-ie-field="title" className="font-copy font-medium text-[39px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center max-w-[600px] mx-auto px-4 mb-4">
         {article.title}
       </h1>
+
+      <div className="h-3" />
 
       {/* Featured Image + Caption + Credit */}
       {featuredImage?.url && (() => {
