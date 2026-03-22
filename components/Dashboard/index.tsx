@@ -6,6 +6,7 @@ import { Greeting } from './Greeting.tsx'
 import { SidebarNewArticle } from '@/components/Dashboard/SidebarNewArticle.tsx'
 import { SearchBar } from './SearchBar.tsx'
 import { Todos } from './Todos/index.tsx'
+import { BackupPanel } from './BackupPanel.tsx'
 import './styles.css' // We will add a simple CSS file for layout
 import { User, Media, JobTitle } from '@/payload-types'
 
@@ -105,6 +106,8 @@ const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: strin
       </div>
 
       <div className="dashboard-content">
+        {isAdmin && <BackupPanel />}
+
         {/* Articles Section (always shown if articles found) */}
         <div className="dashboard-articles-section">
           {articles.docs.length > 0 ? (
