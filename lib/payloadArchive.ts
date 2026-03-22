@@ -65,6 +65,11 @@ const runCommand = async (
   })
 }
 
+const copyDirectoryContents = async (sourceDir: string, targetDir: string): Promise<void> => {
+  await mkdir(targetDir, { recursive: true })
+  await runCommand('cp', ['-a', path.join(sourceDir, '.'), targetDir])
+}
+
 const createTempDir = async (prefix: string): Promise<string> =>
   mkdtemp(path.join(tmpdir(), `${prefix}-`))
 
@@ -184,7 +189,7 @@ const createRollbackSnapshot = async (
   ])
 
   try {
-    await cp(getMediaDir(), rollbackMediaDir, { recursive: true })
+    await copyDirectoryContents(getMediaDir(), rollbackMediaDir)
   } catch (error) {
     if (!isNotFoundError(error)) {
       throw error
@@ -291,7 +296,7 @@ export const createArchive = async (): Promise<{
     ])
 
     try {
-      await cp(getMediaDir(), path.join(bundleDir, manifest.media.directory), { recursive: true })
+      await copyDirectoryContents(getMediaDir(), path.join(bundleDir, manifest.media.directory))
     } catch (error) {
       const typedError = error as NodeJS.ErrnoException
       if (typedError.code !== 'ENOENT') {
@@ -374,7 +379,7 @@ const importArchiveFromPath = async (archivePath: string): Promise<ArchiveManife
     await ensureFileExists(dumpPath, 'database dump')
 
     try {
-      await cp(importedMediaDir, stagedMediaDir, { recursive: true })
+      await copyDirectoryContents(importedMediaDir, stagedMediaDir)
     } catch (error) {
       if (!isNotFoundError(error)) {
         throw error
