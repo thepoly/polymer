@@ -19,10 +19,11 @@ const requireAdmin = async (request: Request) => {
 }
 
 export async function POST(request: Request) {
+  const requestId = crypto.randomUUID()
   const user = await requireAdmin(request)
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    return NextResponse.json({ error: 'Unauthorized', requestId }, { status: 401 })
   }
 
   try {
@@ -30,23 +31,25 @@ export async function POST(request: Request) {
     const archive = formData.get('archive')
 
     if (!(archive instanceof File)) {
-      return NextResponse.json({ error: 'Archive file is required.' }, { status: 400 })
+      return NextResponse.json({ error: 'Archive file is required.', requestId }, { status: 400 })
     }
 
     if (!archive.name.toLowerCase().endsWith('.zip')) {
-      return NextResponse.json({ error: 'Archive must be a .zip file.' }, { status: 400 })
+      return NextResponse.json({ error: 'Archive must be a .zip file.', requestId }, { status: 400 })
     }
 
     const manifest = await importArchive(Buffer.from(await archive.arrayBuffer()))
 
     return NextResponse.json({
       ok: true,
+      requestId,
       importedAt: new Date().toISOString(),
       exportedAt: manifest.exportedAt,
       version: manifest.version,
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to import archive.'
-    return NextResponse.json({ error: message }, { status: 500 })
+    console.error(`[archive-import:${requestId}]`, error)
+    return NextResponse.json({ error: message, requestId }, { status: 500 })
   }
 }

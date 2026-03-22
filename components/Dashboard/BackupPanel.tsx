@@ -8,6 +8,44 @@ type ImportState =
   | { type: 'success'; message: string }
   | { type: 'error'; message: string }
 
+const parseResponseBody = async (
+  response: Response,
+): Promise<{
+  error?: string
+  exportedAt?: string
+  requestId?: string
+}> => {
+  const text = await response.text()
+
+  if (!text) {
+    return {}
+  }
+
+  const contentType = response.headers.get('content-type') || ''
+
+  try {
+    return JSON.parse(text) as {
+      error?: string
+      exportedAt?: string
+      requestId?: string
+    }
+  } catch {
+    if (contentType.includes('text/html')) {
+      const titleMatch = text.match(/<title>(.*?)<\/title>/i)
+      const headingMatch = text.match(/<h1[^>]*>(.*?)<\/h1>/i)
+      const summary = titleMatch?.[1] || headingMatch?.[1] || 'The server returned an HTML error page.'
+
+      return {
+        error: summary.replace(/\s+/g, ' ').trim(),
+      }
+    }
+
+    return {
+      error: text.trim() || 'The server returned an unreadable response.',
+    }
+  }
+}
+
 export const BackupPanel = () => {
   const [isExporting, setIsExporting] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
@@ -50,15 +88,18 @@ export const BackupPanel = () => {
       const response = await fetch('/api/admin/archive/import', {
         method: 'POST',
         body: formData,
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+        },
       })
 
-      const payload = (await response.json()) as {
-        error?: string
-        exportedAt?: string
-      }
+      const payload = await parseResponseBody(response)
 
       if (!response.ok) {
-        throw new Error(payload.error || 'Import failed.')
+        const requestIdSuffix = payload.requestId ? ` Request ID: ${payload.requestId}.` : ''
+        throw new Error((payload.error || 'Import failed.') + requestIdSuffix)
       }
 
       setState({

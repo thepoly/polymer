@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, readFile, rm, rename, cp, writeFile } from 'fs/promises'
+import { access, mkdtemp, mkdir, readFile, rm, rename, cp, writeFile } from 'fs/promises'
 import { createReadStream } from 'fs'
 import { tmpdir } from 'os'
 import path from 'path'
@@ -18,6 +18,11 @@ type ArchiveManifest = {
   media: {
     directory: string
   }
+}
+
+type ImportRollback = {
+  databaseDumpPath: string
+  mediaDirPath: string
 }
 
 const ensureDatabaseUrl = (): string => {
@@ -66,6 +71,158 @@ const createTempDir = async (prefix: string): Promise<string> =>
 const getMediaDir = (): string => {
   const directoryName = ['me', 'dia'].join('')
   return path.resolve(process.cwd(), directoryName)
+}
+
+const isNotFoundError = (error: unknown): boolean =>
+  (error as NodeJS.ErrnoException | undefined)?.code === 'ENOENT'
+
+const assertZipBuffer = (archiveBuffer: Buffer): void => {
+  if (archiveBuffer.length < 4) {
+    throw new Error('Archive is empty or truncated.')
+  }
+
+  if (archiveBuffer[0] !== 0x50 || archiveBuffer[1] !== 0x4b) {
+    throw new Error('Archive is not a valid ZIP file.')
+  }
+}
+
+const isArchiveManifest = (value: unknown): value is ArchiveManifest => {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const manifest = value as Record<string, unknown>
+  const database = manifest.database as Record<string, unknown> | undefined
+  const media = manifest.media as Record<string, unknown> | undefined
+
+  return (
+    manifest.version === ARCHIVE_VERSION &&
+    typeof manifest.exportedAt === 'string' &&
+    !!database &&
+    database.format === 'postgres-custom' &&
+    typeof database.file === 'string' &&
+    !!media &&
+    typeof media.directory === 'string'
+  )
+}
+
+const normalizeArchivePath = (input: string): string => input.replace(/^[/\\]+/, '')
+
+const assertSafeRelativePath = (input: string, label: string): string => {
+  const normalized = normalizeArchivePath(input)
+
+  if (
+    !normalized ||
+    normalized.includes('\0') ||
+    path.isAbsolute(normalized) ||
+    normalized.split(/[\\/]+/).includes('..')
+  ) {
+    throw new Error(`Archive ${label} path is invalid.`)
+  }
+
+  return normalized
+}
+
+const loadManifest = async (manifestPath: string): Promise<ArchiveManifest> => {
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(await readFile(manifestPath, 'utf8'))
+  } catch {
+    throw new Error('Archive manifest is missing or invalid JSON.')
+  }
+
+  if (!isArchiveManifest(parsed)) {
+    throw new Error('Archive manifest is invalid or unsupported.')
+  }
+
+  return parsed
+}
+
+const ensureFileExists = async (filePath: string, label: string): Promise<void> => {
+  try {
+    await access(filePath)
+  } catch {
+    throw new Error(`Archive ${label} is missing.`)
+  }
+}
+
+const createRollbackSnapshot = async (
+  databaseUrl: string,
+  tempDir: string,
+): Promise<ImportRollback> => {
+  const rollbackDumpPath = path.join(tempDir, 'rollback.dump')
+  const rollbackMediaDir = path.join(tempDir, 'rollback-media')
+
+  await runCommand('pg_dump', [
+    '--format=custom',
+    '--clean',
+    '--if-exists',
+    '--no-owner',
+    '--no-privileges',
+    '--file',
+    rollbackDumpPath,
+    databaseUrl,
+  ])
+
+  try {
+    await cp(getMediaDir(), rollbackMediaDir, { recursive: true })
+  } catch (error) {
+    if (!isNotFoundError(error)) {
+      throw error
+    }
+    await mkdir(rollbackMediaDir, { recursive: true })
+  }
+
+  return {
+    databaseDumpPath: rollbackDumpPath,
+    mediaDirPath: rollbackMediaDir,
+  }
+}
+
+const restoreDatabaseDump = async (databaseUrl: string, dumpPath: string): Promise<void> => {
+  await runCommand('pg_restore', [
+    '--clean',
+    '--if-exists',
+    '--no-owner',
+    '--no-privileges',
+    '--dbname',
+    databaseUrl,
+    dumpPath,
+  ])
+}
+
+const rollbackImport = async (
+  databaseUrl: string,
+  rollback: ImportRollback,
+  originalError: unknown,
+): Promise<never> => {
+  const failures: string[] = []
+
+  try {
+    await restoreDatabaseDump(databaseUrl, rollback.databaseDumpPath)
+  } catch (error) {
+    failures.push(
+      `database rollback failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+    )
+  }
+
+  try {
+    await swapMediaDirectory(rollback.mediaDirPath)
+  } catch (error) {
+    failures.push(
+      `media rollback failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+    )
+  }
+
+  const baseMessage =
+    originalError instanceof Error ? originalError.message : 'Archive import failed.'
+
+  if (failures.length > 0) {
+    throw new Error(`${baseMessage} Rollback also failed: ${failures.join('; ')}`)
+  }
+
+  throw new Error(`${baseMessage} Changes were rolled back to the previous instance state.`)
 }
 
 const makeManifest = (): ArchiveManifest => ({
@@ -173,48 +330,45 @@ export const importArchive = async (archiveBuffer: Buffer): Promise<ArchiveManif
   const tempDir = await createTempDir('payload-import')
   const archivePath = path.join(tempDir, 'payload-import.zip')
   const extractedDir = path.join(tempDir, 'extracted')
+  let rollback: ImportRollback | null = null
 
   try {
+    assertZipBuffer(archiveBuffer)
     await writeFile(archivePath, archiveBuffer)
     await mkdir(extractedDir, { recursive: true })
     await runCommand('unzip', ['-q', archivePath, '-d', extractedDir])
 
     const manifestPath = path.join(extractedDir, 'manifest.json')
-    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as ArchiveManifest
-
-    if (manifest.version !== ARCHIVE_VERSION) {
-      throw new Error(`Unsupported archive version: ${manifest.version}`)
-    }
-
-    if (manifest.database.format !== 'postgres-custom') {
-      throw new Error(`Unsupported database format: ${manifest.database.format}`)
-    }
-
-    const dumpPath = path.join(extractedDir, manifest.database.file)
-    const importedMediaDir = path.join(extractedDir, manifest.media.directory)
+    const manifest = await loadManifest(manifestPath)
+    const dumpPath = path.join(
+      extractedDir,
+      assertSafeRelativePath(manifest.database.file, 'database file'),
+    )
+    const importedMediaDir = path.join(
+      extractedDir,
+      assertSafeRelativePath(manifest.media.directory, 'media directory'),
+    )
     const stagedMediaDir = path.join(tempDir, 'media-staged')
+
+    await ensureFileExists(dumpPath, 'database dump')
 
     try {
       await cp(importedMediaDir, stagedMediaDir, { recursive: true })
     } catch (error) {
-      const typedError = error as NodeJS.ErrnoException
-      if (typedError.code !== 'ENOENT') {
+      if (!isNotFoundError(error)) {
         throw error
       }
       await mkdir(stagedMediaDir, { recursive: true })
     }
 
-    await runCommand('pg_restore', [
-      '--clean',
-      '--if-exists',
-      '--no-owner',
-      '--no-privileges',
-      '--dbname',
-      databaseUrl,
-      dumpPath,
-    ])
+    rollback = await createRollbackSnapshot(databaseUrl, tempDir)
 
-    await swapMediaDirectory(stagedMediaDir)
+    try {
+      await restoreDatabaseDump(databaseUrl, dumpPath)
+      await swapMediaDirectory(stagedMediaDir)
+    } catch (error) {
+      await rollbackImport(databaseUrl, rollback, error)
+    }
 
     return manifest
   } finally {
