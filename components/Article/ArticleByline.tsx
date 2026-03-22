@@ -25,47 +25,56 @@ export const ArticleByline: React.FC<Props> = ({
 
   return (
     <div className={`flex flex-col gap-3 py-4 border-b border-rule-strong ${maxWidthClassName} w-full mx-auto transition-colors`}>
-      <div className="flex items-start gap-3">
-        {/* Author Headshots */}
-        {hasAnyAuthor && (
-          <div className="flex -space-x-2">
-            {staffAuthors.map((user) => {
-              const headshot = user.headshot as Media | null;
-              if (!headshot?.url) return null;
-              return (
-                <Link
-                  href={`/staff/${user.slug || user.id}`}
-                  key={user.id}
-                  className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 border-2 border-bg-main transition-colors hover:border-accent z-10 hover:z-20"
-                >
-                  <Image
-                    src={headshot.url}
-                    alt={`${user.firstName} ${user.lastName}`}
-                    fill
-                    className="object-cover"
-                  />
-                </Link>
-              );
-            })}
-            {writeInAuthors.map((writeIn, i) => {
-              const photo = writeIn.photo && typeof writeIn.photo !== 'number' ? writeIn.photo as Media : null;
-              if (!photo?.url) return null;
-              return (
-                <div
-                  key={`write-in-${i}`}
-                  className="relative w-8 h-8 rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 border-2 border-bg-main transition-colors z-10"
-                >
-                  <Image
-                    src={photo.url}
-                    alt={writeIn.name}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
+      <div className="flex items-center gap-3">
+        {/* Author Headshots — only render wrapper when at least one photo exists */}
+        {(() => {
+          const staffPhotos = staffAuthors.filter((user) => {
+            const headshot = user.headshot as Media | null;
+            return headshot?.url;
+          });
+          const writeInPhotos = writeInAuthors.filter((writeIn) => {
+            const photo = writeIn.photo && typeof writeIn.photo !== 'number' ? writeIn.photo as Media : null;
+            return photo?.url;
+          });
+          if (staffPhotos.length === 0 && writeInPhotos.length === 0) return null;
+          return (
+            <div className="flex -space-x-2">
+              {staffPhotos.map((user) => {
+                const headshot = user.headshot as Media;
+                return (
+                  <Link
+                    href={`/staff/${user.slug || user.id}`}
+                    key={user.id}
+                    className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 border-2 border-bg-main transition-colors hover:border-accent z-10 hover:z-20"
+                  >
+                    <Image
+                      src={headshot.url!}
+                      alt={`${user.firstName} ${user.lastName}`}
+                      fill
+                      className="object-cover"
+                    />
+                  </Link>
+                );
+              })}
+              {writeInPhotos.map((writeIn, i) => {
+                const photo = writeIn.photo as Media;
+                return (
+                  <div
+                    key={`write-in-${i}`}
+                    className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800 border-2 border-bg-main transition-colors z-10"
+                  >
+                    <Image
+                      src={photo.url!}
+                      alt={writeIn.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* Author Names + Titles */}
         {hasAnyAuthor ? (() => {

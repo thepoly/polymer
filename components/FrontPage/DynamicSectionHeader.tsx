@@ -21,6 +21,7 @@ const HEADER_Y_OFFSET_RATIO = 0.06;
 const HEADER_LINE_HEIGHT = 0.82;
 const LANE_TOLERANCE = 48;
 const WIDTH_PADDING = 12;
+const HEADER_BOTTOM_SPACE = 8;
 
 interface AnchorEdge {
   position: number;
@@ -364,12 +365,12 @@ export function DynamicSectionHeader({
         ref={mobileRef}
         className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden transition-opacity duration-300"
         style={{
-          marginBottom: `-${mobileFontSize * 0.095}px`,
+          marginBottom: `${HEADER_BOTTOM_SPACE - mobileFontSize * 0.095}px`,
           marginTop: mobileOffsetY || offsetY ? `${mobileOffsetY + offsetY}px` : undefined,
           opacity: isReady ? 1 : 0,
         }}
       >
-        <TransitionLink href={href} className="group block">
+        <TransitionLink href={href} className="group block text-center">
           <h2
             className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#D6001C] dark:text-white group-hover:text-[#D6001C] dark:group-hover:text-white whitespace-nowrap"
             style={{ fontSize: `${mobileFontSize}px`, marginLeft: `${-mobileFontSize * 0.06 + offsetX}px` }}
@@ -385,9 +386,17 @@ export function DynamicSectionHeader({
     <div
       ref={containerRef}
       className="transition-opacity duration-300"
-      style={{ height: 0, overflow: "visible", position: "relative", opacity: isReady ? 1 : 0 }}
+      style={{ height: HEADER_BOTTOM_SPACE, overflow: "visible", position: "relative", opacity: isReady ? 1 : 0 }}
     >
-      <div style={{ transform: `translate(${HEADER_X_OFFSET + offsetX}px, ${ty}px)`, marginLeft: `-${fontSize * 0.06}px` }}>
+      <div
+        style={{
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+          transform: `translate(${HEADER_X_OFFSET + offsetX}px, ${ty}px)`,
+          marginLeft: `-${fontSize * 0.06}px`,
+        }}
+      >
         <TransitionLink href={href} className="group inline-block">
           <h2
             ref={headingRef}

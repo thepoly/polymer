@@ -4,7 +4,6 @@ export const Byline = ({
     author,
     date,
     className = "",
-    split = false,
 }: {
     author?: string | null;
     date?: string | null;
@@ -24,13 +23,14 @@ export const Byline = ({
     };
 
     return (
-        <div className={`font-meta mt-1.5 md:mt-2.5 text-[12px] md:text-[11px] font-normal tracking-[0.04em] leading-tight ${split ? "flex items-baseline justify-between gap-3" : ""} ${className}`}>
+        <div className={`font-meta mt-1.5 md:mt-2.5 text-[12px] md:text-[11px] font-normal tracking-[0.04em] leading-tight ${className}`}>
             {author && (
-                <span className={split ? "min-w-0 text-left" : "mr-1"}>
+                <span className="mr-1">
                     {renderAuthor(author)}
                 </span>
             )}
-            {date && <span className={`text-text-muted font-semibold md:font-medium ${split ? "shrink-0 text-right" : ""}`}>{date}</span>}
+            {author && date && <span className="text-text-muted ml-0.5 mr-1">&middot;</span>}
+            {date && <span className="text-text-muted font-semibold md:font-medium">{date}</span>}
         </div>
     );
 };

@@ -68,6 +68,17 @@ const Articles: CollectionConfig = {
         if (isNowPublished && !wasPublished) {
           data.publishedDate = new Date().toISOString()
         }
+
+        // Auto-generate slug from title if not set
+        if (!data.slug && data.title) {
+          data.slug = data.title
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .trim()
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+        }
+
         return data
       },
     ],
@@ -176,6 +187,9 @@ const Articles: CollectionConfig = {
       unique: true,
       admin: {
         position: 'sidebar',
+        components: {
+          Field: '/components/admin/SlugField#SlugField',
+        },
       },
     },
     {

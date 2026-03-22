@@ -261,25 +261,13 @@ export async function GET(request: NextRequest) {
   const queryFormsLower = forms.map((form) => form.toLowerCase()).filter((form) => form.length > 0);
 
   try {
-    const [payloadResults, legacyRows] = await Promise.all([
-      searchPayload(queryFormsLower).catch(() => [] as { article: Article; score: number }[]),
-      searchLegacy(forms).catch(() => [] as { article: Article; bodyText: string }[]),
-    ]);
+    const payloadResults = await searchPayload(queryFormsLower).catch(
+      () => [] as { article: Article; score: number }[],
+    );
 
     const merged = new Map<string, { article: Article; score: number }>();
     for (const result of payloadResults) {
       merged.set(articleKey(result.article), result);
-    }
-    for (const row of legacyRows) {
-      const result = {
-        article: row.article,
-        score: scoreArticle(row.article, row.bodyText, queryFormsLower),
-      };
-      const key = articleKey(result.article);
-      const existing = merged.get(key);
-      if (!existing || result.score > existing.score) {
-        merged.set(key, result);
-      }
     }
 
     const allResults = [...merged.values()].sort(

@@ -411,10 +411,10 @@ export default async function Home() {
 
   // Check for aries grid JSON with left/right column data
   const ariesGrid = layout.skeleton === 'aries' && layout.grid && typeof layout.grid === 'object' && !Array.isArray(layout.grid) && 'lead' in layout.grid
-    ? layout.grid as { lead?: number | null; left?: (number | null)[]; right?: (number | null)[]; bottom?: (number | null)[] }
+    ? layout.grid as { lead?: number | null; leadImportant?: boolean; left?: (number | null)[]; right?: (number | null)[]; bottom?: (number | null)[] }
     : null;
 
-  type TopStories = { lead: NonNullable<typeof mainArticle>; list: NonNullable<typeof mainArticle>[]; heroLeft?: NonNullable<typeof mainArticle>[]; heroRight?: NonNullable<typeof mainArticle>[]; bottomRow?: NonNullable<typeof mainArticle>[] };
+  type TopStories = { lead: NonNullable<typeof mainArticle>; list: NonNullable<typeof mainArticle>[]; heroLeft?: NonNullable<typeof mainArticle>[]; heroRight?: NonNullable<typeof mainArticle>[]; bottomRow?: NonNullable<typeof mainArticle>[]; leadImportant?: boolean };
   let topStories: TopStories;
 
   if (ariesGrid) {
@@ -430,6 +430,7 @@ export default async function Home() {
       heroLeft: fillArticles(heroLeft, recentPool, heroLeft.length || 2, [mainArticle.id]),
       heroRight: fillArticles(heroRight, recentPool, heroRight.length || 2, [mainArticle.id, ...heroLeft.map(a => a.id)]),
       ...(bottomRow.length > 0 ? { bottomRow } : {}),
+      leadImportant: !!ariesGrid.leadImportant,
     };
   } else {
     // Legacy: 4 fixed hero slots

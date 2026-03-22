@@ -9,60 +9,77 @@ export const ArticleCard = ({
   article,
   caption,
   showImage = Boolean(article.image),
-  preserveImageSpace = false,
   imageAspectClassName = "aspect-[4/3]",
-  titleClassName = "text-[32px] md:text-[24px]",
+  titleClassName = "text-[22px] md:text-[24px]",
   excerptClassName = "mt-1.5 line-clamp-3 text-[13px] leading-[1.38]",
   contained = false,
+  showKicker = false,
+  imageRight = false,
 }: {
   article: Article;
   caption?: string | null;
   showImage?: boolean;
-  preserveImageSpace?: boolean;
   imageAspectClassName?: string;
   titleClassName?: string;
   excerptClassName?: string;
   /** When true, image stays within its container instead of going full-bleed on mobile */
   contained?: boolean;
+  /** When true, show the kicker on desktop (always shown on mobile) */
+  showKicker?: boolean;
+  /** When true, image appears to the right of the text instead of above */
+  imageRight?: boolean;
 }) => (
-  <TransitionLink href={getArticleUrl(article)} className="group block min-w-0">
-    {(showImage && article.image) || preserveImageSpace ? (
-      <figure data-header-anchor="image" className={`mb-3 ${contained ? 'relative w-full' : 'relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen lg:static lg:ml-0 lg:mr-0 lg:w-full'}`}>
+  <TransitionLink href={getArticleUrl(article)} className={`group block min-w-0 ${imageRight && showImage && article.image ? "md:grid md:grid-cols-[minmax(0,1fr)_220px] md:gap-5 md:items-start" : ""}`}>
+    {showImage && article.image && !imageRight && (
+      <figure data-header-anchor="image" className={`mb-3 ${contained ? 'relative w-full' : 'relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen md:static md:ml-0 md:mr-0 md:w-full'}`}>
         <div className={`relative w-full overflow-hidden ${imageAspectClassName}`}>
-          {showImage && article.image ? (
-            <Image
-              src={article.image}
-              alt={article.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 380px"
-            />
-          ) : null}
+          <Image
+            src={article.image}
+            alt={article.title}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 380px"
+          />
         </div>
-        {showImage && article.image && caption && (
+        {caption && (
           <figcaption className="font-meta mt-1.5 text-[10px] leading-snug tracking-wide text-text-muted">
             {caption}
           </figcaption>
         )}
       </figure>
-    ) : null}
-    {article.kicker && (
-      <p className="font-meta text-[14px] md:text-[14px] font-[600] md:font-[440] italic tracking-[0.04em] text-accent mb-1 lg:hidden [overflow-wrap:anywhere] break-words">
-        {article.kicker}
-      </p>
     )}
-    <div data-header-anchor="text">
-      <h3
-        className={`font-display font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors group-hover:text-accent [overflow-wrap:anywhere] break-words ${titleClassName} ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic text-[33px] md:text-[25px]" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
-      >
-        {article.title}
-      </h3>
-      {article.excerpt && (
-        <p className={`font-meta font-normal text-text-muted [overflow-wrap:anywhere] break-words ${excerptClassName}`}>
-          {article.excerpt}
+    <div>
+      {article.kicker && (
+        <p className={`font-meta text-[12px] font-[600] uppercase tracking-[0.08em] text-accent mb-1 [overflow-wrap:anywhere] break-words ${showKicker ? "" : "lg:hidden"}`}>
+          {article.kicker}
         </p>
       )}
-      <Byline author={article.author} date={article.date} />
+      <div data-header-anchor="text">
+        <h3
+          className={`font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors ${article.section === "opinion" ? "" : "group-hover:text-accent"} [overflow-wrap:anywhere] break-words ${article.section === "opinion" ? "font-copy font-light" : "font-display"} ${titleClassName} ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[23px] md:text-[25px]" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""}`}
+        >
+          {article.title}
+        </h3>
+        <Byline author={article.author} date={article.date} />
+        {article.excerpt && (
+          <p className={`font-meta font-normal text-black dark:text-white [overflow-wrap:anywhere] break-words ${excerptClassName}`}>
+            {article.excerpt}
+          </p>
+        )}
+      </div>
     </div>
+    {showImage && article.image && imageRight && (
+      <figure data-header-anchor="image" className="relative w-full">
+        <div className={`relative w-full overflow-hidden ${imageAspectClassName}`}>
+          <Image
+            src={article.image}
+            alt={article.title}
+            fill
+            className="object-cover"
+            sizes="220px"
+          />
+        </div>
+      </figure>
+    )}
   </TransitionLink>
 );

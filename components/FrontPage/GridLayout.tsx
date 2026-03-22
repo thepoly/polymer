@@ -37,10 +37,10 @@ function GridArticleCard({
   const isMedium = span >= 5;
 
   const titleSize = isLarge
-    ? "text-[32px] md:text-[30px] xl:text-[34px]"
+    ? "text-[28px] md:text-[32px] xl:text-[36px]"
     : isMedium
-      ? "text-[28px] md:text-[24px]"
-      : "text-[24px] md:text-[20px]";
+      ? "text-[22px] md:text-[26px]"
+      : "text-[20px] md:text-[22px]";
 
   const textContent = (
     <div data-header-anchor="text" className={isHorizontal ? "flex-1 min-w-0" : ""}>
@@ -48,13 +48,14 @@ function GridArticleCard({
         {article.section}
       </p>
       <h3
-        className={`font-display font-bold leading-[1.08] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent [overflow-wrap:anywhere] break-words ${titleSize} ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
+        className={`font-display font-bold leading-[1.08] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent [overflow-wrap:anywhere] break-words ${titleSize} ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
       >
         {article.title}
       </h3>
+      <Byline author={article.author} date={article.date} split={isLarge} />
       {article.excerpt && (
         <p
-          className={`font-meta font-normal text-text-muted mt-2 [overflow-wrap:anywhere] break-words ${
+          className={`font-meta font-normal text-black dark:text-white mt-2 [overflow-wrap:anywhere] break-words ${
             isLarge
               ? "text-[14px] leading-[1.45] line-clamp-4"
               : "text-[13px] leading-[1.38] line-clamp-3"
@@ -63,7 +64,6 @@ function GridArticleCard({
           {article.excerpt}
         </p>
       )}
-      <Byline author={article.author} date={article.date} split={isLarge} />
     </div>
   );
 
@@ -147,16 +147,16 @@ function MobileArticleCard({ article }: { article: Article }) {
         {article.section}
       </p>
       <h3
-        className={`font-display font-bold leading-[1.08] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent [overflow-wrap:anywhere] break-words text-[26px] ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
+        className={`font-display font-bold leading-[1.08] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent [overflow-wrap:anywhere] break-words text-[26px] ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
       >
         {article.title}
       </h3>
+      <Byline author={article.author} date={article.date} />
       {article.excerpt && (
-        <p className="font-meta font-normal text-text-muted mt-2 text-[14px] leading-[1.45] line-clamp-3 [overflow-wrap:anywhere] break-words">
+        <p className="font-meta font-normal text-black dark:text-white mt-2 text-[14px] leading-[1.45] line-clamp-3 [overflow-wrap:anywhere] break-words">
           {article.excerpt}
         </p>
       )}
-      <Byline author={article.author} date={article.date} />
     </TransitionLink>
   );
 }

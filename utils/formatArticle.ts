@@ -52,23 +52,23 @@ export const formatArticle = (
 
   let dateString: string | null = null;
   if (date) {
-    if (!absoluteDate) {
-      const now = new Date().getTime();
-      const diffMs = now - date.getTime();
-      const diffMins = Math.floor(diffMs / (1000 * 60));
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const now = new Date().getTime();
+    const diffMs = now - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-      if (diffMins < 60) {
-        dateString = `${diffMins} MINUTE${diffMins !== 1 ? 'S' : ''} AGO`;
-      } else if (diffHours < 24) {
-        dateString = `${diffHours} HOUR${diffHours !== 1 ? 'S' : ''} AGO`;
-      } else if (diffDays < 7) {
-        dateString = `${diffDays} DAY${diffDays !== 1 ? 'S' : ''} AGO`;
-      }
-    }
-    if (!dateString) {
+    if (absoluteDate) {
       dateString = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    } else if (diffDays >= 7) {
+      // Hide date if older than 7 days
+      dateString = null;
+    } else if (diffMins < 60) {
+      dateString = `${diffMins} MINUTE${diffMins !== 1 ? 'S' : ''} AGO`;
+    } else if (diffHours < 24) {
+      dateString = `${diffHours} HOUR${diffHours !== 1 ? 'S' : ''} AGO`;
+    } else {
+      dateString = `${diffDays} DAY${diffDays !== 1 ? 'S' : ''} AGO`;
     }
   }
 
@@ -77,7 +77,7 @@ export const formatArticle = (
     slug: article.slug || '#',
     title: article.title,
     excerpt: article.subdeck || '',
-    author: authors || null,
+    author: authors ? authors.toUpperCase() : 'THE POLY',
     date: dateString,
     image: (article.featuredImage as Media)?.url || null,
     section: article.section,

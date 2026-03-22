@@ -14,15 +14,15 @@ export const FeatureBand = ({ article }: { article: Article }) => (
       <p className="font-meta mb-2 text-[11px] md:text-[12px] font-[440] italic capitalize tracking-[0.04em] text-accent">
         {article.section}
       </p>
-      <h3 className={`font-display text-[24px] font-bold leading-[1.06] tracking-[-0.018em] text-text-main transition-colors group-hover:text-accent md:text-[30px] ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic text-[25px] md:text-[31px]" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
+      <h3 className={`font-display text-[24px] font-bold leading-[1.06] tracking-[-0.018em] text-text-main transition-colors group-hover:text-accent md:text-[30px] ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[25px] md:text-[31px]" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""}`}>
         {article.title}
       </h3>
+      <Byline author={article.author} date={article.date} />
       {article.excerpt && (
         <p className="font-meta mt-3 max-w-3xl text-[13px] font-normal leading-[1.4] text-text-main">
           {article.excerpt}
         </p>
       )}
-      <Byline author={article.author} date={article.date} />
     </div>
 
     {article.image ? (

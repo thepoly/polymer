@@ -102,17 +102,9 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center text-center px-4 pb-3 sm:pb-5 md:pb-6 pointer-events-none">
           <div className="max-w-3xl w-full space-y-1">
             
-            <h1 data-ie-field="title" className={`font-display font-bold text-[39px] md:text-[34px] lg:text-[42px] text-white leading-[1.05] tracking-[-0.02em] drop-shadow-lg ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
+            <h1 data-ie-field="title" className={`font-display font-bold text-[39px] md:text-[34px] lg:text-[42px] text-white leading-[1.05] tracking-[-0.02em] drop-shadow-lg ${article.section === "news" ? "font-display-news" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
               {article.title}
             </h1>
-
-            {article.subdeck && (
-              <div className="flex flex-col items-center">
-                <h2 data-ie-field="subdeck" className="font-meta text-xl md:text-2xl font-normal text-white/90 leading-snug max-w-[38rem] drop-shadow-md">
-                  {article.subdeck}
-                </h2>
-              </div>
-            )}
 
             {/* Author and Date */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3 text-white drop-shadow-md">
@@ -183,6 +175,14 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                 </>
               )}
             </div>
+
+            {article.subdeck && (
+              <div className="flex flex-col items-center">
+                <h2 data-ie-field="subdeck" className="font-meta text-xl md:text-2xl font-normal text-white/90 leading-snug max-w-[38rem] drop-shadow-md">
+                  {article.subdeck}
+                </h2>
+              </div>
+            )}
           </div>
         </div>
 

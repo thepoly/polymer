@@ -156,6 +156,13 @@ const formatDate = (d: string | null): string => {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
+const getAuthorDateString = (article: ArticleData): string => {
+  const author = getAuthorString(article);
+  const date = formatDate(article.publishedDate);
+  if (author && date) return `${author} • ${date}`;
+  return author || date;
+};
+
 const extractDocId = (): string | null => {
   const parts = window.location.pathname.split('/');
   const idx = parts.indexOf('layout');
@@ -271,8 +278,8 @@ function CellPreview({ article, direction }: { article: ArticleData; direction: 
         {article.section}
       </span>
       <div className="le-cell-title">{article.title}</div>
-      {article.subdeck && <div className="le-cell-subdeck">{article.subdeck}</div>}
       {author && <div className="le-cell-author">{author}</div>}
+      {article.subdeck && <div className="le-cell-subdeck">{article.subdeck}</div>}
     </div>
   );
 
@@ -709,12 +716,13 @@ const EMPTY_SECTION_LAYOUTS: AllSectionLayouts = {
 // When any article in a column has a photo, the column collapses to 2 slots.
 type AriesData = {
   lead: number | null;
+  leadImportant?: boolean;
   left: (number | null)[];   // always length 3 internally
   right: (number | null)[];  // always length 3 internally
-  bottom: (number | null)[]; // always length 4 internally
+  bottom: (number | null)[]; // always length 7 internally
 };
 
-const EMPTY_ARIES: AriesData = { lead: null, left: [null, null, null], right: [null, null, null], bottom: [null, null, null, null] };
+const EMPTY_ARIES: AriesData = { lead: null, leadImportant: false, left: [null, null, null], right: [null, null, null], bottom: [null, null, null, null, null, null, null] };
 
 /** How many visible slots does a column get? 2 if any article has a photo, else 3. */
 const ariesColSlotCount = (col: (number | null)[], articleMap: Map<number, ArticleData>): number => {
@@ -738,18 +746,38 @@ const ariesUsedIds = (d: AriesData): Set<number> => {
 };
 
 /** All aries slot IDs (for DnD source identification) */
-const ALL_ARIES_IDS = ['lead', 'left-0', 'left-1', 'left-2', 'right-0', 'right-1', 'right-2', 'bottom-0', 'bottom-1', 'bottom-2', 'bottom-3'];
+const ALL_ARIES_IDS = ['lead', 'left-0', 'left-1', 'left-2', 'right-0', 'right-1', 'right-2', 'bottom-0', 'bottom-1', 'bottom-2', 'bottom-3', 'bottom-4', 'bottom-5', 'bottom-6'];
 const isAriesSlotId = (id: string) => ALL_ARIES_IDS.includes(id);
+const isAriesBottomSlotId = (id: string) => id.startsWith('bottom-');
+const getArticleHasImage = (article: ArticleData | null | undefined): boolean => Boolean(article && getImageUrl(article));
+const getAriesBottomRequirement = (
+  bottom: (number | null)[],
+  articleMap: Map<number, ArticleData>,
+  excludedSlotIds: string[] = [],
+): 'image' | 'text' | null => {
+  const excluded = new Set(excludedSlotIds);
+  for (let i = 0; i < bottom.length; i++) {
+    if (excluded.has(`bottom-${i}`)) continue;
+    const id = bottom[i];
+    if (id === null) continue;
+    const article = articleMap.get(id);
+    if (!article) continue;
+    return getArticleHasImage(article) ? 'image' : 'text';
+  }
+  return null;
+};
 
 // ---------------------------------------------------------------------------
 // Aries Slot Droppable
 // ---------------------------------------------------------------------------
 
-function AriesSlot({ slotId, label, article, isLead, isOver, setDropRef, onClear }: {
+function AriesSlot({ slotId, label, article, isLead, isOver, setDropRef, onClear, emptyConstraint }: {
   slotId: string; label: string; article: ArticleData | null; isLead: boolean;
   isOver: boolean; setDropRef: (node: HTMLElement | null) => void; onClear: () => void;
+  emptyConstraint?: 'image' | 'text' | null;
 }) {
   const imageUrl = article ? getImageUrl(article) : null;
+  const authorDate = article ? getAuthorDateString(article) : '';
 
   return (
     <div
@@ -771,18 +799,59 @@ function AriesSlot({ slotId, label, article, isLead, isOver, setDropRef, onClear
             <div className="le-cell-text">
               <span className="le-cell-badge" style={{ background: SECTION_COLORS[article.section] || '#888' }}>{article.section}</span>
               <div className="le-cell-title">{article.title}</div>
+              {authorDate && <div className="le-cell-author">{authorDate}</div>}
               {article.subdeck && isLead && <div className="le-cell-subdeck">{article.subdeck}</div>}
-              <div className="le-cell-author">{getAuthorString(article)}</div>
             </div>
           </div>
         </DraggableCellArticle>
       ) : (
         <div className="le-cell-empty">
-          <div className="le-cell-empty-inner">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="20" height="20">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            <span>Drop article</span>
+          <div className={`le-cell-empty-inner ${emptyConstraint ? 'le-cell-empty-inner--locked' : ''}`}>
+            {emptyConstraint === 'image' ? (
+              <>
+                <svg
+                  className="le-aries-empty-icon le-aries-empty-icon--image"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  width="20"
+                  height="20"
+                  aria-label="Image article required"
+                >
+                  <rect x="3" y="5" width="18" height="14" rx="2" />
+                  <circle cx="8.5" cy="10" r="1.5" />
+                  <path d="M6 17l4.5-4.5L14 16l2.5-2.5L19 16" />
+                </svg>
+                <span className="le-aries-empty-text le-aries-empty-text--image">Photo article only</span>
+              </>
+            ) : emptyConstraint === 'text' ? (
+              <>
+                <svg
+                  className="le-tau-no-image-icon le-aries-empty-icon le-aries-empty-icon--text"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  width="20"
+                  height="20"
+                  aria-label="No-image article required"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="M21 15l-5-5L5 21" />
+                  <line x1="3" y1="3" x2="21" y2="21" strokeWidth="2.5" />
+                </svg>
+                <span className="le-aries-empty-text le-aries-empty-text--text">No-photo article only</span>
+              </>
+            ) : (
+              <>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="20" height="20">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span>Drop article</span>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -790,20 +859,33 @@ function AriesSlot({ slotId, label, article, isLead, isOver, setDropRef, onClear
   );
 }
 
-function AriesDropSlot({ slotId, label, article, isLead, onClear }: {
+function AriesDropSlot({ slotId, label, article, isLead, onClear, emptyConstraint }: {
   slotId: string; label: string; article: ArticleData | null; isLead: boolean; onClear: () => void;
+  emptyConstraint?: 'image' | 'text' | null;
 }) {
   const { isOver, setNodeRef } = useDroppable({
     id: `aries-${slotId}`,
     data: { cellId: slotId, skeleton: 'aries' },
   });
-  return <AriesSlot slotId={slotId} label={label} article={article} isLead={isLead} isOver={isOver} setDropRef={setNodeRef} onClear={onClear} />;
+  return (
+    <AriesSlot
+      slotId={slotId}
+      label={label}
+      article={article}
+      isLead={isLead}
+      isOver={isOver}
+      setDropRef={setNodeRef}
+      onClear={onClear}
+      emptyConstraint={emptyConstraint}
+    />
+  );
 }
 
-function AriesEditor({ data, articleMap, onClear }: {
+function AriesEditor({ data, articleMap, onClear, onToggleLeadImportant }: {
   data: AriesData;
   articleMap: Map<number, ArticleData>;
   onClear: (slotId: string) => void;
+  onToggleLeadImportant: () => void;
 }) {
   const leftCount = ariesColSlotCount(data.left, articleMap);
   const rightCount = ariesColSlotCount(data.right, articleMap);
@@ -841,6 +923,14 @@ function AriesEditor({ data, articleMap, onClear }: {
             isLead
             onClear={() => onClear('lead')}
           />
+          <label className="le-aries-important-toggle">
+            <input
+              type="checkbox"
+              checked={!!data.leadImportant}
+              onChange={onToggleLeadImportant}
+            />
+            <span>Important</span>
+          </label>
         </div>
         <div className="le-aries-hero-grid">
           {heroSlots.map(({ slotId, article }) => (
@@ -861,16 +951,60 @@ function AriesEditor({ data, articleMap, onClear }: {
           Bottom row &middot; optional{hasBottom ? '' : ' (empty — will be hidden)'}
         </div>
         <div className="le-aries-bottom-grid">
-          {data.bottom.map((id, i) => (
+          <div className="le-aries-bottom-left">
             <AriesDropSlot
-              key={`bottom-${i}`}
-              slotId={`bottom-${i}`}
-              label={`Bottom ${i + 1}`}
-              article={id !== null ? articleMap.get(id) || null : null}
+              slotId="bottom-0"
+              label="Text Feature"
+              article={data.bottom[0] !== null ? articleMap.get(data.bottom[0]!) || null : null}
               isLead={false}
-              onClear={() => onClear(`bottom-${i}`)}
+              onClear={() => onClear('bottom-0')}
+              emptyConstraint="text"
             />
-          ))}
+            <div className="le-aries-bottom-left-pair">
+              {[1, 2].map((i) => (
+                <AriesDropSlot
+                  key={`bottom-${i}`}
+                  slotId={`bottom-${i}`}
+                  label={`Left ${i}`}
+                  article={data.bottom[i] !== null ? articleMap.get(data.bottom[i]!) || null : null}
+                  isLead={false}
+                  onClear={() => onClear(`bottom-${i}`)}
+                  emptyConstraint="text"
+                />
+              ))}
+            </div>
+            <AriesDropSlot
+              slotId="bottom-3"
+              label="Text Feature 2"
+              article={data.bottom[3] !== null ? articleMap.get(data.bottom[3]!) || null : null}
+              isLead={false}
+              onClear={() => onClear('bottom-3')}
+              emptyConstraint="text"
+            />
+          </div>
+          <div className="le-aries-bottom-right">
+            <AriesDropSlot
+              slotId="bottom-4"
+              label="Image + Text"
+              article={data.bottom[4] !== null ? articleMap.get(data.bottom[4]!) || null : null}
+              isLead={false}
+              onClear={() => onClear('bottom-4')}
+              emptyConstraint="image"
+            />
+            <div className="le-aries-bottom-right-pair">
+              {[5, 6].map((i) => (
+                <AriesDropSlot
+                  key={`bottom-${i}`}
+                  slotId={`bottom-${i}`}
+                  label={`Right ${i - 4}`}
+                  article={data.bottom[i] !== null ? articleMap.get(data.bottom[i]!) || null : null}
+                  isLead={false}
+                  onClear={() => onClear(`bottom-${i}`)}
+                  emptyConstraint="text"
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -897,14 +1031,6 @@ function TaurusSlot({ slotId, label, article, className, textOnly, onClear, onRe
       className={`le-tau-slot ${isOver ? 'le-cell-over' : ''} ${article ? 'le-cell-filled' : ''} ${className || ''}`}
     >
       <div className="le-tau-slot-label">{label}</div>
-      {textOnly && (
-        <svg className="le-tau-no-image-icon" viewBox="0 0 24 24" fill="none" strokeWidth="1.5" width="14" height="14" aria-label="Text only — no photo articles">
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <circle cx="8.5" cy="8.5" r="1.5" />
-          <path d="M21 15l-5-5L5 21" />
-          <line x1="3" y1="3" x2="21" y2="21" strokeWidth="2.5" />
-        </svg>
-      )}
       {article ? (
         <DraggableCellArticle article={article} cellId={slotId} direction="top">
           <div className="le-tau-slot-preview">
@@ -916,18 +1042,41 @@ function TaurusSlot({ slotId, label, article, className, textOnly, onClear, onRe
             <div className="le-cell-text">
               <span className="le-cell-badge" style={{ background: SECTION_COLORS[article.section] || '#888' }}>{article.section}</span>
               <div className="le-cell-title">{article.title}</div>
+              <div className="le-cell-author">{getAuthorDateString(article)}</div>
               {article.subdeck && <div className="le-cell-subdeck">{article.subdeck}</div>}
-              <div className="le-cell-author">{getAuthorString(article)}</div>
             </div>
           </div>
         </DraggableCellArticle>
       ) : (
         <div className="le-cell-empty">
-          <div className="le-cell-empty-inner">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="16" height="16">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            <span>{textOnly ? 'Text only' : 'Drop'}</span>
+          <div className={`le-cell-empty-inner ${textOnly ? 'le-cell-empty-inner--locked' : ''}`}>
+            {textOnly ? (
+              <>
+                <svg
+                  className="le-tau-no-image-icon le-aries-empty-icon le-aries-empty-icon--text"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  width="16"
+                  height="16"
+                  aria-label="No-image article required"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <circle cx="8.5" cy="8.5" r="1.5" />
+                  <path d="M21 15l-5-5L5 21" />
+                  <line x1="3" y1="3" x2="21" y2="21" strokeWidth="2.5" />
+                </svg>
+                <span className="le-aries-empty-text le-aries-empty-text--text">No-photo article only</span>
+              </>
+            ) : (
+              <>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="16" height="16">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span>Drop</span>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -1238,12 +1387,13 @@ export function LayoutEditor() {
             // Try loading from grid JSON first (new format), fall back to legacy fields
             const gridData = (layoutData as Record<string, unknown>).grid;
             if (gridData && typeof gridData === 'object' && !Array.isArray(gridData) && 'lead' in gridData) {
-              const g = gridData as { lead?: number | null; left?: (number | null)[]; right?: (number | null)[]; bottom?: (number | null)[] };
+              const g = gridData as { lead?: number | null; leadImportant?: boolean; left?: (number | null)[]; right?: (number | null)[]; bottom?: (number | null)[] };
               setAries({
                 lead: g.lead ?? null,
+                leadImportant: !!g.leadImportant,
                 left: [...(g.left || [null, null, null]), null, null, null].slice(0, 3) as (number | null)[],
                 right: [...(g.right || [null, null, null]), null, null, null].slice(0, 3) as (number | null)[],
-                bottom: [...(g.bottom || [null, null, null, null]), null, null, null, null].slice(0, 4) as (number | null)[],
+                bottom: [...(g.bottom || [null, null, null, null, null, null, null]), null, null, null, null, null, null, null].slice(0, 7) as (number | null)[],
               });
             } else {
               // Legacy field import
@@ -1252,7 +1402,7 @@ export function LayoutEditor() {
                 lead: getRelId(ld.mainArticle),
                 left: [getRelId(ld.top1), getRelId(ld.top2), getRelId(ld.top3)],
                 right: [getRelId(ld.top4), getRelId(ld.op1), getRelId(ld.op2)],
-                bottom: [getRelId(ld.op3), getRelId(ld.op4), getRelId(ld.special), null],
+                bottom: [getRelId(ld.op3), getRelId(ld.op4), getRelId(ld.special), null, null],
               });
             }
           } else {
@@ -1606,6 +1756,14 @@ export function LayoutEditor() {
     // Aries skeleton drop
     if (overData.skeleton === 'aries') {
       if (isAriesSlotId(targetCellId)) {
+        // Enforce bottom slot constraints: 0-3,5-6 = text only, 4 = image only
+        if (isAriesBottomSlotId(targetCellId)) {
+          const slotIdx = Number(targetCellId.split('-')[1]);
+          const hasImage = getArticleHasImage(draggedArticle);
+          if (slotIdx === 4 && !hasImage) return;   // image-only slot
+          if (slotIdx !== 4 && hasImage) return;     // text-only slots
+        }
+
         if (activeData.source === 'cell' && isAriesSlotId(activeData.cellId as string)) {
           // Swap between aries slots
           const sourceCellId = activeData.cellId as string;
@@ -1735,7 +1893,7 @@ export function LayoutEditor() {
         body = {
           ...commonFields,
           skeleton,
-          grid: { lead: aries.lead, left: visLeft, right: visRight, bottom: aries.bottom },
+          grid: { lead: aries.lead, leadImportant: !!aries.leadImportant, left: visLeft, right: visRight, bottom: aries.bottom },
           mainArticle: aries.lead,
           top1: aries.left[0] ?? null, top2: aries.left[1] ?? null, top3: aries.left[2] ?? null,
           top4: aries.right[0] ?? null, op1: aries.right[1] ?? null, op2: aries.right[2] ?? null,
@@ -1868,6 +2026,10 @@ export function LayoutEditor() {
                     }
                     return prev;
                   });
+                  markDirty();
+                }}
+                onToggleLeadImportant={() => {
+                  setAries((prev) => ({ ...prev, leadImportant: !prev.leadImportant }));
                   markDirty();
                 }}
               />
