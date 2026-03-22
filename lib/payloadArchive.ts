@@ -1,4 +1,4 @@
-import { access, lstat, mkdtemp, mkdir, readFile, realpath, rm, rename, cp, writeFile } from 'fs/promises'
+import { access, lstat, mkdtemp, mkdir, readdir, readFile, realpath, rm, cp, writeFile } from 'fs/promises'
 import { createReadStream } from 'fs'
 import { tmpdir } from 'os'
 import path from 'path'
@@ -68,6 +68,16 @@ const runCommand = async (
 const copyDirectoryContents = async (sourceDir: string, targetDir: string): Promise<void> => {
   await mkdir(targetDir, { recursive: true })
   await runCommand('cp', ['-a', path.join(sourceDir, '.'), targetDir])
+}
+
+const replaceDirectoryContents = async (targetDir: string, sourceDir: string): Promise<void> => {
+  await mkdir(targetDir, { recursive: true })
+
+  for (const entry of await readdir(targetDir)) {
+    await rm(path.join(targetDir, entry), { recursive: true, force: true })
+  }
+
+  await copyDirectoryContents(sourceDir, targetDir)
 }
 
 const createTempDir = async (prefix: string): Promise<string> =>
@@ -346,33 +356,7 @@ export const createArchive = async (): Promise<{
 
 const swapMediaDirectory = async (sourceDir: string): Promise<void> => {
   const mediaDir = await getMediaStorageDir()
-  const parentDir = path.dirname(mediaDir)
-  const backupDir = path.join(parentDir, `media-backup-${Date.now()}`)
-  let existingMediaMoved = false
-
-  await mkdir(parentDir, { recursive: true })
-
-  try {
-    await rename(mediaDir, backupDir)
-    existingMediaMoved = true
-  } catch (error) {
-    const typedError = error as NodeJS.ErrnoException
-    if (typedError.code !== 'ENOENT') {
-      throw error
-    }
-  }
-
-  try {
-    await cp(sourceDir, mediaDir, { recursive: true })
-  } catch (error) {
-    if (existingMediaMoved) {
-      await rm(mediaDir, { recursive: true, force: true })
-      await rename(backupDir, mediaDir)
-    }
-    throw error
-  }
-
-  await rm(backupDir, { recursive: true, force: true })
+  await replaceDirectoryContents(mediaDir, sourceDir)
 }
 
 const importArchiveFromPath = async (archivePath: string): Promise<ArchiveManifest> => {
