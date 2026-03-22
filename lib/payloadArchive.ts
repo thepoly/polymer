@@ -73,6 +73,11 @@ const getMediaDir = (): string => {
   return path.resolve(process.cwd(), directoryName)
 }
 
+const getArchiveStorageDir = (): string => {
+  const directoryName = ['.payload', '-archives'].join('')
+  return path.resolve(process.cwd(), directoryName)
+}
+
 const isNotFoundError = (error: unknown): boolean =>
   (error as NodeJS.ErrnoException | undefined)?.code === 'ENOENT'
 
@@ -145,6 +150,19 @@ const ensureFileExists = async (filePath: string, label: string): Promise<void> 
   } catch {
     throw new Error(`Archive ${label} is missing.`)
   }
+}
+
+const assertZipFilename = (filename: string): string => {
+  if (
+    !filename ||
+    filename.includes('\0') ||
+    path.basename(filename) !== filename ||
+    !filename.toLowerCase().endsWith('.zip')
+  ) {
+    throw new Error('Archive filename is invalid.')
+  }
+
+  return filename
 }
 
 const createRollbackSnapshot = async (
@@ -239,17 +257,21 @@ const makeManifest = (): ArchiveManifest => ({
 
 export const createArchive = async (): Promise<{
   filename: string
+  serverPath: string
   stream: ReadableStream
 }> => {
   const databaseUrl = ensureDatabaseUrl()
   const tempDir = await createTempDir('payload-export')
   const bundleDir = path.join(tempDir, 'bundle')
+  const archiveStorageDir = getArchiveStorageDir()
   const zipFilename = `payload-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.zip`
   const zipPath = path.join(tempDir, zipFilename)
+  const storedZipPath = path.join(archiveStorageDir, zipFilename)
   const manifest = makeManifest()
 
   try {
     await mkdir(bundleDir, { recursive: true })
+    await mkdir(archiveStorageDir, { recursive: true })
     await mkdir(path.join(bundleDir, manifest.media.directory), { recursive: true })
     await writeFile(
       path.join(bundleDir, 'manifest.json'),
@@ -278,14 +300,16 @@ export const createArchive = async (): Promise<{
     }
 
     await runCommand('zip', ['-r', '-q', zipPath, '.'], { cwd: bundleDir })
+    await cp(zipPath, storedZipPath)
 
-    const stream = createReadStream(zipPath)
+    const stream = createReadStream(storedZipPath)
     void finished(stream).finally(async () => {
       await rm(tempDir, { recursive: true, force: true })
     })
 
     return {
       filename: zipFilename,
+      serverPath: storedZipPath,
       stream: Readable.toWeb(stream) as ReadableStream,
     }
   } catch (error) {
@@ -325,16 +349,13 @@ const swapMediaDirectory = async (sourceDir: string): Promise<void> => {
   await rm(backupDir, { recursive: true, force: true })
 }
 
-export const importArchive = async (archiveBuffer: Buffer): Promise<ArchiveManifest> => {
+const importArchiveFromPath = async (archivePath: string): Promise<ArchiveManifest> => {
   const databaseUrl = ensureDatabaseUrl()
   const tempDir = await createTempDir('payload-import')
-  const archivePath = path.join(tempDir, 'payload-import.zip')
   const extractedDir = path.join(tempDir, 'extracted')
   let rollback: ImportRollback | null = null
 
   try {
-    assertZipBuffer(archiveBuffer)
-    await writeFile(archivePath, archiveBuffer)
     await mkdir(extractedDir, { recursive: true })
     await runCommand('unzip', ['-q', archivePath, '-d', extractedDir])
 
@@ -374,4 +395,47 @@ export const importArchive = async (archiveBuffer: Buffer): Promise<ArchiveManif
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }
+}
+
+export const readStoredArchive = async (
+  filename: string,
+): Promise<{
+  filename: string
+  serverPath: string
+  stream: ReadableStream
+}> => {
+  const safeFilename = assertZipFilename(filename)
+  const serverPath = path.join(getArchiveStorageDir(), safeFilename)
+
+  await ensureFileExists(serverPath, 'file')
+
+  return {
+    filename: safeFilename,
+    serverPath,
+    stream: Readable.toWeb(createReadStream(serverPath)) as ReadableStream,
+  }
+}
+
+export const importArchive = async (archiveBuffer: Buffer): Promise<ArchiveManifest> => {
+  const tempDir = await createTempDir('payload-import-buffer')
+  const archivePath = path.join(tempDir, 'payload-import.zip')
+
+  try {
+    assertZipBuffer(archiveBuffer)
+    await writeFile(archivePath, archiveBuffer)
+    return await importArchiveFromPath(archivePath)
+  } finally {
+    await rm(tempDir, { recursive: true, force: true })
+  }
+}
+
+export const importArchiveFromServerPath = async (serverPath: string): Promise<ArchiveManifest> => {
+  const resolvedPath = path.resolve(serverPath)
+
+  if (!resolvedPath.toLowerCase().endsWith('.zip')) {
+    throw new Error('Server archive path must point to a .zip file.')
+  }
+
+  await ensureFileExists(resolvedPath, 'file')
+  return importArchiveFromPath(resolvedPath)
 }

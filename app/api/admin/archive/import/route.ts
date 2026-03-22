@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 
-import { importArchive } from '@/lib/payloadArchive'
+import { importArchive, importArchiveFromServerPath } from '@/lib/payloadArchive'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -27,18 +27,41 @@ export async function POST(request: Request) {
   }
 
   try {
-    const formData = await request.formData()
-    const archive = formData.get('archive')
+    const contentType = request.headers.get('content-type') || ''
+    let manifest
 
-    if (!(archive instanceof File)) {
-      return NextResponse.json({ error: 'Archive file is required.', requestId }, { status: 400 })
+    if (contentType.includes('application/json')) {
+      const body = (await request.json()) as { serverPath?: string }
+      const serverPath = body.serverPath?.trim()
+
+      if (!serverPath) {
+        return NextResponse.json(
+          { error: 'Server archive path is required.', requestId },
+          { status: 400 },
+        )
+      }
+
+      manifest = await importArchiveFromServerPath(serverPath)
+    } else {
+      const formData = await request.formData()
+      const archive = formData.get('archive')
+
+      if (!(archive instanceof File)) {
+        return NextResponse.json(
+          { error: 'Archive file is required.', requestId },
+          { status: 400 },
+        )
+      }
+
+      if (!archive.name.toLowerCase().endsWith('.zip')) {
+        return NextResponse.json(
+          { error: 'Archive must be a .zip file.', requestId },
+          { status: 400 },
+        )
+      }
+
+      manifest = await importArchive(Buffer.from(await archive.arrayBuffer()))
     }
-
-    if (!archive.name.toLowerCase().endsWith('.zip')) {
-      return NextResponse.json({ error: 'Archive must be a .zip file.', requestId }, { status: 400 })
-    }
-
-    const manifest = await importArchive(Buffer.from(await archive.arrayBuffer()))
 
     return NextResponse.json({
       ok: true,

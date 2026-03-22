@@ -14,6 +14,8 @@ const parseResponseBody = async (
   error?: string
   exportedAt?: string
   requestId?: string
+  serverPath?: string
+  downloadUrl?: string
 }> => {
   const text = await response.text()
 
@@ -28,6 +30,8 @@ const parseResponseBody = async (
       error?: string
       exportedAt?: string
       requestId?: string
+      serverPath?: string
+      downloadUrl?: string
     }
   } catch {
     if (contentType.includes('text/html')) {
@@ -50,23 +54,53 @@ export const BackupPanel = () => {
   const [isExporting, setIsExporting] = useState(false)
   const [isImporting, setIsImporting] = useState(false)
   const [state, setState] = useState<ImportState>({ type: 'idle', message: null })
+  const [serverArchivePath, setServerArchivePath] = useState('')
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
-  const handleExport = () => {
+  const handleExport = async () => {
     setIsExporting(true)
-    window.location.href = '/api/admin/archive/export'
-    window.setTimeout(() => {
+
+    try {
+      const response = await fetch('/api/admin/archive/export', {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: {
+          Accept: 'application/json',
+        },
+      })
+
+      const payload = await parseResponseBody(response)
+
+      if (!response.ok || !payload.downloadUrl || !payload.serverPath) {
+        throw new Error(payload.error || 'Export failed.')
+      }
+
+      setServerArchivePath(payload.serverPath)
+      setState({
+        type: 'success',
+        message: `Archive built. Server copy: ${payload.serverPath}`,
+      })
+
+      window.location.href = payload.downloadUrl
+    } catch (error) {
+      setState({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Export failed.',
+      })
+    } finally {
       setIsExporting(false)
-    }, 1500)
+    }
   }
 
   const handleImport = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const file = fileInputRef.current?.files?.[0]
+    const trimmedServerPath = serverArchivePath.trim()
 
-    if (!file) {
-      setState({ type: 'error', message: 'Choose a ZIP archive first.' })
+    if (!file && !trimmedServerPath) {
+      setState({ type: 'error', message: 'Choose a ZIP or enter a server archive path.' })
       return
     }
 
@@ -82,18 +116,30 @@ export const BackupPanel = () => {
     setState({ type: 'idle', message: null })
 
     try {
-      const formData = new FormData()
-      formData.set('archive', file)
-
-      const response = await fetch('/api/admin/archive/import', {
-        method: 'POST',
-        body: formData,
-        credentials: 'same-origin',
-        cache: 'no-store',
-        headers: {
-          Accept: 'application/json',
-        },
-      })
+      const response = trimmedServerPath
+        ? await fetch('/api/admin/archive/import', {
+            method: 'POST',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ serverPath: trimmedServerPath }),
+          })
+        : await fetch('/api/admin/archive/import', {
+            method: 'POST',
+            body: (() => {
+              const formData = new FormData()
+              formData.set('archive', file as File)
+              return formData
+            })(),
+            credentials: 'same-origin',
+            cache: 'no-store',
+            headers: {
+              Accept: 'application/json',
+            },
+          })
 
       const payload = await parseResponseBody(response)
 
@@ -129,7 +175,8 @@ export const BackupPanel = () => {
         <h2>Export everything. Restore everything.</h2>
         <p className="subtext">
           Download a ZIP with the full Postgres database and every uploaded image in
-          <code> media/</code>. Importing the same ZIP replaces the current instance.
+          <code> media/</code>. Export also saves a server-side copy so large restores can bypass
+          browser upload limits.
         </p>
       </div>
 
@@ -145,8 +192,17 @@ export const BackupPanel = () => {
 
         <form className="dashboard-backup-import-form" onSubmit={handleImport}>
           <label className="dashboard-backup-file">
-            <span>Import ZIP</span>
+            <span>Import ZIP Upload</span>
             <input ref={fileInputRef} type="file" accept=".zip,application/zip" />
+          </label>
+          <label className="dashboard-backup-file">
+            <span>Server Archive Path</span>
+            <input
+              type="text"
+              value={serverArchivePath}
+              onChange={(event) => setServerArchivePath(event.target.value)}
+              placeholder="/home/red/poly/polymer/.payload-archives/payload-backup-....zip"
+            />
           </label>
           <button
             type="submit"
