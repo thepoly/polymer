@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import type { CollectionConfig, Access } from 'payload'
 import { User } from '@/payload-types'
 
@@ -6,6 +8,11 @@ const isAdmin: Access = ({ req: { user } }) => {
   const roles = (user as User)?.roles || []
   return roles.includes('admin')
 }
+
+const mediaDir = process.env.MEDIA_DIR || '/var/www/polymer-media'
+
+const getThumbFilename = (filename: string) =>
+  `${path.parse(filename).name}.thumb.webp`
 
 export const Media: CollectionConfig = {
   slug: 'media',
@@ -16,10 +23,25 @@ export const Media: CollectionConfig = {
   hooks: {
     afterRead: [
       ({ doc }) => {
-        if (doc?.sourceURL && typeof doc.sourceURL === 'string') {
-          doc.url = doc.sourceURL
-          doc.thumbnailURL = null
+        if (doc?.filename && typeof doc.filename === 'string') {
+          const localPath = path.join(mediaDir, doc.filename)
+          const thumbFilename = getThumbFilename(doc.filename)
+          const thumbPath = path.join(mediaDir, thumbFilename)
+
+          if (fs.existsSync(thumbPath)) {
+            doc.thumbnailURL = `/api/media/file/${thumbFilename}`
+          }
+
+          if (fs.existsSync(localPath)) {
+            doc.url = `/api/media/file/${doc.filename}`
+            return doc
+          }
         }
+
+        if (doc?.sourceUrl && typeof doc.sourceUrl === 'string') {
+          doc.url = doc.sourceUrl
+        }
+
         return doc
       },
     ],
@@ -38,7 +60,7 @@ export const Media: CollectionConfig = {
       },
     },
     {
-      name: 'sourceURL',
+      name: 'sourceUrl',
       type: 'text',
       admin: {
         hidden: true,
