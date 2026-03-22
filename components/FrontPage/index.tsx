@@ -324,7 +324,13 @@ export default function FrontPage({
           {topStories.bottomRow && topStories.bottomRow.length > 0 && (
             <div className="grid grid-cols-4 gap-5 mt-7">
               {topStories.bottomRow.map((article) => (
-                <ArticleCard key={article.id} article={article} contained titleClassName="text-[18px] md:text-[17px]" />
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  contained
+                  preserveImageSpace
+                  titleClassName="text-[18px] md:text-[17px]"
+                />
               ))}
             </div>
           )}

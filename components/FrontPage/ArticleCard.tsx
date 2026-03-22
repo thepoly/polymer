@@ -9,6 +9,7 @@ export const ArticleCard = ({
   article,
   caption,
   showImage = Boolean(article.image),
+  preserveImageSpace = false,
   imageAspectClassName = "aspect-[4/3]",
   titleClassName = "text-[32px] md:text-[24px]",
   excerptClassName = "mt-1.5 line-clamp-3 text-[13px] leading-[1.38]",
@@ -17,6 +18,7 @@ export const ArticleCard = ({
   article: Article;
   caption?: string | null;
   showImage?: boolean;
+  preserveImageSpace?: boolean;
   imageAspectClassName?: string;
   titleClassName?: string;
   excerptClassName?: string;
@@ -24,24 +26,26 @@ export const ArticleCard = ({
   contained?: boolean;
 }) => (
   <TransitionLink href={getArticleUrl(article)} className="group block min-w-0">
-    {showImage && article.image && (
+    {(showImage && article.image) || preserveImageSpace ? (
       <figure data-header-anchor="image" className={`mb-3 ${contained ? 'relative w-full' : 'relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen lg:static lg:ml-0 lg:mr-0 lg:w-full'}`}>
         <div className={`relative w-full overflow-hidden ${imageAspectClassName}`}>
-          <Image
-            src={article.image}
-            alt={article.title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 380px"
-          />
+          {showImage && article.image ? (
+            <Image
+              src={article.image}
+              alt={article.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 380px"
+            />
+          ) : null}
         </div>
-        {caption && (
+        {showImage && article.image && caption && (
           <figcaption className="font-meta mt-1.5 text-[10px] leading-snug tracking-wide text-text-muted">
             {caption}
           </figcaption>
         )}
       </figure>
-    )}
+    ) : null}
     {article.kicker && (
       <p className="font-meta text-[14px] md:text-[14px] font-[600] md:font-[440] italic tracking-[0.04em] text-accent mb-1 lg:hidden [overflow-wrap:anywhere] break-words">
         {article.kicker}
