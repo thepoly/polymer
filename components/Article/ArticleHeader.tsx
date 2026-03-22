@@ -15,15 +15,16 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
     <div className="flex flex-col gap-10 mb-8" style={{ paddingTop: '40px' }}>
       <div className="flex flex-col gap-4 max-w-[680px] w-full mx-auto">
         {article.kicker && (
-            <span className="font-meta text-accent font-[440] italic text-[15px] md:text-[16px] tracking-[0.06em] transition-colors">
+            <span data-ie-field="kicker" className="font-meta text-accent font-[600] uppercase text-[13px] md:text-[13px] tracking-[0.08em] transition-colors">
                 {article.kicker}
             </span>
         )}
-        <h1 className={`font-display font-bold text-[39px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em] transition-colors ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
+        <h1 data-ie-field="title" className={`font-display font-bold text-[39px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em] transition-colors ${article.section === "news" ? "font-display-news" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
           {article.title}
         </h1>
+        <ArticleByline article={article} />
         {article.subdeck && (
-            <h2 className="font-meta text-xl md:text-2xl font-normal text-text-muted leading-snug transition-colors">
+            <h2 data-ie-field="subdeck" className="font-meta text-xl md:text-2xl font-normal text-text-muted leading-snug transition-colors">
                 {article.subdeck}
             </h2>
         )}
@@ -49,7 +50,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
             {(imageCaption || photographer) && (
               <div className="flex justify-between items-baseline gap-4 mt-1">
                 {imageCaption && (
-                  <span className="font-meta text-[12px] text-text-muted italic transition-colors">
+                  <span data-ie-field="imageCaption" className="font-meta text-[12px] text-text-muted italic transition-colors">
                     {imageCaption}
                   </span>
                 )}
@@ -64,7 +65,6 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         );
       })()}
 
-      <ArticleByline article={article} />
     </div>
   );
 };

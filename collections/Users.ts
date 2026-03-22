@@ -73,25 +73,6 @@ export const Users: CollectionConfig = {
         const posthog = getPostHogClient()
         const doc = user as import('../payload-types').User;
         if (posthog && doc && doc.id) {
-          posthog.identify({
-            distinctId: String(doc.id),
-            properties: {
-              email: doc.email,
-              firstName: doc.firstName,
-              lastName: doc.lastName,
-              name: `${doc.firstName || ''} ${doc.lastName || ''}`.trim() || undefined,
-              slug: doc.slug,
-              roles: doc.roles,
-              blackTheme: doc.blackTheme,
-              has_bio: !!doc.bio,
-              position_count: doc.positions?.length || 0,
-              updatedAt: doc.updatedAt,
-              createdAt: doc.createdAt,
-              $set_once: {
-                initial_email: doc.email,
-              },
-            },
-          })
           posthog.capture({
             distinctId: String(doc.id),
             event: 'user_logged_in',
@@ -145,6 +126,24 @@ export const Users: CollectionConfig = {
       ],
       access: {
         // CONSTRAINT: Only Admins can change anyone's roles
+        update: isAdminField,
+      },
+    },
+    {
+      name: 'section',
+      type: 'select',
+      label: 'Assigned Section',
+      admin: {
+        description: 'Which section this editor manages (only applies to Section Editor role)',
+        condition: (data) => data?.roles?.includes('editor'),
+      },
+      options: [
+        { label: 'News', value: 'news' },
+        { label: 'Features', value: 'features' },
+        { label: 'Opinion', value: 'opinion' },
+        { label: 'Sports', value: 'sports' },
+      ],
+      access: {
         update: isAdminField,
       },
     },

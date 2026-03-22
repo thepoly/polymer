@@ -8,6 +8,11 @@ type PublicAuthorLike = {
 
 type PublicMediaLike = Pick<Media, 'url'>;
 
+type WriteInAuthor = {
+  name: string;
+  photo?: unknown;
+};
+
 type FormatArticleInput = {
   id: number | string;
   slug?: string | null;
@@ -20,6 +25,7 @@ type FormatArticleInput = {
   publishedDate?: string | null;
   createdAt?: string;
   authors?: Array<number | PublicAuthorLike> | null;
+  writeInAuthors?: WriteInAuthor[] | null;
   _status?: string | null;
 };
 
@@ -31,35 +37,40 @@ export const formatArticle = (
   if (article._status && article._status !== 'published') return null;
   if (!article.slug) return null;
 
-  const authors = article.authors
-    ?.map((author) => {
+  const staffNames = (article.authors || [])
+    .map((author) => {
       if (typeof author === 'number') return '';
       return `${author.firstName} ${author.lastName}`;
     })
-    .filter(Boolean)
-    .join(' AND ');
+    .filter(Boolean);
+
+  const writeInNames = (article.writeInAuthors || [])
+    .map((a) => a.name)
+    .filter(Boolean);
+
+  const authors = [...staffNames, ...writeInNames].join(' AND ');
 
   const date = article.publishedDate ? new Date(article.publishedDate) : null;
 
   let dateString: string | null = null;
   if (date) {
-    if (!absoluteDate) {
-      const now = new Date().getTime();
-      const diffMs = now - date.getTime();
-      const diffMins = Math.floor(diffMs / (1000 * 60));
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const now = new Date().getTime();
+    const diffMs = now - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-      if (diffMins < 60) {
-        dateString = `${diffMins} MINUTE${diffMins !== 1 ? 'S' : ''} AGO`;
-      } else if (diffHours < 24) {
-        dateString = `${diffHours} HOUR${diffHours !== 1 ? 'S' : ''} AGO`;
-      } else if (diffDays < 7) {
-        dateString = `${diffDays} DAY${diffDays !== 1 ? 'S' : ''} AGO`;
-      }
-    }
-    if (!dateString) {
+    if (absoluteDate) {
       dateString = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    } else if (diffDays >= 7) {
+      // Hide date if older than 7 days
+      dateString = null;
+    } else if (diffMins < 60) {
+      dateString = `${diffMins} MINUTE${diffMins !== 1 ? 'S' : ''} AGO`;
+    } else if (diffHours < 24) {
+      dateString = `${diffHours} HOUR${diffHours !== 1 ? 'S' : ''} AGO`;
+    } else {
+      dateString = `${diffDays} DAY${diffDays !== 1 ? 'S' : ''} AGO`;
     }
   }
 
@@ -68,7 +79,7 @@ export const formatArticle = (
     slug: article.slug || '#',
     title: article.title,
     excerpt: article.subdeck || '',
-    author: authors || null,
+    author: authors ? authors.toUpperCase() : 'THE POLY',
     date: dateString,
     image: (article.featuredImage as Media)?.url || null,
     section: article.section,

@@ -9,7 +9,6 @@ import SearchOverlay from "@/components/SearchOverlay";
 import { useHeaderTransition } from "@/components/HeaderTransitionProvider";
 import { ANIMATED_HEADER_ROUTES } from "@/components/headerAnimationRoutes";
 import { useTheme } from "@/components/ThemeProvider";
-import posthog from "posthog-js";
 
 const primaryNavItems = [
   { label: "News", href: "/news" },
@@ -346,7 +345,6 @@ export default function Header({ compact = false, mobileTight = false }: { compa
 
   const openSearchOverlay = () => {
     setIsSearchOverlayOpen(true);
-    posthog.capture("search_overlay_opened");
   };
 
   const prefetchLink = (href: string) => {
@@ -445,7 +443,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
             </div>
           </div>
         </div>
-        <div className="mt-3 border-y border-black">
+        <div className="mt-3 border-y border-black dark:border-[#DDDDDD]">
           <div className="font-meta safe-area-mobile-header-x mx-auto flex max-w-[1280px] items-center justify-center gap-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.1em]">
             <span className="text-text-main" suppressHydrationWarning>{currentDate}</span>
             <span className="text-accent font-semibold">Vol. XCI No. 22</span>

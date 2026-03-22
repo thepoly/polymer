@@ -132,6 +132,10 @@ export interface User {
   lastName: string;
   slug?: string | null;
   roles?: ('admin' | 'eic' | 'editor' | 'writer')[] | null;
+  /**
+   * Which section this editor manages (only applies to Section Editor role)
+   */
+  section?: ('news' | 'features' | 'opinion' | 'sports') | null;
   headshot?: (number | null) | Media;
   bio?: {
     root: {
@@ -184,6 +188,7 @@ export interface Media {
   id: number;
   alt?: string | null;
   photographer?: (number | null) | User;
+  sourceUrl?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -233,7 +238,17 @@ export interface Article {
         | 'more'
       )
     | null;
-  authors: (number | User)[];
+  authors?: (number | User)[] | null;
+  /**
+   * External contributors who are not staff users
+   */
+  writeInAuthors?:
+    | {
+        name: string;
+        photo?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
   publishedDate?: string | null;
   featuredImage?: (number | null) | Media;
   imageCaption?: string | null;
@@ -253,6 +268,14 @@ export interface Article {
     [k: string]: unknown;
   } | null;
   slug?: string | null;
+  /**
+   * Overrides the article title in search results. Leave blank to use the article title.
+   */
+  seoTitle?: string | null;
+  /**
+   * Summary shown in search engine results (150–160 characters recommended).
+   */
+  searchDescription?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -264,7 +287,31 @@ export interface Article {
 export interface Layout {
   id: number;
   name: string;
-  mainArticle: number | Article;
+  skeleton?: ('custom' | 'aries') | null;
+  grid?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  volume?: number | null;
+  edition?: number | null;
+  /**
+   * Per-section layout configuration (skeleton + pinned articles)
+   */
+  sectionLayouts?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  mainArticle?: (number | null) | Article;
   top1?: (number | null) | Article;
   top2?: (number | null) | Article;
   top3?: (number | null) | Article;
@@ -418,6 +465,7 @@ export interface UsersSelect<T extends boolean = true> {
   lastName?: T;
   slug?: T;
   roles?: T;
+  section?: T;
   headshot?: T;
   bio?: T;
   positions?:
@@ -453,6 +501,7 @@ export interface UsersSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   photographer?: T;
+  sourceUrl?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -476,11 +525,20 @@ export interface ArticlesSelect<T extends boolean = true> {
   subdeck?: T;
   opinionType?: T;
   authors?: T;
+  writeInAuthors?:
+    | T
+    | {
+        name?: T;
+        photo?: T;
+        id?: T;
+      };
   publishedDate?: T;
   featuredImage?: T;
   imageCaption?: T;
   content?: T;
   slug?: T;
+  seoTitle?: T;
+  searchDescription?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -500,6 +558,11 @@ export interface JobTitlesSelect<T extends boolean = true> {
  */
 export interface LayoutSelect<T extends boolean = true> {
   name?: T;
+  skeleton?: T;
+  grid?: T;
+  volume?: T;
+  edition?: T;
+  sectionLayouts?: T;
   mainArticle?: T;
   top1?: T;
   top2?: T;

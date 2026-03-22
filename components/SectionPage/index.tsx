@@ -14,7 +14,7 @@ import { getArticleUrl } from "@/utils/getArticleUrl";
 const tc = (article: Article, size: string) =>
   `font-display font-bold leading-[1.12] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent ${size} ${
     article.section === "news"
-      ? "font-display-news uppercase"
+      ? "font-display-news"
       : article.section === "features"
         ? "font-normal italic"
         : article.section === "sports"
@@ -66,12 +66,12 @@ function ColumnCard({
   return (
     <TransitionLink href={getArticleUrl(article)} className="group block">
       <h3 className={tc(article, size)}>{article.title}</h3>
+      <Byline author={article.author} date={article.date} />
       {article.excerpt && (
         <p className="font-meta mt-1.5 text-[13px] leading-[1.42] text-text-muted line-clamp-3">
           {article.excerpt}
         </p>
       )}
-      <Byline author={article.author} date={article.date} />
       {article.image && (
         <div className="relative mt-3 overflow-hidden">
           <div className="relative w-full aspect-[3/2]">

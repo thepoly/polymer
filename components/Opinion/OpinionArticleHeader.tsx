@@ -33,7 +33,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
       <div className="w-8 border-t border-rule-strong mb-6" />
 
       {/* Title */}
-      <h1 className="font-copy font-medium text-[39px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center max-w-[600px] mx-auto px-4 mb-4">
+      <h1 data-ie-field="title" className="font-copy font-medium text-[39px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center max-w-[600px] mx-auto px-4 mb-4">
         {article.title}
       </h1>
 
@@ -57,7 +57,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
             {(imageCaption || photographer) && (
               <div className="flex justify-between items-baseline gap-4 mt-2">
                 {imageCaption && (
-                  <span className="font-meta text-xs text-text-muted italic transition-colors">
+                  <span data-ie-field="imageCaption" className="font-meta text-xs text-text-muted italic transition-colors">
                     {imageCaption}
                   </span>
                 )}

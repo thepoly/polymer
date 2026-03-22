@@ -3,6 +3,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import escapeHTML from 'escape-html';
 import { Media, User } from '@/payload-types';
+import { PhotoGallery } from './PhotoGallery';
+import { Carousel } from './Carousel';
 
 export type LexicalNode = {
   type: string;
@@ -18,8 +20,11 @@ export type LexicalNode = {
 
 let paragraphCount = 0;
 
-const ParagraphTracker = ({ children, isFirst }: { children: React.ReactNode; isFirst: boolean }) => (
-  <p className={`font-copy text-xl leading-relaxed text-text-main dark:text-[#CCCCCC] mb-6 transition-colors ${isFirst ? 'drop-cap' : ''}`}>
+const ParagraphTracker = ({ children, isFirst, rootIndex }: { children: React.ReactNode; isFirst: boolean; rootIndex?: number }) => (
+  <p
+    className={`font-copy text-xl leading-relaxed text-text-main dark:text-[#CCCCCC] mb-6 transition-colors ${isFirst ? 'drop-cap' : ''}`}
+    {...(rootIndex !== undefined ? { 'data-ie-field': 'paragraph', 'data-ie-index': rootIndex } : {})}
+  >
     {children}
   </p>
 );
@@ -60,7 +65,7 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
             const isFirst = paragraphCount === 0;
             paragraphCount++;
             return (
-              <ParagraphTracker key={index} isFirst={isFirst}>
+              <ParagraphTracker key={index} isFirst={isFirst} rootIndex={isRoot ? index : undefined}>
                 {serializedChildren}
               </ParagraphTracker>
             );
@@ -95,7 +100,10 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
                 </div>
                 {(caption || creditUser || media.alt) && (
                   <div className="flex justify-between items-baseline gap-4 mt-1">
-                    <span className="font-meta text-[12px] text-text-muted italic transition-colors">
+                    <span
+                      className="font-meta text-[12px] text-text-muted italic transition-colors"
+                      {...(isRoot ? { 'data-ie-field': 'upload-caption', 'data-ie-index': index } : {})}
+                    >
                       {caption || media.alt}
                     </span>
                     {creditUser && typeof creditUser === 'object' && (
@@ -129,6 +137,18 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
                 {serializedChildren}
               </blockquote>
             );
+
+          case 'block': {
+            const blockFields = node.fields as { blockType: string; images?: { image: Media | number; caption?: string | null }[] } | undefined;
+            if (!blockFields) return null;
+            if (blockFields.blockType === 'photo_gallery') {
+              return <PhotoGallery key={index} images={blockFields.images || []} />;
+            }
+            if (blockFields.blockType === 'carousel') {
+              return <Carousel key={index} images={blockFields.images || []} />;
+            }
+            return null;
+          }
 
           default:
             return <Fragment key={index}>{serializedChildren}</Fragment>;

@@ -1,0 +1,96 @@
+/* Inline Editor — staff-only live editing */
+
+.ie-toolbar {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.ie-toolbar-editing {
+  border-color: #3b82f6;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.3);
+}
+
+.ie-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ie-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ie-btn-edit {
+  background: #3b82f6;
+  color: #fff;
+}
+.ie-btn-edit:hover {
+  background: #2563eb;
+}
+.ie-btn-admin {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  display: inline-flex;
+  align-items: center;
+}
+.ie-btn-admin:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+.ie-btn-save {
+  background: #22c55e;
+  color: #fff;
+}
+.ie-btn-save:hover:not(:disabled) {
+  background: #16a34a;
+}
+.ie-btn-cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+}
+.ie-btn-cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.ie-error {
+  font-size: 12px;
+  color: #ef4444;
+  font-weight: 500;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Editable field styles */
+[data-ie-field].ie-editable {
+  outline: 2px dashed rgba(59, 130, 246, 0.4);
+  outline-offset: 4px;
+  border-radius: 2px;
+  cursor: text;
+  transition: outline-color 0.15s;
+}
+[data-ie-field].ie-editable:focus {
+  outline-color: #3b82f6;
+  outline-style: solid;
+}
+[data-ie-field].ie-editable:hover {
+  outline-color: rgba(59, 130, 246, 0.7);
+}

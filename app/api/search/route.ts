@@ -11,7 +11,6 @@ import {
   sanitizeSearchQuery,
 } from "@/utils/search";
 import { checkRateLimit } from "@/utils/rateLimit";
-import { getPostHogClient } from "@/lib/posthog-server";
 
 const SEARCH_RATE_LIMIT = 40;
 const SEARCH_RATE_LIMIT_WINDOW_MS = 10_000;
@@ -198,6 +197,7 @@ async function searchPayload(queryFormsLower: string[]) {
     publishedDate: true,
     createdAt: true,
     authors: true,
+    writeInAuthors: true,
     content: true,
   } as const;
   const allDocs = await payload
@@ -261,25 +261,13 @@ export async function GET(request: NextRequest) {
   const queryFormsLower = forms.map((form) => form.toLowerCase()).filter((form) => form.length > 0);
 
   try {
-    const [payloadResults, legacyRows] = await Promise.all([
-      searchPayload(queryFormsLower).catch(() => [] as { article: Article; score: number }[]),
-      searchLegacy(forms).catch(() => [] as { article: Article; bodyText: string }[]),
-    ]);
+    const payloadResults = await searchPayload(queryFormsLower).catch(
+      () => [] as { article: Article; score: number }[],
+    );
 
     const merged = new Map<string, { article: Article; score: number }>();
     for (const result of payloadResults) {
       merged.set(articleKey(result.article), result);
-    }
-    for (const row of legacyRows) {
-      const result = {
-        article: row.article,
-        score: scoreArticle(row.article, row.bodyText, queryFormsLower),
-      };
-      const key = articleKey(result.article);
-      const existing = merged.get(key);
-      if (!existing || result.score > existing.score) {
-        merged.set(key, result);
-      }
     }
 
     const allResults = [...merged.values()].sort(
@@ -290,23 +278,6 @@ export async function GET(request: NextRequest) {
     const safePage = totalPages === 0 ? 1 : Math.min(page, totalPages);
     const start = (safePage - 1) * pageSize;
     const articles = allResults.slice(start, start + pageSize).map((entry) => entry.article);
-
-    const posthog = getPostHogClient();
-    const payload = await getPayload({ config });
-    const { user: authUser } = await payload.auth({ headers: request.headers });
-    const distinctId = authUser ? String(authUser.id) : (forwardedFor || "anonymous");
-
-    posthog?.capture({
-      distinctId,
-      event: "search_api_called",
-      properties: {
-        query: q,
-        total_results: totalResults,
-        page: safePage,
-        is_authenticated: !!authUser,
-        $process_person_profile: !!authUser,
-      },
-    });
 
     return Response.json({
       articles,

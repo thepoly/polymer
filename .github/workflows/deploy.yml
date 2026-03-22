@@ -120,7 +120,12 @@ jobs:
         run: |
           set -euo pipefail
 
-          CONFIG_PATH="$DEPLOY_ROOT/current/ecosystem.config.cjs"
+          CONFIG_PATH="$RELEASE_DIR/ecosystem.config.cjs"
+
+          # Rewrite the cwd in the ecosystem config from the symlink path to the
+          # literal release path so PM2 doesn't have to follow /current at start
+          # time (which fails when PM2 runs as a different user than the symlink owner).
+          sed -i "s|/var/www/polymer/current|$RELEASE_DIR|g" "$CONFIG_PATH"
 
           # Replace any stale process definition before starting from the
           # ecosystem file. A previous "pm2 start \"pnpm start\"" style app

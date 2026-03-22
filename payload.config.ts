@@ -1,9 +1,44 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
-import { lexicalEditor, UploadFeature } from '@payloadcms/richtext-lexical'
+import { BlocksFeature, lexicalEditor, UploadFeature } from '@payloadcms/richtext-lexical'
 import path from 'path'
 import { buildConfig } from 'payload'
+import type { Block } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
+
+const PhotoGalleryBlock: Block = {
+  slug: 'photo_gallery',
+  labels: { singular: 'Photo Gallery', plural: 'Photo Galleries' },
+  fields: [
+    {
+      name: 'images',
+      type: 'array',
+      required: true,
+      minRows: 1,
+      fields: [
+        { name: 'image', type: 'upload', relationTo: 'media', required: true },
+        { name: 'caption', type: 'text' },
+      ],
+    },
+  ],
+}
+
+const CarouselBlock: Block = {
+  slug: 'carousel',
+  labels: { singular: 'Carousel', plural: 'Carousels' },
+  fields: [
+    {
+      name: 'images',
+      type: 'array',
+      required: true,
+      minRows: 1,
+      fields: [
+        { name: 'image', type: 'upload', relationTo: 'media', required: true },
+        { name: 'caption', type: 'text' },
+      ],
+    },
+  ],
+}
 
 import { Users } from './collections/Users.ts'
 import { Media } from './collections/Media.ts'
@@ -47,6 +82,7 @@ export default buildConfig({
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [
       ...defaultFeatures,
+      BlocksFeature({ blocks: [PhotoGalleryBlock, CarouselBlock] }),
       UploadFeature({
         collections: {
           media: {

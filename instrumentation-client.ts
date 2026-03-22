@@ -7,10 +7,13 @@ if (POSTHOG_KEY) {
     ui_host: "/ingest",
     person_profiles: "identified_only",
     capture_exceptions: true,
-    capture_pageleave: "if_capture_pageview",
+    disable_session_recording: true,
+    autocapture: false,
+    capture_pageleave: false,
     capture_pageview: "history_change",
     debug: process.env.NODE_ENV === "development",
     defaults: "2026-01-30",
+    persistence: "memory",
     before_send: (event) => {
       if (typeof window !== "undefined" && !shouldTrackPath(window.location.pathname)) {
         return null;

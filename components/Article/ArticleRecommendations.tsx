@@ -62,12 +62,14 @@ const getFeaturedImage = (value: RecommendationArticle['featuredImage'] | Media 
 };
 
 const getAuthorString = (article: RecommendationArticle) => {
-  const names = (article.authors || []).flatMap((author) => {
+  const staffNames = (article.authors || []).flatMap((author) => {
     if (typeof author === 'number') return [];
-
     return [`${author.firstName} ${author.lastName}`];
   });
-
+  const writeInNames = ((article as unknown as Record<string, unknown>).writeInAuthors as Array<{ name: string }> || [])
+    .map((a) => a.name)
+    .filter(Boolean);
+  const names = [...staffNames, ...writeInNames];
   return names.length > 0 ? names.join(' AND ') : null;
 };
 
@@ -98,7 +100,7 @@ const getHeadlineClasses = (article: RecommendationArticle, variant: 'lead' | 'l
       : 'font-display text-[20px] font-bold leading-[1.08] tracking-[-0.015em] md:text-[22px]';
 
   const sectionStyles = [
-    article.section === 'news' ? 'font-display-news uppercase' : '',
+    article.section === 'news' ? 'font-display-news' : '',
     article.section === 'features'
       ? variant === 'lead'
         ? 'text-[30px] font-normal italic md:text-[36px]'
@@ -182,6 +184,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
       publishedDate: true,
       createdAt: true,
       authors: true,
+      writeInAuthors: true,
       opinionType: true,
     },
   });
@@ -242,22 +245,22 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
               ) : null}
 
               <div className="min-w-0">
-                <p className="line-clamp-1 font-meta text-[11px] font-[440] italic tracking-[0.05em] text-accent">
+                <p className="line-clamp-1 font-meta text-[11px] font-[600] uppercase tracking-[0.08em] text-accent">
                   {getArticleLabel(leadArticle)}
                 </p>
                 <h3 className={`mt-2 ${getHeadlineClasses(leadArticle, 'lead')}`}>
                   {leadArticle.title}
                 </h3>
-                {leadArticle.subdeck && (
-                  <p className="mt-3 max-w-xl font-meta text-[14px] leading-[1.48] text-text-muted line-clamp-3">
-                    {leadArticle.subdeck}
-                  </p>
-                )}
                 <Byline
                   author={getAuthorString(leadArticle)}
                   date={formatDate(leadArticle)}
                   className="mt-4 text-[11px] md:text-[11px]"
                 />
+                {leadArticle.subdeck && (
+                  <p className="mt-3 max-w-xl font-meta text-[14px] leading-[1.48] text-text-muted line-clamp-3">
+                    {leadArticle.subdeck}
+                  </p>
+                )}
               </div>
             </div>
           </TransitionLink>
@@ -291,7 +294,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                       ) : null}
 
                       <div className="min-w-0">
-                        <p className="line-clamp-1 font-meta text-[10px] font-[440] italic tracking-[0.05em] text-accent">
+                        <p className="line-clamp-1 font-meta text-[10px] font-[600] uppercase tracking-[0.08em] text-accent">
                           {getArticleLabel(article)}
                         </p>
                         <h3 className={`mt-1 ${getHeadlineClasses(article, 'list')}`}>

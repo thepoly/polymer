@@ -287,6 +287,7 @@ export default function SearchInput({
         query: q,
         total_results: primaryData.totalResults,
         page: pageIndex + 1,
+        source: "inline",
       });
       setSearched(true);
       if (!hasSearchedOnceRef.current) {
@@ -652,13 +653,13 @@ export default function SearchInput({
                     data-analytics-context="search-inline"
                     onClick={() => posthog.capture("search_result_clicked", { query, article_title: article.title, article_section: article.section })}
                   >
-                    <h3 className={`font-display font-bold text-text-main mb-1 text-[16px] md:text-[18px] leading-tight group-hover:text-accent transition-colors ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
+                    <h3 className={`font-display font-bold text-text-main mb-1 text-[16px] md:text-[18px] leading-tight group-hover:text-accent transition-colors ${article.section === "news" ? "font-display-news" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
                       {article.title}
                     </h3>
+                    <Byline author={article.author} date={article.date} />
                     <p className="font-copy text-text-main text-[13px] md:text-[14px] leading-[1.4] mb-2 transition-colors">
                       {article.excerpt}
                     </p>
-                    <Byline author={article.author} date={article.date} />
                   </TransitionLink>
                 </div>
               ))}

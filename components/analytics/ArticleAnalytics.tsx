@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import posthog from "posthog-js";
+import { setArticleMeta } from "@/components/analytics/SiteAnalytics";
 import { useTheme } from "@/components/ThemeProvider";
-
-const READ_COMPLETION_THRESHOLD = 85;
-const ACTIVE_WINDOW_MS = 30_000;
-const TICK_SECONDS = 5;
 
 type Props = {
   articleId: number;
@@ -19,28 +16,6 @@ type Props = {
   isStaff?: boolean;
 };
 
-function getArticleReadDepth(element: HTMLElement) {
-  const rect = element.getBoundingClientRect();
-  const articleTop = window.scrollY + rect.top;
-  const articleHeight = Math.max(rect.height, element.scrollHeight, 1);
-  const viewportBottom = window.scrollY + window.innerHeight;
-  const readDepth = ((viewportBottom - articleTop) / articleHeight) * 100;
-
-  return Math.max(0, Math.min(100, Math.round(readDepth)));
-}
-
-function getCopiableArea(element: HTMLElement | null): string {
-  if (!element) return "unknown";
-  if (element.closest(".article-body")) return "body";
-  if (element.closest(".article-header")) return "header";
-  if (element.closest(".article-subdeck")) return "subdeck";
-  if (element.closest(".article-byline")) return "byline";
-  if (element.closest(".article-caption")) return "caption";
-  if (element.closest(".article-staff-bio")) return "staff_bio";
-  if (element.closest(".section-name")) return "section_name";
-  return "other";
-}
-
 export default function ArticleAnalytics({
   articleId,
   pathname,
@@ -52,43 +27,19 @@ export default function ArticleAnalytics({
   isStaff = false,
 }: Props) {
   const { isDarkMode } = useTheme();
-  
-  const startTimeRef = useRef(0);
-  const maxReadDepthRef = useRef(0);
-  const currentScrollRef = useRef(0);
-  const engagedSecondsRef = useRef(0);
-  const lastActivityAtRef = useRef(0);
-  const hasCapturedCompletionRef = useRef(false);
-  const sentSummaryRef = useRef(false);
-  const linkClicksRef = useRef({ internal: 0, external: 0 });
-  
-  // Theme tracking
-  const themeStartTimeRef = useRef(0);
-  const themeSecondsRef = useRef({ light: 0, dark: 0 });
-  const currentThemeRef = useRef(isDarkMode ? "dark" : "light");
-
-  // Selection & Copy tracking
-  const highlightCountRef = useRef(0);
-  const totalCharsCopiedRef = useRef(0);
-  const lastSelectionRef = useRef<string | null>(null);
-
-  // Tracking the exit
-  const exitMethodRef = useRef<"internal_link" | "external_link" | "tab_hidden" | "browser_closed" | "unmount">("unmount");
-  const exitDestinationRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const newTheme = isDarkMode ? "dark" : "light";
-    if (newTheme !== currentThemeRef.current) {
-      const now = Date.now();
-      const elapsed = Math.round((now - themeStartTimeRef.current) / 1000);
-      if (currentThemeRef.current === "dark") themeSecondsRef.current.dark += elapsed;
-      else themeSecondsRef.current.light += elapsed;
-      currentThemeRef.current = newTheme;
-      themeStartTimeRef.current = now;
-    }
-  }, [isDarkMode]);
+    setArticleMeta({
+      articleId,
+      title,
+      section,
+      slug,
+      pathname,
+      publishedDate,
+      wordCount,
+      isStaff,
+    });
 
-  useEffect(() => {
     posthog.capture("article_viewed", {
       article_id: articleId,
       article_section: section,
@@ -99,189 +50,12 @@ export default function ArticleAnalytics({
       theme: isDarkMode ? "dark" : "light",
       is_staff_viewer: isStaff,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [articleId, pathname, publishedDate, section, slug, title, isStaff]);
-
-  useEffect(() => {
-    // Reset session state on mount
-    maxReadDepthRef.current = 0;
-    currentScrollRef.current = 0;
-    engagedSecondsRef.current = 0;
-    lastActivityAtRef.current = Date.now();
-    startTimeRef.current = Date.now();
-    themeStartTimeRef.current = Date.now();
-    themeSecondsRef.current = { light: 0, dark: 0 };
-    hasCapturedCompletionRef.current = false;
-    sentSummaryRef.current = false;
-    linkClicksRef.current = { internal: 0, external: 0 };
-    highlightCountRef.current = 0;
-    totalCharsCopiedRef.current = 0;
-    lastSelectionRef.current = null;
-    exitMethodRef.current = "unmount";
-    exitDestinationRef.current = null;
-
-    const articleBody = document.querySelector(".article-body");
-    
-    const getSummaryProperties = () => {
-      const now = Date.now();
-      const totalSecondsOnPage = Math.max(0, Math.round((now - startTimeRef.current) / 1000));
-      
-      const finalThemeElapsed = Math.max(0, Math.round((now - themeStartTimeRef.current) / 1000));
-      const finalThemeSeconds = { ...themeSecondsRef.current };
-      if (currentThemeRef.current === "dark") finalThemeSeconds.dark += finalThemeElapsed;
-      else finalThemeSeconds.light += finalThemeElapsed;
-
-      const wpm = engagedSecondsRef.current > 0 
-        ? Math.round((wordCount / (engagedSecondsRef.current / 60))) 
-        : 0;
-
-      return {
-        article_id: articleId,
-        article_section: section,
-        article_slug: slug,
-        article_title: title,
-        pathname: pathname,
-        word_count: wordCount,
-        is_staff_viewer: isStaff,
-        
-        // Performance
-        words_per_minute: wpm,
-        max_scroll_percentage: maxReadDepthRef.current, 
-        exit_scroll_percentage: currentScrollRef.current, // Safely use the tracked state instead of DOM query
-        total_engaged_seconds: engagedSecondsRef.current,
-        total_seconds_on_page: totalSecondsOnPage,
-
-        // Theme & Engagement
-        seconds_spent_in_light_mode: finalThemeSeconds.light,
-        seconds_spent_in_dark_mode: finalThemeSeconds.dark,
-        text_highlight_count: highlightCountRef.current,
-        total_chars_copied: totalCharsCopiedRef.current,
-        
-        // Exit context
-        exit_method: exitMethodRef.current,
-        exit_destination: exitDestinationRef.current,
-        read_completed: hasCapturedCompletionRef.current,
-        engagement_ratio: totalSecondsOnPage > 0 
-          ? Number((engagedSecondsRef.current / totalSecondsOnPage).toFixed(2)) 
-          : 0,
-      };
-    };
-
-    const sendSummary = () => {
-      if (sentSummaryRef.current) return;
-      sentSummaryRef.current = true;
-      posthog.capture("article_session_summary", getSummaryProperties());
-    };
-
-    const handleBeforeUnload = () => {
-      if (exitMethodRef.current === "unmount") {
-        exitMethodRef.current = "browser_closed";
-      }
-      sendSummary();
-    };
-
-    const handleCopy = () => {
-      const selection = window.getSelection();
-      const text = selection?.toString().trim();
-      if (!text) return;
-
-      const area = getCopiableArea(selection?.anchorNode?.parentElement || null);
-      totalCharsCopiedRef.current += text.length;
-
-      posthog.capture("article_text_copied", {
-        article_id: articleId,
-        article_title: title,
-        text_copied: text,
-        char_count: text.length,
-        page_area: area,
-        pathname: pathname,
-      });
-    };
-
-    const handleSelectionChange = () => {
-      const selection = window.getSelection();
-      const text = selection?.toString().trim();
-      if (text && text.length > 5 && text !== lastSelectionRef.current) {
-        highlightCountRef.current++;
-        lastSelectionRef.current = text;
-      }
-    };
-
-    const handleGlobalClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const anchor = target.closest("a");
-      if (anchor) {
-        let url: URL;
-        try { url = new URL(anchor.href, window.location.origin); } catch { return; }
-        const isExternal = url.hostname !== window.location.hostname;
-        exitMethodRef.current = isExternal ? "external_link" : "internal_link";
-        exitDestinationRef.current = isExternal ? url.href : url.pathname + url.search;
-        if (articleBody?.contains(anchor)) {
-          if (isExternal) linkClicksRef.current.external++;
-          else linkClicksRef.current.internal++;
-        }
-      }
-    };
-
-    const updateMetrics = () => {
-      if (!(articleBody instanceof HTMLElement)) return;
-      const readDepth = getArticleReadDepth(articleBody);
-      currentScrollRef.current = readDepth;
-      maxReadDepthRef.current = Math.max(maxReadDepthRef.current, readDepth);
-      if (!hasCapturedCompletionRef.current && readDepth >= READ_COMPLETION_THRESHOLD) {
-        hasCapturedCompletionRef.current = true;
-      }
-    };
-
-    const intervalId = window.setInterval(() => {
-      if (document.hidden || Date.now() - lastActivityAtRef.current > ACTIVE_WINDOW_MS) return;
-      engagedSecondsRef.current += TICK_SECONDS;
-      updateMetrics();
-    }, TICK_SECONDS * 1000);
-
-    const markActivity = () => { lastActivityAtRef.current = Date.now(); };
-
-    window.addEventListener("scroll", updateMetrics, { passive: true });
-    window.addEventListener("resize", updateMetrics);
-    window.addEventListener("focus", markActivity);
-    window.addEventListener("keydown", markActivity);
-    window.addEventListener("mousemove", markActivity, { passive: true });
-    
-    // Robust exit listeners
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        if (exitMethodRef.current === "unmount") exitMethodRef.current = "tab_hidden";
-        sendSummary();
-      }
-    };
-    
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("pagehide", handleBeforeUnload);
-
-    document.addEventListener("click", handleGlobalClick);
-    document.addEventListener("copy", handleCopy);
-    document.addEventListener("selectionchange", handleSelectionChange);
 
     return () => {
-      window.clearInterval(intervalId);
-      window.removeEventListener("scroll", updateMetrics);
-      window.removeEventListener("resize", updateMetrics);
-      window.removeEventListener("focus", markActivity);
-      window.removeEventListener("keydown", markActivity);
-      window.removeEventListener("mousemove", markActivity);
-      
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.removeEventListener("pagehide", handleBeforeUnload);
-      
-      document.removeEventListener("click", handleGlobalClick);
-      document.removeEventListener("copy", handleCopy);
-      document.removeEventListener("selectionchange", handleSelectionChange);
-      
-      sendSummary();
+      setArticleMeta(null);
     };
-  }, [articleId, pathname, publishedDate, section, slug, title, wordCount, isStaff]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [articleId, pathname, publishedDate, section, slug, title, isStaff]);
 
   return null;
 }

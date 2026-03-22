@@ -106,6 +106,22 @@
   font-display: swap;
 }
 
+/* Bebas Neue Pro */
+@font-face {
+  font-family: "Bebas Neue Pro";
+  src: url("/fonts/bebas-neue-pro/Bebas Neue Pro Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Bebas Neue Pro";
+  src: url("/fonts/bebas-neue-pro/Bebas Neue Pro Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Raleway */
 @font-face {
   font-family: "Raleway";
@@ -159,6 +175,7 @@
   --font-copy: "Minion Pro", "Iowan Old Style", Georgia, serif;
   --font-ui: "Myriad Pro", "Helvetica Neue", Arial, sans-serif;
   --font-meta: "Raleway", "Helvetica Neue", Arial, sans-serif;
+  --font-display-news: "Bebas Neue Pro", Impact, "Arial Narrow", sans-serif;
 
   --opinions-choice-bg: #f2f2f2;
   --opinions-choice-hover: #e8e8e8;

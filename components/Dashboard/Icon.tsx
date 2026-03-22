@@ -1,11 +1,11 @@
 import React from 'react'
 
 export const Icon = () => (
-  <svg className="poly-icon" width="80" height="113" viewBox="0 0 80 113" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ 
-    width: '11px', 
-    height: 'auto', 
+  <svg className="poly-icon" width="80" height="113" viewBox="0 0 80 113" fill="none" xmlns="http://www.w3.org/2000/svg" style={{
+    width: '11px',
+    height: 'auto',
     transition: 'opacity 0.2s ease',
-    cursor: 'pointer'
+    display: 'inline-flex'
   }}>
     <style>
       {`

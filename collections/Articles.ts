@@ -90,6 +90,16 @@ const Articles: CollectionConfig = {
           data.opinionType = matched || 'more'
         }
 
+        // Auto-generate slug from title if not set
+        if (!data.slug && data.title) {
+          data.slug = data.title
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .trim()
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+        }
+
         return data
       },
     ],
@@ -147,7 +157,7 @@ const Articles: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       hasMany: true,
-      required: true,
+      required: false,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       defaultValue: ({ req }: { req: any }) => {
         if (req.user) return [req.user.id]
@@ -156,6 +166,24 @@ const Articles: CollectionConfig = {
       admin: {
         position: 'sidebar',
       },
+    },
+    {
+      name: 'writeInAuthors',
+      type: 'array',
+      label: 'Write-in Authors',
+      admin: {
+        position: 'sidebar',
+        description: 'External contributors who are not staff users',
+      },
+      fields: [
+        { name: 'name', type: 'text', required: true },
+        {
+          name: 'photo',
+          type: 'upload',
+          relationTo: 'media',
+          required: false,
+        },
+      ],
     },
     {
       name: 'publishedDate',
@@ -184,6 +212,27 @@ const Articles: CollectionConfig = {
       unique: true,
       admin: {
         position: 'sidebar',
+        components: {
+          Field: '/components/admin/SlugField#SlugField',
+        },
+      },
+    },
+    {
+      name: 'seoTitle',
+      type: 'text',
+      label: 'SEO Title',
+      admin: {
+        position: 'sidebar',
+        description: 'Overrides the article title in search results. Leave blank to use the article title.',
+      },
+    },
+    {
+      name: 'searchDescription',
+      type: 'textarea',
+      label: 'Search Description',
+      admin: {
+        position: 'sidebar',
+        description: 'Summary shown in search engine results (150–160 characters recommended).',
       },
     },
   ],

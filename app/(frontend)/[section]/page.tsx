@@ -101,6 +101,7 @@ export default async function SectionPageRoute({ params }: Args) {
       createdAt: true,
       authors: true,
       ...(isOpinion && { opinionType: true }),
+      writeInAuthors: true,
     },
   });
 
