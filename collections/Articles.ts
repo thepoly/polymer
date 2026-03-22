@@ -178,6 +178,24 @@ const Articles: CollectionConfig = {
         position: 'sidebar',
       },
     },
+    {
+      name: 'seoTitle',
+      type: 'text',
+      label: 'SEO Title',
+      admin: {
+        position: 'sidebar',
+        description: 'Overrides the article title in search results. Leave blank to use the article title.',
+      },
+    },
+    {
+      name: 'searchDescription',
+      type: 'textarea',
+      label: 'Search Description',
+      admin: {
+        position: 'sidebar',
+        description: 'Summary shown in search engine results (150–160 characters recommended).',
+      },
+    },
   ],
 }
 

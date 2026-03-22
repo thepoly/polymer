@@ -3,6 +3,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import escapeHTML from 'escape-html';
 import { Media, User } from '@/payload-types';
+import { PhotoGallery } from './PhotoGallery';
+import { Carousel } from './Carousel';
 
 export type LexicalNode = {
   type: string;
@@ -135,6 +137,18 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
                 {serializedChildren}
               </blockquote>
             );
+
+          case 'block': {
+            const blockFields = node.fields as { blockType: string; images?: { image: Media | number; caption?: string | null }[] } | undefined;
+            if (!blockFields) return null;
+            if (blockFields.blockType === 'photo_gallery') {
+              return <PhotoGallery key={index} images={blockFields.images || []} />;
+            }
+            if (blockFields.blockType === 'carousel') {
+              return <Carousel key={index} images={blockFields.images || []} />;
+            }
+            return null;
+          }
 
           default:
             return <Fragment key={index}>{serializedChildren}</Fragment>;

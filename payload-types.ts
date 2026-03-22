@@ -264,6 +264,14 @@ export interface Article {
     [k: string]: unknown;
   } | null;
   slug?: string | null;
+  /**
+   * Overrides the article title in search results. Leave blank to use the article title.
+   */
+  seoTitle?: string | null;
+  /**
+   * Summary shown in search engine results (150–160 characters recommended).
+   */
+  searchDescription?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -478,6 +486,8 @@ export interface ArticlesSelect<T extends boolean = true> {
   imageCaption?: T;
   content?: T;
   slug?: T;
+  seoTitle?: T;
+  searchDescription?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

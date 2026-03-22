@@ -8,6 +8,7 @@ import * as migration_20260317_200000_add_opinion_type_and_caption from './20260
 import * as migration_20260320_200000_add_write_in_authors from './20260320_200000_add_write_in_authors';
 import * as migration_20260321_200000_add_layout_template from './20260321_200000_add_layout_template';
 import * as migration_20260321_210000_add_layout_sections_and_volume from './20260321_210000_add_layout_sections_and_volume';
+import * as migration_20260322_200000_add_seo_fields from './20260322_200000_add_seo_fields';
 
 export const migrations = [
   {
@@ -59,5 +60,10 @@ export const migrations = [
     up: migration_20260321_210000_add_layout_sections_and_volume.up,
     down: migration_20260321_210000_add_layout_sections_and_volume.down,
     name: '20260321_210000_add_layout_sections_and_volume',
+  },
+  {
+    up: migration_20260322_200000_add_seo_fields.up,
+    down: migration_20260322_200000_add_seo_fields.down,
+    name: '20260322_200000_add_seo_fields',
   },
 ];
