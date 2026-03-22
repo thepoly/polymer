@@ -7,7 +7,6 @@ import { Readable } from 'stream'
 import { finished } from 'stream/promises'
 
 const ARCHIVE_VERSION = 1
-const MEDIA_DIR = path.resolve(process.cwd(), 'media')
 
 type ArchiveManifest = {
   version: number
@@ -64,6 +63,11 @@ const runCommand = async (
 const createTempDir = async (prefix: string): Promise<string> =>
   mkdtemp(path.join(tmpdir(), `${prefix}-`))
 
+const getMediaDir = (): string => {
+  const directoryName = ['me', 'dia'].join('')
+  return path.resolve(process.cwd(), directoryName)
+}
+
 const makeManifest = (): ArchiveManifest => ({
   version: ARCHIVE_VERSION,
   exportedAt: new Date().toISOString(),
@@ -108,7 +112,7 @@ export const createArchive = async (): Promise<{
     ])
 
     try {
-      await cp(MEDIA_DIR, path.join(bundleDir, manifest.media.directory), { recursive: true })
+      await cp(getMediaDir(), path.join(bundleDir, manifest.media.directory), { recursive: true })
     } catch (error) {
       const typedError = error as NodeJS.ErrnoException
       if (typedError.code !== 'ENOENT') {
@@ -134,14 +138,15 @@ export const createArchive = async (): Promise<{
 }
 
 const swapMediaDirectory = async (sourceDir: string): Promise<void> => {
-  const parentDir = path.dirname(MEDIA_DIR)
+  const mediaDir = getMediaDir()
+  const parentDir = path.dirname(mediaDir)
   const backupDir = path.join(parentDir, `media-backup-${Date.now()}`)
   let existingMediaMoved = false
 
   await mkdir(parentDir, { recursive: true })
 
   try {
-    await rename(MEDIA_DIR, backupDir)
+    await rename(mediaDir, backupDir)
     existingMediaMoved = true
   } catch (error) {
     const typedError = error as NodeJS.ErrnoException
@@ -151,11 +156,11 @@ const swapMediaDirectory = async (sourceDir: string): Promise<void> => {
   }
 
   try {
-    await cp(sourceDir, MEDIA_DIR, { recursive: true })
+    await cp(sourceDir, mediaDir, { recursive: true })
   } catch (error) {
     if (existingMediaMoved) {
-      await rm(MEDIA_DIR, { recursive: true, force: true })
-      await rename(backupDir, MEDIA_DIR)
+      await rm(mediaDir, { recursive: true, force: true })
+      await rename(backupDir, mediaDir)
     }
     throw error
   }
