@@ -3,6 +3,7 @@ import { LeadArticle } from "./LeadArticle";
 import { ArticleCard } from "./ArticleCard";
 import { ArticleListItem } from "./ArticleListItem";
 import { DynamicSectionHeader } from "./DynamicSectionHeader";
+import { SectionPinEditor } from "./SectionPinEditor";
 import { Article } from "./types";
 import TransitionLink from "@/components/TransitionLink";
 
@@ -10,6 +11,11 @@ interface FrontPageProps {
   topStories: {
     lead: Article;
     list: Article[];
+    /** When provided, override the default left/right split */
+    heroLeft?: Article[];
+    heroRight?: Article[];
+    /** Optional row of up to 4 articles below the hero area */
+    bottomRow?: Article[];
   };
   sections: {
     news: Article[];
@@ -100,7 +106,7 @@ const chunkIntoColumns = (articles: Article[], columnCount: number) => {
   return columns;
 };
 
-function SectionBlock({
+export function SectionBlock({
   title,
   articles,
 }: {
@@ -143,7 +149,7 @@ function SectionBlock({
       {/* Desktop: rich grid layout */}
       <div
         data-section-body
-        className={`hidden md:grid gap-6 ${
+        className={`hidden md:grid gap-6 pt-12 ${
           hasBlocks && listStories.length > 0
             ? "lg:grid-cols-[minmax(0,1.7fr)_minmax(280px,1fr)] lg:items-start"
             : ""
@@ -237,13 +243,14 @@ function SectionBlock({
         )}
       </div>
 
-      <div className="mt-4 flex justify-end">
+      <div className="mt-4 flex justify-end items-center">
         <TransitionLink
           href={`/${sectionSlug}`}
           className="font-meta text-[11px] font-bold uppercase tracking-[0.06em] text-accent transition-colors hover:text-accent/70"
         >
           More {title} &rarr;
         </TransitionLink>
+        <SectionPinEditor section={sectionSlug} />
       </div>
     </section>
   );
@@ -253,7 +260,9 @@ export default function FrontPage({
   topStories,
   sections,
 }: FrontPageProps) {
-  const heroStories = arrangeHeroStories(topStories.list);
+  const heroStories: HeroColumns = topStories.heroLeft && topStories.heroRight
+    ? { left: topStories.heroLeft, right: topStories.heroRight }
+    : arrangeHeroStories(topStories.list);
   const heroImageCount = [...heroStories.left, ...heroStories.right].filter(
     (article) => article.image,
   ).length;
@@ -270,36 +279,55 @@ export default function FrontPage({
               <ArticleCard article={article} />
             </div>
           ))}
+          {topStories.bottomRow && topStories.bottomRow.length > 0 && (
+            <>
+              {topStories.bottomRow.map((article) => (
+                <div key={article.id} className="mt-10">
+                  <ArticleCard article={article} />
+                </div>
+              ))}
+            </>
+          )}
         </div>
 
-        {/* Desktop: two-column hero grid */}
-        <div
-          data-frontpage-top
-          className={`relative z-[1] hidden pt-6 md:pt-7 md:grid gap-7 ${
-            leadIsCompact
-              ? "lg:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]"
-              : "lg:grid-cols-[minmax(0,0.97fr)_minmax(0,1.03fr)]"
-          }`}
-        >
-          <div data-header-scope="primary">
-            <LeadArticle article={topStories.lead} compact={leadIsCompact} />
+        {/* Desktop: hero + optional bottom row */}
+        <div data-frontpage-top className="relative z-[1] hidden md:block pt-6 md:pt-7 pb-8">
+          <div
+            className={`grid gap-7 ${
+              leadIsCompact
+                ? "lg:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]"
+                : "lg:grid-cols-[minmax(0,0.97fr)_minmax(0,1.03fr)]"
+            }`}
+          >
+            <div>
+              <LeadArticle article={topStories.lead} compact={leadIsCompact} />
+            </div>
+            <div className="grid grid-cols-2 gap-4 items-start">
+              <div className="flex flex-col divide-y divide-rule">
+                {heroStories.left.map((article, i) => (
+                  <div key={article.id} className={i > 0 ? "pt-3" : "pb-3"}>
+                    <ArticleCard article={article} />
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col divide-y divide-rule">
+                {heroStories.right.map((article, i) => (
+                  <div key={article.id} className={i > 0 ? "pt-3" : "pb-3"}>
+                    <ArticleCard article={article} />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-4 items-start">
-            <div className="flex flex-col divide-y divide-rule">
-              {heroStories.left.map((article, i) => (
-                <div key={article.id} className={i > 0 ? "pt-3" : "pb-3"}>
-                  <ArticleCard article={article} />
-                </div>
+
+          {/* Bottom row: optional 4-across below hero */}
+          {topStories.bottomRow && topStories.bottomRow.length > 0 && (
+            <div className="grid grid-cols-4 gap-5 mt-7">
+              {topStories.bottomRow.map((article) => (
+                <ArticleCard key={article.id} article={article} contained titleClassName="text-[18px] md:text-[17px]" />
               ))}
             </div>
-            <div className="flex flex-col divide-y divide-rule">
-              {heroStories.right.map((article, i) => (
-                <div key={article.id} className={i > 0 ? "pt-3" : "pb-3"}>
-                  <ArticleCard article={article} />
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="relative z-[0] mt-16 md:mt-6 flex flex-col gap-8 lg:gap-6">

@@ -7,6 +7,7 @@ import { getArticleLayout, ArticleLayouts } from '@/components/Article/Layouts';
 import { LexicalNode } from '@/components/Article/RichTextParser';
 import ArticleScrollBar from '@/components/ArticleScrollBar';
 import ArticleAnalytics from '@/components/analytics/ArticleAnalytics';
+import { InlineEditor } from '@/components/Article/InlineEditor';
 import { calculateWordCount } from '@/utils/wordCount';
 import { getArticleUrl } from '@/utils/getArticleUrl';
 import type { Metadata } from 'next';
@@ -109,6 +110,7 @@ const getArticle = cache(async (slug: string, section?: string): Promise<Article
       section: true,
       opinionType: true,
       authors: true,
+      writeInAuthors: true,
       publishedDate: true,
       featuredImage: true,
       imageCaption: true,
@@ -140,9 +142,13 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
 
   if (!article || !matchesRequestedDate(article, year, month)) return {};
 
-  const authors = (article.authors || [])
+  const staffAuthorNames = (article.authors || [])
     .map((a) => (typeof a === 'number' ? null : `${a.firstName} ${a.lastName}`))
     .filter(Boolean) as string[];
+  const writeInAuthorNames = (((article as unknown as Record<string, unknown>).writeInAuthors || []) as Array<{ name: string }>)
+    .map((a) => a.name)
+    .filter(Boolean);
+  const authors = [...staffAuthorNames, ...writeInAuthorNames];
 
   const image = article.featuredImage as Media | null;
   const imageUrl = image?.url || undefined;
@@ -215,7 +221,8 @@ export default async function ArticlePage({ params }: Args) {
       }
   }
 
-  const authors = (article.authors || []).filter((author): author is User => typeof author !== 'number');
+  const staffAuthorsForJsonLd = (article.authors || []).filter((author): author is User => typeof author !== 'number');
+  const writeInAuthorsForJsonLd = ((article as unknown as Record<string, unknown>).writeInAuthors || []) as Array<{ name: string }>;
   const image = article.featuredImage as Media | null;
   const articleUrl = getArticleUrl(article);
 
@@ -255,11 +262,17 @@ export default async function ArticlePage({ params }: Args) {
     }),
     datePublished: article.publishedDate || article.createdAt,
     dateModified: article.updatedAt,
-    author: authors.map((a) => ({
-      '@type': 'Person',
-      name: `${a.firstName} ${a.lastName}`,
-      ...(a.slug && { url: `/staff/${a.slug}` }),
-    })),
+    author: [
+      ...staffAuthorsForJsonLd.map((a) => ({
+        '@type': 'Person',
+        name: `${a.firstName} ${a.lastName}`,
+        ...(a.slug && { url: `/staff/${a.slug}` }),
+      })),
+      ...writeInAuthorsForJsonLd.map((a) => ({
+        '@type': 'Person',
+        name: a.name,
+      })),
+    ],
     publisher: {
       '@type': 'Organization',
       name: 'The Polytechnic',
@@ -294,6 +307,7 @@ export default async function ArticlePage({ params }: Args) {
       />
       <ArticleScrollBar title={article.title} section={article.section} />
       <LayoutComponent article={article as unknown as Article} content={cleanContent} />
+      {isStaff && <InlineEditor articleId={article.id} />}
     </>
   );
 }

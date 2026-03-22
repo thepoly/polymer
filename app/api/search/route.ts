@@ -197,6 +197,7 @@ async function searchPayload(queryFormsLower: string[]) {
     publishedDate: true,
     createdAt: true,
     authors: true,
+    writeInAuthors: true,
     content: true,
   } as const;
   const allDocs = await payload

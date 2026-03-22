@@ -16,6 +16,9 @@
     "postinstall": "node scripts/generate-env.js"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@payloadcms/db-postgres": "^3.75.0",
     "@payloadcms/next": "^3.75.0",
     "@payloadcms/richtext-lexical": "^3.75.0",

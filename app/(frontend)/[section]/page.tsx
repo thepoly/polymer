@@ -95,6 +95,7 @@ export default async function SectionPageRoute({ params }: Args) {
       publishedDate: true,
       createdAt: true,
       authors: true,
+      writeInAuthors: true,
     },
   });
 

@@ -62,12 +62,14 @@ const getFeaturedImage = (value: RecommendationArticle['featuredImage'] | Media 
 };
 
 const getAuthorString = (article: RecommendationArticle) => {
-  const names = (article.authors || []).flatMap((author) => {
+  const staffNames = (article.authors || []).flatMap((author) => {
     if (typeof author === 'number') return [];
-
     return [`${author.firstName} ${author.lastName}`];
   });
-
+  const writeInNames = ((article as unknown as Record<string, unknown>).writeInAuthors as Array<{ name: string }> || [])
+    .map((a) => a.name)
+    .filter(Boolean);
+  const names = [...staffNames, ...writeInNames];
   return names.length > 0 ? names.join(' AND ') : null;
 };
 
@@ -182,6 +184,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
       publishedDate: true,
       createdAt: true,
       authors: true,
+      writeInAuthors: true,
       opinionType: true,
     },
   });

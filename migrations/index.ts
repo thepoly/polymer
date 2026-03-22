@@ -5,6 +5,9 @@ import * as migration_20260310_211734_add_user_slug from './20260310_211734_add_
 import * as migration_20260316_144021_add_layout_top4 from './20260316_144021_add_layout_top4';
 import * as migration_20260316_145613_remove_editorial_section from './20260316_145613_remove_editorial_section';
 import * as migration_20260317_200000_add_opinion_type_and_caption from './20260317_200000_add_opinion_type_and_caption';
+import * as migration_20260320_200000_add_write_in_authors from './20260320_200000_add_write_in_authors';
+import * as migration_20260321_200000_add_layout_template from './20260321_200000_add_layout_template';
+import * as migration_20260321_210000_add_layout_sections_and_volume from './20260321_210000_add_layout_sections_and_volume';
 
 export const migrations = [
   {
@@ -41,5 +44,20 @@ export const migrations = [
     up: migration_20260317_200000_add_opinion_type_and_caption.up,
     down: migration_20260317_200000_add_opinion_type_and_caption.down,
     name: '20260317_200000_add_opinion_type_and_caption',
+  },
+  {
+    up: migration_20260320_200000_add_write_in_authors.up,
+    down: migration_20260320_200000_add_write_in_authors.down,
+    name: '20260320_200000_add_write_in_authors',
+  },
+  {
+    up: migration_20260321_200000_add_layout_template.up,
+    down: migration_20260321_200000_add_layout_template.down,
+    name: '20260321_200000_add_layout_template',
+  },
+  {
+    up: migration_20260321_210000_add_layout_sections_and_volume.up,
+    down: migration_20260321_210000_add_layout_sections_and_volume.down,
+    name: '20260321_210000_add_layout_sections_and_volume',
   },
 ];

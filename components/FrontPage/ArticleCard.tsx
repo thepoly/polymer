@@ -12,6 +12,7 @@ export const ArticleCard = ({
   imageAspectClassName = "aspect-[4/3]",
   titleClassName = "text-[32px] md:text-[24px]",
   excerptClassName = "mt-1.5 line-clamp-3 text-[13px] leading-[1.38]",
+  contained = false,
 }: {
   article: Article;
   caption?: string | null;
@@ -19,10 +20,12 @@ export const ArticleCard = ({
   imageAspectClassName?: string;
   titleClassName?: string;
   excerptClassName?: string;
+  /** When true, image stays within its container instead of going full-bleed on mobile */
+  contained?: boolean;
 }) => (
   <TransitionLink href={getArticleUrl(article)} className="group block min-w-0">
     {showImage && article.image && (
-      <figure data-header-anchor="image" className="mb-3 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen lg:static lg:ml-0 lg:mr-0 lg:w-full">
+      <figure data-header-anchor="image" className={`mb-3 ${contained ? 'relative w-full' : 'relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen lg:static lg:ml-0 lg:mr-0 lg:w-full'}`}>
         <div className={`relative w-full overflow-hidden ${imageAspectClassName}`}>
           <Image
             src={article.image}

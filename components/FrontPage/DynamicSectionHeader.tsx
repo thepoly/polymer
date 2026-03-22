@@ -13,9 +13,9 @@ const TOP_BLOCK_SELECTOR = "[data-frontpage-top]";
 const PRIMARY_SCOPE_SELECTOR = "[data-header-scope='primary']";
 const ANCHOR_SELECTOR = "[data-header-anchor]";
 const TEXT_TOP_GAP = 16;
-const TEXT_BOTTOM_GAP = 12;
+const TEXT_BOTTOM_GAP = 18;
 const IMAGE_TOP_INSET = 18; // extra clearance above header when prev content is an image
-const IMAGE_BOT_INSET = -5; // let the header tuck a bit closer to the image below
+const IMAGE_BOT_INSET = 12; // clearance below header when next content is an image
 const HEADER_X_OFFSET = -1;
 const HEADER_Y_OFFSET_RATIO = 0.06;
 const HEADER_LINE_HEIGHT = 0.82;

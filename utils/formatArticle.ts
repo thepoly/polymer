@@ -8,6 +8,11 @@ type PublicAuthorLike = {
 
 type PublicMediaLike = Pick<Media, 'url'>;
 
+type WriteInAuthor = {
+  name: string;
+  photo?: unknown;
+};
+
 type FormatArticleInput = {
   id: number | string;
   slug?: string | null;
@@ -19,6 +24,7 @@ type FormatArticleInput = {
   publishedDate?: string | null;
   createdAt?: string;
   authors?: Array<number | PublicAuthorLike> | null;
+  writeInAuthors?: WriteInAuthor[] | null;
   _status?: string | null;
 };
 
@@ -29,13 +35,18 @@ export const formatArticle = (
   if (!article || typeof article === 'number') return null;
   if (article._status && article._status !== 'published') return null;
 
-  const authors = article.authors
-    ?.map((author) => {
+  const staffNames = (article.authors || [])
+    .map((author) => {
       if (typeof author === 'number') return '';
       return `${author.firstName} ${author.lastName}`;
     })
-    .filter(Boolean)
-    .join(' AND ');
+    .filter(Boolean);
+
+  const writeInNames = (article.writeInAuthors || [])
+    .map((a) => a.name)
+    .filter(Boolean);
+
+  const authors = [...staffNames, ...writeInNames].join(' AND ');
 
   const date = article.publishedDate ? new Date(article.publishedDate) : null;
 

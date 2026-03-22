@@ -129,6 +129,24 @@ export const Users: CollectionConfig = {
         update: isAdminField,
       },
     },
+    {
+      name: 'section',
+      type: 'select',
+      label: 'Assigned Section',
+      admin: {
+        description: 'Which section this editor manages (only applies to Section Editor role)',
+        condition: (data) => data?.roles?.includes('editor'),
+      },
+      options: [
+        { label: 'News', value: 'news' },
+        { label: 'Features', value: 'features' },
+        { label: 'Opinion', value: 'opinion' },
+        { label: 'Sports', value: 'sports' },
+      ],
+      access: {
+        update: isAdminField,
+      },
+    },
     // --- 3. PUBLIC PROFILE ---
     {
       name: 'headshot',

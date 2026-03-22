@@ -130,6 +130,10 @@ export interface User {
   lastName: string;
   slug?: string | null;
   roles?: ('admin' | 'eic' | 'editor' | 'writer')[] | null;
+  /**
+   * Which section this editor manages (only applies to Section Editor role)
+   */
+  section?: ('news' | 'features' | 'opinion' | 'sports') | null;
   headshot?: (number | null) | Media;
   bio?: {
     root: {
@@ -230,7 +234,17 @@ export interface Article {
         | 'other'
       )
     | null;
-  authors: (number | User)[];
+  authors?: (number | User)[] | null;
+  /**
+   * External contributors who are not staff users
+   */
+  writeInAuthors?:
+    | {
+        name: string;
+        photo?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
   publishedDate?: string | null;
   featuredImage?: (number | null) | Media;
   imageCaption?: string | null;
@@ -261,7 +275,31 @@ export interface Article {
 export interface Layout {
   id: number;
   name: string;
-  mainArticle: number | Article;
+  skeleton?: ('custom' | 'aries') | null;
+  grid?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  volume?: number | null;
+  edition?: number | null;
+  /**
+   * Per-section layout configuration (skeleton + pinned articles)
+   */
+  sectionLayouts?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  mainArticle?: (number | null) | Article;
   top1?: (number | null) | Article;
   top2?: (number | null) | Article;
   top3?: (number | null) | Article;
@@ -369,6 +407,7 @@ export interface UsersSelect<T extends boolean = true> {
   lastName?: T;
   slug?: T;
   roles?: T;
+  section?: T;
   headshot?: T;
   bio?: T;
   positions?:
@@ -427,6 +466,13 @@ export interface ArticlesSelect<T extends boolean = true> {
   section?: T;
   opinionType?: T;
   authors?: T;
+  writeInAuthors?:
+    | T
+    | {
+        name?: T;
+        photo?: T;
+        id?: T;
+      };
   publishedDate?: T;
   featuredImage?: T;
   imageCaption?: T;
@@ -451,6 +497,11 @@ export interface JobTitlesSelect<T extends boolean = true> {
  */
 export interface LayoutSelect<T extends boolean = true> {
   name?: T;
+  skeleton?: T;
+  grid?: T;
+  volume?: T;
+  edition?: T;
+  sectionLayouts?: T;
   mainArticle?: T;
   top1?: T;
   top2?: T;

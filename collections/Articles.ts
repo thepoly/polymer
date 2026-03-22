@@ -121,7 +121,7 @@ const Articles: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       hasMany: true,
-      required: true,
+      required: false,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       defaultValue: ({ req }: { req: any }) => {
         if (req.user) return [req.user.id]
@@ -130,6 +130,24 @@ const Articles: CollectionConfig = {
       admin: {
         position: 'sidebar',
       },
+    },
+    {
+      name: 'writeInAuthors',
+      type: 'array',
+      label: 'Write-in Authors',
+      admin: {
+        position: 'sidebar',
+        description: 'External contributors who are not staff users',
+      },
+      fields: [
+        { name: 'name', type: 'text', required: true },
+        {
+          name: 'photo',
+          type: 'upload',
+          relationTo: 'media',
+          required: false,
+        },
+      ],
     },
     {
       name: 'publishedDate',

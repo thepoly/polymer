@@ -102,13 +102,13 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center text-center px-4 pb-3 sm:pb-5 md:pb-6 pointer-events-none">
           <div className="max-w-3xl w-full space-y-1">
             
-            <h1 className={`font-display font-bold text-[39px] md:text-[34px] lg:text-[42px] text-white leading-[1.05] tracking-[-0.02em] drop-shadow-lg ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
+            <h1 data-ie-field="title" className={`font-display font-bold text-[39px] md:text-[34px] lg:text-[42px] text-white leading-[1.05] tracking-[-0.02em] drop-shadow-lg ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
               {article.title}
             </h1>
 
             {article.subdeck && (
               <div className="flex flex-col items-center">
-                <h2 className="font-meta text-xl md:text-2xl font-normal text-white/90 leading-snug max-w-[38rem] drop-shadow-md">
+                <h2 data-ie-field="subdeck" className="font-meta text-xl md:text-2xl font-normal text-white/90 leading-snug max-w-[38rem] drop-shadow-md">
                   {article.subdeck}
                 </h2>
               </div>
@@ -134,25 +134,42 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                       </Link>
                     );
                   })}
+                  {((article as unknown as Record<string, unknown>).writeInAuthors as Array<{ name: string; photo?: Media | number | null }> || []).map((writeIn, i) => {
+                    const photo = writeIn.photo && typeof writeIn.photo !== 'number' ? writeIn.photo as Media : null;
+                    if (!photo?.url) return null;
+                    return (
+                      <div key={`write-in-${i}`} className="relative w-7 h-7 rounded-full overflow-hidden bg-gray-800 border-2 border-white z-10">
+                        <Image src={photo.url} alt={writeIn.name} fill className="object-cover" />
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Author Names */}
                 <div className="font-meta text-[12px] font-[440] tracking-[0.08em] pointer-events-auto sm:text-[13px]">
-                  By {article.authors && article.authors.length > 0 ? (
-                    article.authors.map((author, index) => {
-                      const user = author as User;
-                      return (
-                        <React.Fragment key={user.id}>
-                          {index > 0 && index === article.authors!.length - 1 ? ' and ' : index > 0 ? ', ' : ''}
-                          <Link href={`/staff/${user.slug || user.id}`} className="hover:text-red-500 hover:underline decoration-1 underline-offset-2 transition-colors">
-                            {user.firstName} {user.lastName}
-                          </Link>
-                        </React.Fragment>
-                      );
-                    })
-                  ) : (
-                    <><em>The Polytechnic</em> Editorial Board</>
-                  )}
+                  {(() => {
+                    const staffAuthors = (article.authors || []).filter((a): a is User => typeof a !== 'number');
+                    const writeInAuthors = ((article as unknown as Record<string, unknown>).writeInAuthors || []) as Array<{ name: string }>;
+                    const allNames: { name: string; href?: string; key: string }[] = [
+                      ...staffAuthors.map((u) => ({ name: `${u.firstName} ${u.lastName}`, href: `/staff/${u.slug || u.id}`, key: `staff-${u.id}` })),
+                      ...writeInAuthors.map((w, i) => ({ name: w.name, key: `write-in-${i}` })),
+                    ];
+                    if (allNames.length === 0) return <>By <em>The Polytechnic</em> Editorial Board</>;
+                    return (
+                      <>
+                        By {allNames.map((author, index) => (
+                          <React.Fragment key={author.key}>
+                            {index > 0 && index === allNames.length - 1 ? ' and ' : index > 0 ? ', ' : ''}
+                            {author.href ? (
+                              <Link href={author.href} className="hover:text-red-500 hover:underline decoration-1 underline-offset-2 transition-colors">
+                                {author.name}
+                              </Link>
+                            ) : author.name}
+                          </React.Fragment>
+                        ))}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
 
