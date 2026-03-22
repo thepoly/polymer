@@ -28,6 +28,11 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'picsum.photos',
       },
+      {
+        protocol: 'http',
+        hostname: '10.10.10.22',
+        port: '8080',
+      },
     ],
   },
   async headers() {
