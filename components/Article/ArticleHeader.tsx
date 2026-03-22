@@ -12,7 +12,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
   const featuredImage = article.featuredImage as Media | null;
 
   return (
-    <div className="flex flex-col gap-6 mb-8">
+    <div className="flex flex-col gap-10 mb-8" style={{ paddingTop: '40px' }}>
       <div className="flex flex-col gap-4 max-w-[680px] w-full mx-auto">
         {article.kicker && (
             <span className="font-meta text-accent font-[440] italic text-[15px] md:text-[16px] tracking-[0.06em] transition-colors">

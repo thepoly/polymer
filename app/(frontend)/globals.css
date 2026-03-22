@@ -160,6 +160,9 @@
   --font-ui: "Myriad Pro", "Helvetica Neue", Arial, sans-serif;
   --font-meta: "Raleway", "Helvetica Neue", Arial, sans-serif;
 
+  --opinions-choice-bg: #f2f2f2;
+  --opinions-choice-hover: #e8e8e8;
+
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
@@ -180,6 +183,9 @@ html.dark {
   --header-border: #1f1f1f;
   --rule-color: rgba(255, 255, 255, 0.08);
   --rule-strong-color: rgba(255, 255, 255, 0.25);
+
+  --opinions-choice-bg: rgba(255, 255, 255, 0.06);
+  --opinions-choice-hover: rgba(255, 255, 255, 0.1);
 
   --logo-filter: none;
   --header-logo-invert: none;
@@ -399,4 +405,10 @@ html:not(.standalone-pwa) body::after {
 html.standalone-pwa body::before,
 html.standalone-pwa body::after {
   display: none;
+}
+
+/* ── Opinion section grid ── */
+.opinion-grid {
+  column-gap: 20px;
+  column-rule: 1px solid var(--rule-color);
 }

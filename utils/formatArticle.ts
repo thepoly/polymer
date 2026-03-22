@@ -16,6 +16,7 @@ type FormatArticleInput = {
   featuredImage?: number | PublicMediaLike | null;
   section: string;
   kicker?: string | null;
+  opinionType?: string | null;
   publishedDate?: string | null;
   createdAt?: string;
   authors?: Array<number | PublicAuthorLike> | null;
@@ -28,6 +29,7 @@ export const formatArticle = (
 ): ComponentArticle | null => {
   if (!article || typeof article === 'number') return null;
   if (article._status && article._status !== 'published') return null;
+  if (!article.slug) return null;
 
   const authors = article.authors
     ?.map((author) => {
@@ -71,6 +73,7 @@ export const formatArticle = (
     image: (article.featuredImage as Media)?.url || null,
     section: article.section,
     kicker: article.kicker || null,
+    opinionType: article.opinionType || null,
     publishedDate: article.publishedDate,
     createdAt: article.createdAt,
   };

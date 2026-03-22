@@ -6,12 +6,12 @@ type ArticleLike = {
 }
 
 export const getArticleUrl = (article: ArticleLike) => {
-  const dateStr = article.publishedDate || article.createdAt || new Date().toISOString();
+  const dateStr = article.publishedDate || article.createdAt;
+  if (!dateStr || !article.slug || article.slug === '#') return '#';
+
   const date = new Date(dateStr);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const section = article.section;
-  const slug = article.slug;
-  
-  return `/${section}/${year}/${month}/${slug}`;
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+
+  return `/${article.section}/${year}/${month}/${article.slug}`;
 }
