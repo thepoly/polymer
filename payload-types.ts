@@ -287,7 +287,7 @@ export interface Article {
 export interface Layout {
   id: number;
   name: string;
-  skeleton?: ('custom' | 'aries') | null;
+  skeleton?: ('custom' | 'aries' | 'taurus') | null;
   grid?:
     | {
         [k: string]: unknown;

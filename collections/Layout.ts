@@ -45,6 +45,7 @@ const Layout: CollectionConfig = {
       options: [
         { label: 'Custom Grid', value: 'custom' },
         { label: 'Aries', value: 'aries' },
+        { label: 'Taurus', value: 'taurus' },
       ],
       admin: { hidden: true },
     },
