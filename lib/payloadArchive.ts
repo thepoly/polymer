@@ -1,4 +1,4 @@
-import { access, mkdtemp, mkdir, readFile, rm, rename, cp, writeFile } from 'fs/promises'
+import { access, lstat, mkdtemp, mkdir, readFile, realpath, rm, rename, cp, writeFile } from 'fs/promises'
 import { createReadStream } from 'fs'
 import { tmpdir } from 'os'
 import path from 'path'
@@ -76,6 +76,24 @@ const createTempDir = async (prefix: string): Promise<string> =>
 const getMediaDir = (): string => {
   const directoryName = ['me', 'dia'].join('')
   return path.resolve(process.cwd(), directoryName)
+}
+
+const getMediaStorageDir = async (): Promise<string> => {
+  const mediaDir = getMediaDir()
+
+  try {
+    const stats = await lstat(mediaDir)
+
+    if (stats.isSymbolicLink()) {
+      return await realpath(mediaDir)
+    }
+  } catch (error) {
+    if (!isNotFoundError(error)) {
+      throw error
+    }
+  }
+
+  return mediaDir
 }
 
 const getArchiveStorageDir = (): string => {
@@ -189,7 +207,7 @@ const createRollbackSnapshot = async (
   ])
 
   try {
-    await copyDirectoryContents(getMediaDir(), rollbackMediaDir)
+    await copyDirectoryContents(await getMediaStorageDir(), rollbackMediaDir)
   } catch (error) {
     if (!isNotFoundError(error)) {
       throw error
@@ -296,7 +314,10 @@ export const createArchive = async (): Promise<{
     ])
 
     try {
-      await copyDirectoryContents(getMediaDir(), path.join(bundleDir, manifest.media.directory))
+      await copyDirectoryContents(
+        await getMediaStorageDir(),
+        path.join(bundleDir, manifest.media.directory),
+      )
     } catch (error) {
       const typedError = error as NodeJS.ErrnoException
       if (typedError.code !== 'ENOENT') {
@@ -324,7 +345,7 @@ export const createArchive = async (): Promise<{
 }
 
 const swapMediaDirectory = async (sourceDir: string): Promise<void> => {
-  const mediaDir = getMediaDir()
+  const mediaDir = await getMediaStorageDir()
   const parentDir = path.dirname(mediaDir)
   const backupDir = path.join(parentDir, `media-backup-${Date.now()}`)
   let existingMediaMoved = false
