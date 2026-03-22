@@ -18,7 +18,8 @@ VALUES
   ('20260317_200000_add_opinion_type_and_caption', 2, NOW(), NOW()),
   ('20260320_200000_add_write_in_authors', 3, NOW(), NOW()),
   ('20260321_200000_add_layout_template', 4, NOW(), NOW()),
-  ('20260321_210000_add_layout_sections_and_volume', 4, NOW(), NOW())
+  ('20260321_210000_add_layout_sections_and_volume', 4, NOW(), NOW()),
+  ('20260322_210000_add_media_source_url', 5, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -101,4 +102,11 @@ ALTER TABLE "layout" ADD COLUMN IF NOT EXISTS "edition" numeric;
 
 -- 20260321: Add section field to users (for section editor assignment)
 ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "section" varchar;
+
+-- 20260322: Add source_url to media and backfill legacy remote media
+ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "source_url" varchar;
+UPDATE "media"
+SET "source_url" = "url"
+WHERE "url" LIKE 'http://10.10.10.22:8080/media/%'
+  AND ("source_url" IS NULL OR "source_url" = '');
 SQL

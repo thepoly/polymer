@@ -9,6 +9,7 @@ import * as migration_20260320_200000_add_write_in_authors from './20260320_2000
 import * as migration_20260321_200000_add_layout_template from './20260321_200000_add_layout_template';
 import * as migration_20260321_210000_add_layout_sections_and_volume from './20260321_210000_add_layout_sections_and_volume';
 import * as migration_20260322_200000_add_seo_fields from './20260322_200000_add_seo_fields';
+import * as migration_20260322_210000_add_media_source_url from './20260322_210000_add_media_source_url';
 
 export const migrations = [
   {
@@ -65,5 +66,10 @@ export const migrations = [
     up: migration_20260322_200000_add_seo_fields.up,
     down: migration_20260322_200000_add_seo_fields.down,
     name: '20260322_200000_add_seo_fields',
+  },
+  {
+    up: migration_20260322_210000_add_media_source_url.up,
+    down: migration_20260322_210000_add_media_source_url.down,
+    name: '20260322_210000_add_media_source_url',
   },
 ];

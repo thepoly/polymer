@@ -13,6 +13,17 @@ export const Media: CollectionConfig = {
     read: () => true,
     delete: isAdmin,
   },
+  hooks: {
+    afterRead: [
+      ({ doc }) => {
+        if (doc?.sourceURL && typeof doc.sourceURL === 'string') {
+          doc.url = doc.sourceURL
+          doc.thumbnailURL = null
+        }
+        return doc
+      },
+    ],
+  },
   fields: [
     {
       name: 'alt',
@@ -26,8 +37,16 @@ export const Media: CollectionConfig = {
         position: 'sidebar',
       },
     },
+    {
+      name: 'sourceURL',
+      type: 'text',
+      admin: {
+        hidden: true,
+        readOnly: true,
+      },
+    },
   ],
   upload: true,
 }
 
-export default Media;
+export default Media
