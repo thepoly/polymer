@@ -161,6 +161,10 @@ export interface User {
       }[]
     | null;
   blackTheme?: boolean | null;
+  /**
+   * Marks this staffer as retired. Retired staff are shown in the RETIRED section on the staff page as "Poly Emeritus" from the end of their last role through the present, and their password is replaced with a long scrambled value without notifying them.
+   */
+  retired?: boolean | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -478,6 +482,7 @@ export interface UsersSelect<T extends boolean = true> {
         id?: T;
       };
   blackTheme?: T;
+  retired?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;

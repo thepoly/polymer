@@ -13,6 +13,7 @@ import * as migration_20260322_200000_add_seo_fields from './20260322_200000_add
 import * as migration_20260322_210000_add_media_source_url from './20260322_210000_add_media_source_url';
 import * as migration_20260322_220000_add_more_to_opinion_type_enum from './20260322_220000_add_more_to_opinion_type_enum';
 import * as migration_20260322_230000_add_write_in_photographer_to_media from './20260322_230000_add_write_in_photographer_to_media';
+import * as migration_20260322_231000_add_user_retired from './20260322_231000_add_user_retired';
 
 export const migrations = [
   {
@@ -89,5 +90,10 @@ export const migrations = [
     up: migration_20260322_230000_add_write_in_photographer_to_media.up,
     down: migration_20260322_230000_add_write_in_photographer_to_media.down,
     name: '20260322_230000_add_write_in_photographer_to_media',
+  },
+  {
+    up: migration_20260322_231000_add_user_retired.up,
+    down: migration_20260322_231000_add_user_retired.down,
+    name: '20260322_231000_add_user_retired',
   },
 ];
