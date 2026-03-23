@@ -31,6 +31,21 @@ const SWIPE_THRESHOLD = 36;
 const DRAG_START_THRESHOLD = 6;
 const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
 
+// Header line wave: sine-wave path that dampens to a flat line as it draws in.
+const HEADER_WAVE_LAMBDA = 300;
+const HEADER_WAVE_AMPLITUDE = 1.5;
+const HEADER_WAVE_PATH = (() => {
+  const cy = 0.5, A = HEADER_WAVE_AMPLITUDE, half = HEADER_WAVE_LAMBDA / 2;
+  const cp = Math.round(0.3642 * half);
+  let d = `M 0,${cy}`;
+  for (let n = 0; n < 20; n++) {
+    const x = n * HEADER_WAVE_LAMBDA;
+    d += ` C ${x + cp},${cy - A} ${x + half - cp},${cy - A} ${x + half},${cy}`;
+    d += ` C ${x + half + cp},${cy + A} ${x + HEADER_WAVE_LAMBDA - cp},${cy + A} ${x + HEADER_WAVE_LAMBDA},${cy}`;
+  }
+  return d;
+})();
+
 function formatCurrentDate() {
   return new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -581,6 +596,11 @@ export default function Header({ compact = false, mobileTight = false }: { compa
                 animation: terrySuck ${suckDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
                 transform-origin: 468px 0.5px;
               }
+              @keyframes headerWaveDampen {
+                0% { transform: scaleY(1); }
+                85% { transform: scaleY(1); }
+                100% { transform: scaleY(0); }
+              }
             `}} />
 
             <div className="relative flex items-end justify-between gap-8 pb-0.5">
@@ -646,14 +666,17 @@ export default function Header({ compact = false, mobileTight = false }: { compa
                         animation: `terryWrapDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
                       }}
                     />
-                    <line
-                      x1={logoOutlineLeftX} y1={logoBaselineY} x2="100%" y2={logoBaselineY}
+                    <path
+                      d={HEADER_WAVE_PATH}
                       pathLength="100"
                       stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="square"
+                      vectorEffect="non-scaling-stroke"
                       style={{
                         strokeDasharray: 100,
                         strokeDashoffset: 100,
-                        animation: `terryShootDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+                        transformBox: 'fill-box',
+                        transformOrigin: 'center center',
+                        animation: `terryShootDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards, headerWaveDampen ${shootDurationMs}ms ease-out forwards`,
                       }}
                     />
                   </svg>
