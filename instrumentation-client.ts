@@ -1,5 +1,5 @@
 import posthog from "posthog-js";
-import { POSTHOG_KEY, POSTHOG_UI_HOST, shouldTrackPath } from "@/lib/posthog-config";
+import { POSTHOG_KEY, getPageType, shouldTrackPath } from "@/lib/posthog-config";
 
 if (POSTHOG_KEY) {
   posthog.init(POSTHOG_KEY, {
@@ -17,6 +17,13 @@ if (POSTHOG_KEY) {
     before_send: (event) => {
       if (typeof window !== "undefined" && !shouldTrackPath(window.location.pathname)) {
         return null;
+      }
+
+      if (typeof window !== "undefined" && event.event === "$pageview") {
+        event.properties = {
+          ...event.properties,
+          page_type: getPageType(window.location.pathname),
+        };
       }
 
       return event;
