@@ -208,6 +208,10 @@ html.dark {
   --header-logo-invert: none;
 }
 
+html.dark .homepage-zodiac {
+  --accent-color: #ff8a99;
+}
+
 html {
   background-color: var(--background);
   color-scheme: light dark;

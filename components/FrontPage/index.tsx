@@ -262,7 +262,7 @@ export default function FrontPage({
   const leadIsCompact = heroImageCount >= 2;
 
   return (
-    <div className="w-full bg-bg-main text-text-main transition-colors duration-300">
+    <div className="homepage-zodiac w-full bg-bg-main text-text-main transition-colors duration-300">
       <div className="mx-auto max-w-[1280px] px-4 pb-14 md:px-6 xl:px-[30px]">
         {/* Mobile: lead first, then a text article, then the rest */}
         <div className="pt-2 flex flex-col md:hidden" data-frontpage-top>

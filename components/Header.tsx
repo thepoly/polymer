@@ -446,7 +446,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
         <div className="mt-3 border-y border-black dark:border-[#DDDDDD]">
           <div className="font-meta safe-area-mobile-header-x mx-auto flex max-w-[1280px] items-center justify-center gap-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.1em]">
             <span className="text-text-main" suppressHydrationWarning>{currentDate}</span>
-            <span className="text-accent font-semibold">Vol. XCI No. 22</span>
+            <span className="text-accent font-semibold dark:text-[#ff8a99]">Vol. XCI No. 22</span>
           </div>
         </div>
       </header>
@@ -491,7 +491,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
 
             <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 text-[11px] font-medium uppercase tracking-[0.1em]">
               <span className="text-text-main" suppressHydrationWarning>{currentDate}</span>
-              <span className="text-accent font-semibold">Vol. XCI No. 22</span>
+              <span className="text-accent font-semibold dark:text-[#ff8a99]">Vol. XCI No. 22</span>
             </div>
 
             <div className="flex items-center gap-2">

@@ -49,7 +49,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                 priority
               />
             </div>
-            {(imageCaption || photographer) && (
+            {(imageCaption || photographer || writeInPhotographer) && (
               <div className="flex justify-between items-baseline gap-4 mt-1">
                 {imageCaption && (
                   <span data-ie-field="imageCaption" className="font-meta text-[12px] text-text-muted italic transition-colors">
