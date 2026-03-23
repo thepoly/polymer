@@ -188,6 +188,7 @@ export interface Media {
   id: number;
   alt?: string | null;
   photographer?: (number | null) | User;
+  writeInPhotographer?: string | null;
   sourceUrl?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -501,6 +502,7 @@ export interface UsersSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   photographer?: T;
+  writeInPhotographer?: T;
   sourceUrl?: T;
   updatedAt?: T;
   createdAt?: T;

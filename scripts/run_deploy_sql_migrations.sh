@@ -169,6 +169,9 @@ SET "source_url" = "url"
 WHERE "url" LIKE 'http://10.10.10.22:8080/media/%'
   AND ("source_url" IS NULL OR "source_url" = '');
 
+-- 20260322: Add write-in photographer to media
+ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "write_in_photographer" varchar;
+
 -- 20260322: Add 'more' to opinion_type enums
 ALTER TYPE "public"."enum_articles_opinion_type" ADD VALUE IF NOT EXISTS 'more';
 ALTER TYPE "public"."enum__articles_v_version_opinion_type" ADD VALUE IF NOT EXISTS 'more';

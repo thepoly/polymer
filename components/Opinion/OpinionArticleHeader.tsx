@@ -14,6 +14,9 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
   const opinionType = (article as unknown as Record<string, unknown>).opinionType as string | undefined;
   const imageCaption = (article as unknown as Record<string, unknown>).imageCaption as string | undefined;
   const typeLabel = opinionTypeLabels[opinionType || 'opinion'] || 'Op-Ed';
+  const writeInPhotographer = featuredImage
+    ? ((featuredImage as unknown as Record<string, unknown>).writeInPhotographer as string | null | undefined)
+    : null;
 
   return (
     <div className="flex flex-col items-center mb-8" style={{ paddingTop: '40px' }}>
@@ -68,6 +71,11 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
                 {photographer && (
                   <span className="font-meta text-[11px] text-text-muted transition-colors shrink-0">
                     Photo Credit: <Link href={`/staff/${photographer.slug || photographer.id}`} className="hover:text-accent transition-colors">{photographer.firstName} {photographer.lastName}</Link>
+                  </span>
+                )}
+                {!photographer && writeInPhotographer && (
+                  <span className="font-meta text-[11px] text-text-muted transition-colors shrink-0">
+                    Photo Credit: {writeInPhotographer}
                   </span>
                 )}
               </div>

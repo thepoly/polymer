@@ -60,6 +60,13 @@ export const Media: CollectionConfig = {
       },
     },
     {
+      name: 'writeInPhotographer',
+      type: 'text',
+      admin: {
+        position: 'sidebar',
+      },
+    },
+    {
       name: 'sourceUrl',
       type: 'text',
       admin: {

@@ -10,6 +10,9 @@ type Props = {
 
 export const ArticleHeader: React.FC<Props> = ({ article }) => {
   const featuredImage = article.featuredImage as Media | null;
+  const writeInPhotographer = featuredImage
+    ? ((featuredImage as unknown as Record<string, unknown>).writeInPhotographer as string | null | undefined)
+    : null;
 
   return (
     <div className="flex flex-col gap-10 mb-8" style={{ paddingTop: '40px' }}>
@@ -56,6 +59,11 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                 {photographer && (
                   <span className="font-meta text-[11px] text-text-muted transition-colors shrink-0">
                     Photo Credit: <Link href={`/staff/${photographer.slug || photographer.id}`} className="hover:text-accent transition-colors">{photographer.firstName} {photographer.lastName}</Link>
+                  </span>
+                )}
+                {!photographer && writeInPhotographer && (
+                  <span className="font-meta text-[11px] text-text-muted transition-colors shrink-0">
+                    Photo Credit: {writeInPhotographer}
                   </span>
                 )}
               </div>

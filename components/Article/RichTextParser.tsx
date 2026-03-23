@@ -84,6 +84,7 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
             const fields = node.fields as Record<string, unknown> | undefined;
             const caption = fields?.caption as string | undefined;
             const creditUser = (fields?.credit as User | null | undefined) || (media.photographer && typeof media.photographer === 'object' ? media.photographer as User : null);
+            const writeInPhotographer = (media as unknown as Record<string, unknown>).writeInPhotographer as string | null | undefined;
             return (
               <div
                 key={index}
@@ -109,6 +110,11 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
                     {creditUser && typeof creditUser === 'object' && (
                       <span className="font-meta text-[11px] text-text-muted transition-colors shrink-0">
                         Photo Credit: <Link href={`/staff/${creditUser.slug || creditUser.id}`} className="hover:text-accent transition-colors">{creditUser.firstName} {creditUser.lastName}</Link>
+                      </span>
+                    )}
+                    {!creditUser && writeInPhotographer && (
+                      <span className="font-meta text-[11px] text-text-muted transition-colors shrink-0">
+                        Photo Credit: {writeInPhotographer}
                       </span>
                     )}
                   </div>

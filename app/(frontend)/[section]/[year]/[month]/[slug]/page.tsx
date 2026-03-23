@@ -48,6 +48,7 @@ type PublicArticleMedia = {
   width?: number | null;
   height?: number | null;
   photographer?: PublicArticleUser | null;
+  writeInPhotographer?: string | null;
 };
 
 const toPublicArticleUser = (user: User): PublicArticleUser => ({
@@ -77,6 +78,7 @@ const toPublicArticleMedia = (media: Article['featuredImage']): PublicArticleMed
     width: media.width,
     height: media.height,
     photographer,
+    writeInPhotographer: (media as unknown as Record<string, unknown>).writeInPhotographer as string | null | undefined,
   };
 };
 
