@@ -55,13 +55,10 @@ const HEADER_WAVE_FLEET = (() => {
   };
 
   const specs = [
-    { cy: 1.5,  A: 1.5, opacity: 0.35, delay: 0.10 },
-    { cy: 3.5,  A: 2.0, opacity: 0.5,  delay: 0.07 },
-    { cy: 5.5,  A: 2.4, opacity: 0.7,  delay: 0.03 },
-    { cy: 8,    A: 2.8, opacity: 1,     delay: 0 },
-    { cy: 10.5, A: 2.4, opacity: 0.7,  delay: 0.03 },
-    { cy: 12.5, A: 2.0, opacity: 0.5,  delay: 0.07 },
-    { cy: 14.5, A: 1.5, opacity: 0.35, delay: 0.10 },
+    { cy: 2,    A: 3.2, opacity: 0.4,  delay: 0.10 },
+    { cy: 6,    A: 4.0, opacity: 0.7,  delay: 0.05 },
+    { cy: 10,   A: 4.6, opacity: 1,    delay: 0 },
+    { cy: 14,   A: 3.2, opacity: 0.4,  delay: 0.08 },
   ];
 
   const convergeEndX = startX + HEADER_WAVE_CONVERGE;
@@ -780,7 +777,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
                           d={wave.d}
                           pathLength="100"
                           stroke={`url(#header-wave-rainbow-${animationKey})`}
-                          strokeWidth="2"
+                          strokeWidth="1"
                           strokeLinecap="round"
                           fill="none"
                           opacity={wave.opacity}
