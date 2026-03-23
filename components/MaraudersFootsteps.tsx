@@ -469,6 +469,7 @@ export default function MaraudersFootsteps() {
   const frameRef = useRef<number | null>(null);
   const walkerRef = useRef<WalkerData | null>(null);
   const hasScrolledRef = useRef(false);
+  const stepWalkerRef = useRef<(now: number) => void>(() => {});
 
   const stop = useCallback(() => {
     if (frameRef.current !== null) {
@@ -588,8 +589,12 @@ export default function MaraudersFootsteps() {
     }
 
     setFootsteps([...walker.footsteps]);
-    frameRef.current = requestAnimationFrame(stepWalker);
+    frameRef.current = requestAnimationFrame(stepWalkerRef.current);
   }, []);
+
+  useEffect(() => {
+    stepWalkerRef.current = stepWalker;
+  }, [stepWalker]);
 
   const start = useCallback(() => {
     if (window.innerWidth < DESKTOP_BREAKPOINT) return;
@@ -627,7 +632,7 @@ export default function MaraudersFootsteps() {
       cancelAnimationFrame(frameRef.current);
     }
 
-    frameRef.current = requestAnimationFrame(stepWalker);
+    frameRef.current = requestAnimationFrame(stepWalkerRef.current);
   }, [stepWalker]);
 
   useEffect(() => {

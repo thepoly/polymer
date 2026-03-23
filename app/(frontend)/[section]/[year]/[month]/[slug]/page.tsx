@@ -30,6 +30,11 @@ type PublicArticleUser = {
   lastName: string;
   slug?: string | null;
   headshot?: { url?: string | null } | null;
+  bio?: {
+    root?: {
+      children?: LexicalNode[];
+    };
+  } | null;
   positions?:
     | {
         startDate: string;
@@ -57,6 +62,13 @@ const toPublicArticleUser = (user: User): PublicArticleUser => ({
   lastName: user.lastName,
   slug: user.slug,
   headshot: typeof user.headshot === 'object' && user.headshot ? { url: user.headshot.url } : null,
+  bio: user.bio
+    ? {
+        root: {
+          children: user.bio.root?.children as LexicalNode[] | undefined,
+        },
+      }
+    : null,
   positions: user.positions?.map((position) => ({
     startDate: position.startDate,
     endDate: position.endDate,

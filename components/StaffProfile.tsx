@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { LexicalNode, SerializeLexical } from '@/components/Article/RichTextParser';
+import { LexicalNode } from '@/components/Article/RichTextParser';
 
 export interface StaffProfileUser {
   id: number;
@@ -53,6 +53,36 @@ interface StaffProfileProps {
 
 const INITIAL_ARTICLE_COUNT = 8;
 
+const lexicalToPlainText = (nodes: LexicalNode[] | undefined): string => {
+  if (!nodes || nodes.length === 0) return '';
+
+  return nodes
+    .map((node) => {
+      if (node.type === 'text') {
+        return node.text || '';
+      }
+
+      const childrenText = lexicalToPlainText(node.children);
+
+      if (node.type === 'linebreak') return '\n';
+      if (node.type === 'paragraph' || node.type === 'heading' || node.type === 'quote') {
+        return `${childrenText}\n`;
+      }
+      if (node.type === 'listitem') {
+        return `${childrenText}\n`;
+      }
+      if (node.type === 'link') {
+        return childrenText;
+      }
+
+      return childrenText;
+    })
+    .join('')
+    .replace(/\n+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
 export function StaffProfile({ user, articles = [], photos = [], photoToArticleMap = {} }: StaffProfileProps) {
   const headshot = user.headshot || null;
   const bio = user.bio;
@@ -65,8 +95,8 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
     <div className="flex flex-col gap-16 text-text-main transition-colors duration-300">
       <div className="flex flex-col md:flex-row gap-12 items-start">
         {/* Left Column: Photo & Basic Info */}
-        <div className="w-full md:w-1/3 flex-shrink-0">
-          <div className="relative w-full aspect-[3/4] mb-6 rounded-sm overflow-hidden bg-gray-100 dark:bg-zinc-800 shadow-sm transition-colors">
+        <div className="w-full md:w-[28%] flex-shrink-0">
+          <div className="relative w-full max-w-[320px] mx-auto md:mx-0 aspect-[4/5] mb-4 md:mb-6 rounded-sm overflow-hidden bg-gray-100 dark:bg-zinc-800 shadow-sm transition-colors">
             {headshot?.url ? (
               <Image
                 src={headshot.url}
@@ -85,7 +115,7 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
           </div>
           
           <div className="text-center md:text-left">
-              <h1 className="font-display text-3xl font-bold mb-3 tracking-tight">
+              <h1 className="font-meta text-3xl font-semibold mb-3 tracking-tight">
                   {user.firstName} {user.lastName}
               </h1>
               
@@ -112,11 +142,14 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
         <div className="w-full md:w-2/3">
           {/* Biography Section */}
           <section className="mb-12">
-            <h2 className="font-meta text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted mb-6 border-b border-rule pb-2 transition-colors">Biography</h2>
             {bio && bio.root && bio.root.children ? (
-              <div className="prose prose-sm max-w-none font-sans text-text-muted leading-relaxed transition-colors">
-                 <SerializeLexical nodes={bio.root.children} />
-              </div>
+              <p className="font-meta text-[17px] md:text-[18px] !text-text-main leading-relaxed transition-colors">
+                <span>
+                  {user.firstName}
+                </span>
+                {' '}
+                {lexicalToPlainText(bio.root.children)}
+              </p>
             ) : (
                 <p className="text-text-muted italic text-sm transition-colors">No biography available.</p>
             )}
@@ -135,7 +168,7 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
                   return (
                     <div key={article.id} className="group">
                       <Link href={`/${article.section}/${year}/${month}/${article.slug}`} className="block">
-                        <h3 className="text-lg font-bold group-hover:text-accent transition-colors leading-tight mb-1">
+                        <h3 className={`font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors group-hover:text-accent mb-1 [overflow-wrap:anywhere] break-words ${article.section === "opinion" ? "font-copy font-light" : "font-display"} ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : "text-[22px] md:text-[24px]"} ${article.section === "features" ? "font-light italic text-[23px] md:text-[25px]" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""}`}>
                           {article.title}
                         </h3>
                       </Link>

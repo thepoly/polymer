@@ -1,6 +1,7 @@
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import type { LexicalNode } from '@/components/Article/RichTextParser';
 import { Article, Media, User } from '@/payload-types';
 
 type Props = {
@@ -10,6 +11,38 @@ type Props = {
 
 const getAuthors = (article: Article): User[] =>
   (article.authors || []).flatMap((author) => (typeof author === 'number' ? [] : [author as User]));
+
+const hasBio = (user: User) => Boolean(user.bio?.root?.children?.length);
+
+const lexicalToPlainText = (nodes: LexicalNode[] | undefined): string => {
+  if (!nodes || nodes.length === 0) return '';
+
+  return nodes
+    .map((node) => {
+      if (node.type === 'text') {
+        return node.text || '';
+      }
+
+      const childrenText = lexicalToPlainText(node.children);
+
+      if (node.type === 'linebreak') return '\n';
+      if (node.type === 'paragraph' || node.type === 'heading' || node.type === 'quote') {
+        return `${childrenText}\n`;
+      }
+      if (node.type === 'listitem') {
+        return `${childrenText}\n`;
+      }
+      if (node.type === 'link') {
+        return childrenText;
+      }
+
+      return childrenText;
+    })
+    .join('')
+    .replace(/\n+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+};
 
 export const ArticleStaffBios: React.FC<Props> = ({
   article,
@@ -43,16 +76,25 @@ export const ArticleStaffBios: React.FC<Props> = ({
               )}
 
               <div className="min-w-0 pt-1">
-                <p className="font-meta text-[14px] leading-[1.55] text-text-main">
-                  <Link
-                    href={href}
-                    className="text-[15px] font-bold tracking-[0.04em] text-accent transition-colors hover:text-accent/70"
-                  >
-                    {user.firstName} {user.lastName}
-                  </Link>
-                  {' is a junior Computer Science and Games and Simulation Arts and Sciences dual major from Robbinsville, New Jersey. They enjoy crocheting. '}
-                  <strong>GIVE ME YOUR STAFF BIOS</strong>
-                </p>
+                <div className="font-meta text-[14px] leading-[1.55] text-text-main">
+                  <p className="mb-2">
+                    <Link
+                      href={href}
+                      className="text-[15px] font-bold tracking-[0.04em] text-accent transition-colors hover:text-accent/70"
+                    >
+                      {user.firstName} {user.lastName}
+                    </Link>
+                    {hasBio(user) ? (
+                      <>
+                        {' '}
+                        {lexicalToPlainText(user.bio?.root?.children as LexicalNode[] | undefined)}
+                      </>
+                    ) : null}
+                  </p>
+                  {!hasBio(user) ? (
+                    <p className="italic text-text-muted">No biography available.</p>
+                  ) : null}
+                </div>
               </div>
             </div>
           );

@@ -202,7 +202,7 @@ export default async function StaffProfilePage({ params }: StaffArgs) {
   const publicPhotos = photos.docs.map((photo) => toPublicStaffPhoto(photo));
 
   return (
-    <div className="max-w-[1200px] mx-auto px-4 py-12">
+    <div className="max-w-[1200px] mx-auto px-4 pt-3 md:pt-4 pb-12">
       <StaffProfile 
         user={publicUser}
         articles={publicArticles}

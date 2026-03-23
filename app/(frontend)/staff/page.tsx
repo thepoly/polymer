@@ -152,7 +152,7 @@ export default async function StaffPage() {
                 )}
               </div>
               
-              <h3 className="font-display text-[15px] md:text-[16px] leading-tight font-bold text-text-main mb-1 group-hover:text-accent transition-colors">
+              <h3 className="font-meta text-[15px] md:text-[16px] leading-tight font-semibold text-text-main mb-1 group-hover:text-accent transition-colors">
                 {user.firstName} {user.lastName}
               </h3>
 
@@ -181,7 +181,7 @@ export default async function StaffPage() {
                 key={user.id}
                 className="group flex flex-col items-start text-left"
               >
-                <h3 className="font-display text-[15px] md:text-[16px] leading-tight font-bold text-text-main mb-1 group-hover:text-accent transition-colors">
+                <h3 className="font-meta text-[15px] md:text-[16px] leading-tight font-semibold text-text-main mb-1 group-hover:text-accent transition-colors">
                   {user.firstName} {user.lastName}
                 </h3>
                 <p className="font-meta text-[11px] leading-snug text-accent font-semibold transition-colors">

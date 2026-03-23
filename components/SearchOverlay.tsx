@@ -731,11 +731,11 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
                       onClick={() => { posthog.capture("search_result_clicked", { query, article_title: article.title, article_section: article.section, source: "overlay" }); handleClose(); }}
                       className="flex flex-col group cursor-pointer"
                     >
-                      <h3 className={`font-display font-bold text-text-main mb-1 text-[16px] md:text-[18px] leading-tight group-hover:text-accent transition-colors ${article.section === "news" ? "font-display-news" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
+                      <h3 className={`font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors group-hover:text-accent mb-1 [overflow-wrap:anywhere] break-words ${article.section === "opinion" ? "font-copy font-light" : "font-display"} text-[22px] md:text-[24px] ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[23px] md:text-[25px]" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""}`}>
                         {article.title}
                       </h3>
                       <Byline author={article.author} date={article.date} />
-                      <p className="font-copy text-text-main text-[13px] md:text-[14px] leading-[1.4] mb-2 transition-colors">
+                      <p className="font-meta font-normal text-black dark:text-white text-[13px] leading-[1.38] mb-2 transition-colors [overflow-wrap:anywhere] break-words">
                         {article.excerpt}
                       </p>
                     </TransitionLink>

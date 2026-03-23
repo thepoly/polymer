@@ -474,7 +474,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
     <>
       <header className={`${compact ? "sticky top-0" : ""} ${mobileTight ? "mobile-header-tight" : ""} safe-area-top z-50 bg-bg-main lg:hidden`}>
         <div className="mobile-chrome-header-inner safe-area-mobile-header-x mx-auto max-w-[1280px]">
-          <div className="grid h-[56px] grid-cols-[1fr_auto_1fr] items-center">
+            <div className="grid h-[56px] grid-cols-[1fr_auto_1fr] items-center">
             <div className="flex justify-start">
               <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="relative -top-[2px] flex h-9 w-9 items-center justify-center overflow-hidden text-text-main">
                 <span className="relative block h-5 w-5">
@@ -498,7 +498,13 @@ export default function Header({ compact = false, mobileTight = false }: { compa
               onFocus={() => prefetchLink("/")}
               className="relative block h-[56px] w-[min(72vw,300px)] justify-self-center"
             >
-              <Image src={mobileLogoSrc} alt="The Polytechnic" fill className="object-contain" priority />
+              <Image
+                src={mobileLogoSrc}
+                alt="The Polytechnic"
+                fill
+                className="object-contain"
+                priority
+              />
             </Link>
             <div className="flex justify-end">
               <button onClick={openSearchOverlay} className="relative -top-[2px] flex h-9 w-9 items-center justify-center text-text-main">
@@ -625,7 +631,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
         </div>
 
         {!compact && (
-          <div className="mx-auto max-w-[1280px] px-4 pt-6 md:px-6 xl:px-[30px]">
+          <div className="mx-auto max-w-[1280px] px-4 pt-4 md:px-6 xl:px-[30px]">
             <style dangerouslySetInnerHTML={{__html: `
               @keyframes terryWrapDraw {
                 0% { stroke-dashoffset: ${shootWrapPathLength}; }
@@ -789,19 +795,19 @@ export default function Header({ compact = false, mobileTight = false }: { compa
                 </div>
               )}
 
-              <Link 
+              <Link
                 href="/"
                 onClick={(e) => handleLinkClick(e, "/")}
                 onMouseEnter={() => prefetchLink("/")}
                 onFocus={() => prefetchLink("/")}
-                className={`relative -top-2 block h-[76px] w-[456px] max-w-full shrink-0 ${isAnimating ? 'cursor-default' : 'cursor-pointer'}`}
+                className={`relative -top-2 block h-[76px] w-[456px] max-w-full shrink-0 overflow-hidden ${isAnimating ? 'cursor-default' : 'cursor-pointer'}`}
               >
-                <Image 
-                  src={logoSrc} 
-                  alt="The Polytechnic" 
-                  fill 
-                  className="object-contain object-left"
-                  priority 
+                <Image
+                  src={logoSrc}
+                  alt="The Polytechnic"
+                  fill
+                  className="origin-left scale-[1.09] object-contain object-left"
+                  priority
                 />
               </Link>
 
