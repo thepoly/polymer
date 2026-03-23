@@ -32,58 +32,67 @@ const DRAG_START_THRESHOLD = 6;
 const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
 
 // Header wave fleet: waves fan out from a single start point, converge back at the end.
-const HEADER_WAVE_LAMBDA = 400;
+const HEADER_WAVE_LAMBDA = 320;
 const HEADER_WAVE_SVG_H = 16;
-const HEADER_WAVE_PERIODS = 20;
-const HEADER_WAVE_VISIBLE = 1300; // approx visible line length
+const HEADER_WAVE_CONVERGE = 4 * HEADER_WAVE_LAMBDA; // 1280px — where waves fully pinch
 const HEADER_WAVE_FLEET = (() => {
   const half = HEADER_WAVE_LAMBDA / 2;
   const cp = Math.round(0.3642 * half);
-  const baseline = HEADER_WAVE_SVG_H / 2; // y=8, aligns with the static line
-  const startX = -4; // logoOutlineLeftX
-  const rampUp = HEADER_WAVE_LAMBDA * 0.75;
+  const baseline = HEADER_WAVE_SVG_H / 2;
+  const startX = -4;
+  const rampUp = HEADER_WAVE_LAMBDA * 0.6;
   const rampDown = HEADER_WAVE_LAMBDA * 1.2;
 
-  // Envelope: 0 at both ends, 1 in the middle
+  // Envelope: 0 at start, ramps to 1, back to 0 at converge point, stays 0 after
   const envelope = (x: number) => {
     const t = x - startX;
     if (t <= 0) return 0;
     if (t < rampUp) return t / rampUp;
-    if (t < HEADER_WAVE_VISIBLE - rampDown) return 1;
-    if (t < HEADER_WAVE_VISIBLE) return (HEADER_WAVE_VISIBLE - t) / rampDown;
+    if (t < HEADER_WAVE_CONVERGE - rampDown) return 1;
+    if (t < HEADER_WAVE_CONVERGE) return (HEADER_WAVE_CONVERGE - t) / rampDown;
     return 0;
   };
 
   const specs = [
-    { cy: 2,    A: 1.8, color: '#ff4040', opacity: 0.6, delay: 0.08 },
-    { cy: 5,    A: 2.2, color: '#ffbb00', opacity: 0.75, delay: 0.04 },
-    { cy: 8,    A: 2.8, color: '#44dd44', opacity: 1,    delay: 0 },
-    { cy: 11,   A: 2.2, color: '#4488ff', opacity: 0.75, delay: 0.04 },
-    { cy: 14,   A: 1.8, color: '#cc44ff', opacity: 0.6, delay: 0.08 },
+    { cy: 1.5,  A: 1.5, opacity: 0.35, delay: 0.10 },
+    { cy: 3.5,  A: 2.0, opacity: 0.5,  delay: 0.07 },
+    { cy: 5.5,  A: 2.4, opacity: 0.7,  delay: 0.03 },
+    { cy: 8,    A: 2.8, opacity: 1,     delay: 0 },
+    { cy: 10.5, A: 2.4, opacity: 0.7,  delay: 0.03 },
+    { cy: 12.5, A: 2.0, opacity: 0.5,  delay: 0.07 },
+    { cy: 14.5, A: 1.5, opacity: 0.35, delay: 0.10 },
   ];
 
-  return specs.map(({ cy, A, color, opacity, delay }) => {
-    let d = `M ${startX},${baseline}`;
-    const totalHalves = HEADER_WAVE_PERIODS * 2;
+  const convergeEndX = startX + HEADER_WAVE_CONVERGE;
+  // Generate enough half-periods to reach past the convergence, then truncate
+  const maxHalves = Math.ceil(HEADER_WAVE_CONVERGE / half) + 2;
 
-    for (let n = 0; n < totalHalves; n++) {
+  return specs.map(({ cy, A, opacity, delay }) => {
+    let d = `M ${startX},${baseline}`;
+
+    for (let n = 0; n < maxHalves; n++) {
       const x0 = startX + n * half;
       const x1 = startX + (n + 1) * half;
+
+      // Stop once we've passed the convergence point
+      if (x0 >= convergeEndX) break;
 
       const e0 = envelope(x0);
       const e1 = envelope(x1);
       const eMid = envelope((x0 + x1) / 2);
 
-      // Centerline shifts from baseline toward cy based on envelope
       const y0 = baseline + (cy - baseline) * e0;
       const y1 = baseline + (cy - baseline) * e1;
       const peakA = A * eMid;
-      const sign = n % 2 === 0 ? -1 : 1; // up then down
+      const sign = n % 2 === 0 ? -1 : 1;
 
       d += ` C ${x0 + cp},${y0 + sign * peakA} ${x1 - cp},${y1 + sign * peakA} ${x1},${y1}`;
     }
 
-    return { d, color, opacity, delay };
+    // Snap to the exact convergence point on the baseline
+    d += ` L ${convergeEndX},${baseline}`;
+
+    return { d, opacity, delay };
   });
 })();
 
@@ -637,19 +646,16 @@ export default function Header({ compact = false, mobileTight = false }: { compa
                 animation: terrySuck ${suckDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
                 transform-origin: 468px 0.5px;
               }
-              @keyframes headerWaveTravel {
-                from { transform: translateX(-${HEADER_WAVE_LAMBDA}px); }
-                to   { transform: translateX(0px); }
-              }
               @keyframes headerWaveDraw {
                 0%   { stroke-dashoffset: 100; }
-                20%  { stroke-dashoffset: 100; }
-                92%  { stroke-dashoffset: 0; }
+                35%  { stroke-dashoffset: 100; }
+                93%  { stroke-dashoffset: 0; }
                 100% { stroke-dashoffset: 0; }
               }
               @keyframes headerWaveCrystallize {
                 0%   { opacity: 1; }
-                82%  { opacity: 1; }
+                65%  { opacity: 1; }
+                85%  { opacity: 0.4; }
                 100% { opacity: 0; }
               }
               @keyframes headerRainbowHue {
@@ -736,31 +742,47 @@ export default function Header({ compact = false, mobileTight = false }: { compa
 
                   {/* Rainbow wave fleet — draws in via dashoffset, crystallizes to static line */}
                   <svg
-                    className="absolute left-0 bottom-0 overflow-visible"
-                    width={HEADER_WAVE_LAMBDA * HEADER_WAVE_PERIODS}
+                    className="absolute"
+                    viewBox={`-4 0 ${HEADER_WAVE_CONVERGE} ${HEADER_WAVE_SVG_H}`}
+                    preserveAspectRatio="none"
                     height={HEADER_WAVE_SVG_H}
                     style={{
+                      left: '-4px',
+                      width: 'calc(100% + 4px)',
                       bottom: `-${HEADER_WAVE_SVG_H / 2}px`,
                       animation: `headerRainbowHue 4s linear infinite, headerWaveCrystallize ${shootDurationMs}ms ease-out forwards`,
                       willChange: 'filter, opacity',
                     }}
                   >
-                    {HEADER_WAVE_FLEET.map((wave, i) => (
-                      <path
-                        key={i}
-                        d={wave.d}
-                        pathLength="100"
-                        stroke={wave.color}
-                        strokeWidth="1.5"
-                        fill="none"
-                        opacity={wave.opacity}
-                        style={{
-                          strokeDasharray: 100,
-                          strokeDashoffset: 100,
-                          animation: `headerWaveDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) ${wave.delay * shootDurationMs}ms forwards`,
-                        }}
-                      />
-                    ))}
+                      <defs>
+                        <linearGradient id={`header-wave-rainbow-${animationKey}`} x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%"   stopColor="#ff4040" stopOpacity="0.9" />
+                          <stop offset="14%"  stopColor="#ff9900" stopOpacity="0.9" />
+                          <stop offset="28%"  stopColor="#ffee00" stopOpacity="0.9" />
+                          <stop offset="42%"  stopColor="#44dd44" stopOpacity="0.9" />
+                          <stop offset="57%"  stopColor="#22cccc" stopOpacity="0.9" />
+                          <stop offset="71%"  stopColor="#4488ff" stopOpacity="0.9" />
+                          <stop offset="85%"  stopColor="#cc44ff" stopOpacity="0.9" />
+                          <stop offset="100%" stopColor="#ff4040" stopOpacity="0.9" />
+                        </linearGradient>
+                      </defs>
+                      {HEADER_WAVE_FLEET.map((wave, i) => (
+                        <path
+                          key={i}
+                          d={wave.d}
+                          pathLength="100"
+                          stroke={`url(#header-wave-rainbow-${animationKey})`}
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          fill="none"
+                          opacity={wave.opacity}
+                          style={{
+                            strokeDasharray: 100,
+                            strokeDashoffset: 100,
+                            animation: `headerWaveDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) ${wave.delay * shootDurationMs}ms forwards`,
+                          }}
+                        />
+                      ))}
                   </svg>
                 </div>
               )}

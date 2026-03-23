@@ -13,7 +13,7 @@ if (POSTHOG_KEY) {
     capture_pageview: "history_change",
     debug: process.env.NODE_ENV === "development",
     defaults: "2026-01-30",
-    persistence: "memory",
+    persistence: "localStorage",
     before_send: (event) => {
       if (typeof window !== "undefined" && !shouldTrackPath(window.location.pathname)) {
         return null;
