@@ -1,0 +1,224 @@
+"use client";
+
+import React from "react";
+import Image from "next/image";
+import TransitionLink from "@/components/TransitionLink";
+import { getArticleUrl } from "@/utils/getArticleUrl";
+import RainbowDivider, { AnimatedLine } from "@/components/Opinion/RainbowDivider";
+import type { Article as ComponentArticle } from "@/components/FrontPage/types";
+import { newsGroups } from "./newsGroups";
+
+/* ── Article card — optionally shows image ── */
+
+function NewsCard({ article, withImage = false, priority = false }: { article: ComponentArticle; withImage?: boolean; priority?: boolean }) {
+  return (
+    <TransitionLink
+      href={getArticleUrl(article)}
+      className="group block mb-8"
+    >
+      {withImage && article.image && (
+        <div className="relative overflow-hidden mb-3" style={{ aspectRatio: "3/2" }}>
+          <Image
+            src={article.image}
+            alt={article.title}
+            fill
+            className="object-cover"
+            sizes="33vw"
+            priority={priority}
+          />
+        </div>
+      )}
+      {/* Kicker */}
+      {article.kicker && (
+        <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent block mb-1.5">
+          {article.kicker}
+        </span>
+      )}
+      {/* Title */}
+      <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors group-hover:text-accent">
+        {article.title}
+      </h3>
+      {/* Byline */}
+      <div className="mt-2 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
+        {article.author && (
+          <span><span className="text-text-muted">BY </span><span className="text-accent">{article.author}</span></span>
+        )}
+        {article.author && article.date && (
+          <span className="text-text-muted mx-1.5">&bull;</span>
+        )}
+        {article.date && (
+          <span className="text-text-muted">{article.date}</span>
+        )}
+      </div>
+      {/* Subdeck */}
+      {article.excerpt && (
+        <p className="mt-0.5 font-meta text-[15px] font-medium leading-[1.5] text-text-main line-clamp-4">
+          {article.excerpt}
+        </p>
+      )}
+    </TransitionLink>
+  );
+}
+
+/* ── Main Page ── */
+
+export default function NewsSectionPage({
+  title,
+  articles,
+  pinnedArticle,
+  groupedArticles,
+}: {
+  title: string;
+  articles: ComponentArticle[];
+  pinnedArticle: ComponentArticle | null;
+  groupedArticles: Record<string, ComponentArticle[]>;
+}) {
+  // Track shown article IDs to avoid repeats
+  const shownIds = new Set<string | number>();
+
+  // Reserve pinned article first — it always shows in col 2, nowhere else
+  const col2Lead = pinnedArticle;
+  if (col2Lead) shownIds.add(col2Lead.id);
+
+  // Col 1: "Student Senate" and "Executive Board" kicker articles, ordered by date
+  const col1 = articles.filter(
+    (a) => !shownIds.has(a.id) && (a.kicker === "Student Senate" || a.kicker === "Executive Board")
+  );
+  col1.forEach((a) => shownIds.add(a.id));
+
+  // Col 2: "Campus Infrastructure" and "Press Release" below the pinned lead
+  const col2Rest = articles.filter(
+    (a) => !shownIds.has(a.id) && (a.kicker === "Campus Infrastructure" || a.kicker === "Press Release")
+  );
+  col2Rest.forEach((a) => shownIds.add(a.id));
+
+  // Col 3: "Interview", "Town Hall", and "GM Week 2026"
+  const col3 = articles.filter(
+    (a) => !shownIds.has(a.id) && (a.kicker === "Interview" || a.kicker === "Town Hall" || a.kicker === "GM Week 2026")
+  );
+  col3.forEach((a) => shownIds.add(a.id));
+
+  return (
+    <div style={{ maxWidth: 1280, margin: "0 auto", padding: "20px 30px 32px" }}>
+      {/* Header */}
+      <div className="flex items-center mt-6 mb-10" style={{ gap: 24 }}>
+        <h1 className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors" style={{ fontSize: 60, fontWeight: 400, lineHeight: 1 }}>
+          {title}
+        </h1>
+        <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground)" }} />
+        <a
+          href="mailto:news@poly.rpi.edu,eic@poly.rpi.edu?subject=News%2C%20Request%2FComment"
+          className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
+          style={{ fontSize: 36, fontWeight: 300 }}
+        >
+          Contact
+        </a>
+      </div>
+
+      {/* 3-column grid */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          gap: "0 24px",
+        }}
+      >
+        {/* ── Col 1: Student Senate & Executive Board ── */}
+        <div style={{ borderRight: "1px solid var(--rule-color)", paddingRight: 24 }}>
+          {col1.map((article, i) => (
+            <NewsCard key={article.id} article={article} withImage={i === 0} priority={i === 0} />
+          ))}
+        </div>
+
+        {/* ── Col 2: Pinned lead + Campus Infrastructure + Press Release ── */}
+        <div style={{ borderRight: "1px solid var(--rule-color)", paddingRight: 24 }}>
+          {col2Lead && <NewsCard article={col2Lead} withImage priority />}
+          {col2Lead && col2Rest.length > 0 && (
+            <div className="border-t border-rule mb-8" />
+          )}
+          {col2Rest.map((article) => (
+            <NewsCard key={article.id} article={article} />
+          ))}
+        </div>
+
+        {/* ── Col 3: Interview, Town Hall, GM Week 2026 ── */}
+        <div>
+          {col3.map((article, i) => (
+            <NewsCard key={article.id} article={article} withImage={i === 0} />
+          ))}
+        </div>
+      </div>
+
+      <RainbowDivider />
+
+      {/* ── Bottom sections: Interviews, Student Government, Other News ── */}
+      {Object.entries(newsGroups).map(([key, group], index) => {
+        const groupArticles = groupedArticles[key] || [];
+        if (groupArticles.length === 0) return null;
+        return (
+          <div key={key} className="mt-14">
+            {index > 0 && (
+              <AnimatedLine
+                id={`section-${index}`}
+                delay={250 * index}
+                duration={300}
+                style={{ marginTop: 24, marginBottom: 8 }}
+              />
+            )}
+            <div className="flex items-baseline justify-between mb-4">
+              <h2 className="font-meta uppercase tracking-[0.04em] text-text-main" style={{ fontSize: 28, fontWeight: 500 }}>
+                {group.label}
+              </h2>
+              <TransitionLink
+                href={group.kickers ? `/search?q=${encodeURIComponent(group.kickers[0])}` : `/news`}
+                className="font-meta text-[14px] uppercase tracking-[0.08em] text-accent hover:underline transition-colors"
+              >
+                More &rarr;
+              </TransitionLink>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(5, 1fr)",
+                gap: 24,
+              }}
+            >
+              {groupArticles.slice(0, 5).map((article) => (
+                <TransitionLink
+                  key={article.id}
+                  href={getArticleUrl(article)}
+                  className="group block"
+                >
+                  {article.image && (
+                    <div className="relative overflow-hidden mb-3" style={{ aspectRatio: "3/2" }}>
+                      <Image
+                        src={article.image}
+                        alt={article.title}
+                        fill
+                        className="object-cover"
+                        sizes="20vw"
+                      />
+                    </div>
+                  )}
+                  {article.kicker && (
+                    <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-text-main block mb-1.5">
+                      {article.kicker}
+                    </span>
+                  )}
+                  <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors group-hover:text-accent">
+                    {article.title}
+                  </h3>
+                  {article.author && (
+                    <div className="mt-2 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
+                      <span className="text-text-muted">BY </span><span className="text-accent">{article.author}</span>
+                    </div>
+                  )}
+                </TransitionLink>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SectionPage from '@/components/SectionPage';
 import OpinionSectionPage from '@/components/Opinion/OpinionSectionPage';
+import NewsSectionPage from '@/components/News/NewsSectionPage';
 import { Article as PayloadArticle } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
 import type { QuoteData } from '@/components/Opinion/InlineQuote';
@@ -76,6 +77,10 @@ export default async function SectionPageRoute({ params }: Args) {
 
   const payload = await getPayload({ config });
   const isOpinion = section === 'opinion';
+  const isNews = section === 'news';
+
+  const fourWeeksAgo = new Date();
+  fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
 
   const articlesResponse = await payload.find({
     collection: 'articles',
@@ -86,9 +91,14 @@ export default async function SectionPageRoute({ params }: Args) {
       _status: {
         equals: 'published',
       },
+      ...(isNews && {
+        publishedDate: {
+          greater_than_equal: fourWeeksAgo.toISOString(),
+        },
+      }),
     },
     sort: '-publishedDate',
-    limit: 30,
+    limit: isNews ? 200 : 30,
     depth: isOpinion ? 2 : 1,
     select: {
       title: true,
@@ -218,6 +228,86 @@ export default async function SectionPageRoute({ params }: Args) {
     }
   }
 
+  // Fetch news pinned article and grouped articles for bottom sections
+  let newsPinnedArticle: ComponentArticle | null = null;
+  const newsGroupedArticles: Record<string, ComponentArticle[]> = {};
+  if (isNews) {
+    // Fetch pinned article from layout's sectionLayouts
+    try {
+      const layoutResponse = await payload.find({
+        collection: 'layout',
+        limit: 1,
+        depth: 0,
+        select: { sectionLayouts: true },
+      });
+      const layoutDoc = layoutResponse.docs[0] as { sectionLayouts?: Record<string, { pinnedArticles?: number[] }> } | undefined;
+      const newsConfig = layoutDoc?.sectionLayouts?.news;
+      const pinnedIds = newsConfig?.pinnedArticles || [];
+
+      if (pinnedIds.length > 0) {
+        const pinnedResponse = await payload.find({
+          collection: 'articles',
+          where: {
+            and: [
+              { id: { equals: pinnedIds[0] } },
+              { _status: { equals: 'published' } },
+            ],
+          },
+          limit: 1,
+          depth: 1,
+          select: {
+            title: true,
+            slug: true,
+            subdeck: true,
+            featuredImage: true,
+            section: true,
+            kicker: true,
+            publishedDate: true,
+            createdAt: true,
+            authors: true,
+          },
+        });
+        if (pinnedResponse.docs[0]) {
+          newsPinnedArticle = formatArticle(pinnedResponse.docs[0]);
+        }
+      }
+    } catch {
+      // Layout may not exist yet
+    }
+
+    // Build grouped articles for bottom sections, excluding anything shown in columns
+    // Replicate the same column logic as NewsSectionPage to know what's already shown
+    const columnShownIds = new Set<string | number>();
+    if (newsPinnedArticle) columnShownIds.add(newsPinnedArticle.id);
+    for (const a of formattedArticles) {
+      if (a.kicker === 'Student Senate' || a.kicker === 'Executive Board' ||
+          a.kicker === 'Campus Infrastructure' || a.kicker === 'Press Release' ||
+          a.kicker === 'Interview' || a.kicker === 'Town Hall' || a.kicker === 'GM Week 2026') {
+        columnShownIds.add(a.id);
+      }
+    }
+
+    // Interviews group — exclude articles already in columns
+    newsGroupedArticles.interviews = formattedArticles.filter(
+      (a) => !columnShownIds.has(a.id) && a.kicker === 'Interview'
+    ).slice(0, 5);
+
+    // Student Government group — exclude articles already in columns
+    newsGroupedArticles.studentGov = formattedArticles.filter(
+      (a) => !columnShownIds.has(a.id) && (a.kicker === 'Student Senate' || a.kicker === 'Executive Board')
+    ).slice(0, 5);
+
+    // Other: articles not shown in columns or other bottom groups
+    const bottomShownIds = new Set<string | number>([
+      ...columnShownIds,
+      ...newsGroupedArticles.interviews.map((a) => a.id),
+      ...newsGroupedArticles.studentGov.map((a) => a.id),
+    ]);
+    newsGroupedArticles.other = formattedArticles.filter(
+      (a) => !bottomShownIds.has(a.id)
+    ).slice(0, 5);
+  }
+
   // Fetch grouped opinion articles for bottom sections
   const groupedArticles: Record<string, ComponentArticle[]> = {};
   if (isOpinion) {
@@ -274,6 +364,13 @@ export default async function SectionPageRoute({ params }: Args) {
           editorsChoiceLabel={editorsChoiceLabel}
           quotes={quotes}
           groupedArticles={groupedArticles}
+        />
+      ) : isNews ? (
+        <NewsSectionPage
+          title={sectionTitle}
+          articles={formattedArticles}
+          pinnedArticle={newsPinnedArticle}
+          groupedArticles={newsGroupedArticles}
         />
       ) : (
         <SectionPage title={sectionTitle} articles={formattedArticles} />
