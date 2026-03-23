@@ -241,7 +241,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
               {leadImage?.url ? (
                 <div className="relative aspect-[16/10] overflow-hidden bg-gray-100 dark:bg-zinc-800">
                   <Image
-                    src={(leadImage as any).sizes?.card?.url || leadImage.url}
+                    src={leadImage.sizes?.card?.url || leadImage.url}
                     alt={leadImage.alt || leadArticle.title}
                     fill
                     className="object-cover"
@@ -291,7 +291,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                       {image?.url ? (
                         <div className="relative hidden aspect-square overflow-hidden bg-gray-100 dark:bg-zinc-800 sm:block">
                           <Image
-                            src={(image as any).sizes?.card?.url || image.url}
+                            src={image.sizes?.card?.url || image.url}
                             alt={image.alt || article.title}
                             fill
                             className="object-cover"

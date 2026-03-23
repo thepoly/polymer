@@ -741,8 +741,8 @@ export default function Header({ compact = false, mobileTight = false }: { compa
                     height={HEADER_WAVE_SVG_H}
                     style={{
                       bottom: `-${HEADER_WAVE_SVG_H / 2}px`,
-                      animation: `headerWaveTravel ${HEADER_WAVE_LAMBDA / 300}s linear infinite, headerRainbowHue 4s linear infinite, headerWaveCrystallize ${shootDurationMs}ms ease-out forwards`,
-                      willChange: 'transform, filter, opacity',
+                      animation: `headerRainbowHue 4s linear infinite, headerWaveCrystallize ${shootDurationMs}ms ease-out forwards`,
+                      willChange: 'filter, opacity',
                     }}
                   >
                     {HEADER_WAVE_FLEET.map((wave, i) => (
