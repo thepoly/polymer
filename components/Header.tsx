@@ -31,19 +31,60 @@ const SWIPE_THRESHOLD = 36;
 const DRAG_START_THRESHOLD = 6;
 const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
 
-// Header line wave: sine-wave path that dampens to a flat line as it draws in.
-const HEADER_WAVE_LAMBDA = 300;
-const HEADER_WAVE_AMPLITUDE = 1.5;
-const HEADER_WAVE_PATH = (() => {
-  const cy = 0.5, A = HEADER_WAVE_AMPLITUDE, half = HEADER_WAVE_LAMBDA / 2;
+// Header wave fleet: waves fan out from a single start point, converge back at the end.
+const HEADER_WAVE_LAMBDA = 400;
+const HEADER_WAVE_SVG_H = 16;
+const HEADER_WAVE_PERIODS = 20;
+const HEADER_WAVE_VISIBLE = 1300; // approx visible line length
+const HEADER_WAVE_FLEET = (() => {
+  const half = HEADER_WAVE_LAMBDA / 2;
   const cp = Math.round(0.3642 * half);
-  let d = `M 0,${cy}`;
-  for (let n = 0; n < 20; n++) {
-    const x = n * HEADER_WAVE_LAMBDA;
-    d += ` C ${x + cp},${cy - A} ${x + half - cp},${cy - A} ${x + half},${cy}`;
-    d += ` C ${x + half + cp},${cy + A} ${x + HEADER_WAVE_LAMBDA - cp},${cy + A} ${x + HEADER_WAVE_LAMBDA},${cy}`;
-  }
-  return d;
+  const baseline = HEADER_WAVE_SVG_H / 2; // y=8, aligns with the static line
+  const startX = -4; // logoOutlineLeftX
+  const rampUp = HEADER_WAVE_LAMBDA * 0.75;
+  const rampDown = HEADER_WAVE_LAMBDA * 1.2;
+
+  // Envelope: 0 at both ends, 1 in the middle
+  const envelope = (x: number) => {
+    const t = x - startX;
+    if (t <= 0) return 0;
+    if (t < rampUp) return t / rampUp;
+    if (t < HEADER_WAVE_VISIBLE - rampDown) return 1;
+    if (t < HEADER_WAVE_VISIBLE) return (HEADER_WAVE_VISIBLE - t) / rampDown;
+    return 0;
+  };
+
+  const specs = [
+    { cy: 2,    A: 1.8, color: '#ff4040', opacity: 0.6, delay: 0.08 },
+    { cy: 5,    A: 2.2, color: '#ffbb00', opacity: 0.75, delay: 0.04 },
+    { cy: 8,    A: 2.8, color: '#44dd44', opacity: 1,    delay: 0 },
+    { cy: 11,   A: 2.2, color: '#4488ff', opacity: 0.75, delay: 0.04 },
+    { cy: 14,   A: 1.8, color: '#cc44ff', opacity: 0.6, delay: 0.08 },
+  ];
+
+  return specs.map(({ cy, A, color, opacity, delay }) => {
+    let d = `M ${startX},${baseline}`;
+    const totalHalves = HEADER_WAVE_PERIODS * 2;
+
+    for (let n = 0; n < totalHalves; n++) {
+      const x0 = startX + n * half;
+      const x1 = startX + (n + 1) * half;
+
+      const e0 = envelope(x0);
+      const e1 = envelope(x1);
+      const eMid = envelope((x0 + x1) / 2);
+
+      // Centerline shifts from baseline toward cy based on envelope
+      const y0 = baseline + (cy - baseline) * e0;
+      const y1 = baseline + (cy - baseline) * e1;
+      const peakA = A * eMid;
+      const sign = n % 2 === 0 ? -1 : 1; // up then down
+
+      d += ` C ${x0 + cp},${y0 + sign * peakA} ${x1 - cp},${y1 + sign * peakA} ${x1},${y1}`;
+    }
+
+    return { d, color, opacity, delay };
+  });
 })();
 
 function formatCurrentDate() {
@@ -596,10 +637,24 @@ export default function Header({ compact = false, mobileTight = false }: { compa
                 animation: terrySuck ${suckDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
                 transform-origin: 468px 0.5px;
               }
-              @keyframes headerWaveDampen {
-                0% { transform: scaleY(1); }
-                85% { transform: scaleY(1); }
-                100% { transform: scaleY(0); }
+              @keyframes headerWaveTravel {
+                from { transform: translateX(-${HEADER_WAVE_LAMBDA}px); }
+                to   { transform: translateX(0px); }
+              }
+              @keyframes headerWaveDraw {
+                0%   { stroke-dashoffset: 100; }
+                20%  { stroke-dashoffset: 100; }
+                92%  { stroke-dashoffset: 0; }
+                100% { stroke-dashoffset: 0; }
+              }
+              @keyframes headerWaveCrystallize {
+                0%   { opacity: 1; }
+                82%  { opacity: 1; }
+                100% { opacity: 0; }
+              }
+              @keyframes headerRainbowHue {
+                from { filter: hue-rotate(0deg); }
+                to   { filter: hue-rotate(360deg); }
               }
             `}} />
 
@@ -656,6 +711,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
                     isDarkMode ? "text-[#DDDDDD]" : "text-rule-strong"
                   }`}
                 >
+                  {/* Wrap path (around logo) + base line drawing underneath */}
                   <svg className="absolute left-0 bottom-0 w-full h-px overflow-visible">
                     <path
                       d={shootWrapPathD}
@@ -666,19 +722,45 @@ export default function Header({ compact = false, mobileTight = false }: { compa
                         animation: `terryWrapDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
                       }}
                     />
-                    <path
-                      d={HEADER_WAVE_PATH}
+                    <line
+                      x1={logoOutlineLeftX} y1={logoBaselineY} x2="100%" y2={logoBaselineY}
                       pathLength="100"
                       stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="square"
-                      vectorEffect="non-scaling-stroke"
                       style={{
                         strokeDasharray: 100,
                         strokeDashoffset: 100,
-                        transformBox: 'fill-box',
-                        transformOrigin: 'center center',
-                        animation: `terryShootDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards, headerWaveDampen ${shootDurationMs}ms ease-out forwards`,
+                        animation: `terryShootDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
                       }}
                     />
+                  </svg>
+
+                  {/* Rainbow wave fleet — draws in via dashoffset, crystallizes to static line */}
+                  <svg
+                    className="absolute left-0 bottom-0 overflow-visible"
+                    width={HEADER_WAVE_LAMBDA * HEADER_WAVE_PERIODS}
+                    height={HEADER_WAVE_SVG_H}
+                    style={{
+                      bottom: `-${HEADER_WAVE_SVG_H / 2}px`,
+                      animation: `headerWaveTravel ${HEADER_WAVE_LAMBDA / 300}s linear infinite, headerRainbowHue 4s linear infinite, headerWaveCrystallize ${shootDurationMs}ms ease-out forwards`,
+                      willChange: 'transform, filter, opacity',
+                    }}
+                  >
+                    {HEADER_WAVE_FLEET.map((wave, i) => (
+                      <path
+                        key={i}
+                        d={wave.d}
+                        pathLength="100"
+                        stroke={wave.color}
+                        strokeWidth="1.5"
+                        fill="none"
+                        opacity={wave.opacity}
+                        style={{
+                          strokeDasharray: 100,
+                          strokeDashoffset: 100,
+                          animation: `headerWaveDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) ${wave.delay * shootDurationMs}ms forwards`,
+                        }}
+                      />
+                    ))}
                   </svg>
                 </div>
               )}

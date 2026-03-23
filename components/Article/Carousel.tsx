@@ -26,9 +26,12 @@ export function Carousel({ images }: Props) {
               style={{ width: `${aspectRatio * 100}%`, maxWidth: '80vw', minWidth: '40vw' }}
             >
               <Image
-                src={image.url!}
+                src={(image.sizes?.gallery?.url) || image.url!}
                 alt={image.alt || caption || ''}
                 fill
+                sizes="(max-width: 768px) 80vw, 40vw"
+                quality={70}
+                loading="lazy"
                 className="object-cover"
               />
             </div>

@@ -40,10 +40,11 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         {featuredImage?.url && (
           <div className="absolute inset-0 w-full h-full z-0">
             <Image
-              src={featuredImage.url}
+              src={(featuredImage as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || featuredImage.url}
               alt={featuredImage.alt || article.title}
               fill
               className="object-cover opacity-90"
+              sizes="100vw"
               priority
             />
             {/* Gradient Overlay */}

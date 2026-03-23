@@ -41,10 +41,13 @@ export function PhotoGallery({ images }: Props) {
             {col.map(({ image, caption }, i) => (
               <Image
                 key={i}
-                src={image.url!}
+                src={(image.sizes?.gallery?.url) || image.url!}
                 alt={image.alt || caption || ''}
-                width={image.width || 1200}
-                height={image.height || 800}
+                width={(image.sizes?.gallery?.width) || image.width || 1200}
+                height={(image.sizes?.gallery?.height) || image.height || 800}
+                sizes={`(max-width: 768px) 100vw, ${Math.round(100 / colCount)}vw`}
+                quality={70}
+                loading="lazy"
                 className="w-full h-auto"
               />
             ))}

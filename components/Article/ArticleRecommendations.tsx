@@ -37,6 +37,11 @@ type RecommendationImage = {
   id: number;
   url?: string | null;
   alt?: string | null;
+  sizes?: {
+    card?: {
+      url?: string | null;
+    } | null;
+  } | null;
 };
 
 type RecommendationArticle = {
@@ -152,8 +157,9 @@ const toPublicRecommendationArticle = (article: Article): RecommendationArticle 
     article.featuredImage && typeof article.featuredImage !== 'number'
       ? {
           id: article.featuredImage.id,
-          url: article.featuredImage.url,
+          url: article.featuredImage.sizes?.card?.url || article.featuredImage.url,
           alt: article.featuredImage.alt,
+          sizes: article.featuredImage.sizes,
         }
       : null,
   opinionType: (article as unknown as Record<string, unknown>).opinionType as string | null | undefined,
@@ -235,11 +241,12 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
               {leadImage?.url ? (
                 <div className="relative aspect-[16/10] overflow-hidden bg-gray-100 dark:bg-zinc-800">
                   <Image
-                    src={leadImage.url}
+                    src={(leadImage as any).sizes?.card?.url || leadImage.url}
                     alt={leadImage.alt || leadArticle.title}
                     fill
                     className="object-cover"
                     sizes="(max-width: 1024px) 100vw, 720px"
+                    loading="lazy"
                   />
                 </div>
               ) : null}
@@ -284,11 +291,12 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                       {image?.url ? (
                         <div className="relative hidden aspect-square overflow-hidden bg-gray-100 dark:bg-zinc-800 sm:block">
                           <Image
-                            src={image.url}
+                            src={(image as any).sizes?.card?.url || image.url}
                             alt={image.alt || article.title}
                             fill
                             className="object-cover"
                             sizes="104px"
+                            loading="lazy"
                           />
                         </div>
                       ) : null}

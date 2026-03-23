@@ -93,9 +93,11 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
               >
                 <div className="relative aspect-[3/2] w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden transition-colors">
                   <Image
-                    src={media.url}
+                    src={(media as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || media.url}
                     alt={media.alt || ''}
                     fill
+                    sizes="(max-width: 768px) 100vw, 680px"
+                    loading="lazy"
                     className="object-cover"
                   />
                 </div>

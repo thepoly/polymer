@@ -75,7 +75,23 @@ export const Media: CollectionConfig = {
       },
     },
   ],
-  upload: true,
+  upload: {
+    imageSizes: [
+      {
+        name: 'gallery',
+        width: 1200,
+        height: undefined,
+        formatOptions: { format: 'webp', options: { quality: 80 } },
+      },
+      {
+        name: 'card',
+        width: 640,
+        height: undefined,
+        formatOptions: { format: 'webp', options: { quality: 75 } },
+      },
+    ],
+    resizeOptions: { withoutEnlargement: true },
+  },
 }
 
 export default Media

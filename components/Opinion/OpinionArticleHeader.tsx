@@ -53,11 +53,12 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
           <div className="w-full max-w-[780px] mx-auto mb-8">
             <div className="relative w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden">
               <Image
-                src={featuredImage.url}
+                src={(featuredImage as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || featuredImage.url}
                 alt={featuredImage.alt || article.title}
                 width={featuredImage.width || 1200}
                 height={featuredImage.height || 800}
                 className="w-full h-auto"
+                sizes="(max-width: 768px) 100vw, 680px"
                 priority
               />
             </div>

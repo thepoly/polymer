@@ -6,7 +6,13 @@ type PublicAuthorLike = {
   lastName: string;
 };
 
-type PublicMediaLike = Pick<Media, 'url'>;
+type PublicMediaLike = Pick<Media, 'url'> & {
+  sizes?: {
+    card?: {
+      url?: string | null;
+    } | null;
+  } | null;
+};
 
 type WriteInAuthor = {
   name: string;
@@ -81,7 +87,7 @@ export const formatArticle = (
     excerpt: article.subdeck || '',
     author: authors ? authors.toUpperCase() : 'THE POLY',
     date: dateString,
-    image: (article.featuredImage as Media)?.url || null,
+    image: (article.featuredImage as Media)?.sizes?.card?.url || (article.featuredImage as Media)?.url || null,
     section: article.section,
     kicker: article.kicker || null,
     opinionType: article.opinionType || null,
