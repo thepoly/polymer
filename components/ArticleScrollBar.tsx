@@ -105,6 +105,11 @@ export default function ArticleScrollBar({ title, section }: Props) {
 
   useEffect(() => {
     const handleScroll = () => {
+      if (window.innerWidth < 768) {
+        setVisible(true);
+        return;
+      }
+
       setVisible(prev => {
         if (!prev && window.scrollY > 400) return true;
         if (prev && window.scrollY < 300) {
@@ -114,7 +119,10 @@ export default function ArticleScrollBar({ title, section }: Props) {
         return prev;
       });
     };
+
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 

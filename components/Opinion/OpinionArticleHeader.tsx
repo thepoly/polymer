@@ -33,11 +33,15 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
       <div className="w-8 border-t border-rule-strong mb-6" />
 
       {/* Title */}
-      <h1 data-ie-field="title" className="font-copy font-medium text-[39px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center max-w-[600px] mx-auto px-4 mb-4">
+      <h1 data-ie-field="title" className="font-copy font-light text-[39px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center max-w-[600px] mx-auto px-4 mb-4">
         {article.title}
       </h1>
 
-      <div className="h-3" />
+      {article.subdeck && (
+        <h2 data-ie-field="subdeck" className="font-meta text-xl md:text-2xl font-normal text-text-muted leading-snug text-center max-w-[680px] mx-auto px-4 mb-6">
+          {article.subdeck}
+        </h2>
+      )}
 
       {/* Featured Image + Caption + Credit */}
       {featuredImage?.url && (() => {
@@ -72,8 +76,9 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
         );
       })()}
 
-      {/* Author byline */}
-      <ArticleByline article={article} />
+      <div className="w-full max-w-[680px] mx-auto px-4">
+        <ArticleByline article={article} />
+      </div>
     </div>
   );
 };

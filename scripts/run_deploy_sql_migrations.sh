@@ -147,6 +147,15 @@ CREATE INDEX IF NOT EXISTS "opinion_page_layout_quotes_order_idx" ON "opinion_pa
 CREATE INDEX IF NOT EXISTS "opinion_page_layout_quotes_parent_id_idx" ON "opinion_page_layout_quotes" USING btree ("_parent_id");
 CREATE INDEX IF NOT EXISTS "opinion_page_layout_quotes_article_idx" ON "opinion_page_layout_quotes" USING btree ("article_id");
 
+-- Fix missing opinion_page_layout FK in locked documents rels
+ALTER TABLE "payload_locked_documents_rels" ADD COLUMN IF NOT EXISTS "opinion_page_layout_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_opinion_page_layout_fk"
+    FOREIGN KEY ("opinion_page_layout_id") REFERENCES "public"."opinion_page_layout"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_opinion_page_layout_id_idx"
+  ON "payload_locked_documents_rels" ("opinion_page_layout_id");
+
 -- 20260322: Add SEO fields to articles
 ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "seo_title" varchar;
 ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "search_description" varchar;

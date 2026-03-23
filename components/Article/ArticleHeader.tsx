@@ -19,10 +19,9 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                 {article.kicker}
             </span>
         )}
-        <h1 data-ie-field="title" className={`font-display font-bold text-[39px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em] transition-colors ${article.section === "news" ? "font-display-news" : ""} ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
+        <h1 data-ie-field="title" className={`font-bold text-[39px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em] transition-colors ${article.section === "opinion" ? "font-copy font-light" : "font-display"} ${article.section === "news" ? "font-meta !font-[600]" : ""} ${article.section === "features" ? "font-light italic" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""}`}>
           {article.title}
         </h1>
-        <ArticleByline article={article} />
         {article.subdeck && (
             <h2 data-ie-field="subdeck" className="font-meta text-xl md:text-2xl font-normal text-text-muted leading-snug transition-colors">
                 {article.subdeck}
@@ -64,6 +63,10 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
           </div>
         );
       })()}
+
+      <div className="max-w-[680px] w-full mx-auto">
+        <ArticleByline article={article} />
+      </div>
 
     </div>
   );
