@@ -37,7 +37,8 @@ export const LeadArticle = ({
                 </p>
             )}
             <h3
-                className={`font-display mb-0.5 md:mb-1 font-bold leading-[1.04] tracking-[-0.018em] text-text-main transition-colors group-hover:text-accent [overflow-wrap:anywhere] break-words ${article.section === "news" ? `font-meta !text-[1.6em] ${important ? "!font-[800] uppercase" : "!font-[600]"}` : ""} ${article.section === "features" ? "font-light italic" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""} ${
+                data-marauders-title
+                className={`relative z-[30] font-display mb-0.5 md:mb-1 font-bold leading-[1.04] tracking-[-0.018em] text-text-main transition-colors group-hover:text-accent [overflow-wrap:anywhere] break-words ${article.section === "news" ? `font-meta !text-[1.6em] ${important ? "!font-[800] uppercase" : "!font-[600]"}` : ""} ${article.section === "features" ? "font-light italic" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""} ${
                     compact ? "text-[29px] md:text-[29px] xl:text-[31px]" : "text-[32px] md:text-[33px] xl:text-[36px]"
                 } ${article.section === "features" ? (compact ? "text-[30px] md:text-[30px] xl:text-[32px]" : "text-[33px] md:text-[34px] xl:text-[37px]") : ""}`}
             >
@@ -46,6 +47,7 @@ export const LeadArticle = ({
             <Byline author={article.author} date={getLeadDate(article)} split />
             {article.excerpt && (
                 <p
+                    data-marauders-obstacle="excerpt"
                     className={`font-meta font-normal text-black dark:text-white transition-colors mt-1.5 ${
                         compact ? "max-w-[36rem] text-[13px] leading-[1.42] md:text-[14px]" : "max-w-[40rem] text-[14px] leading-[1.45] md:text-[15px]"
                     } [overflow-wrap:anywhere] break-words`}
@@ -57,6 +59,7 @@ export const LeadArticle = ({
         {article.image && (
             <div
                 data-header-anchor="image"
+                data-marauders-obstacle="image"
                 className={`relative mt-4 w-full overflow-hidden left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen md:static md:ml-0 md:mr-0 md:w-full ${
                     imageFirstOnMobile ? "order-1 md:order-2 mt-0 md:mt-4" : ""
                 }`}

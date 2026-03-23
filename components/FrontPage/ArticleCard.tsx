@@ -31,7 +31,11 @@ export const ArticleCard = ({
 }) => (
   <TransitionLink href={getArticleUrl(article)} className={`group block min-w-0 ${imageRight && showImage && article.image ? "md:grid md:grid-cols-[minmax(0,1fr)_220px] md:gap-5 md:items-start" : ""}`}>
     {showImage && article.image && !imageRight && (
-      <figure data-header-anchor="image" className={`mb-3 ${contained ? 'relative w-full' : 'relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen md:static md:ml-0 md:mr-0 md:w-full'}`}>
+      <figure
+        data-header-anchor="image"
+        data-marauders-obstacle="image"
+        className={`mb-3 ${contained ? 'relative w-full' : 'relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen md:static md:ml-0 md:mr-0 md:w-full'}`}
+      >
         <div className={`relative w-full overflow-hidden ${imageAspectClassName}`}>
           <Image
             src={article.image}
@@ -56,20 +60,28 @@ export const ArticleCard = ({
       )}
       <div data-header-anchor="text">
         <h3
-          className={`font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors ${article.section === "opinion" ? "" : "group-hover:text-accent"} [overflow-wrap:anywhere] break-words ${article.section === "opinion" ? "font-copy font-light" : "font-display"} ${titleClassName} ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[23px] md:text-[25px]" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""}`}
+          data-marauders-title
+          className={`relative z-[30] font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors ${article.section === "opinion" ? "" : "group-hover:text-accent"} [overflow-wrap:anywhere] break-words ${article.section === "opinion" ? "font-copy font-light" : "font-display"} ${titleClassName} ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[23px] md:text-[25px]" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""}`}
         >
           {article.title}
         </h3>
         <Byline author={article.author} date={article.date} />
         {article.excerpt && (
-          <p className={`font-meta font-normal text-black dark:text-white [overflow-wrap:anywhere] break-words ${excerptClassName}`}>
+          <p
+            data-marauders-obstacle="excerpt"
+            className={`font-meta font-normal text-black dark:text-white [overflow-wrap:anywhere] break-words ${excerptClassName}`}
+          >
             {article.excerpt}
           </p>
         )}
       </div>
     </div>
     {showImage && article.image && imageRight && (
-      <figure data-header-anchor="image" className="relative w-full">
+      <figure
+        data-header-anchor="image"
+        data-marauders-obstacle="image"
+        className="relative w-full"
+      >
         <div className={`relative w-full overflow-hidden ${imageAspectClassName}`}>
           <Image
             src={article.image}

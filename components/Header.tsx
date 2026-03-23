@@ -8,6 +8,7 @@ import { Menu, Moon, Search, Sun, X } from "lucide-react";
 import SearchOverlay from "@/components/SearchOverlay";
 import { useHeaderTransition } from "@/components/HeaderTransitionProvider";
 import { ANIMATED_HEADER_ROUTES } from "@/components/headerAnimationRoutes";
+import MaraudersFootsteps from "@/components/MaraudersFootsteps";
 import { useTheme } from "@/components/ThemeProvider";
 
 const primaryNavItems = [
@@ -394,8 +395,8 @@ export default function Header({ compact = false, mobileTight = false }: { compa
   const currentDate = useCurrentDate();
   const { animationKey, phase, isAnimating, triggerTransition, suckDurationMs, shootDurationMs } = useHeaderTransition();
   const { isDarkMode, toggleDarkMode } = useTheme();
-  const logoSrc = isDarkMode ? "/logo-dark.svg" : "/logo-light.svg";
-  const mobileLogoSrc = isDarkMode ? "/logo-dark-mobile.svg" : "/logo-light-mobile.svg";
+  const logoSrc = isDarkMode ? "/logo-dark-gm-week.svg" : "/logo-light-gm-week.svg";
+  const mobileLogoSrc = isDarkMode ? "/logo-dark-gm-week-mobile.svg" : "/logo-light-gm-week-mobile.svg";
   const router = useRouter();
   const pathname = usePathname();
   const currentPath = pathname ?? "";
@@ -601,6 +602,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
               
               <button 
                 className="group relative flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 text-text-main" 
+                data-marauders-origin="search"
                 onClick={openSearchOverlay}
               >
                 <span 
@@ -713,7 +715,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
               {shouldEnableAnimatedHeaderTransition && phase === "shooting" && (
                 <div
                   key={`animated-${animationKey}`}
-                  className={`absolute inset-x-0 bottom-0 h-px overflow-visible pointer-events-none ${
+                  className={`absolute -left-1 right-0 bottom-0 h-px overflow-visible pointer-events-none ${
                     isDarkMode ? "text-[#DDDDDD]" : "text-rule-strong"
                   }`}
                 >
@@ -822,6 +824,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
         )}
       </header>
 
+      <MaraudersFootsteps />
       {isSearchOverlayOpen && <SearchOverlay onClose={() => setIsSearchOverlayOpen(false)} />}
     </>
   );

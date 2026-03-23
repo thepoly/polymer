@@ -23,7 +23,10 @@ export const Byline = ({
     };
 
     return (
-        <div className={`font-meta mt-1.5 md:mt-2.5 text-[12px] md:text-[11px] font-normal tracking-[0.04em] leading-tight ${className}`}>
+        <div
+            data-marauders-obstacle="meta"
+            className={`font-meta mt-1.5 md:mt-2.5 text-[12px] md:text-[11px] font-normal tracking-[0.04em] leading-tight ${className}`}
+        >
             {author && (
                 <span className="mr-1">
                     {renderAuthor(author)}

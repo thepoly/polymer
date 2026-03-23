@@ -48,13 +48,15 @@ function GridArticleCard({
         {article.section}
       </p>
       <h3
-        className={`font-display font-bold leading-[1.08] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent [overflow-wrap:anywhere] break-words ${titleSize} ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
+        data-marauders-title
+        className={`relative z-[30] font-display font-bold leading-[1.08] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent [overflow-wrap:anywhere] break-words ${titleSize} ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
       >
         {article.title}
       </h3>
       <Byline author={article.author} date={article.date} split={isLarge} />
       {article.excerpt && (
         <p
+          data-marauders-obstacle="excerpt"
           className={`font-meta font-normal text-black dark:text-white mt-2 [overflow-wrap:anywhere] break-words ${
             isLarge
               ? "text-[14px] leading-[1.45] line-clamp-4"
@@ -70,6 +72,7 @@ function GridArticleCard({
   const imageContent = showImage && article.image ? (
     <div
       data-header-anchor="image"
+      data-marauders-obstacle="image"
       className={
         isHorizontal
           ? `relative overflow-hidden flex-shrink-0 ${isLarge ? "w-[55%]" : isMedium ? "w-[50%]" : "w-[45%]"}`
@@ -147,13 +150,17 @@ function MobileArticleCard({ article }: { article: Article }) {
         {article.section}
       </p>
       <h3
-        className={`font-display font-bold leading-[1.08] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent [overflow-wrap:anywhere] break-words text-[26px] ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
+        data-marauders-title
+        className={`relative z-[30] font-display font-bold leading-[1.08] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent [overflow-wrap:anywhere] break-words text-[26px] ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
       >
         {article.title}
       </h3>
       <Byline author={article.author} date={article.date} />
       {article.excerpt && (
-        <p className="font-meta font-normal text-black dark:text-white mt-2 text-[14px] leading-[1.45] line-clamp-3 [overflow-wrap:anywhere] break-words">
+        <p
+          data-marauders-obstacle="excerpt"
+          className="font-meta font-normal text-black dark:text-white mt-2 text-[14px] leading-[1.45] line-clamp-3 [overflow-wrap:anywhere] break-words"
+        >
           {article.excerpt}
         </p>
       )}
