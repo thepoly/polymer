@@ -8,7 +8,7 @@ import { Menu, Moon, Search, Sun, X } from "lucide-react";
 import SearchOverlay from "@/components/SearchOverlay";
 import { useHeaderTransition } from "@/components/HeaderTransitionProvider";
 import { ANIMATED_HEADER_ROUTES } from "@/components/headerAnimationRoutes";
-import MaraudersFootsteps from "@/components/MaraudersFootsteps";
+// import MaraudersFootsteps from "@/components/MaraudersFootsteps";
 import { useTheme } from "@/components/ThemeProvider";
 
 const primaryNavItems = [
@@ -395,8 +395,8 @@ export default function Header({ compact = false, mobileTight = false }: { compa
   const currentDate = useCurrentDate();
   const { animationKey, phase, isAnimating, triggerTransition, suckDurationMs, shootDurationMs } = useHeaderTransition();
   const { isDarkMode, toggleDarkMode } = useTheme();
-  const logoSrc = isDarkMode ? "/logo-dark-gm-week.svg" : "/logo-light-gm-week.svg";
-  const mobileLogoSrc = isDarkMode ? "/logo-dark-gm-week-mobile.svg" : "/logo-light-gm-week-mobile.svg";
+  const logoSrc = isDarkMode ? "/logo-dark.svg" : "/logo-light.svg";
+  const mobileLogoSrc = isDarkMode ? "/logo-dark-mobile.svg" : "/logo-light-mobile.svg";
   const router = useRouter();
   const pathname = usePathname();
   const currentPath = pathname ?? "";
@@ -631,7 +631,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
         </div>
 
         {!compact && (
-          <div className="mx-auto max-w-[1280px] px-4 pt-4 md:px-6 xl:px-[30px]">
+          <div className="mx-auto max-w-[1280px] px-4 pt-6 md:px-6 xl:px-[30px]">
             <style dangerouslySetInnerHTML={{__html: `
               @keyframes terryWrapDraw {
                 0% { stroke-dashoffset: ${shootWrapPathLength}; }
@@ -800,13 +800,13 @@ export default function Header({ compact = false, mobileTight = false }: { compa
                 onClick={(e) => handleLinkClick(e, "/")}
                 onMouseEnter={() => prefetchLink("/")}
                 onFocus={() => prefetchLink("/")}
-                className={`relative -top-2 block h-[76px] w-[456px] max-w-full shrink-0 overflow-hidden ${isAnimating ? 'cursor-default' : 'cursor-pointer'}`}
+                className={`relative -top-2 block h-[76px] w-[456px] max-w-full shrink-0 ${isAnimating ? 'cursor-default' : 'cursor-pointer'}`}
               >
                 <Image
                   src={logoSrc}
                   alt="The Polytechnic"
                   fill
-                  className="origin-left scale-[1.09] object-contain object-left"
+                  className="object-contain object-left"
                   priority
                 />
               </Link>
@@ -830,7 +830,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
         )}
       </header>
 
-      <MaraudersFootsteps />
+      {/* <MaraudersFootsteps /> */}
       {isSearchOverlayOpen && <SearchOverlay onClose={() => setIsSearchOverlayOpen(false)} />}
     </>
   );
