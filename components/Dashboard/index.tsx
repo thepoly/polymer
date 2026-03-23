@@ -20,6 +20,7 @@ const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: strin
     depth: 1,
   }) : null
   const isAdmin = user?.roles?.includes('admin')
+  const canGlobalSearch = Boolean(user?.roles?.some((role) => ['admin', 'eic'].includes(role)))
 
   const { search } = await searchParams
   const rawSearchQuery = Array.isArray(search) ? search[0] : search
@@ -42,7 +43,7 @@ const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: strin
 
   // Global search for admins
   let globalResults: { collection: string; label: string; id: string | number }[] = []
-  if (isAdmin && searchQuery) {
+  if (canGlobalSearch && searchQuery) {
     const [users, media, jobTitles] = await Promise.all([
       payload.find({
         collection: 'users',
@@ -101,7 +102,7 @@ const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: strin
       {/* Search Bar */}
       <div className="dashboard-search">
         <Suspense fallback={<div>Loading search...</div>}>
-          <SearchBar isAdmin={isAdmin} />
+          <SearchBar isAdmin={canGlobalSearch} />
         </Suspense>
       </div>
 
@@ -135,7 +136,7 @@ const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: strin
         </div>
 
         {/* Global Search Results (Admin Only) */}
-        {isAdmin && searchQuery && globalResults.length > 0 && (
+        {canGlobalSearch && searchQuery && globalResults.length > 0 && (
           <div className="dashboard-global-results">
             <h2>Global Results</h2>
             <p className="subtext">Found in other collections</p>

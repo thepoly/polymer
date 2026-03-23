@@ -7,25 +7,14 @@ type UserWithRoles = {
   roles?: string[]
 }
 
-const isAdmin: Access = ({ req: { user } }) => {
+const isAdminOrEIC: Access = ({ req: { user } }) => {
   const u = user as unknown as UserWithRoles
-  return Boolean(u?.roles?.includes('admin'))
+  return Boolean(u?.roles?.some((role) => ['admin', 'eic'].includes(role)))
 }
 
-const isAdminField: FieldAccess = ({ req: { user } }) => {
+const isAdminOrEICField: FieldAccess = ({ req: { user } }) => {
   const u = user as unknown as UserWithRoles
-  return Boolean(u?.roles?.includes('admin'))
-}
-
-const isSelfOrAdmin: Access = ({ req: { user } }) => {
-  if (!user) return false
-  const u = user as unknown as UserWithRoles
-  if (u.roles?.includes('admin')) return true
-  return {
-    id: {
-      equals: user.id,
-    },
-  }
+  return Boolean(u?.roles?.some((role) => ['admin', 'eic'].includes(role)))
 }
 
 export const Users: CollectionConfig = {
@@ -39,10 +28,28 @@ export const Users: CollectionConfig = {
     defaultColumns: ['firstName', 'lastName', 'roles'],
   },
   access: {
-    read: isSelfOrAdmin,
-    create: isAdmin,
-    update: isSelfOrAdmin,
-    delete: isAdmin,
+    read: ({ req: { user } }) => {
+      if (!user) return false
+      const u = user as unknown as UserWithRoles
+      if (u.roles?.some((role) => ['admin', 'eic'].includes(role))) return true
+      return {
+        id: {
+          equals: user.id,
+        },
+      }
+    },
+    create: isAdminOrEIC,
+    update: ({ req: { user } }) => {
+      if (!user) return false
+      const u = user as unknown as UserWithRoles
+      if (u.roles?.some((role) => ['admin', 'eic'].includes(role))) return true
+      return {
+        id: {
+          equals: user.id,
+        },
+      }
+    },
+    delete: isAdminOrEIC,
   },
   hooks: {
     beforeChange: [
@@ -142,8 +149,7 @@ export const Users: CollectionConfig = {
         { label: 'Writer', value: 'writer' },
       ],
       access: {
-        // CONSTRAINT: Only Admins can change anyone's roles
-        update: isAdminField,
+        update: isAdminOrEICField,
       },
     },
     {
@@ -161,7 +167,7 @@ export const Users: CollectionConfig = {
         { label: 'Sports', value: 'sports' },
       ],
       access: {
-        update: isAdminField,
+        update: isAdminOrEICField,
       },
     },
     // --- 3. PUBLIC PROFILE ---
@@ -243,7 +249,7 @@ export const Users: CollectionConfig = {
           'Marks this staffer as retired. Retired staff are shown in the RETIRED section on the staff page as "Poly Emeritus" from the end of their last role through the present, and their password is replaced with a long scrambled value without notifying them.',
       },
       access: {
-        update: isAdminField,
+        update: isAdminOrEICField,
       },
     },
   ],

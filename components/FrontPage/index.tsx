@@ -134,7 +134,7 @@ export function SectionBlock({
     <section data-section={sectionSlug}>
       <div className="mb-5">
         <div className="border-t border-black dark:border-white -mx-4 md:-mx-6 xl:-mx-[30px]" />
-        <h2 className="font-meta text-[36px] font-bold tracking-[0.04em] text-accent capitalize leading-[1] mt-4 md:mt-2">{title}</h2>
+        <h2 className="font-meta text-[36px] font-bold tracking-[0.04em] text-accent uppercase leading-[1] mt-4 md:mt-2">{title}</h2>
       </div>
       {/* Mobile: flat list with dividers */}
       <div className="flex flex-col md:hidden">

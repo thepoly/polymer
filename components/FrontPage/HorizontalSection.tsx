@@ -30,7 +30,7 @@ export const StoryKicker = ({ section }: { section: string }) => (
 export const SectionHeading = ({ title }: { title: string }) => (
   <div className="mb-5 mb-2 pb-3">
     <Link href={`/${title.toLowerCase()}`} className="group inline-block">
-      <h2 className="font-meta text-[14px] font-bold capitalize tracking-[0.04em] text-accent transition-colors group-hover:text-accent/70 md:text-[15px]">
+      <h2 className="font-meta text-[14px] font-bold uppercase tracking-[0.04em] text-accent transition-colors group-hover:text-accent/70 md:text-[15px]">
         {title}
       </h2>
     </Link>
