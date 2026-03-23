@@ -22,7 +22,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                 {article.kicker}
             </span>
         )}
-        <h1 data-ie-field="title" className={`font-bold text-[39px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em] transition-colors ${article.section === "opinion" ? "font-copy font-light" : "font-display"} ${article.section === "news" ? "font-meta !font-[600]" : ""} ${article.section === "features" ? "font-light italic" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""}`}>
+        <h1 data-ie-field="title" className={`font-bold text-[39px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em] transition-colors font-copy ${article.section === "opinion" ? "font-light" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""}`}>
           {article.title}
         </h1>
         {article.subdeck && (

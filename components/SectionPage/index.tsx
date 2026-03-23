@@ -12,16 +12,14 @@ import { getArticleUrl } from "@/utils/getArticleUrl";
 /* ─── Helpers ─────────────────────────────────────────────────────── */
 
 const tc = (article: Article, size: string) =>
-  `font-display font-bold leading-[1.12] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent ${size} ${
-    article.section === "news"
-      ? "font-display-news"
-      : article.section === "features"
-        ? "font-normal italic"
-        : article.section === "sports"
-          ? "italic tracking-[0.015em]"
-          : article.section === "opinion"
-            ? "font-light"
-            : ""
+  `font-copy font-bold leading-[1.12] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent ${size} ${
+    article.section === "features"
+      ? "font-normal"
+      : article.section === "sports"
+        ? "font-normal tracking-[0.015em]"
+        : article.section === "opinion"
+          ? "font-light"
+          : ""
   }`;
 
 const normalizeKicker = (rawKicker?: string | null): string | null => {

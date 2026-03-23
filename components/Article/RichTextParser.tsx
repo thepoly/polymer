@@ -65,7 +65,7 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
         switch (node.type) {
           case 'heading':
             const Tag = node.tag as React.ElementType;
-            return <Tag key={index} className="font-display font-bold text-text-main my-4 leading-tight transition-colors">{serializedChildren}</Tag>;
+            return <Tag key={index} className="font-copy font-bold text-text-main my-4 leading-tight transition-colors">{serializedChildren}</Tag>;
 
           case 'paragraph': {
             const isFirst = paragraphCount === 0;

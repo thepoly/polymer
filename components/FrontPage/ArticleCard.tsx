@@ -61,7 +61,7 @@ export const ArticleCard = ({
       <div data-header-anchor="text">
         <h3
           data-marauders-title
-          className={`relative z-[30] font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors ${article.section === "opinion" ? "" : "group-hover:text-accent"} [overflow-wrap:anywhere] break-words ${article.section === "opinion" ? "font-copy font-light" : "font-display"} ${titleClassName} ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[23px] md:text-[25px]" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""}`}
+          className={`relative z-[30] font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors ${article.section === "opinion" ? "" : "group-hover:text-accent"} [overflow-wrap:anywhere] break-words font-copy ${article.section === "opinion" ? "font-light" : ""} ${titleClassName} ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[23px] md:text-[25px]" : ""}`}
         >
           {article.title}
         </h3>

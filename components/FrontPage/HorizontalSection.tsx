@@ -61,7 +61,7 @@ export const LeadStory = ({
 
     <StoryKicker section={article.section} />
     <h3
-      className={`font-display font-bold leading-[0.97] tracking-[-0.02em] text-text-main transition-colors group-hover:text-accent ${titleClassName} ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[24px] md:text-[28px]" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""}`}
+      className={`font-copy font-bold leading-[0.97] tracking-[-0.02em] text-text-main transition-colors group-hover:text-accent ${titleClassName} ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[24px] md:text-[28px]" : ""}`}
     >
       {article.title}
     </h3>
@@ -86,7 +86,7 @@ export const TextStory = ({
   <Link href={getArticleUrl(article)} className="group block">
     <StoryKicker section={article.section} />
     <h3
-      className={`font-display font-bold leading-[1.04] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent ${titleClassName} ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[22px] md:text-[24px]" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""}`}
+      className={`font-copy font-bold leading-[1.04] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent ${titleClassName} ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[22px] md:text-[24px]" : ""}`}
     >
       {article.title}
     </h3>
@@ -117,7 +117,7 @@ export const ThumbStory = ({
     <div>
       <StoryKicker section={article.section} />
       <h3
-        className={`font-display font-bold leading-[1.04] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent ${titleClassName} ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[22px] md:text-[24px]" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""}`}
+        className={`font-copy font-bold leading-[1.04] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent ${titleClassName} ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[22px] md:text-[24px]" : ""}`}
       >
         {article.title}
       </h3>
@@ -160,7 +160,7 @@ const SparseSection = ({
   const textBlock = (
     <div>
       <StoryKicker section={lead.section} />
-      <h3 className={`font-display text-[24px] font-bold leading-[1.08] tracking-[-0.018em] text-text-main transition-colors group-hover:text-accent md:text-[28px] ${lead.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${lead.section === "features" ? "font-light italic text-[25px] md:text-[29px]" : ""} ${lead.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""}`}>
+      <h3 className={`font-copy text-[24px] font-bold leading-[1.08] tracking-[-0.018em] text-text-main transition-colors group-hover:text-accent md:text-[28px] ${lead.section === "news" ? "!text-[1.2em]" : ""} ${lead.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${lead.section === "features" ? "font-light text-[25px] md:text-[29px]" : ""}`}>
         {lead.title}
       </h3>
       <Byline author={lead.author} date={lead.date} />
@@ -335,7 +335,7 @@ const SportsSection = ({ articles }: { articles: Article[] }) => {
           >
             <div>
               <StoryKicker section={lead.section} />
-              <h3 className={`font-display text-[20px] font-bold leading-[1.08] tracking-[-0.018em] text-text-main transition-colors group-hover:text-accent md:text-[24px] ${lead.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : ""} ${lead.section === "features" ? "font-light italic text-[21px] md:text-[25px]" : ""} ${lead.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""}`}>
+              <h3 className={`font-copy text-[20px] font-bold leading-[1.08] tracking-[-0.018em] text-text-main transition-colors group-hover:text-accent md:text-[24px] ${lead.section === "news" ? "!text-[1.2em]" : ""} ${lead.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${lead.section === "features" ? "font-light text-[21px] md:text-[25px]" : ""}`}>
                 {lead.title}
               </h3>
               <Byline author={lead.author} date={lead.date} />

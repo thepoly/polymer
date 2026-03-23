@@ -101,11 +101,10 @@ const getArticleLabel = (article: RecommendationArticle) => {
 const getHeadlineClasses = (article: RecommendationArticle, variant: 'lead' | 'list') => {
   const base =
     variant === 'lead'
-      ? 'font-display text-[28px] font-bold leading-[1.02] tracking-[-0.02em] md:text-[34px]'
-      : 'font-display text-[20px] font-bold leading-[1.08] tracking-[-0.015em] md:text-[22px]';
+      ? 'font-copy text-[28px] font-bold leading-[1.02] tracking-[-0.02em] md:text-[34px]'
+      : 'font-copy text-[20px] font-bold leading-[1.08] tracking-[-0.015em] md:text-[22px]';
 
   const sectionStyles = [
-    article.section === 'news' ? 'font-display-news' : '',
     article.section === 'features'
       ? variant === 'lead'
         ? 'text-[30px] font-normal italic md:text-[36px]'

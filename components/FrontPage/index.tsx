@@ -284,7 +284,7 @@ export default function FrontPage({
         </div>
 
         {/* Desktop: hero + bottom row as two flowing columns */}
-        <div data-frontpage-top className="relative z-[1] hidden md:grid md:grid-cols-2 gap-5 pt-6 md:pt-7 pb-8 items-start">
+        <div data-frontpage-top className="relative z-[1] hidden md:grid md:grid-cols-[1fr_1px_1fr] gap-x-5 pt-6 md:pt-7 pb-8 items-start">
           {/* Left column: lead + bottom-left articles */}
           <div className="flex flex-col gap-5">
             <LeadArticle article={topStories.lead} compact={leadIsCompact} important={topStories.leadImportant} />
@@ -297,10 +297,11 @@ export default function FrontPage({
               />
             )}
             {(topStories.bottomRow?.[1] || topStories.bottomRow?.[2]) && (
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-[1fr_1px_1fr] gap-x-5 items-start">
                 {topStories.bottomRow[1] && (
                   <ArticleCard article={topStories.bottomRow[1]} showImage={false} contained showKicker />
                 )}
+                <div className="self-stretch bg-rule" />
                 {topStories.bottomRow[2] && (
                   <ArticleCard article={topStories.bottomRow[2]} showImage={false} contained showKicker />
                 )}
@@ -315,9 +316,11 @@ export default function FrontPage({
               />
             )}
           </div>
+          {/* Column divider */}
+          <div className="self-stretch bg-rule" />
           {/* Right column: hero columns + bottom-right articles */}
           <div className="flex flex-col gap-5">
-            <div className="grid grid-cols-2 gap-5">
+            <div className="grid grid-cols-[1fr_1px_1fr] gap-x-5">
               <div className="flex flex-col">
                 {heroStories.left.map((article, i) => (
                   <div key={article.id} className={i > 0 ? "pt-3" : "pb-3"}>
@@ -325,6 +328,7 @@ export default function FrontPage({
                   </div>
                 ))}
               </div>
+              <div className="self-stretch bg-rule" />
               <div className="flex flex-col">
                 {heroStories.right.map((article, i) => (
                   <div key={article.id} className={i > 0 ? "pt-3" : "pb-3"}>
@@ -343,10 +347,11 @@ export default function FrontPage({
               />
             )}
             {(topStories.bottomRow?.[5] || topStories.bottomRow?.[6]) && (
-              <div className="grid grid-cols-2 gap-5">
+              <div className="grid grid-cols-[1fr_1px_1fr] gap-x-5 items-start">
                 {topStories.bottomRow[5] && (
                   <ArticleCard article={topStories.bottomRow[5]} showImage={false} contained showKicker />
                 )}
+                <div className="self-stretch bg-rule" />
                 {topStories.bottomRow[6] && (
                   <ArticleCard article={topStories.bottomRow[6]} showImage={false} contained showKicker />
                 )}
