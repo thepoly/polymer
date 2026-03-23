@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto'
 import type { CollectionConfig, FieldAccess, Access } from 'payload'
 import { getPostHogClient } from '../lib/posthog-server'
 
@@ -44,6 +45,22 @@ export const Users: CollectionConfig = {
     delete: isAdmin,
   },
   hooks: {
+    beforeChange: [
+      async ({ data, operation, originalDoc }) => {
+        if (operation !== 'update') {
+          return data
+        }
+
+        if (data?.retired === true && originalDoc?.retired !== true) {
+          return {
+            ...data,
+            password: randomBytes(48).toString('base64'),
+          }
+        }
+
+        return data
+      },
+    ],
     afterChange: [
       async ({ doc }) => {
         const posthog = getPostHogClient()
