@@ -19,6 +19,10 @@ if (POSTHOG_KEY) {
         return null;
       }
 
+      if (!event) {
+        return event;
+      }
+
       if (typeof window !== "undefined" && event.event === "$pageview") {
         event.properties = {
           ...event.properties,

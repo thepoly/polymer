@@ -12,6 +12,12 @@ export type LexicalNode = {
   text?: string;
   children?: LexicalNode[];
   url?: string;
+  fields?: {
+    url?: string;
+    newTab?: boolean;
+    linkType?: string;
+    [key: string]: unknown;
+  };
   version: number;
   format?: number;
   tag?: string;
@@ -71,12 +77,24 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
             );
           }
 
-          case 'link':
+          case 'link': {
+            const fields = node.fields as { url?: string; newTab?: boolean } | undefined;
+            const href = fields?.url || node.url || '';
+
+            if (!href) {
+              return <Fragment key={index}>{serializedChildren}</Fragment>;
+            }
+
             return (
-              <Link key={index} href={escapeHTML(node.url || "")} className="text-accent hover:underline decoration-1 underline-offset-2 transition-colors">
+              <Link
+                key={index}
+                href={href}
+                className="text-accent hover:underline decoration-1 underline-offset-2 transition-colors"
+              >
                 {serializedChildren}
               </Link>
             );
+          }
 
           case 'upload':
             const media = node.value as Media;
