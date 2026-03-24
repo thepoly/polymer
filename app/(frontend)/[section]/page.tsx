@@ -12,7 +12,7 @@ import type { QuoteData } from '@/components/Opinion/InlineQuote';
 import { formatArticle } from '@/utils/formatArticle';
 import { getArticleUrl } from '@/utils/getArticleUrl';
 import { opinionGroups } from '@/components/Opinion/opinionGroups';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 
 export const revalidate = 60;
@@ -50,8 +50,13 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
 
 export default async function SectionPageRoute({ params }: Args) {
   const { section } = await params;
+
+  if (section === 'archives') {
+    redirect('https://digitalassets.archives.rpi.edu/do/235be3d2-f018-48af-a413-b50e16dd6dc7');
+  }
+
   const contentSections = ['news', 'sports', 'features', 'opinion'];
-  const placeholderSections = ['about', 'archives', 'checkmate', 'contact', 'submit'];
+  const placeholderSections = ['about', 'checkmate', 'contact', 'submit'];
   const isContentSection = contentSections.includes(section);
   const isPlaceholderSection = placeholderSections.includes(section);
 
