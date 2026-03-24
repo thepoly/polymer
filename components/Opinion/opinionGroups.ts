@@ -2,17 +2,17 @@ export const opinionGroups = {
   editorials: {
     label: 'Editorials',
     slug: 'editorials',
-    types: ['staff-editorial', 'editorial-notebook', 'endorsement'],
+    types: ['staff-editorial', 'editorial-notebook', 'endorsement', 'editors-notebook', 'polys-recommendations'],
   },
   more: {
-    label: 'More in Opinion',
+    label: 'Opinions',
     slug: 'more-in-opinion',
-    types: ['opinion', 'letter-to-the-editor', 'other', 'more'],
+    types: ['opinion', 'column'],
   },
   other: {
     label: 'Other',
     slug: 'other',
-    types: ['column', 'editors-notebook', 'top-hat', 'candidate-profile', 'derby', 'polys-recommendations'],
+    types: ['letter-to-the-editor', 'top-hat', 'candidate-profile', 'derby', 'other', 'more'],
   },
 } as const;
 

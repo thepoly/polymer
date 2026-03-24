@@ -13,30 +13,49 @@ export interface SpotlightAuthor {
 
 export default function AuthorSpotlightCarousel({
   authors,
+  pinnedAuthors,
 }: {
   authors: SpotlightAuthor[];
+  pinnedAuthors?: SpotlightAuthor[];
 }) {
+  const displayAuthors = pinnedAuthors && pinnedAuthors.length > 0 ? pinnedAuthors : authors;
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const count = authors.length;
+  const count = displayAuthors.length;
+
+  // Derive a safe index — if the list shrinks, clamp without a cascading render
+  const safeIndex = count === 0 ? 0 : Math.min(activeIndex, count - 1);
+
+  const restartInterval = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = null;
+  }, []);
 
   const advance = useCallback(() => {
     setActiveIndex((prev) => (prev + 1) % count);
-  }, [count]);
+    restartInterval();
+  }, [count, restartInterval]);
+
+  const retreat = useCallback(() => {
+    setActiveIndex((prev) => (prev - 1 + count) % count);
+    restartInterval();
+  }, [count, restartInterval]);
 
   useEffect(() => {
     if (paused || count <= 1) return;
-    intervalRef.current = setInterval(advance, 5000);
+    intervalRef.current = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % count);
+    }, 5000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [paused, advance, count]);
+  }, [paused, count]);
 
   if (count === 0) return null;
 
-  const active = authors[activeIndex];
+  const active = displayAuthors[safeIndex];
 
   return (
     <div
@@ -72,26 +91,42 @@ export default function AuthorSpotlightCarousel({
         </p>
 
         {/* Latest article */}
-        <p className="mt-1 font-copy text-[16px] italic leading-[1.35] text-text-muted transition-colors line-clamp-2 max-w-[220px]">
+        <p className="mt-1 font-copy text-[16px] leading-[1.35] text-text-muted transition-colors group-hover:text-accent line-clamp-2 max-w-[220px]">
           {active.latestArticle.title}
         </p>
       </TransitionLink>
 
-      {/* Dot indicators */}
+      {/* Navigation: arrows + dots */}
       {count > 1 && (
-        <div className="flex justify-center gap-1.5 mt-4">
-          {authors.map((_, i) => (
-            <button
-              key={authors[i].id}
-              onClick={() => setActiveIndex(i)}
-              className={`rounded-full transition-all duration-300 ${
-                i === activeIndex
-                  ? "w-2 h-2 bg-accent"
-                  : "w-1.5 h-1.5 bg-text-muted/30 hover:bg-text-muted/60"
-              }`}
-              aria-label={`Show ${authors[i].name}`}
-            />
-          ))}
+        <div className="flex items-center justify-center gap-2 mt-4">
+          <button
+            onClick={retreat}
+            style={{ fontSize: 18, lineHeight: 1, padding: "0 4px", color: "#aaa", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center" }}
+            aria-label="Previous author"
+          >
+            &#8249;
+          </button>
+          <div className="flex gap-1.5 items-center">
+            {displayAuthors.map((_, i) => (
+              <button
+                key={displayAuthors[i].id}
+                onClick={() => setActiveIndex(i)}
+                className={`rounded-full transition-all duration-300 ${
+                  i === safeIndex
+                    ? "w-2 h-2 bg-accent"
+                    : "w-1.5 h-1.5 bg-text-muted/30 hover:bg-text-muted/60"
+                }`}
+                aria-label={`Show ${displayAuthors[i].name}`}
+              />
+            ))}
+          </div>
+          <button
+            onClick={advance}
+            style={{ fontSize: 18, lineHeight: 1, padding: "0 4px", color: "#aaa", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center" }}
+            aria-label="Next author"
+          >
+            &#8250;
+          </button>
         </div>
       )}
     </div>

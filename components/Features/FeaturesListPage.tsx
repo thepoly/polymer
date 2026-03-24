@@ -8,7 +8,7 @@ import type { Article } from "@/components/FrontPage/types";
 
 const PAGE_SIZE = 10;
 
-export default function OpinionListPage({
+export default function FeaturesListPage({
   title,
   articles,
 }: {
@@ -32,10 +32,10 @@ export default function OpinionListPage({
           {title}
         </h1>
         <TransitionLink
-          href="/opinion"
+          href="/features"
           className="font-meta text-[14px] uppercase tracking-[0.08em] text-accent hover:underline transition-colors"
         >
-          &larr; Back to Opinion
+          &larr; Back to Features
         </TransitionLink>
       </div>
 
@@ -62,13 +62,13 @@ export default function OpinionListPage({
               </div>
             )}
             <div className="flex flex-col justify-center">
-              <h2 className="font-copy font-medium leading-[1.15] text-[22px] text-text-main transition-colors">
+              <h2 className="font-copy font-medium leading-[1.15] text-[22px] text-text-main transition-colors group-hover:text-accent">
                 {article.title}
               </h2>
               {article.author && (
                 <p className="mt-1 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
                   <span className="text-text-muted">BY </span>
-                  <span className="text-accent dark:text-white">{article.author}</span>
+                  <span className="text-accent">{article.author}</span>
                   {article.date && (
                     <>
                       <span className="text-text-muted mx-1.5">&bull;</span>

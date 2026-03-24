@@ -8,7 +8,6 @@ import { opinionTypeLabels } from "./opinionTypeLabels";
 import AuthorSpotlightCarousel, {
   type SpotlightAuthor,
 } from "./AuthorSpotlightCarousel";
-import type { QuoteData } from "./InlineQuote";
 import EditorsChoice from "./EditorsChoice";
 import { opinionGroups } from "./opinionGroups";
 import RainbowDivider, { AnimatedLine } from "./RainbowDivider";
@@ -78,17 +77,24 @@ export default function OpinionSectionPage({
   title,
   articles,
   rawArticles,
+  pinnedCol1,
+  pinnedCol2,
+  pinnedCol3,
   editorsChoiceArticles,
   editorsChoiceLabel,
   groupedArticles,
+  pinnedSpotlightAuthors,
 }: {
   title: string;
   articles: ComponentArticle[];
   rawArticles: PayloadArticle[];
+  pinnedCol1: ComponentArticle[];
+  pinnedCol2: ComponentArticle[];
+  pinnedCol3: ComponentArticle[];
   editorsChoiceArticles: ComponentArticle[];
   editorsChoiceLabel: string;
-  quotes: QuoteData[];
   groupedArticles: Record<string, ComponentArticle[]>;
+  pinnedSpotlightAuthors?: SpotlightAuthor[];
 }) {
   const spotlightAuthors = useMemo(() => {
     const authorMap = new Map<
@@ -142,110 +148,67 @@ export default function OpinionSectionPage({
         };
       });
 
-    // TODO: Remove placeholder authors — for preview only
-    if (real.length < 4) {
-      const placeholders: SpotlightAuthor[] = [
-        { id: -1, name: "Maya Chen", headshot: null, latestArticle: { title: "Why Student Government Matters More Than You Think", url: "/opinion" } },
-        { id: -2, name: "Derek Miller", headshot: null, latestArticle: { title: "A Republican Walks Into a Bar", url: "/opinion" } },
-        { id: -3, name: "Priya Sharma", headshot: null, latestArticle: { title: "Grade Deflation Will Be Good For Us", url: "/opinion" } },
-        { id: -4, name: "James O'Brien", headshot: null, latestArticle: { title: "The Ethics of Capping Grades", url: "/opinion" } },
-        { id: -5, name: "Sofia Ruiz", headshot: null, latestArticle: { title: "What RPI Gets Wrong About Free Speech", url: "/opinion" } },
-      ];
-      return [...real, ...placeholders.slice(0, 6 - real.length)];
-    }
-
     return real;
   }, [rawArticles]);
 
-  const editorsChoiceIds = new Set(
-    editorsChoiceArticles.map((a) => String(a.id))
-  );
-  const mainArticles = articles.filter(
-    (a) => !editorsChoiceIds.has(String(a.id))
+  // Build a set of all pinned/EC IDs so we can exclude them from auto-fill
+  const pinnedIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const a of [...pinnedCol1, ...pinnedCol2, ...pinnedCol3, ...editorsChoiceArticles]) {
+      ids.add(String(a.id));
+    }
+    return ids;
+  }, [pinnedCol1, pinnedCol2, pinnedCol3, editorsChoiceArticles]);
+
+  // Auto-fill pool: articles not already pinned
+  const autoFillPool = useMemo(() =>
+    articles.filter((a) => !pinnedIds.has(String(a.id))),
+    [articles, pinnedIds]
   );
 
-  // Col1: image, text, text, CTA, text, text      → 5 articles (indices 0-4)
-  // Col2: text, carousel, text, image, text       → 4 articles (indices 5-8)
-  // Col3: most read, text, text, text, image      → 4 articles (indices 9-12)
-  const col1 = mainArticles.slice(0, 5);
-  const col2 = mainArticles.slice(5, 9);
-  const col3 = mainArticles.slice(9, 13);
+  // Fill each column: pinned first, then auto-fill to reach slot count
+  const { col1, col2, col3 } = useMemo(() => {
+    const fillColumn = (pinned: ComponentArticle[], slotCount: number, ref: { idx: number }): ComponentArticle[] => {
+      const result: ComponentArticle[] = [...pinned];
+      while (result.length < slotCount && ref.idx < autoFillPool.length) {
+        result.push(autoFillPool[ref.idx++]);
+      }
+      return result;
+    };
+    const ref = { idx: 0 };
+    return {
+      col1: fillColumn(pinnedCol1, 5, ref),
+      col2: fillColumn(pinnedCol2, 4, ref),
+      col3: fillColumn(pinnedCol3, 4, ref),
+    };
+  }, [pinnedCol1, pinnedCol2, pinnedCol3, autoFillPool]);
 
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-5 pb-8 md:px-[30px]">
       {/* Header */}
-      <div className="mt-2 mb-6 md:mt-6 md:mb-10">
-        {/* Desktop: single row */}
-        <div className="hidden md:flex items-center gap-6">
-          <h1 className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[60px]" style={{ fontWeight: 400, lineHeight: 1 }}>
-            {title}
-          </h1>
-          <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground)" }} />
-          <TransitionLink href="/submit" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors text-[36px]" style={{ fontWeight: 300 }}>
-            Submit
-          </TransitionLink>
-          <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground)" }} />
-          <TransitionLink href="/contact" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors text-[36px]" style={{ fontWeight: 300 }}>
-            Contact
-          </TransitionLink>
-        </div>
-        {/* Mobile: title then links below, centered */}
-        <div className="md:hidden text-center">
-          <h1 className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[36px]" style={{ fontWeight: 400, lineHeight: 1 }}>
-            {title}
-          </h1>
-          <div className="flex items-center justify-center gap-3 mt-2">
-            <TransitionLink href="/submit" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors text-[18px]" style={{ fontWeight: 300 }}>
-              Submit
-            </TransitionLink>
-            <span className="text-text-muted">&bull;</span>
-            <TransitionLink href="/contact" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors text-[18px]" style={{ fontWeight: 300 }}>
-              Contact
-            </TransitionLink>
-          </div>
-        </div>
+      <div className="flex items-center mt-6 mb-10" style={{ gap: 24 }}>
+        <h1 className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors" style={{ fontSize: 60, fontWeight: 400, lineHeight: 1 }}>
+          {title}
+        </h1>
+        <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground-muted)" }} />
+        <TransitionLink href="/submit" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors" style={{ fontSize: 36, fontWeight: 300 }}>
+          Submit
+        </TransitionLink>
+        <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground-muted)" }} />
+        <a href="mailto:edop@poly.rpi.edu" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors" style={{ fontSize: 36, fontWeight: 300 }}>
+          Contact
+        </a>
       </div>
 
-      {/* ── Mobile: single-column, desktop order ── */}
-      <div className="flex flex-col md:hidden">
-        {/* Col 1 articles */}
-        {col1[0] && <OpinionCard article={col1[0]} withImage priority />}
-        {col1[1] && <OpinionCard article={col1[1]} />}
-        {col1[2] && <OpinionCard article={col1[2]} />}
-        {/* Guest writer CTA */}
-        <div className="py-7 border-y border-rule mb-8">
-          <p className="font-copy text-[19px] leading-[1.5] text-text-main">
-            Interested in being a guest writer?{" "}
-            <TransitionLink href="/submit" className="text-accent hover:underline transition-colors">
-              Learn more.
-            </TransitionLink>
-          </p>
-        </div>
-        {col1[3] && <OpinionCard article={col1[3]} />}
-        {col1[4] && <OpinionCard article={col1[4]} />}
-        {/* Col 2 articles */}
-        {col2[0] && <OpinionCard article={col2[0]} />}
-        {spotlightAuthors.length > 0 && (
-          <AuthorSpotlightCarousel authors={spotlightAuthors} />
-        )}
-        {col2[1] && <OpinionCard article={col2[1]} />}
-        {col2[2] && <OpinionCard article={col2[2]} withImage />}
-        {col2[3] && <OpinionCard article={col2[3]} />}
-        {/* Col 3 articles */}
-        {editorsChoiceArticles.length > 0 && (
-          <div className="mb-3">
-            <EditorsChoice articles={editorsChoiceArticles} label={editorsChoiceLabel} />
-          </div>
-        )}
-        {col3[0] && <OpinionCard article={col3[0]} />}
-        {col3[1] && <OpinionCard article={col3[1]} />}
-        {col3[2] && <OpinionCard article={col3[2]} />}
-        {col3[3] && <OpinionCard article={col3[3]} withImage />}
-      </div>
-
-      {/* 3-column grid — desktop only */}
-      <div className="hidden md:grid" style={{ gridTemplateColumns: "1fr 1fr 1fr", gap: "0 24px", alignItems: "start" }}>
-        {/* ── Col 1: image, text, text, CTA, text ── */}
+      {/* 3-column grid — inline styles to guarantee layout */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          gap: "0 24px",
+        }}
+      >
+        {/* ── Col 1: image, text, text, CTA, text, text ── */}
         <div style={{ borderRight: "1px solid var(--rule-color)", paddingRight: 24 }}>
           {col1[0] && <OpinionCard article={col1[0]} withImage priority />}
           {col1[1] && <OpinionCard article={col1[1]} />}
@@ -272,8 +235,8 @@ export default function OpinionSectionPage({
         <div style={{ borderRight: "1px solid var(--rule-color)", paddingRight: 24 }}>
           {col2[0] && <OpinionCard article={col2[0]} />}
 
-          {spotlightAuthors.length > 0 && (
-            <AuthorSpotlightCarousel authors={spotlightAuthors} />
+          {(spotlightAuthors.length > 0 || (pinnedSpotlightAuthors && pinnedSpotlightAuthors.length > 0)) && (
+            <AuthorSpotlightCarousel authors={spotlightAuthors} pinnedAuthors={pinnedSpotlightAuthors} />
           )}
 
           {col2[1] && <OpinionCard article={col2[1]} />}
@@ -281,8 +244,8 @@ export default function OpinionSectionPage({
           {col2[3] && <OpinionCard article={col2[3]} />}
         </div>
 
-        {/* ── Col 3: most read, text, text, text, image ── */}
-        <div>
+        {/* ── Col 3: editors choice, text, text, text, image ── */}
+        <div className="sticky top-20 self-start">
           {editorsChoiceArticles.length > 0 && (
             <div className="mb-3">
               <EditorsChoice

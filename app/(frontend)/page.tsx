@@ -458,6 +458,17 @@ export default async function Home() {
     topStories = { lead: mainArticle, list: topStoryList };
   }
 
+  // Exclude all articles already shown in the hero from the section blocks.
+  // heroUsedIds only covers pinned IDs; fillArticles may have auto-filled others.
+  const heroArticleIds = new Set<string>([
+    String(topStories.lead.id),
+    ...(topStories.heroLeft || []).map((a) => String(a.id)),
+    ...(topStories.heroRight || []).map((a) => String(a.id)),
+    ...(topStories.list || []).map((a) => String(a.id)),
+    ...(topStories.bottomRow || []).filter((a) => a !== null).map((a) => String(a.id)),
+  ]);
+  const dropHero = (arts: typeof newsArticles) => arts.filter((a) => !heroArticleIds.has(String(a.id)));
+
   return (
     <main className="min-h-screen bg-bg-main transition-colors duration-300">
       <script
@@ -468,10 +479,10 @@ export default async function Home() {
       <FrontPage
         topStories={topStories}
         sections={{
-          news: newsArticles,
-          features: featuresArticles,
-          sports: sportsArticles,
-          opinion: opinionArticles,
+          news: dropHero(newsArticles),
+          features: dropHero(featuresArticles),
+          sports: dropHero(sportsArticles),
+          opinion: dropHero(opinionArticles),
         }}
       />
       <Footer />
