@@ -42,6 +42,13 @@ export interface StaffProfilePhoto {
   alt?: string | null;
   width?: number | null;
   height?: number | null;
+  sizes?: {
+    gallery?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+    };
+  } | null;
 }
 
 interface StaffProfileProps {
@@ -52,6 +59,22 @@ interface StaffProfileProps {
 }
 
 const INITIAL_ARTICLE_COUNT = 8;
+
+type PortfolioPhoto = Required<Pick<StaffProfilePhoto, 'id'>> & StaffProfilePhoto;
+
+const distributePortfolioPhotos = (images: PortfolioPhoto[], colCount: number): PortfolioPhoto[][] => {
+  const columns: PortfolioPhoto[][] = Array.from({ length: colCount }, () => []);
+  const heights = new Array(colCount).fill(0);
+
+  for (const image of images) {
+    const aspect = (image.height || 800) / (image.width || 1200);
+    const shortest = heights.indexOf(Math.min(...heights));
+    columns[shortest].push(image);
+    heights[shortest] += aspect;
+  }
+
+  return columns;
+};
 
 const lexicalToPlainText = (nodes: LexicalNode[] | undefined): string => {
   if (!nodes || nodes.length === 0) return '';
@@ -90,6 +113,12 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
 
   const displayedArticles = showAllArticles ? articles : articles.slice(0, INITIAL_ARTICLE_COUNT);
   const hasMoreArticles = articles.length > INITIAL_ARTICLE_COUNT;
+  const populatedPhotos = photos.filter((photo): photo is PortfolioPhoto => Boolean(photo.url));
+  const portfolioColumnCount = Math.min(populatedPhotos.length, 3);
+  const portfolioGridClassName = { 1: 'md:grid-cols-1', 2: 'md:grid-cols-2', 3: 'md:grid-cols-3' }[portfolioColumnCount];
+  const portfolioColumns = portfolioColumnCount > 0
+    ? distributePortfolioPhotos(populatedPhotos, portfolioColumnCount)
+    : [];
 
   return (
     <div className="flex flex-col gap-16 text-text-main transition-colors duration-300">
@@ -164,11 +193,12 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
                   const publishedDate = new Date(article.publishedDate!);
                   const year = publishedDate.getFullYear();
                   const month = (publishedDate.getMonth() + 1).toString().padStart(2, '0');
+                  const headlineClassName = `font-copy font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors group-hover:text-accent mb-1 [overflow-wrap:anywhere] break-words ${article.section === "opinion" ? "font-light" : ""} ${(article.section === "news" || article.section === "features") ? "text-[23px] md:text-[25px]" : "text-[22px] md:text-[24px]"} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""}`;
 
                   return (
                     <div key={article.id} className="group">
                       <Link href={`/${article.section}/${year}/${month}/${article.slug}`} className="block">
-                        <h3 className={`font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors group-hover:text-accent mb-1 [overflow-wrap:anywhere] break-words ${article.section === "opinion" ? "font-copy font-light" : "font-display"} ${article.section === "news" ? "font-meta !font-[600] !text-[1.2em]" : "text-[22px] md:text-[24px]"} ${article.section === "features" ? "font-light italic text-[23px] md:text-[25px]" : ""} ${article.section === "sports" ? "font-[560] italic tracking-[0.015em]" : ""}`}>
+                        <h3 className={headlineClassName}>
                           {article.title}
                         </h3>
                       </Link>
@@ -198,37 +228,39 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
       {photos.length > 0 && (
         <section className="w-full">
           <h2 className="font-meta text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted mb-8 border-b border-rule pb-2 transition-colors">Photo Portfolio</h2>
-          <div className="columns-2 sm:columns-2 lg:columns-3 gap-6 space-y-6">
-            {photos.map((photo, index) => {
-              const articleUrl = photoToArticleMap[photo.id];
-              // Alternating aspect ratios for a fun masonry feel if dimensions aren't perfect
-              const aspectRatios = ['aspect-[4/3]', 'aspect-[3/4]', 'aspect-square', 'aspect-[16/9]'];
-              const aspectRatioClass = (photo.width && photo.height) ? '' : aspectRatios[index % aspectRatios.length];
-              
-              const content = (
-                <div className={`relative bg-gray-100 dark:bg-zinc-800 overflow-hidden group mb-4 transition-colors ${aspectRatioClass}`}>
-                  {photo.url && (
-                    <Image
-                      src={photo.url}
-                      alt={photo.alt || 'Photo credit'}
-                      width={photo.width || 800}
-                      height={photo.height || 600}
-                      className={`w-full ${photo.width && photo.height ? 'h-auto' : 'h-full'} object-cover`}
-                      sizes="(max-width: 768px) 50vw, 25vw"
-                    />
-                  )}
-                </div>
-              );
+          {portfolioColumns.length > 0 ? (
+            <div className={`grid grid-cols-1 gap-4 md:gap-6 ${portfolioGridClassName}`}>
+              {portfolioColumns.map((column, columnIndex) => (
+                <div key={columnIndex} className="flex flex-col gap-4 md:gap-6">
+                  {column.map((photo) => {
+                    const href = photoToArticleMap[photo.id];
+                    const imageNode = (
+                      <Image
+                        src={photo.sizes?.gallery?.url || photo.url!}
+                        alt={photo.alt || 'Photo credit'}
+                        width={photo.sizes?.gallery?.width || photo.width || 1200}
+                        height={photo.sizes?.gallery?.height || photo.height || 800}
+                        sizes={`(max-width: 768px) 100vw, ${Math.round(100 / portfolioColumnCount)}vw`}
+                        quality={70}
+                        loading="lazy"
+                        className="w-full h-auto"
+                      />
+                    );
 
-              return articleUrl ? (
-                <Link key={photo.id} href={articleUrl} className="block break-inside-avoid">
-                  {content}
-                </Link>
-              ) : (
-                <div key={photo.id} className="break-inside-avoid">{content}</div>
-              );
-            })}
-          </div>
+                    if (!href) {
+                      return <div key={photo.id}>{imageNode}</div>;
+                    }
+
+                    return (
+                      <Link key={photo.id} href={href} className="block">
+                        {imageNode}
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          ) : null}
         </section>
       )}
     </div>

@@ -49,7 +49,7 @@ type PublicStaffUserSource = Pick<
 
 type PublicStaffArticleSource = Pick<Article, 'id' | 'title' | 'slug' | 'section' | 'publishedDate'>;
 
-type PublicStaffPhotoSource = Pick<Media, 'id' | 'url' | 'alt' | 'width' | 'height'>;
+type PublicStaffPhotoSource = Pick<Media, 'id' | 'url' | 'alt' | 'width' | 'height' | 'sizes'>;
 
 const toPublicStaffUser = (user: PublicStaffUserSource): StaffProfileUser => ({
   id: user.id,
@@ -87,6 +87,7 @@ const toPublicStaffPhoto = (photo: PublicStaffPhotoSource): StaffProfilePhoto =>
   alt: photo.alt,
   width: photo.width,
   height: photo.height,
+  sizes: photo.sizes,
 });
 
 export async function generateMetadata({ params }: StaffArgs): Promise<Metadata> {
@@ -148,17 +149,29 @@ export default async function StaffProfilePage({ params }: StaffArgs) {
   const photos = await payload.find({
     collection: 'media',
     where: {
-      photographer: {
-        equals: user.id,
-      },
+      or: [
+        {
+          photographer: {
+            equals: user.id,
+          },
+        },
+        {
+          photographer: {
+            equals: String(user.id),
+          },
+        },
+      ],
     },
     limit: 20,
     depth: 0,
     select: {
       url: true,
+      filename: true,
+      sourceUrl: true,
       alt: true,
       width: true,
       height: true,
+      sizes: true,
     },
   });
 
