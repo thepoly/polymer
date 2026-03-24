@@ -101,18 +101,22 @@ const getArticleLabel = (article: RecommendationArticle) => {
 const getHeadlineClasses = (article: RecommendationArticle, variant: 'lead' | 'list') => {
   const base =
     variant === 'lead'
-      ? 'font-display text-[28px] font-bold leading-[1.02] tracking-[-0.02em] md:text-[34px]'
-      : 'font-display text-[20px] font-bold leading-[1.08] tracking-[-0.015em] md:text-[22px]';
+      ? 'font-display text-[31px] font-bold leading-[1.02] tracking-[-0.02em] md:text-[37px]'
+      : 'font-display text-[23px] font-bold leading-[1.08] tracking-[-0.015em] md:text-[25px]';
 
   const sectionStyles = [
     article.section === 'news' ? 'font-display-news' : '',
     article.section === 'features'
       ? variant === 'lead'
-        ? 'text-[30px] font-normal italic md:text-[36px]'
-        : 'text-[21px] font-normal italic md:text-[23px]'
+        ? 'text-[33px] font-normal italic md:text-[39px]'
+        : 'text-[24px] font-normal italic md:text-[26px]'
       : '',
     article.section === 'sports' ? 'italic tracking-[0.015em]' : '',
-    article.section === 'opinion' ? 'font-light' : '',
+    article.section === 'opinion'
+      ? variant === 'lead'
+        ? 'font-copy font-medium leading-[1.12] text-[28px] md:text-[28px]'
+        : 'font-copy font-medium leading-[1.12] text-[28px] md:text-[28px]'
+      : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -214,18 +218,21 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
       <div className="pt-2 md:pt-3">
         <div className="mb-8 flex flex-col gap-4 border-b border-rule pb-6 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
-            <p className="font-meta text-[11px] font-bold uppercase tracking-[0.12em] text-accent">
+            <p className="font-meta text-[14px] font-bold uppercase tracking-[0.12em] text-accent">
               Continue Reading
             </p>
             <TransitionLink
               href={`/${currentArticle.section}`}
               className="group inline-block"
             >
-              <h2 className={`mt-2 font-display text-[30px] leading-[0.98] tracking-[-0.03em] text-text-main transition-colors group-hover:text-accent md:text-[38px] ${currentArticle.section === 'opinion' ? 'font-medium' : 'font-bold'}`}>
+              <h2
+                className={`mt-2 font-display leading-[0.98] tracking-[-0.03em] text-text-main transition-colors group-hover:text-accent ${currentArticle.section === 'opinion' ? 'font-medium' : 'font-bold text-[33px] md:text-[41px]'}`}
+                style={currentArticle.section === 'opinion' ? { fontSize: 56 } : undefined}
+              >
                 {sectionLabel}
               </h2>
             </TransitionLink>
-            <p className="mt-2 max-w-xl font-meta text-[13px] leading-[1.45] text-text-muted">
+            <p className="mt-2 max-w-xl font-meta text-[16px] leading-[1.45] text-text-muted">
               {sectionDescriptions[currentArticle.section]}
             </p>
           </div>
@@ -252,7 +259,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
               ) : null}
 
               <div className="min-w-0">
-                <p className="line-clamp-1 font-meta text-[11px] font-[600] uppercase tracking-[0.08em] text-accent">
+                <p className="line-clamp-1 font-meta text-[14px] font-[600] uppercase tracking-[0.08em] text-accent">
                   {getArticleLabel(leadArticle)}
                 </p>
                 <h3 className={`mt-2 ${getHeadlineClasses(leadArticle, 'lead')}`}>
@@ -261,10 +268,10 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                 <Byline
                   author={getAuthorString(leadArticle)}
                   date={formatDate(leadArticle)}
-                  className="mt-4 text-[11px] md:text-[11px]"
+                  className="mt-4 text-[14px] md:text-[14px]"
                 />
                 {leadArticle.subdeck && (
-                  <p className="mt-3 max-w-xl font-meta text-[14px] leading-[1.48] text-text-muted line-clamp-3">
+                  <p className="mt-3 max-w-xl font-meta text-[17px] leading-[1.48] text-text-muted line-clamp-3">
                     {leadArticle.subdeck}
                   </p>
                 )}
@@ -302,13 +309,13 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                       ) : null}
 
                       <div className="min-w-0">
-                        <p className="line-clamp-1 font-meta text-[10px] font-[600] uppercase tracking-[0.08em] text-accent">
+                        <p className="line-clamp-1 font-meta text-[13px] font-[600] uppercase tracking-[0.08em] text-accent">
                           {getArticleLabel(article)}
                         </p>
                         <h3 className={`mt-1 ${getHeadlineClasses(article, 'list')}`}>
                           {article.title}
                         </h3>
-                        <Byline author={getAuthorString(article)} date={formatDate(article)} />
+                        <Byline author={getAuthorString(article)} date={formatDate(article)} className="text-[15px] md:text-[14px]" />
                       </div>
                     </TransitionLink>
                   </div>

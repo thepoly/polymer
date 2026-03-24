@@ -8,7 +8,7 @@ import type { Article } from "@/components/FrontPage/types";
 
 const PAGE_SIZE = 10;
 
-export default function OpinionListPage({
+export default function FeaturesListPage({
   title,
   articles,
 }: {
@@ -32,10 +32,10 @@ export default function OpinionListPage({
           {title}
         </h1>
         <TransitionLink
-          href="/opinion"
+          href="/features"
           className="font-meta text-[14px] uppercase tracking-[0.08em] text-accent hover:underline transition-colors"
         >
-          &larr; Back to Opinion
+          &larr; Back to Features
         </TransitionLink>
       </div>
 

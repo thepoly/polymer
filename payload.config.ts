@@ -46,6 +46,10 @@ import Articles from './collections/Articles.ts'
 import JobTitles from './collections/JobTitles.ts'
 import Layout from './collections/Layout.ts'
 import OpinionPageLayout from './collections/OpinionPageLayout.ts'
+import NewsPageLayout from './collections/NewsPageLayout.ts'
+import FeaturesPageLayout from './collections/FeaturesPageLayout.ts'
+import Submissions from './collections/Submissions.ts'
+import EventSubmissions from './collections/EventSubmissions.ts'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -78,7 +82,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Media, Articles, JobTitles, Layout, OpinionPageLayout],
+  collections: [Users, Media, Articles, JobTitles, Layout, OpinionPageLayout, NewsPageLayout, FeaturesPageLayout, Submissions, EventSubmissions],
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [
       ...defaultFeatures,

@@ -275,8 +275,8 @@ export default function FrontPage({
             const textFirst = textIdx >= 0 ? all[textIdx] : null;
             const rest = textFirst ? [...all.slice(0, textIdx), ...all.slice(textIdx + 1)] : all;
             const ordered = textFirst ? [textFirst, ...rest] : rest;
-            return ordered.map((article) => (
-              <div key={article.id} className="mt-10">
+            return ordered.map((article, i) => (
+              <div key={`${article.id}-${i}`} className="mt-10">
                 <ArticleCard article={article} />
               </div>
             ));

@@ -22,11 +22,11 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
     <div className="flex flex-col items-center mb-8" style={{ paddingTop: '40px' }}>
       {/* Kicker + Opinion Type */}
       <div className="flex flex-col items-center gap-1 mb-4">
-        <span className="font-meta text-accent font-bold uppercase text-sm tracking-widest">
+        <span className="font-meta text-accent font-bold uppercase text-[16px] tracking-widest">
           Opinion
         </span>
         {opinionType && opinionType !== 'opinion' && (
-          <span className="font-meta font-bold uppercase text-sm tracking-wide text-text-main">
+          <span className="font-meta font-bold uppercase text-[16px] tracking-wide text-text-main">
             {typeLabel}
           </span>
         )}
@@ -40,10 +40,11 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
         {article.title}
       </h1>
 
-      {article.subdeck && (
-        <h2 data-ie-field="subdeck" className="font-meta text-xl md:text-2xl font-normal text-text-muted leading-snug text-center max-w-[680px] mx-auto px-4 mb-6">
-          {article.subdeck}
-        </h2>
+      {/* Date */}
+      {article.publishedDate && (
+        <div className="font-meta text-[15px] font-medium tracking-[0.06em] text-text-muted mb-6">
+          {new Date(article.publishedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+        </div>
       )}
 
       {/* Featured Image + Caption + Credit */}
@@ -86,7 +87,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
       })()}
 
       <div className="w-full max-w-[680px] mx-auto px-4">
-        <ArticleByline article={article} />
+        <ArticleByline article={article} showDate={false} />
       </div>
     </div>
   );

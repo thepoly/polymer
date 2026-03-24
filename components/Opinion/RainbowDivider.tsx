@@ -78,6 +78,16 @@ function AnimatedLine({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      <style>{`
+        @keyframes dividerWaveTravel {
+          from { transform: translateX(-${WAVE_LAMBDA}px); }
+          to   { transform: translateX(0px); }
+        }
+        @keyframes dividerRainbowHue {
+          from { filter: hue-rotate(0deg); }
+          to   { filter: hue-rotate(360deg); }
+        }
+      `}</style>
       <svg
         className="absolute bottom-0 left-0"
         width={WAVE_LAMBDA * 10}
@@ -123,19 +133,7 @@ function AnimatedLine({
 
 export default function RainbowDivider() {
   return (
-    <>
-      <style>{`
-        @keyframes dividerWaveTravel {
-          from { transform: translateX(-${WAVE_LAMBDA}px); }
-          to   { transform: translateX(0px); }
-        }
-        @keyframes dividerRainbowHue {
-          from { filter: hue-rotate(0deg); }
-          to   { filter: hue-rotate(360deg); }
-        }
-      `}</style>
-      <AnimatedLine id="main" delay={0} duration={300} style={{ marginTop: 24, marginBottom: 8 }} />
-    </>
+    <AnimatedLine id="main" delay={0} duration={300} style={{ marginTop: 24, marginBottom: 8 }} />
   );
 }
 
