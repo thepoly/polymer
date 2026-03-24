@@ -10,6 +10,26 @@ import { Todos } from './Todos/index.tsx'
 import './styles.css' // We will add a simple CSS file for layout
 import { User, Media, JobTitle } from '@/payload-types'
 
+const VERSION_CHART_COLORS = ['#0f62fe', '#16a34a', '#f97316', '#d6001c', '#7c3aed', '#0891b2', '#eab308', '#ec4899']
+
+const buildVersionChartGradient = (
+  items: { version: string; count: number; color: string }[],
+  totalUsers: number,
+) => {
+  if (totalUsers <= 0 || items.length === 0) {
+    return 'conic-gradient(#d1e6f7 0deg 360deg)'
+  }
+
+  let currentPercent = 0
+  const stops = items.map(({ count, color }) => {
+    const start = currentPercent
+    currentPercent += (count / totalUsers) * 100
+    return `${color} ${start}% ${currentPercent}%`
+  })
+
+  return `conic-gradient(${stops.join(', ')})`
+}
+
 const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) => {
   const payload = await getPayload({ config: configPromise })
   const headersList = await headers()
@@ -22,10 +42,56 @@ const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: strin
   const shouldShowNewsroomMoveNotice =
     ((user as (User & { latestVersion?: string | null }) | null)?.latestVersion || '0.0.0') !==
     '1.0.0'
+  const isAdmin = Boolean(user?.roles?.includes('admin'))
 
   const { search } = await searchParams
   const rawSearchQuery = Array.isArray(search) ? search[0] : search
   const searchQuery = rawSearchQuery?.trim() || ''
+
+  let versionChartData: { version: string; count: number; color: string }[] = []
+  let totalActiveUsers = 0
+
+  if (isAdmin) {
+    const usersByVersion = await payload.find({
+      collection: 'users',
+      depth: 0,
+      limit: 1000,
+      pagination: false,
+      where: {
+        or: [
+          {
+            retired: {
+              equals: false,
+            },
+          },
+          {
+            retired: {
+              exists: false,
+            },
+          },
+        ],
+      },
+    })
+
+    const counts = new Map<string, number>()
+
+    for (const staffUser of usersByVersion.docs as User[]) {
+      const version = staffUser.latestVersion?.trim() || '0.0.0'
+      counts.set(version, (counts.get(version) || 0) + 1)
+    }
+
+    versionChartData = Array.from(counts.entries())
+      .sort(([versionA], [versionB]) =>
+        versionA.localeCompare(versionB, undefined, { numeric: true, sensitivity: 'base' }),
+      )
+      .map(([version, count], index) => ({
+        version,
+        count,
+        color: VERSION_CHART_COLORS[index % VERSION_CHART_COLORS.length],
+      }))
+
+    totalActiveUsers = versionChartData.reduce((sum, item) => sum + item.count, 0)
+  }
 
   // Fetch articles, optionally filtering by title if a search query is provided
   const articles = await payload.find({
@@ -127,6 +193,38 @@ const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: strin
       <div className="dashboard-header">
         <Greeting user={user} />
       </div>
+
+      {isAdmin && (
+        <div className="dashboard-version-chart">
+          <div
+            className="dashboard-version-chart-graphic"
+            aria-label="User version breakdown"
+            role="img"
+            style={{ backgroundImage: buildVersionChartGradient(versionChartData, totalActiveUsers) }}
+          />
+          <div className="dashboard-version-chart-copy">
+            <h2>Polymer version rollout</h2>
+            <p className="subtext">
+              {totalActiveUsers} unretired users across {versionChartData.length || 1} version
+              {versionChartData.length === 1 ? '' : 's'}
+            </p>
+            <div className="dashboard-version-chart-legend">
+              {versionChartData.map((item) => (
+                <div key={item.version} className="dashboard-version-chart-item">
+                  <span
+                    className="dashboard-version-chart-swatch"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="dashboard-version-chart-version">{item.version}</span>
+                  <span className="dashboard-version-chart-count">
+                    {item.count} user{item.count === 1 ? '' : 's'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Search Bar */}
       <div className="dashboard-search">
