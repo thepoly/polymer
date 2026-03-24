@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getPayload } from "payload";
+import type { Where } from "payload";
 import config from "@/payload.config";
 import { formatArticle } from "@/utils/formatArticle";
 import { Article } from "@/components/FrontPage/types";
@@ -57,7 +58,7 @@ async function searchPayload(queryFormsLower: string[], page: number, pageSize: 
   } as const;
 
   // Build OR conditions: match any query form in title, subdeck, or kicker
-  const orConditions: Record<string, unknown>[] = [];
+  const orConditions: Where[] = [];
   for (const form of queryFormsLower) {
     orConditions.push({ title: { like: form } });
     orConditions.push({ subdeck: { like: form } });
