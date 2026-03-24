@@ -17,6 +17,11 @@ const isAdminOrEICField: FieldAccess = ({ req: { user } }) => {
   return Boolean(u?.roles?.some((role) => ['admin', 'eic'].includes(role)))
 }
 
+const isAdminField: FieldAccess = ({ req: { user } }) => {
+  const u = user as unknown as UserWithRoles
+  return Boolean(u?.roles?.includes('admin'))
+}
+
 export const Users: CollectionConfig = {
   slug: 'users',
   auth: {
@@ -257,8 +262,14 @@ export const Users: CollectionConfig = {
       type: 'text',
       defaultValue: '0.0.0',
       admin: {
-        hidden: true,
+        condition: (_, __, { user }) => {
+          const currentUser = user as unknown as UserWithRoles | undefined
+          return Boolean(currentUser?.roles?.includes('admin'))
+        },
         disableListColumn: true,
+      },
+      access: {
+        update: isAdminField,
       },
     },
   ],
