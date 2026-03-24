@@ -1928,7 +1928,7 @@ export function LayoutEditor() {
         if (!res.ok) throw new Error(`Create failed (${res.status}): ${await res.text()}`);
         const data = await res.json();
         id = String(data.doc.id); docIdRef.current = id;
-        window.history.replaceState(null, '', `/admin/collections/layout/${id}`);
+        window.history.replaceState(null, '', `/newsroom/collections/layout/${id}`);
       }
       setSaved(true);
     } catch (err) { setError(err instanceof Error ? err.message : 'Failed to save'); console.error('Layout save error:', err); } finally { setSaving(false); }

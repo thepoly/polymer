@@ -16,7 +16,7 @@ export const Byline = ({
         const parts = text.split(' AND ');
         return parts.map((part, index) => (
             <React.Fragment key={index}>
-                <span className="font-[650] md:font-[520] text-accent">{part}</span>
+                <span className="font-[650] md:font-[520] text-accent dark:text-white">{part}</span>
                 {index < parts.length - 1 && <span className="font-normal text-text-main/50"> & </span>}
             </React.Fragment>
         ));

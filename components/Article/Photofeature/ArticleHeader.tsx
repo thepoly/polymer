@@ -154,7 +154,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                           <React.Fragment key={author.key}>
                             {index > 0 && index === allNames.length - 1 ? ' and ' : index > 0 ? ', ' : ''}
                             {author.href ? (
-                              <Link href={author.href} className="hover:text-red-500 hover:underline decoration-1 underline-offset-2 transition-colors">
+                              <Link href={author.href} className="text-white hover:text-white/75 hover:underline decoration-1 underline-offset-2 transition-colors">
                                 {author.name}
                               </Link>
                             ) : author.name}

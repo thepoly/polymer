@@ -243,7 +243,7 @@ export function InlineEditor({ articleId }: { articleId: number }) {
         </>
       ) : (
         <>
-          <a className="ie-btn ie-btn-admin" href={`/admin/collections/articles/${articleId}`}>
+          <a className="ie-btn ie-btn-admin" href={`/newsroom/collections/articles/${articleId}`}>
             CMS
           </a>
           <button className="ie-btn ie-btn-edit" onClick={enterEditMode}>

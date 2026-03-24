@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 
-export const SearchBar = ({ isAdmin }: { isAdmin?: boolean }) => {
+export const SearchBar = () => {
   const searchParams = useSearchParams()
   const pathname = usePathname()
   const router = useRouter()
@@ -45,7 +45,7 @@ export const SearchBar = ({ isAdmin }: { isAdmin?: boolean }) => {
     <div className="search-form">
       <input
         type="text"
-        placeholder={isAdmin ? "Search everything..." : "Search articles..."}
+        placeholder="Search everything..."
         value={query}
         onFocus={() => { isFocused.current = true }}
         onBlur={() => { isFocused.current = false }}

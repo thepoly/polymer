@@ -24,7 +24,8 @@ VALUES
   ('20260322_210000_add_media_source_url', 5, NOW(), NOW()),
   ('20260322_220000_add_more_to_opinion_type_enum', 6, NOW(), NOW()),
   ('20260322_230000_add_write_in_photographer_to_media', 6, NOW(), NOW()),
-  ('20260322_231000_add_user_retired', 6, NOW(), NOW())
+  ('20260322_231000_add_user_retired', 6, NOW(), NOW()),
+  ('20260324_220000_add_user_seen_newsroom_notice', 7, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -176,6 +177,9 @@ ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "write_in_photographer" varchar;
 
 -- 20260322: Add retired checkbox to users
 ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "retired" boolean DEFAULT false;
+
+-- 20260324: Add latest seen version marker to users
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "latest_version" varchar DEFAULT '0.0.0';
 
 -- 20260322: Add 'more' to opinion_type enums
 ALTER TYPE "public"."enum_articles_opinion_type" ADD VALUE IF NOT EXISTS 'more';

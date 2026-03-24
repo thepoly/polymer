@@ -5,6 +5,15 @@ const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://t.poly.rpi.
 
 const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
+  async redirects() {
+    return [
+      {
+        source: '/admin/:path*',
+        destination: '/newsroom/:path*',
+        permanent: false,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {
@@ -56,7 +65,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: '/((?!api|admin|_next/static|_next/image).*)\\.(svg|png|jpg|jpeg|webp|avif|ico|ttf|otf|woff|woff2)$',
+        source: '/((?!api|admin|newsroom|_next/static|_next/image).*)\\.(svg|png|jpg|jpeg|webp|avif|ico|ttf|otf|woff|woff2)$',
         headers: [
           {
             key: 'Cache-Control',

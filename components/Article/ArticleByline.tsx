@@ -97,8 +97,8 @@ export const ArticleByline: React.FC<Props> = ({
                       <div className="w-px bg-rule-strong mx-4 self-stretch" />
                     )}
                     <div>
-                      <div className="font-meta text-[14px] md:text-[15px] font-[440] tracking-[0.08em] text-accent transition-colors">
-                        <Link href={`/staff/${user.slug || user.id}`} className="hover:text-accent/70 transition-colors">
+                      <div className="font-meta text-[14px] md:text-[15px] font-[440] tracking-[0.08em] text-accent dark:text-white transition-colors">
+                        <Link href={`/staff/${user.slug || user.id}`} className="hover:text-accent/70 dark:hover:text-white/75 transition-colors">
                           {user.firstName} {user.lastName}
                         </Link>
                       </div>
@@ -114,7 +114,7 @@ export const ArticleByline: React.FC<Props> = ({
                   <React.Fragment key={`write-in-${i}`}>
                     <div className="w-px bg-rule-strong mx-4 self-stretch" />
                     <div>
-                      <div className="font-meta text-[14px] md:text-[15px] font-[440] tracking-[0.08em] text-accent transition-colors">
+                      <div className="font-meta text-[14px] md:text-[15px] font-[440] tracking-[0.08em] text-accent dark:text-white transition-colors">
                         {writeIn.name}
                       </div>
                     </div>
@@ -143,7 +143,7 @@ export const ArticleByline: React.FC<Props> = ({
           });
 
           return (
-            <div className="font-meta text-[14px] md:text-[15px] font-[440] tracking-[0.08em] text-accent transition-colors">
+            <div className="font-meta text-[14px] md:text-[15px] font-[440] tracking-[0.08em] text-accent dark:text-white transition-colors">
               {allNames.map((node, index) => (
                 <React.Fragment key={index}>
                   {index > 0 && index === allNames.length - 1 ? ' & ' : index > 0 ? ', ' : ''}
@@ -153,7 +153,7 @@ export const ArticleByline: React.FC<Props> = ({
             </div>
           );
         })() : (
-          <div className="font-meta text-[14px] md:text-[15px] font-[440] tracking-[0.08em] text-accent transition-colors">
+          <div className="font-meta text-[14px] md:text-[15px] font-[440] tracking-[0.08em] text-accent dark:text-white transition-colors">
             By <em>The Polytechnic</em> Editorial Board
           </div>
         )}

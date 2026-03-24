@@ -16,7 +16,7 @@ export const TodoRow = ({ article }: { article: Article }) => {
   
   return (
     <Link 
-      href={`/admin/collections/articles/${article.id}`} 
+      href={`/newsroom/collections/articles/${article.id}`} 
       className={`todo-row ${isPublished ? 'published' : 'draft'}`}
     >
       <div className="todo-col-main">

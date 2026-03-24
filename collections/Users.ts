@@ -252,6 +252,15 @@ export const Users: CollectionConfig = {
         update: isAdminOrEICField,
       },
     },
+    {
+      name: 'latestVersion',
+      type: 'text',
+      defaultValue: '0.0.0',
+      admin: {
+        hidden: true,
+        disableListColumn: true,
+      },
+    },
   ],
 }
 

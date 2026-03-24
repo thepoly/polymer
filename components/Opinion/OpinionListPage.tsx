@@ -90,7 +90,7 @@ export default function OpinionListPage({
               {article.author && (
                 <p className="mt-1 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
                   <span className="text-text-muted">BY </span>
-                  <span className="text-accent">{article.author}</span>
+                  <span className="text-accent dark:text-white">{article.author}</span>
                   {article.date && (
                     <>
                       <span className="text-text-muted mx-1.5">&bull;</span>

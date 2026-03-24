@@ -53,7 +53,7 @@ function OpinionCard({ article, withImage = false, priority = false }: { article
       {/* Byline — "BY" is muted, author name is accent */}
       <div className="mt-2 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
         {article.author && (
-          <span><span className="text-text-muted">BY </span><span className="text-accent">{article.author}</span></span>
+          <span><span className="text-text-muted">BY </span><span className="text-accent dark:text-white">{article.author}</span></span>
         )}
         {article.author && article.date && (
           <span className="text-text-muted mx-1.5">&bull;</span>
@@ -354,7 +354,7 @@ export default function OpinionSectionPage({
                     </h3>
                     {article.author && (
                       <div className="mt-2 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
-                        <span className="text-text-muted">BY </span><span className="text-accent">{article.author}</span>
+                        <span className="text-text-muted">BY </span><span className="text-accent dark:text-white">{article.author}</span>
                       </div>
                     )}
                   </TransitionLink>
