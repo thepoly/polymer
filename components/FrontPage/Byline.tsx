@@ -16,7 +16,7 @@ export const Byline = ({
         const parts = text.split(' AND ');
         return parts.map((part, index) => (
             <React.Fragment key={index}>
-                <span className="font-[600] md:font-[440] text-accent">{part}</span>
+                <span className="font-[650] md:font-[520] text-accent">{part}</span>
                 {index < parts.length - 1 && <span className="font-normal text-text-main/50"> & </span>}
             </React.Fragment>
         ));
@@ -25,7 +25,7 @@ export const Byline = ({
     return (
         <div
             data-marauders-obstacle="meta"
-            className={`font-meta mt-1.5 md:mt-2.5 text-[12px] md:text-[11px] font-normal tracking-[0.04em] leading-tight ${className}`}
+            className={`font-meta mt-1 md:mt-1.5 text-[12px] md:text-[11px] font-normal tracking-[0.04em] leading-tight ${className}`}
         >
             {author && (
                 <span className="mr-1">

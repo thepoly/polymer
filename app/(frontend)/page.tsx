@@ -414,21 +414,31 @@ export default async function Home() {
     ? layout.grid as { lead?: number | null; leadImportant?: boolean; left?: (number | null)[]; right?: (number | null)[]; bottom?: (number | null)[] }
     : null;
 
-  type TopStories = { lead: NonNullable<typeof mainArticle>; list: NonNullable<typeof mainArticle>[]; heroLeft?: NonNullable<typeof mainArticle>[]; heroRight?: NonNullable<typeof mainArticle>[]; bottomRow?: NonNullable<typeof mainArticle>[]; leadImportant?: boolean };
+  type TopStories = { lead: NonNullable<typeof mainArticle>; list: NonNullable<typeof mainArticle>[]; heroLeft?: NonNullable<typeof mainArticle>[]; heroRight?: NonNullable<typeof mainArticle>[]; bottomRow?: (NonNullable<typeof mainArticle> | null)[]; leadImportant?: boolean };
   let topStories: TopStories;
 
   if (ariesGrid) {
     // Aries mode: build left/right columns from grid JSON
     const resolveIds = (ids: (number | null)[] | undefined) =>
-      (ids || []).map((id) => id ? layoutArticleMap.get(id) ?? null : null).filter((a): a is NonNullable<typeof a> => a !== null);
+      (ids || []).map((id) => id ? layoutArticleMap.get(id) ?? null : null);
     const heroLeft = resolveIds(ariesGrid.left);
     const heroRight = resolveIds(ariesGrid.right);
     const bottomRow = resolveIds(ariesGrid.bottom);
     topStories = {
       lead: mainArticle,
-      list: [...heroLeft, ...heroRight] as NonNullable<typeof mainArticle>[],
-      heroLeft: fillArticles(heroLeft, recentPool, heroLeft.length || 2, [mainArticle.id]),
-      heroRight: fillArticles(heroRight, recentPool, heroRight.length || 2, [mainArticle.id, ...heroLeft.map(a => a.id)]),
+      list: [...heroLeft, ...heroRight].filter((article): article is NonNullable<typeof mainArticle> => article !== null),
+      heroLeft: fillArticles(
+        heroLeft.filter((article): article is NonNullable<typeof mainArticle> => article !== null),
+        recentPool,
+        heroLeft.filter((article) => article !== null).length || 2,
+        [mainArticle.id],
+      ),
+      heroRight: fillArticles(
+        heroRight.filter((article): article is NonNullable<typeof mainArticle> => article !== null),
+        recentPool,
+        heroRight.filter((article) => article !== null).length || 2,
+        [mainArticle.id, ...heroLeft.filter((article): article is NonNullable<typeof mainArticle> => article !== null).map(a => a.id)],
+      ),
       ...(bottomRow.length > 0 ? { bottomRow } : {}),
       leadImportant: !!ariesGrid.leadImportant,
     };
@@ -468,4 +478,3 @@ export default async function Home() {
     </main>
   );
 }
-

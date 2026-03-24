@@ -719,10 +719,10 @@ type AriesData = {
   leadImportant?: boolean;
   left: (number | null)[];   // always length 3 internally
   right: (number | null)[];  // always length 3 internally
-  bottom: (number | null)[]; // always length 7 internally
+  bottom: (number | null)[]; // always length 8 internally
 };
 
-const EMPTY_ARIES: AriesData = { lead: null, leadImportant: false, left: [null, null, null], right: [null, null, null], bottom: [null, null, null, null, null, null, null] };
+const EMPTY_ARIES: AriesData = { lead: null, leadImportant: false, left: [null, null, null], right: [null, null, null], bottom: [null, null, null, null, null, null, null, null] };
 
 /** How many visible slots does a column get? 2 if any article has a photo, else 3. */
 const ariesColSlotCount = (col: (number | null)[], articleMap: Map<number, ArticleData>): number => {
@@ -746,7 +746,7 @@ const ariesUsedIds = (d: AriesData): Set<number> => {
 };
 
 /** All aries slot IDs (for DnD source identification) */
-const ALL_ARIES_IDS = ['lead', 'left-0', 'left-1', 'left-2', 'right-0', 'right-1', 'right-2', 'bottom-0', 'bottom-1', 'bottom-2', 'bottom-3', 'bottom-4', 'bottom-5', 'bottom-6'];
+const ALL_ARIES_IDS = ['lead', 'left-0', 'left-1', 'left-2', 'right-0', 'right-1', 'right-2', 'bottom-0', 'bottom-1', 'bottom-2', 'bottom-3', 'bottom-4', 'bottom-5', 'bottom-6', 'bottom-7'];
 const isAriesSlotId = (id: string) => ALL_ARIES_IDS.includes(id);
 const isAriesBottomSlotId = (id: string) => id.startsWith('bottom-');
 const getArticleHasImage = (article: ArticleData | null | undefined): boolean => Boolean(article && getImageUrl(article));
@@ -1004,6 +1004,14 @@ function AriesEditor({ data, articleMap, onClear, onToggleLeadImportant }: {
                 />
               ))}
             </div>
+            <AriesDropSlot
+              slotId="bottom-7"
+              label="Long Text"
+              article={data.bottom[7] !== null ? articleMap.get(data.bottom[7]!) || null : null}
+              isLead={false}
+              onClear={() => onClear('bottom-7')}
+              emptyConstraint="text"
+            />
           </div>
         </div>
       </div>
@@ -1393,7 +1401,7 @@ export function LayoutEditor() {
                 leadImportant: !!g.leadImportant,
                 left: [...(g.left || [null, null, null]), null, null, null].slice(0, 3) as (number | null)[],
                 right: [...(g.right || [null, null, null]), null, null, null].slice(0, 3) as (number | null)[],
-                bottom: [...(g.bottom || [null, null, null, null, null, null, null]), null, null, null, null, null, null, null].slice(0, 7) as (number | null)[],
+                bottom: [...(g.bottom || [null, null, null, null, null, null, null, null]), null, null, null, null, null, null, null, null].slice(0, 8) as (number | null)[],
               });
             } else {
               // Legacy field import
@@ -1402,7 +1410,7 @@ export function LayoutEditor() {
                 lead: getRelId(ld.mainArticle),
                 left: [getRelId(ld.top1), getRelId(ld.top2), getRelId(ld.top3)],
                 right: [getRelId(ld.top4), getRelId(ld.op1), getRelId(ld.op2)],
-                bottom: [getRelId(ld.op3), getRelId(ld.op4), getRelId(ld.special), null, null],
+                bottom: [getRelId(ld.op3), getRelId(ld.op4), getRelId(ld.special), null, null, null, null, null],
               });
             }
           } else {
@@ -1756,7 +1764,7 @@ export function LayoutEditor() {
     // Aries skeleton drop
     if (overData.skeleton === 'aries') {
       if (isAriesSlotId(targetCellId)) {
-        // Enforce bottom slot constraints: 0-3,5-6 = text only, 4 = image only
+        // Enforce bottom slot constraints: 0-3,5-7 = text only, 4 = image only
         if (isAriesBottomSlotId(targetCellId)) {
           const slotIdx = Number(targetCellId.split('-')[1]);
           const hasImage = getArticleHasImage(draggedArticle);

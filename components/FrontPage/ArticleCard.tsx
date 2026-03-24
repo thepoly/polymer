@@ -9,6 +9,7 @@ export const ArticleCard = ({
   article,
   caption,
   showImage = Boolean(article.image),
+  showExcerpt = true,
   imageAspectClassName = "aspect-[4/3]",
   titleClassName = "text-[22px] md:text-[24px]",
   excerptClassName = "mt-1.5 line-clamp-3 text-[13px] leading-[1.38]",
@@ -19,6 +20,7 @@ export const ArticleCard = ({
   article: Article;
   caption?: string | null;
   showImage?: boolean;
+  showExcerpt?: boolean;
   imageAspectClassName?: string;
   titleClassName?: string;
   excerptClassName?: string;
@@ -66,7 +68,7 @@ export const ArticleCard = ({
           {article.title}
         </h3>
         <Byline author={article.author} date={article.date} />
-        {article.excerpt && (
+        {showExcerpt && article.excerpt && (
           <p
             data-marauders-obstacle="excerpt"
             className={`font-meta font-normal text-black dark:text-white [overflow-wrap:anywhere] break-words ${excerptClassName}`}

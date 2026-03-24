@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { LeadArticle } from "./LeadArticle";
 import { ArticleCard } from "./ArticleCard";
 import { ArticleListItem } from "./ArticleListItem";
@@ -11,8 +12,8 @@ interface FrontPageProps {
     /** When provided, override the default left/right split */
     heroLeft?: Article[];
     heroRight?: Article[];
-    /** Optional row of up to 4 articles below the hero area */
-    bottomRow?: Article[];
+    /** Optional bottom slots for Aries; preserve nulls so fixed positions render correctly */
+    bottomRow?: (Article | null)[];
     /** When true, lead headline is bolder and uppercase */
     leadImportant?: boolean;
   };
@@ -132,9 +133,16 @@ export function SectionBlock({
 
   return (
     <section data-section={sectionSlug}>
-      <div className="mb-5">
-        <div className="border-t border-black dark:border-white -mx-4 md:-mx-6 xl:-mx-[30px]" />
-        <h2 className="font-meta text-[36px] font-bold tracking-[0.04em] text-accent uppercase leading-[1] mt-4 md:mt-2">{title}</h2>
+      <div className="mb-3">
+        <div className="relative -left-2 w-[calc(100%+0.5rem)] border-t border-black dark:border-white" />
+        <h2 className="mt-4 md:mt-2">
+          <Link
+            href={`/${sectionSlug}`}
+            className="font-meta text-[20px] md:text-[22px] font-bold tracking-[0.04em] text-accent uppercase leading-[1] hover:opacity-75 transition-opacity"
+          >
+            {title}
+          </Link>
+        </h2>
       </div>
       {/* Mobile: flat list with dividers */}
       <div className="flex flex-col md:hidden">
@@ -270,7 +278,7 @@ export default function FrontPage({
           {(() => {
             const heroArticles = [...heroStories.left, ...heroStories.right];
             const bottomArticles = topStories.bottomRow || [];
-            const all = [...heroArticles, ...bottomArticles];
+            const all = [...heroArticles, ...bottomArticles].filter((article): article is Article => Boolean(article));
             const textIdx = all.findIndex((a) => !a.image);
             const textFirst = textIdx >= 0 ? all[textIdx] : null;
             const rest = textFirst ? [...all.slice(0, textIdx), ...all.slice(textIdx + 1)] : all;
@@ -284,7 +292,10 @@ export default function FrontPage({
         </div>
 
         {/* Desktop: hero + bottom row as two flowing columns */}
-        <div data-frontpage-top className="relative z-[1] hidden md:grid md:grid-cols-[1fr_1px_1fr] gap-x-5 pt-6 md:pt-7 pb-8 items-start">
+        <div
+          data-frontpage-top
+          className="relative z-[1] hidden md:mr-auto md:grid md:w-[calc(100%-6px)] md:grid-cols-[1fr_1px_1fr] gap-x-5 pt-6 md:pt-7 pb-8 items-start xl:w-[calc(100%-8px)]"
+        >
           {/* Left column: lead + bottom-left articles */}
           <div className="flex flex-col gap-5">
             <LeadArticle article={topStories.lead} compact={leadIsCompact} important={topStories.leadImportant} />
@@ -357,6 +368,15 @@ export default function FrontPage({
                 )}
               </div>
             )}
+            {topStories.bottomRow?.[7] && (
+              <ArticleCard
+                article={topStories.bottomRow[7]}
+                showImage={false}
+                showExcerpt={false}
+                contained
+                showKicker
+              />
+            )}
           </div>
         </div>
 
@@ -365,15 +385,15 @@ export default function FrontPage({
             {/* <DynamicSectionHeader title="News" href="/news" mobileOffsetY={1} /> */}
             <SectionBlock title="News" articles={sections.news} />
           </div>
-          <div className="mt-8 md:mt-4">
+          <div className="mt-12 md:mt-8">
             {/* <DynamicSectionHeader title="Features" href="/features" /> */}
             <SectionBlock title="Features" articles={sections.features} />
           </div>
-          <div className="mt-8 md:mt-4">
+          <div className="mt-12 md:mt-8">
             {/* <DynamicSectionHeader title="Opinion" href="/opinion" offsetX={2.5} offsetY={-2} /> */}
             <SectionBlock title="Opinion" articles={sections.opinion} />
           </div>
-          <div className="mt-8 md:mt-4">
+          <div className="mt-12 md:mt-8">
             {/* <DynamicSectionHeader title="Sports" href="/sports" offsetX={4.5} /> */}
             <SectionBlock title="Sports" articles={sections.sports} />
           </div>

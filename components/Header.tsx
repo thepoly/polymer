@@ -396,7 +396,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
   const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
   const [showDarkModePrompt, setShowDarkModePrompt] = useState(false);
   const currentDate = useCurrentDate();
-  const { animationKey, phase, isAnimating, triggerTransition, suckDurationMs, shootDurationMs } = useHeaderTransition();
+  const { animationKey, phase, isAnimating, navigateImmediately, triggerTransition, suckDurationMs, shootDurationMs } = useHeaderTransition();
   const { isDarkMode, toggleDarkMode } = useTheme();
   const logoSrc = isDarkMode ? "/logo-dark.svg" : "/logo-light.svg";
   const mobileLogoSrc = isDarkMode ? "/logo-dark-mobile.svg" : "/logo-light-mobile.svg";
@@ -429,11 +429,25 @@ export default function Header({ compact = false, mobileTight = false }: { compa
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) return;
     if (!href.startsWith("/")) return;
+    const currentRoute = pathname ?? window.location.pathname;
+
+    if (isAnimating) {
+      e.preventDefault();
+      setIsMobileMenuOpen(false);
+      navigateImmediately({
+        href,
+        navigate: (nextHref) => {
+          startTransition(() => {
+            router.push(nextHref);
+          });
+        },
+      });
+      return;
+    }
 
     e.preventDefault();
     setIsMobileMenuOpen(false);
 
-    const currentRoute = pathname ?? window.location.pathname;
     if (!ANIMATED_HEADER_ROUTES.has(href)) {
       startTransition(() => {
         router.push(href);
@@ -805,7 +819,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
                 onClick={(e) => handleLinkClick(e, "/")}
                 onMouseEnter={() => prefetchLink("/")}
                 onFocus={() => prefetchLink("/")}
-                className={`relative -top-2 block h-[76px] w-[456px] max-w-full shrink-0 ${isAnimating ? 'cursor-default' : 'cursor-pointer'}`}
+                className="relative -top-2 block h-[76px] w-[456px] max-w-full shrink-0 cursor-pointer"
               >
                 <Image
                   src={logoSrc}

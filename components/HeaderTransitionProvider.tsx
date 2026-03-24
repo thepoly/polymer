@@ -41,6 +41,7 @@ type HeaderTransitionContextValue = {
   shootDurationMs: number;
   isSucking: boolean;
   isAnimating: boolean;
+  navigateImmediately: (options: Pick<NavigationOptions, "href" | "navigate">) => void;
   triggerTransition: (options: NavigationOptions) => void;
 };
 
@@ -131,6 +132,22 @@ export default function HeaderTransitionProvider({
     setPhase("shooting");
     setAnimationKey((prev) => prev + 1);
     unlockAfterShoot();
+  }, [unlockAfterShoot]);
+
+  const navigateImmediately = useCallback(({
+    href,
+    navigate,
+  }: Pick<NavigationOptions, "href" | "navigate">) => {
+    clearAllTimers();
+    pendingNavigationRef.current = false;
+    pendingHrefRef.current = null;
+    if (phaseRef.current !== "shooting") {
+      phaseRef.current = "shooting";
+      setPhase("shooting");
+      setAnimationKey((prev) => prev + 1);
+      unlockAfterShoot();
+    }
+    navigate(href);
   }, [unlockAfterShoot]);
 
   const triggerTransition = ({
@@ -231,6 +248,7 @@ export default function HeaderTransitionProvider({
         shootDurationMs,
         isSucking: phase === "sucking",
         isAnimating: phase !== "idle",
+        navigateImmediately,
         triggerTransition,
       }}
     >

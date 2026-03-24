@@ -31,10 +31,10 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer className="safe-area-bottom mt-12 bg-bg-main">
+    <footer className="safe-area-bottom mt-3 bg-bg-main">
       <div className="safe-area-mobile-page-x mx-auto max-w-[1280px] md:px-6 xl:px-[30px]">
         <div
-          className="h-[1.5px] bg-rule-strong origin-left"
+          className="relative -left-2 h-[1.5px] w-[calc(100%+0.5rem)] bg-rule-strong origin-left"
           style={{
             transform: lineVisible ? "scaleX(1)" : "scaleX(0)",
             transition: "transform 0.9s cubic-bezier(0.4, 0, 0.2, 1)",
