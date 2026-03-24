@@ -74,6 +74,37 @@ const getEmeritusYear = (user: PublicStaffCard): string => {
   return year.toString().slice(-2);
 };
 
+const rolePriority = ['eic', 'editor', 'writer', 'admin'] as const;
+
+const getStaffSortRank = (user: PublicStaffCard): number => {
+  if (!user.roles || user.roles.length === 0) {
+    return rolePriority.indexOf('writer');
+  }
+
+  const matchedRanks = user.roles
+    .map((role) => rolePriority.indexOf(role as (typeof rolePriority)[number]))
+    .filter((rank) => rank !== -1);
+
+  return matchedRanks.length > 0
+    ? Math.min(...matchedRanks)
+    : rolePriority.indexOf('writer');
+};
+
+const sortStaffByRank = (a: PublicStaffCard, b: PublicStaffCard): number => {
+  const rankDifference = getStaffSortRank(a) - getStaffSortRank(b);
+
+  if (rankDifference !== 0) {
+    return rankDifference;
+  }
+
+  const lastNameCompare = a.lastName.localeCompare(b.lastName);
+  if (lastNameCompare !== 0) {
+    return lastNameCompare;
+  }
+
+  return a.firstName.localeCompare(b.firstName);
+};
+
 export default async function StaffPage() {
   const payload = await getPayload({ config });
 
@@ -94,7 +125,7 @@ export default async function StaffPage() {
   });
 
   const users = usersResponse.docs.map((user) => toPublicStaffCard(user));
-  const activeUsers = users.filter((user) => !user.retired);
+  const activeUsers = users.filter((user) => !user.retired).sort(sortStaffByRank);
   const retiredUsers = users.filter((user) => user.retired);
 
   return (
@@ -116,12 +147,12 @@ export default async function StaffPage() {
             const roleMap: Record<string, string> = {
               admin: 'Admin',
               eic: 'Editor in Chief',
-              editor: 'Editor',
+              editor: 'Section Editor',
               writer: 'Writer',
               'copy-editor': 'Copy Editor',
             };
             const sortedRoles = [...user.roles].sort((a, b) => {
-              const priority = ['eic', 'admin', 'editor', 'copy-editor', 'writer'];
+              const priority = ['eic', 'editor', 'writer', 'copy-editor', 'admin'];
               return priority.indexOf(a) - priority.indexOf(b);
             });
             
