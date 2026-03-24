@@ -653,7 +653,7 @@ export default function SearchInput({
                     data-analytics-context="search-inline"
                     onClick={() => posthog.capture("search_result_clicked", { query, article_title: article.title, article_section: article.section })}
                   >
-                    <h3 className={`font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors group-hover:text-accent mb-1 [overflow-wrap:anywhere] break-words font-copy ${article.section === "opinion" ? "font-light" : ""} text-[22px] md:text-[24px] ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[23px] md:text-[25px]" : ""}`}>
+                    <h3 className={`font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors mb-1 [overflow-wrap:anywhere] break-words font-copy ${article.section === "opinion" ? "font-light" : ""} text-[22px] md:text-[24px] ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[23px] md:text-[25px]" : ""}`}>
                       {article.title}
                     </h3>
                     <Byline author={article.author} date={article.date} />

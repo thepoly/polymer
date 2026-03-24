@@ -12,7 +12,7 @@ import { getArticleUrl } from "@/utils/getArticleUrl";
 /* ─── Helpers ─────────────────────────────────────────────────────── */
 
 const tc = (article: Article, size: string) =>
-  `font-copy font-bold leading-[1.12] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent ${size} ${
+  `font-copy font-bold leading-[1.12] tracking-[-0.015em] text-text-main transition-colors ${size} ${
     article.section === "features"
       ? "font-normal"
       : article.section === "sports"

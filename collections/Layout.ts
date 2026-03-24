@@ -1,5 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
+type EditorUser = { roles?: string[]; section?: string }
+
 const Layout: CollectionConfig = {
   slug: 'layout',
   labels: {
@@ -30,6 +32,26 @@ const Layout: CollectionConfig = {
       const roles = (user as unknown as { roles?: string[] }).roles || []
       return roles.some((role: string) => ['admin', 'eic', 'editor'].includes(role))
     },
+  },
+  hooks: {
+    beforeChange: [
+      ({ data, originalDoc, req }) => {
+        const u = req.user as unknown as EditorUser
+        if (!u) return data
+        if (u.roles?.some((r: string) => ['admin', 'eic'].includes(r))) return data
+        if (u.roles?.includes('editor') && u.section) {
+          // Editor may only modify their own section within sectionLayouts
+          return {
+            ...originalDoc,
+            sectionLayouts: {
+              ...(originalDoc?.sectionLayouts ?? {}),
+              [u.section]: data?.sectionLayouts?.[u.section],
+            },
+          }
+        }
+        return data
+      },
+    ],
   },
   fields: [
     {

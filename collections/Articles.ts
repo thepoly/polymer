@@ -8,11 +8,13 @@ const Articles: CollectionConfig = {
     defaultColumns: ['title', 'updatedAt'],
   },
   access: {
-    // CONSTRAINT: Only Admin, EIC, Copy Editor, or Section Editor can modify articles
     update: ({ req: { user } }) => {
       if (!user) return false
-      const roles = (user)?.roles || []
-      return roles.some((role: string) => ['admin', 'eic', 'editor'].includes(role))
+      const u = user as unknown as { roles?: string[]; section?: string }
+      const roles = u.roles || []
+      if (roles.some((role: string) => ['admin', 'eic'].includes(role))) return true
+      if (roles.includes('editor') && u.section) return { section: { equals: u.section } }
+      return false
     },
     // Anonymous readers can only see published articles. Authenticated staff keep full access
     // so the admin UI and editorial workflows can still inspect drafts.
@@ -27,7 +29,7 @@ const Articles: CollectionConfig = {
     create: ({ req: { user } }) => {
       if (!user) return false
       const roles = (user)?.roles || []
-      return roles.some((role: string) => ['admin', 'eic', 'editor', 'writer'].includes(role))
+      return roles.some((role: string) => ['admin', 'eic', 'editor'].includes(role))
     },
     delete: ({ req: { user } }) => {
       if (!user) return false

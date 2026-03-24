@@ -72,7 +72,7 @@ export default function AuthorSpotlightCarousel({
         </p>
 
         {/* Latest article */}
-        <p className="mt-1 font-copy text-[16px] italic leading-[1.35] text-text-muted transition-colors group-hover:text-accent line-clamp-2 max-w-[220px]">
+        <p className="mt-1 font-copy text-[16px] italic leading-[1.35] text-text-muted transition-colors line-clamp-2 max-w-[220px]">
           {active.latestArticle.title}
         </p>
       </TransitionLink>

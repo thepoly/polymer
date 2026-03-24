@@ -47,7 +47,7 @@ function OpinionCard({ article, withImage = false, priority = false }: { article
         {typeLabel}
       </span>
       {/* Title — largest, dominant */}
-      <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors group-hover:text-accent">
+      <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors">
         {article.title}
       </h3>
       {/* Byline — "BY" is muted, author name is accent */}
@@ -233,7 +233,7 @@ export default function OpinionSectionPage({
         </div>
 
         {/* ── Col 3: most read, text, text, text, image ── */}
-        <div className="sticky top-20 self-start">
+        <div>
           {editorsChoiceArticles.length > 0 && (
             <div className="mb-3">
               <EditorsChoice
@@ -306,7 +306,7 @@ export default function OpinionSectionPage({
                     <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-text-main block mb-1.5">
                       {typeLabel}
                     </span>
-                    <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors group-hover:text-accent">
+                    <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors">
                       {article.title}
                     </h3>
                     {article.author && (

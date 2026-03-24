@@ -116,7 +116,7 @@ const getHeadlineClasses = (article: RecommendationArticle, variant: 'lead' | 'l
     .filter(Boolean)
     .join(' ');
 
-  return `${base} text-text-main transition-colors group-hover:text-accent ${sectionStyles}`;
+  return `${base} text-text-main transition-colors ${sectionStyles}`;
 };
 
 const prioritizeRecommendations = (articles: RecommendationArticle[], currentArticle: Article) => {
@@ -220,7 +220,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
               href={`/${currentArticle.section}`}
               className="group inline-block"
             >
-              <h2 className={`mt-2 font-display text-[30px] leading-[0.98] tracking-[-0.03em] text-text-main transition-colors group-hover:text-accent md:text-[38px] ${currentArticle.section === 'opinion' ? 'font-medium' : 'font-bold'}`}>
+              <h2 className={`mt-2 font-display text-[30px] leading-[0.98] tracking-[-0.03em] text-text-main transition-colors md:text-[38px] ${currentArticle.section === 'opinion' ? 'font-medium' : 'font-bold'}`}>
                 {sectionLabel}
               </h2>
             </TransitionLink>

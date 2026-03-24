@@ -84,7 +84,7 @@ export default function OpinionListPage({
               </div>
             )}
             <div className="flex flex-col justify-center">
-              <h2 className="font-copy font-medium leading-[1.15] text-[22px] text-text-main transition-colors group-hover:text-accent">
+              <h2 className="font-copy font-medium leading-[1.15] text-[22px] text-text-main transition-colors">
                 {article.title}
               </h2>
               {article.author && (

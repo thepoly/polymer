@@ -49,7 +49,7 @@ function GridArticleCard({
       </p>
       <h3
         data-marauders-title
-        className={`relative z-[30] font-copy font-bold leading-[1.08] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent [overflow-wrap:anywhere] break-words ${titleSize} ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
+        className={`relative z-[30] font-copy font-bold leading-[1.08] tracking-[-0.015em] text-text-main transition-colors [overflow-wrap:anywhere] break-words ${titleSize} ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
       >
         {article.title}
       </h3>
@@ -151,7 +151,7 @@ function MobileArticleCard({ article }: { article: Article }) {
       </p>
       <h3
         data-marauders-title
-        className={`relative z-[30] font-copy font-bold leading-[1.08] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent [overflow-wrap:anywhere] break-words text-[26px] ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
+        className={`relative z-[30] font-copy font-bold leading-[1.08] tracking-[-0.015em] text-text-main transition-colors [overflow-wrap:anywhere] break-words text-[26px] ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
       >
         {article.title}
       </h3>
