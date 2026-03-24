@@ -110,7 +110,7 @@ export default async function StaffPage() {
 
   const usersResponse = await payload.find({
     collection: 'users',
-    limit: 100,
+    limit: 0,
     sort: 'lastName',
     depth: 1,
     select: {

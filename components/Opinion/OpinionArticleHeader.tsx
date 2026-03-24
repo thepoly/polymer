@@ -50,7 +50,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
       {featuredImage?.url && (() => {
         const photographer = featuredImage.photographer && typeof featuredImage.photographer === 'object' ? featuredImage.photographer as User : null;
         return (
-          <div className="w-full max-w-[780px] mx-auto mb-8">
+          <div className="w-full max-w-[680px] mx-auto px-4 md:px-0 mb-8">
             <div className="relative w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden">
               <Image
                 src={(featuredImage as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || featuredImage.url}
@@ -58,7 +58,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
                 width={featuredImage.width || 1200}
                 height={featuredImage.height || 800}
                 className="w-full h-auto"
-                sizes="(max-width: 768px) 100vw, 680px"
+                sizes="(max-width: 768px) calc(100vw - 2rem), 680px"
                 priority
               />
             </div>
