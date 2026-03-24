@@ -17,13 +17,13 @@ function NewsCard({ article, withImage = false, priority = false }: { article: C
       className="group block mb-8"
     >
       {withImage && article.image && (
-        <div className="relative overflow-hidden mb-3" style={{ aspectRatio: "3/2" }}>
+        <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden mb-3 md:static md:ml-0 md:mr-0 md:w-full" style={{ aspectRatio: "3/2" }}>
           <Image
             src={article.image}
             alt={article.title}
             fill
             className="object-cover"
-            sizes="33vw"
+            sizes="(max-width: 768px) 100vw, 33vw"
             priority={priority}
           />
         </div>
@@ -99,30 +99,60 @@ export default function NewsSectionPage({
   col3.forEach((a) => shownIds.add(a.id));
 
   return (
-    <div style={{ maxWidth: 1280, margin: "0 auto", padding: "20px 30px 32px" }}>
+    <div className="mx-auto max-w-[1280px] px-4 py-5 pb-8 md:px-[30px]">
       {/* Header */}
-      <div className="flex items-center mt-6 mb-10" style={{ gap: 24 }}>
-        <h1 className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors" style={{ fontSize: 60, fontWeight: 400, lineHeight: 1 }}>
-          {title}
-        </h1>
-        <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground)" }} />
-        <a
-          href="mailto:news@poly.rpi.edu,eic@poly.rpi.edu?subject=News%2C%20Request%2FComment"
-          className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
-          style={{ fontSize: 36, fontWeight: 300 }}
-        >
-          Contact
-        </a>
+      <div className="mt-2 mb-6 md:mt-6 md:mb-10">
+        {/* Desktop: single row */}
+        <div className="hidden md:flex items-center gap-6">
+          <h1 className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[60px]" style={{ fontWeight: 400, lineHeight: 1 }}>
+            {title}
+          </h1>
+          <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground)" }} />
+          <a
+            href="mailto:news@poly.rpi.edu,eic@poly.rpi.edu?subject=News%2C%20Request%2FComment"
+            className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors text-[36px]"
+            style={{ fontWeight: 300 }}
+          >
+            Contact
+          </a>
+        </div>
+        {/* Mobile: title then link below, centered */}
+        <div className="md:hidden text-center">
+          <h1 className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[36px]" style={{ fontWeight: 400, lineHeight: 1 }}>
+            {title}
+          </h1>
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <a
+              href="mailto:news@poly.rpi.edu,eic@poly.rpi.edu?subject=News%2C%20Request%2FComment"
+              className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors text-[18px]"
+              style={{ fontWeight: 300 }}
+            >
+              Contact
+            </a>
+          </div>
+        </div>
       </div>
 
-      {/* 3-column grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: "0 24px",
-        }}
-      >
+      {/* ── Mobile: single-column, desktop order ── */}
+      <div className="flex flex-col md:hidden">
+        {/* Col 2 lead (pinned) first */}
+        {col2Lead && <NewsCard article={col2Lead} withImage priority />}
+        {/* Col 1: Student Senate & Executive Board */}
+        {col1.map((article, i) => (
+          <NewsCard key={article.id} article={article} withImage={i === 0} priority={i === 0 && !col2Lead} />
+        ))}
+        {/* Col 2 rest: Campus Infrastructure & Press Release */}
+        {col2Rest.map((article) => (
+          <NewsCard key={article.id} article={article} />
+        ))}
+        {/* Col 3: Interview, Town Hall, GM Week 2026 */}
+        {col3.map((article, i) => (
+          <NewsCard key={article.id} article={article} withImage={i === 0} />
+        ))}
+      </div>
+
+      {/* 3-column grid — desktop only */}
+      <div className="hidden md:grid" style={{ gridTemplateColumns: "1fr 1fr 1fr", gap: "0 24px" }}>
         {/* ── Col 1: Student Senate & Executive Board ── */}
         <div style={{ borderRight: "1px solid var(--rule-color)", paddingRight: 24 }}>
           {col1.map((article, i) => (
@@ -176,13 +206,7 @@ export default function NewsSectionPage({
                 More &rarr;
               </TransitionLink>
             </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(5, 1fr)",
-                gap: 24,
-              }}
-            >
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 lg:gap-6">
               {groupArticles.slice(0, 5).map((article) => (
                 <TransitionLink
                   key={article.id}
@@ -196,7 +220,7 @@ export default function NewsSectionPage({
                         alt={article.title}
                         fill
                         className="object-cover"
-                        sizes="20vw"
+                        sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 20vw"
                       />
                     </div>
                   )}

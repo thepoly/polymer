@@ -31,13 +31,13 @@ function OpinionCard({ article, withImage = false, priority = false }: { article
       className="group block mb-8"
     >
       {withImage && article.image && (
-        <div className="relative overflow-hidden mb-3" style={{ aspectRatio: "3/2" }}>
+        <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden mb-3 md:static md:ml-0 md:mr-0 md:w-full" style={{ aspectRatio: "3/2" }}>
           <Image
             src={article.image}
             alt={article.title}
             fill
             className="object-cover"
-            sizes="33vw"
+            sizes="(max-width: 768px) 100vw, 33vw"
             priority={priority}
           />
         </div>
@@ -172,30 +172,79 @@ export default function OpinionSectionPage({
   const col3 = mainArticles.slice(9, 13);
 
   return (
-    <div style={{ maxWidth: 1280, margin: "0 auto", padding: "20px 30px 32px" }}>
+    <div className="mx-auto max-w-[1280px] px-4 py-5 pb-8 md:px-[30px]">
       {/* Header */}
-      <div className="flex items-center mt-6 mb-10" style={{ gap: 24 }}>
-        <h1 className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors" style={{ fontSize: 60, fontWeight: 400, lineHeight: 1 }}>
-          {title}
-        </h1>
-        <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground)" }} />
-        <TransitionLink href="/submit" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors" style={{ fontSize: 36, fontWeight: 300 }}>
-          Submit
-        </TransitionLink>
-        <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground)" }} />
-        <TransitionLink href="/contact" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors" style={{ fontSize: 36, fontWeight: 300 }}>
-          Contact
-        </TransitionLink>
+      <div className="mt-2 mb-6 md:mt-6 md:mb-10">
+        {/* Desktop: single row */}
+        <div className="hidden md:flex items-center gap-6">
+          <h1 className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[60px]" style={{ fontWeight: 400, lineHeight: 1 }}>
+            {title}
+          </h1>
+          <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground)" }} />
+          <TransitionLink href="/submit" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors text-[36px]" style={{ fontWeight: 300 }}>
+            Submit
+          </TransitionLink>
+          <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground)" }} />
+          <TransitionLink href="/contact" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors text-[36px]" style={{ fontWeight: 300 }}>
+            Contact
+          </TransitionLink>
+        </div>
+        {/* Mobile: title then links below, centered */}
+        <div className="md:hidden text-center">
+          <h1 className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[36px]" style={{ fontWeight: 400, lineHeight: 1 }}>
+            {title}
+          </h1>
+          <div className="flex items-center justify-center gap-3 mt-2">
+            <TransitionLink href="/submit" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors text-[18px]" style={{ fontWeight: 300 }}>
+              Submit
+            </TransitionLink>
+            <span className="text-text-muted">&bull;</span>
+            <TransitionLink href="/contact" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors text-[18px]" style={{ fontWeight: 300 }}>
+              Contact
+            </TransitionLink>
+          </div>
+        </div>
       </div>
 
-      {/* 3-column grid — inline styles to guarantee layout */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: "0 24px",
-        }}
-      >
+      {/* ── Mobile: single-column, desktop order ── */}
+      <div className="flex flex-col md:hidden">
+        {/* Col 1 articles */}
+        {col1[0] && <OpinionCard article={col1[0]} withImage priority />}
+        {col1[1] && <OpinionCard article={col1[1]} />}
+        {col1[2] && <OpinionCard article={col1[2]} />}
+        {/* Guest writer CTA */}
+        <div className="py-7 border-y border-rule mb-8">
+          <p className="font-copy text-[19px] leading-[1.5] text-text-main">
+            Interested in being a guest writer?{" "}
+            <TransitionLink href="/submit" className="text-accent hover:underline transition-colors">
+              Learn more.
+            </TransitionLink>
+          </p>
+        </div>
+        {col1[3] && <OpinionCard article={col1[3]} />}
+        {col1[4] && <OpinionCard article={col1[4]} />}
+        {/* Col 2 articles */}
+        {col2[0] && <OpinionCard article={col2[0]} />}
+        {spotlightAuthors.length > 0 && (
+          <AuthorSpotlightCarousel authors={spotlightAuthors} />
+        )}
+        {col2[1] && <OpinionCard article={col2[1]} />}
+        {col2[2] && <OpinionCard article={col2[2]} withImage />}
+        {col2[3] && <OpinionCard article={col2[3]} />}
+        {/* Col 3 articles */}
+        {editorsChoiceArticles.length > 0 && (
+          <div className="mb-3">
+            <EditorsChoice articles={editorsChoiceArticles} label={editorsChoiceLabel} />
+          </div>
+        )}
+        {col3[0] && <OpinionCard article={col3[0]} />}
+        {col3[1] && <OpinionCard article={col3[1]} />}
+        {col3[2] && <OpinionCard article={col3[2]} />}
+        {col3[3] && <OpinionCard article={col3[3]} withImage />}
+      </div>
+
+      {/* 3-column grid — desktop only */}
+      <div className="hidden md:grid" style={{ gridTemplateColumns: "1fr 1fr 1fr", gap: "0 24px", alignItems: "start" }}>
         {/* ── Col 1: image, text, text, CTA, text ── */}
         <div style={{ borderRight: "1px solid var(--rule-color)", paddingRight: 24 }}>
           {col1[0] && <OpinionCard article={col1[0]} withImage priority />}
@@ -277,13 +326,7 @@ export default function OpinionSectionPage({
                 More &rarr;
               </TransitionLink>
             </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(5, 1fr)",
-                gap: 24,
-              }}
-            >
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 lg:gap-6">
               {groupArticles.slice(0, 5).map((article) => {
                 const typeLabel = opinionTypeLabels[article.opinionType || "opinion"] || "Opinion";
                 return (
@@ -299,7 +342,7 @@ export default function OpinionSectionPage({
                           alt={article.title}
                           fill
                           className="object-cover"
-                          sizes="20vw"
+                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 20vw"
                         />
                       </div>
                     )}
