@@ -10,36 +10,19 @@ import {
   StaffProfileUser,
 } from '@/components/StaffProfile';
 import { LexicalNode } from '@/components/Article/RichTextParser';
-import { getArticleUrl } from '@/utils/getArticleUrl';
 import type { Article, Media, User } from '@/payload-types';
+import {
+  getStaffPortfolioPage,
+  getStaffUserBySlug,
+  StaffPortfolioPhoto,
+} from '@/lib/staffProfile';
 
 export const revalidate = 60;
 
 type StaffArgs = { params: Promise<{ slug: string }> };
 
 const getUser = cache(async function getUser(slug: string): Promise<User | undefined> {
-  const payload = await getPayload({ config });
-  const isNumeric = /^\d+$/.test(slug);
-  const result = await payload.find({
-    collection: 'users',
-    where: {
-      or: [
-        { slug: { equals: slug } },
-        ...(isNumeric ? [{ id: { equals: parseInt(slug, 10) } }] : []),
-      ],
-    },
-    depth: 1,
-    limit: 1,
-    select: {
-      firstName: true,
-      lastName: true,
-      slug: true,
-      headshot: true,
-      bio: true,
-      positions: true,
-    },
-  });
-  return result.docs[0] as User | undefined;
+  return getStaffUserBySlug(slug);
 });
 
 type PublicStaffUserSource = Pick<
@@ -49,7 +32,7 @@ type PublicStaffUserSource = Pick<
 
 type PublicStaffArticleSource = Pick<Article, 'id' | 'title' | 'slug' | 'section' | 'publishedDate'>;
 
-type PublicStaffPhotoSource = Pick<Media, 'id' | 'url' | 'alt' | 'width' | 'height' | 'sizes'>;
+type PublicStaffPhotoSource = StaffPortfolioPhoto;
 
 const toPublicStaffUser = (user: PublicStaffUserSource): StaffProfileUser => ({
   id: user.id,
@@ -87,6 +70,7 @@ const toPublicStaffPhoto = (photo: PublicStaffPhotoSource): StaffProfilePhoto =>
   alt: photo.alt,
   width: photo.width,
   height: photo.height,
+  thumbnailURL: photo.thumbnailURL,
   sizes: photo.sizes,
 });
 
@@ -123,7 +107,6 @@ export default async function StaffProfilePage({ params }: StaffArgs) {
 
   const payload = await getPayload({ config });
 
-  // Fetch articles written by this user
   const articles = await payload.find({
     collection: 'articles',
     where: {
@@ -138,6 +121,7 @@ export default async function StaffProfilePage({ params }: StaffArgs) {
     limit: 20,
     depth: 0,
     select: {
+      id: true,
       title: true,
       slug: true,
       section: true,
@@ -145,74 +129,11 @@ export default async function StaffProfilePage({ params }: StaffArgs) {
     },
   });
 
-  // Fetch photos taken by this user
-  const photos = await payload.find({
-    collection: 'media',
-    where: {
-      or: [
-        {
-          photographer: {
-            equals: user.id,
-          },
-        },
-        {
-          photographer: {
-            equals: String(user.id),
-          },
-        },
-      ],
-    },
-    limit: 20,
-    depth: 0,
-    select: {
-      url: true,
-      filename: true,
-      sourceUrl: true,
-      alt: true,
-      width: true,
-      height: true,
-      sizes: true,
-    },
-  });
-
-  // For each photo, find the most recent article that uses it
-  const photoToArticleMap: Record<number, string> = {};
-  if (photos.docs.length > 0) {
-    const photoIds = photos.docs.map(p => p.id);
-    const relatedArticles = await payload.find({
-      collection: 'articles',
-      where: {
-        _status: {
-          equals: 'published',
-        },
-        featuredImage: {
-          in: photoIds,
-        },
-      },
-      sort: '-publishedDate',
-      limit: 100, // Should be enough to cover recent usage
-      depth: 0,
-      select: {
-        slug: true,
-        section: true,
-        publishedDate: true,
-        createdAt: true,
-        featuredImage: true,
-      },
-    });
-
-    // Populate map with the most recent article for each photo
-    relatedArticles.docs.forEach(article => {
-      const imageId = typeof article.featuredImage === 'object' ? article.featuredImage?.id : article.featuredImage;
-      if (imageId && !photoToArticleMap[imageId]) {
-        photoToArticleMap[imageId] = getArticleUrl(article as Article);
-      }
-    });
-  }
+  const portfolio = await getStaffPortfolioPage(user.id);
 
   const publicUser = toPublicStaffUser(user);
   const publicArticles = articles.docs.map((article) => toPublicStaffArticle(article));
-  const publicPhotos = photos.docs.map((photo) => toPublicStaffPhoto(photo));
+  const publicPhotos = portfolio.photos.map((photo) => toPublicStaffPhoto(photo));
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 pt-3 md:pt-4 pb-12">
@@ -220,7 +141,9 @@ export default async function StaffProfilePage({ params }: StaffArgs) {
         user={publicUser}
         articles={publicArticles}
         photos={publicPhotos}
-        photoToArticleMap={photoToArticleMap}
+        photoToArticleMap={portfolio.photoToArticleMap}
+        initialPortfolioHasMore={portfolio.hasMore}
+        initialPortfolioNextPage={portfolio.nextPage}
       />
     </div>
   );

@@ -1,8 +1,10 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import posthog from 'posthog-js';
 import { LexicalNode } from '@/components/Article/RichTextParser';
+import type { StaffPortfolioPhoto } from '@/lib/staffProfile';
 
 export interface StaffProfileUser {
   id: number;
@@ -41,8 +43,14 @@ export interface StaffProfilePhoto {
   url?: string | null;
   alt?: string | null;
   width?: number | null;
+  thumbnailURL?: string | null;
   height?: number | null;
   sizes?: {
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+    };
     gallery?: {
       url?: string | null;
       width?: number | null;
@@ -56,6 +64,8 @@ interface StaffProfileProps {
   articles?: StaffProfileArticle[];
   photos?: StaffProfilePhoto[];
   photoToArticleMap?: Record<number, string>;
+  initialPortfolioHasMore?: boolean;
+  initialPortfolioNextPage?: number | null;
 }
 
 const INITIAL_ARTICLE_COUNT = 8;
@@ -106,19 +116,107 @@ const lexicalToPlainText = (nodes: LexicalNode[] | undefined): string => {
     .trim();
 };
 
-export function StaffProfile({ user, articles = [], photos = [], photoToArticleMap = {} }: StaffProfileProps) {
+export function StaffProfile({
+  user,
+  articles = [],
+  photos = [],
+  photoToArticleMap = {},
+  initialPortfolioHasMore = false,
+  initialPortfolioNextPage = null,
+}: StaffProfileProps) {
   const headshot = user.headshot || null;
   const bio = user.bio;
   const [showAllArticles, setShowAllArticles] = useState(false);
+  const [loadedPhotos, setLoadedPhotos] = useState<StaffProfilePhoto[]>(photos);
+  const [loadedPhotoToArticleMap, setLoadedPhotoToArticleMap] = useState<Record<number, string>>(photoToArticleMap);
+  const [hasMorePhotos, setHasMorePhotos] = useState(initialPortfolioHasMore);
+  const [nextPhotoPage, setNextPhotoPage] = useState<number | null>(initialPortfolioNextPage);
+  const [isLoadingPhotos, setIsLoadingPhotos] = useState(false);
+  const portfolioSentinelRef = useRef<HTMLDivElement | null>(null);
 
   const displayedArticles = showAllArticles ? articles : articles.slice(0, INITIAL_ARTICLE_COUNT);
   const hasMoreArticles = articles.length > INITIAL_ARTICLE_COUNT;
-  const populatedPhotos = photos.filter((photo): photo is PortfolioPhoto => Boolean(photo.url));
+  const populatedPhotos = loadedPhotos.filter((photo): photo is PortfolioPhoto =>
+    Boolean(photo.thumbnailURL || photo.sizes?.card?.url || photo.sizes?.gallery?.url || photo.url),
+  );
   const portfolioColumnCount = Math.min(populatedPhotos.length, 3);
   const portfolioGridClassName = { 1: 'md:grid-cols-1', 2: 'md:grid-cols-2', 3: 'md:grid-cols-3' }[portfolioColumnCount];
   const portfolioColumns = portfolioColumnCount > 0
     ? distributePortfolioPhotos(populatedPhotos, portfolioColumnCount)
     : [];
+
+  useEffect(() => {
+    setLoadedPhotos(photos);
+  }, [photos]);
+
+  useEffect(() => {
+    setLoadedPhotoToArticleMap(photoToArticleMap);
+  }, [photoToArticleMap]);
+
+  useEffect(() => {
+    setHasMorePhotos(initialPortfolioHasMore);
+  }, [initialPortfolioHasMore]);
+
+  useEffect(() => {
+    setNextPhotoPage(initialPortfolioNextPage);
+  }, [initialPortfolioNextPage]);
+
+  useEffect(() => {
+    if (!hasMorePhotos || !nextPhotoPage || isLoadingPhotos || !portfolioSentinelRef.current) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      const [entry] = entries;
+      if (!entry?.isIntersecting) return;
+
+      setIsLoadingPhotos(true);
+
+      void fetch(`/api/staff/${user.slug || user.id}/portfolio?page=${nextPhotoPage}`, {
+        cache: 'no-store',
+      })
+        .then(async (response) => {
+          if (!response.ok) throw new Error(`Failed to load photo portfolio page ${nextPhotoPage}`);
+          return response.json() as Promise<{
+            photos: StaffPortfolioPhoto[];
+            photoToArticleMap: Record<string, string>;
+            hasMore: boolean;
+            nextPage: number | null;
+          }>;
+        })
+        .then((data) => {
+          setLoadedPhotos((current) => [...current, ...data.photos]);
+          setLoadedPhotoToArticleMap((current) => ({
+            ...current,
+            ...Object.fromEntries(
+              Object.entries(data.photoToArticleMap).map(([photoId, href]) => [Number(photoId), href]),
+            ),
+          }));
+          setHasMorePhotos(data.hasMore);
+          setNextPhotoPage(data.nextPage);
+          posthog.capture('staff_portfolio_batch_loaded', {
+            batch_number: nextPhotoPage,
+            batch_size: data.photos.length,
+            has_more: data.hasMore,
+            next_batch_number: data.nextPage,
+            staff_id: user.id,
+            staff_slug: user.slug || null,
+          });
+        })
+        .catch(() => {
+          setHasMorePhotos(false);
+        })
+        .finally(() => {
+          setIsLoadingPhotos(false);
+        });
+    }, {
+      rootMargin: '600px 0px',
+    });
+
+    observer.observe(portfolioSentinelRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMorePhotos, isLoadingPhotos, nextPhotoPage, user.id, user.slug]);
 
   return (
     <div className="flex flex-col gap-16 text-text-main transition-colors duration-300">
@@ -225,23 +323,23 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
       </div>
 
       {/* Full Width Photos Section (Below everything else) */}
-      {photos.length > 0 && (
+      {loadedPhotos.length > 0 && (
         <section className="w-full">
           <h2 className="font-meta text-[11px] font-bold uppercase tracking-[0.1em] text-text-muted mb-8 border-b border-rule pb-2 transition-colors">Photo Portfolio</h2>
           {portfolioColumns.length > 0 ? (
-            <div className={`grid grid-cols-1 gap-4 md:gap-6 ${portfolioGridClassName}`}>
+            <div className={`grid grid-cols-1 gap-2 md:gap-3 ${portfolioGridClassName}`}>
               {portfolioColumns.map((column, columnIndex) => (
-                <div key={columnIndex} className="flex flex-col gap-4 md:gap-6">
+                <div key={columnIndex} className="flex flex-col gap-2 md:gap-3">
                   {column.map((photo) => {
-                    const href = photoToArticleMap[photo.id];
+                    const href = loadedPhotoToArticleMap[photo.id];
                     const imageNode = (
                       <Image
-                        src={photo.sizes?.gallery?.url || photo.url!}
+                        src={photo.thumbnailURL || photo.sizes?.card?.url || photo.sizes?.gallery?.url || photo.url!}
                         alt={photo.alt || 'Photo credit'}
-                        width={photo.sizes?.gallery?.width || photo.width || 1200}
-                        height={photo.sizes?.gallery?.height || photo.height || 800}
+                        width={photo.sizes?.card?.width || photo.sizes?.gallery?.width || photo.width || 1200}
+                        height={photo.sizes?.card?.height || photo.sizes?.gallery?.height || photo.height || 800}
                         sizes={`(max-width: 768px) 100vw, ${Math.round(100 / portfolioColumnCount)}vw`}
-                        quality={70}
+                        quality={60}
                         loading="lazy"
                         className="w-full h-auto"
                       />
@@ -261,6 +359,7 @@ export function StaffProfile({ user, articles = [], photos = [], photoToArticleM
               ))}
             </div>
           ) : null}
+          {(hasMorePhotos || isLoadingPhotos) && <div ref={portfolioSentinelRef} className="h-8 w-full" aria-hidden="true" />}
         </section>
       )}
     </div>

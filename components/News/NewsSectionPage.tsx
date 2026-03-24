@@ -17,7 +17,7 @@ function NewsCard({ article, withImage = false, priority = false }: { article: C
       className="group block mb-8"
     >
       {withImage && article.image && (
-        <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden mb-3 md:static md:ml-0 md:mr-0 md:w-full" style={{ aspectRatio: "3/2" }}>
+        <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden mb-3 md:left-0 md:right-0 md:ml-0 md:mr-0 md:w-full" style={{ aspectRatio: "3/2" }}>
           <Image
             src={article.image}
             alt={article.title}
