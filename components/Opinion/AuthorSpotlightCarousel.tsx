@@ -59,24 +59,45 @@ export default function AuthorSpotlightCarousel({
 
   return (
     <div
-      className="py-6 border-y border-rule my-6"
+      className="relative py-4 border-y border-rule my-4"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
+      {count > 1 && (
+        <>
+          <button
+            onClick={retreat}
+            className="absolute left-2 top-1/2 z-10 flex h-14 w-14 -translate-y-1/2 items-center justify-center text-[56px] leading-none text-[#9a9a9a] transition-colors hover:text-accent"
+            style={{ background: "none", border: "none", cursor: "pointer" }}
+            aria-label="Previous author"
+          >
+            &#8249;
+          </button>
+          <button
+            onClick={advance}
+            className="absolute right-2 top-1/2 z-10 flex h-14 w-14 -translate-y-1/2 items-center justify-center text-[56px] leading-none text-[#9a9a9a] transition-colors hover:text-accent"
+            style={{ background: "none", border: "none", cursor: "pointer" }}
+            aria-label="Next author"
+          >
+            &#8250;
+          </button>
+        </>
+      )}
+
       <TransitionLink
         href={active.latestArticle.url}
         className="group flex flex-col items-center justify-center text-center"
-        style={{ height: 200 }}
+        style={{ height: 210 }}
       >
         {/* Large headshot */}
-        <div className="relative h-[100px] w-[100px] overflow-hidden rounded-full border-2 border-rule mb-3">
+        <div className="relative h-[124px] w-[124px] overflow-hidden rounded-full border-2 border-rule mb-2">
           {active.headshot ? (
             <Image
               src={active.headshot}
               alt={active.name}
               fill
               className="object-cover"
-              sizes="100px"
+              sizes="124px"
             />
           ) : (
             <span className="flex h-full w-full items-center justify-center bg-accent/10 font-meta text-[32px] font-bold text-accent">
@@ -86,26 +107,19 @@ export default function AuthorSpotlightCarousel({
         </div>
 
         {/* Name */}
-        <p className="font-meta text-[16px] font-bold tracking-[0.04em] text-text-main">
+        <p className="font-meta text-[19px] font-bold tracking-[0.04em] text-text-main">
           {active.name}
         </p>
 
         {/* Latest article */}
-        <p className="mt-1 font-copy text-[16px] leading-[1.35] text-text-muted transition-colors group-hover:text-accent line-clamp-2 max-w-[220px]">
+        <p className="mt-0.5 font-copy text-[19px] leading-[1.3] text-text-muted transition-colors group-hover:text-accent line-clamp-2 max-w-[240px]">
           {active.latestArticle.title}
         </p>
       </TransitionLink>
 
       {/* Navigation: arrows + dots */}
       {count > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-4">
-          <button
-            onClick={retreat}
-            style={{ fontSize: 18, lineHeight: 1, padding: "0 4px", color: "#aaa", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center" }}
-            aria-label="Previous author"
-          >
-            &#8249;
-          </button>
+        <div className="flex items-center justify-center mt-2">
           <div className="flex gap-1.5 items-center">
             {displayAuthors.map((_, i) => (
               <button
@@ -120,13 +134,6 @@ export default function AuthorSpotlightCarousel({
               />
             ))}
           </div>
-          <button
-            onClick={advance}
-            style={{ fontSize: 18, lineHeight: 1, padding: "0 4px", color: "#aaa", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center" }}
-            aria-label="Next author"
-          >
-            &#8250;
-          </button>
         </div>
       )}
     </div>

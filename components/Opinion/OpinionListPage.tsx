@@ -5,6 +5,7 @@ import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import type { Article } from "@/components/FrontPage/types";
+import { Byline } from "@/components/FrontPage/Byline";
 
 const PAGE_SIZE = 10;
 
@@ -65,18 +66,7 @@ export default function OpinionListPage({
               <h2 className="font-copy font-medium leading-[1.15] text-[22px] text-text-main transition-colors">
                 {article.title}
               </h2>
-              {article.author && (
-                <p className="mt-1 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
-                  <span className="text-text-muted">BY </span>
-                  <span className="text-accent dark:text-white">{article.author}</span>
-                  {article.date && (
-                    <>
-                      <span className="text-text-muted mx-1.5">&bull;</span>
-                      <span className="text-text-muted">{article.date}</span>
-                    </>
-                  )}
-                </p>
-              )}
+              <Byline author={article.author} date={article.date} className="text-[13px]" />
               {article.excerpt && (
                 <p className="mt-1 font-meta text-[14px] leading-[1.5] text-text-muted line-clamp-2">
                   {article.excerpt}

@@ -5,6 +5,7 @@ import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import type { Article as ComponentArticle } from "@/components/FrontPage/types";
+import { Byline } from "@/components/FrontPage/Byline";
 import { AnimatedLine } from "@/components/Opinion/RainbowDivider";
 
 /* ── Types ── */
@@ -22,6 +23,11 @@ export type SpotlightPhoto = {
   caption?: string;
   articleTitle?: string;
 };
+
+const PAGE_SIDE_PADDING = "clamp(16px, 3vw, 30px)";
+const COLUMN_GAP = "clamp(16px, 2vw, 24px)";
+const SECTION_RULE_GAP = "clamp(18px, 3vw, 24px)";
+const SECTION_RULE_INSET = 7;
 
 /* ── Article card — optionally shows image ── */
 
@@ -71,20 +77,12 @@ function FeaturesCard({
       >
         {article.title}
       </h3>
-      <div className="mt-2 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
-        {article.author && (
-          <span>
-            <span className="text-text-muted">BY </span>
-            <span className="text-accent">{article.author}</span>
-          </span>
-        )}
-        {!hideDate && article.author && article.date && (
-          <span className="text-text-muted mx-1.5">&bull;</span>
-        )}
-        {!hideDate && article.date && (
-          <span className="text-text-muted">{article.date}</span>
-        )}
-      </div>
+      <Byline
+        author={article.author}
+        date={hideDate ? null : article.date}
+        variant="features"
+        className="mt-2 text-[13px]"
+      />
       {showExcerpt && article.excerpt && (
         <p className="mt-0.5 font-meta text-[15px] font-medium leading-[1.5] text-text-main line-clamp-4">
           {article.excerpt}
@@ -119,7 +117,7 @@ function UpcomingEvents({ events }: { events: FeaturesEvent[] }) {
         <p
           className="font-meta uppercase"
           style={{
-            fontSize: 15,
+            fontSize: 17,
             letterSpacing: "0.08em",
             color: "#C41E3A",
             fontWeight: 500,
@@ -267,6 +265,65 @@ function PhotoSpotlightCarousel({ photos }: { photos: SpotlightPhoto[] }) {
   );
 }
 
+function MobileSectionHeader({
+  title,
+  href,
+}: {
+  title: string;
+  href?: string;
+}) {
+  const heading = href ? (
+    <TransitionLink
+      href={href}
+      className="font-meta text-[20px] font-bold tracking-[0.04em] text-accent uppercase leading-[1] hover:opacity-75 transition-opacity"
+    >
+      {title}
+    </TransitionLink>
+  ) : (
+    <span className="font-meta text-[20px] font-bold tracking-[0.04em] text-accent uppercase leading-[1]">
+      {title}
+    </span>
+  );
+
+  return (
+    <div className="mb-3">
+      <div className="relative -left-2 w-[calc(100%+0.5rem)] border-t border-black dark:border-white" />
+      <h2 className="mt-4">{heading}</h2>
+    </div>
+  );
+}
+
+function MobileFeaturesList({
+  articles,
+  imageFlags,
+  largeFirst = false,
+  showExcerptFirst = false,
+  hideDates = false,
+}: {
+  articles: ComponentArticle[];
+  imageFlags?: boolean[];
+  largeFirst?: boolean;
+  showExcerptFirst?: boolean;
+  hideDates?: boolean;
+}) {
+  return (
+    <div className="flex flex-col md:hidden">
+      {articles.map((article, i) => (
+        <div key={article.id} className={i > 0 ? "mt-10" : ""}>
+          <FeaturesCard
+            article={article}
+            withImage={imageFlags ? Boolean(imageFlags[i]) : Boolean(article.image)}
+            large={largeFirst && i === 0}
+            showExcerpt={showExcerptFirst && i === 0}
+            hideDate={hideDates}
+            priority={i === 0}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ── Main Page ── */
 
 export default function FeaturesSectionPage({
@@ -339,9 +396,34 @@ export default function FeaturesSectionPage({
   const collarCity = fillColumn(pinnedCollarCity, 3, poolRef);
   const wideArticle = fillColumn(pinnedWide, 1, poolRef);
 
+  const sectionColumnStyle = {
+    borderRight: "1px solid var(--rule-color)",
+    paddingRight: COLUMN_GAP,
+  } as const;
+
+  const sectionBreakContentStyle = {
+    paddingTop: SECTION_RULE_GAP,
+  } as const;
+
+  const getSectionBreakRuleStyle = (insetLeft = 0, insetRight = 0) =>
+    ({
+      borderTop: "1px solid var(--text-main, #1a1a1a)",
+      marginTop: SECTION_RULE_GAP,
+      marginLeft: insetLeft,
+      marginRight: insetRight,
+    }) as const;
+  const LOWER_SECTION_EXTRA_TOP_SPACE = 8;
+
+  const getSectionHeadingWrapStyle = (insetLeft = 0, insetRight = 0) =>
+    ({
+      marginLeft: insetLeft,
+      marginRight: insetRight,
+      paddingTop: SECTION_RULE_GAP,
+    }) as const;
+
   return (
     <div
-      style={{ maxWidth: 1280, margin: "0 auto", padding: "20px 30px 32px" }}
+      style={{ maxWidth: 1280, margin: "0 auto", padding: `20px ${PAGE_SIDE_PADDING} 32px` }}
     >
       {/* Header */}
       <div className="flex items-center mt-6 mb-10" style={{ gap: 24 }}>
@@ -351,31 +433,131 @@ export default function FeaturesSectionPage({
         >
           {title}
         </h1>
+        <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground-muted)" }} />
+        <TransitionLink
+          href="/features/submit-event"
+          className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
+          style={{ fontSize: 36, fontWeight: 300 }}
+        >
+          Submit
+        </TransitionLink>
+        <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground-muted)" }} />
+        <a
+          href="mailto:features@poly.rpi.edu,eic@poly.rpi.edu?subject=Features%20Request%2FComment%20or%20Event%20Tip"
+          className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
+          style={{ fontSize: 36, fontWeight: 300 }}
+        >
+          Contact
+        </a>
+      </div>
+
+      <div className="md:hidden">
+        <div className="flex flex-col">
+          {featured[0] && (
+            <FeaturesCard article={featured[0]} withImage large priority showExcerpt />
+          )}
+          {featured[1] && (
+            <div className="mt-10">
+              <FeaturesCard article={featured[1]} withImage />
+            </div>
+          )}
+          {featured[2] && (
+            <div className="mt-10">
+              <FeaturesCard article={featured[2]} withImage />
+            </div>
+          )}
+          {wideArticle[0] && (
+            <div className="mt-10">
+              <FeaturesCard article={wideArticle[0]} withImage showExcerpt />
+            </div>
+          )}
+        </div>
+
+        <div className="mt-12">
+          <MobileSectionHeader title="On-Campus" href="/features" />
+          <MobileFeaturesList articles={onCampus} imageFlags={onCampusImages} hideDates />
+        </div>
+
+        {events.length > 0 && (
+          <div className="mt-12">
+            <MobileSectionHeader title="Upcoming Events" />
+            <UpcomingEvents events={events} />
+          </div>
+        )}
+
+        {(right.length > 0) && (
+          <div className="mt-12">
+            <MobileSectionHeader title="Latest" />
+            <MobileFeaturesList articles={right} imageFlags={rightImages} />
+          </div>
+        )}
+
+        {photoSpotlight.length > 0 && (
+          <div className="mt-12">
+            <MobileSectionHeader title="Photo Spotlight" />
+            <PhotoSpotlightCarousel photos={photoSpotlight} />
+          </div>
+        )}
+
+        {spotlightSubs.length > 0 && (
+          <div className="mt-12">
+            <MobileSectionHeader title="Spotlight Stories" />
+            <MobileFeaturesList articles={spotlightSubs} />
+          </div>
+        )}
+
+        {theArts.length > 0 && (
+          <div className="mt-12">
+            <MobileSectionHeader title="The Arts" />
+            <MobileFeaturesList articles={theArts} imageFlags={theArtsImages} hideDates />
+          </div>
+        )}
+
+        {collarCity.length > 0 && (
+          <div className="mt-12">
+            <MobileSectionHeader title="Collar City Column" />
+            <MobileFeaturesList articles={collarCity} imageFlags={collarCityImages} />
+          </div>
+        )}
+
+        <div className="mt-12">
+          <MobileSectionHeader title="More in Features" href="/features/archive" />
+          <MobileFeaturesList articles={autoFillPool.slice(poolRef.idx, poolRef.idx + 5)} />
+        </div>
       </div>
 
       {/* Single grid — vertical lines are continuous, horizontal line breaks at intersections */}
       <div
+        className="hidden md:grid"
         style={{
-          display: "grid",
           gridTemplateColumns: "240px 1fr 320px",
-          gap: "0 24px",
+          gap: `0 ${COLUMN_GAP}`,
         }}
       >
         {/* ══ Row 1 ══ */}
 
         {/* ── Left column: On-Campus ── */}
-        <div
-          style={{
-            borderRight: "1px solid var(--rule-color)",
-            paddingRight: 24,
-          }}
-        >
-          <h2
-            className="font-meta uppercase tracking-[0.04em] text-text-main"
-            style={{ fontSize: 28, fontWeight: 500, marginBottom: 16 }}
+        <div style={sectionColumnStyle}>
+          <div
+            style={{
+              borderTop: "2px solid #C41E3A",
+              paddingTop: 4,
+              marginBottom: 16,
+            }}
           >
-            On-Campus
-          </h2>
+            <h2
+              className="font-meta uppercase"
+              style={{
+                fontSize: 17,
+                letterSpacing: "0.08em",
+                color: "#C41E3A",
+                fontWeight: 500,
+                margin: "0 0 2px",
+              }}
+            >
+              On-Campus
+            </h2>
+          </div>
 
           {onCampus[0] && <FeaturesCard article={onCampus[0]} withImage={onCampusImages[0]} priority hideDate />}
           {onCampus[1] && <FeaturesCard article={onCampus[1]} withImage={onCampusImages[1]} hideDate />}
@@ -398,19 +580,7 @@ export default function FeaturesSectionPage({
         </div>
 
         {/* ── Middle column: Featured ── */}
-        <div
-          style={{
-            borderRight: "1px solid var(--rule-color)",
-            paddingRight: 24,
-          }}
-        >
-          <h2
-            className="font-meta uppercase tracking-[0.04em] text-text-main"
-            style={{ fontSize: 28, fontWeight: 500, marginBottom: 16 }}
-          >
-            Featured
-          </h2>
-
+        <div style={sectionColumnStyle}>
           {/* Large hero article */}
           {featured[0] && (
             <FeaturesCard article={featured[0]} withImage large priority showExcerpt />
@@ -447,18 +617,7 @@ export default function FeaturesSectionPage({
                 >
                   {wideArticle[0].title}
                 </h2>
-                {wideArticle[0].author && (
-                  <div className="mt-2 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
-                    <span className="text-text-muted">BY </span>
-                    <span className="text-accent">{wideArticle[0].author}</span>
-                    {wideArticle[0].date && (
-                      <>
-                        <span className="text-text-muted mx-1.5">&bull;</span>
-                        <span className="text-text-muted">{wideArticle[0].date}</span>
-                      </>
-                    )}
-                  </div>
-                )}
+                <Byline author={wideArticle[0].author} date={wideArticle[0].date} variant="features" className="mt-2 text-[13px]" />
               </div>
               {wideArticle[0].image && (
                 <div className="relative overflow-hidden" style={{ aspectRatio: "3/2" }}>
@@ -488,20 +647,22 @@ export default function FeaturesSectionPage({
         {/* ══ Row 2 — borderTop on each cell creates the horizontal line with gaps at the vertical intersections ══ */}
 
         {/* ── Left column: The Arts ── */}
-        <div
-          style={{
-            borderRight: "1px solid var(--rule-color)",
-            paddingRight: 24,
-          }}
-        >
-          <div style={{ borderTop: "1px solid var(--text-main, #1a1a1a)", marginRight: 7 }} />
-          <div style={{ paddingTop: 24 }}>
+        <div style={sectionColumnStyle}>
+          <div
+            style={{
+              ...getSectionBreakRuleStyle(0, SECTION_RULE_INSET),
+              marginTop: `calc(${SECTION_RULE_GAP} + ${LOWER_SECTION_EXTRA_TOP_SPACE}px)`,
+            }}
+          />
+          <div style={getSectionHeadingWrapStyle(0, SECTION_RULE_INSET)}>
             <h2
-              className="font-meta uppercase tracking-[0.04em] text-text-main"
-              style={{ fontSize: 28, fontWeight: 500, marginBottom: 16 }}
+              className="font-meta uppercase tracking-[0.04em] text-text-main text-center"
+              style={{ fontSize: 28, fontWeight: 500, marginTop: 0, marginBottom: 16 }}
             >
               The Arts
             </h2>
+          </div>
+          <div>
 
             {theArts[0] && <FeaturesCard article={theArts[0]} withImage={theArtsImages[0]} priority hideDate />}
             {theArts[1] && <FeaturesCard article={theArts[1]} withImage={theArtsImages[1]} hideDate />}
@@ -510,14 +671,14 @@ export default function FeaturesSectionPage({
         </div>
 
         {/* ── Middle column: Photo Spotlight ── */}
-        <div
-          style={{
-            borderRight: "1px solid var(--rule-color)",
-            paddingRight: 24,
-          }}
-        >
-          <div style={{ borderTop: "1px solid var(--text-main, #1a1a1a)", marginLeft: 7, marginRight: 7 }} />
-          <div style={{ paddingTop: 24 }}>
+        <div style={sectionColumnStyle}>
+          <div
+            style={{
+              ...getSectionBreakRuleStyle(SECTION_RULE_INSET, SECTION_RULE_INSET),
+              marginTop: `calc(${SECTION_RULE_GAP} + ${LOWER_SECTION_EXTRA_TOP_SPACE}px)`,
+            }}
+          />
+          <div style={sectionBreakContentStyle}>
             <PhotoSpotlightCarousel photos={photoSpotlight} />
 
             {/* Two sub-feature articles with images */}
@@ -536,14 +697,21 @@ export default function FeaturesSectionPage({
 
         {/* ── Right column: Collar City Column ── */}
         <div>
-          <div style={{ borderTop: "1px solid var(--text-main, #1a1a1a)", marginLeft: 7 }} />
-          <div style={{ paddingTop: 24 }}>
+          <div
+            style={{
+              ...getSectionBreakRuleStyle(SECTION_RULE_INSET, 0),
+              marginTop: `calc(${SECTION_RULE_GAP} + ${LOWER_SECTION_EXTRA_TOP_SPACE}px)`,
+            }}
+          />
+          <div style={getSectionHeadingWrapStyle(SECTION_RULE_INSET, 0)}>
             <h2
-              className="font-meta uppercase tracking-[0.04em] text-text-main"
-              style={{ fontSize: 24, fontWeight: 500, marginBottom: 16 }}
+              className="font-meta uppercase tracking-[0.04em] text-text-main text-center"
+              style={{ fontSize: 24, fontWeight: 500, marginTop: 0, marginBottom: 16 }}
             >
               Collar City Column
             </h2>
+          </div>
+          <div>
 
             {collarCity[0] && <FeaturesCard article={collarCity[0]} withImage={collarCityImages[0]} />}
             {collarCity[1] && <FeaturesCard article={collarCity[1]} withImage={collarCityImages[1]} />}
@@ -553,7 +721,7 @@ export default function FeaturesSectionPage({
       </div>
 
       {/* ── More in Features ── */}
-      <div className="mt-14">
+      <div className="mt-14 hidden md:block">
         <style>{`
           @keyframes dividerWaveTravel {
             from { transform: translateX(-600px); }
@@ -564,7 +732,7 @@ export default function FeaturesSectionPage({
             to   { filter: hue-rotate(360deg); }
           }
         `}</style>
-        <AnimatedLine id="features-more" delay={0} duration={300} style={{ marginTop: 24, marginBottom: 8 }} />
+        <AnimatedLine id="features-more" delay={0} duration={300} style={{ marginTop: SECTION_RULE_GAP, marginBottom: 8 }} />
         <div className="flex items-baseline justify-between mb-4">
           <h2 className="font-meta uppercase tracking-[0.04em] text-text-main" style={{ fontSize: 28, fontWeight: 500 }}>
             More in Features
@@ -608,11 +776,7 @@ export default function FeaturesSectionPage({
               <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors group-hover:text-accent">
                 {article.title}
               </h3>
-              {article.author && (
-                <div className="mt-2 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
-                  <span className="text-text-muted">BY </span><span className="text-accent">{article.author}</span>
-                </div>
-              )}
+              <Byline author={article.author} variant="features" className="mt-2 text-[13px]" />
             </TransitionLink>
           ))}
         </div>

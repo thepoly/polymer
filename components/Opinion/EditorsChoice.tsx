@@ -18,7 +18,7 @@ export default function EditorsChoice({
 
   return (
     <div>
-      <div style={{ borderTop: "2px solid #C41E3A", paddingTop: 12, marginLeft: -1, marginRight: -1 }}>
+      <div style={{ borderTop: "2px solid #C41E3A", paddingTop: 8, marginLeft: -1, marginRight: -1 }}>
         <p
           className="font-meta uppercase"
           style={{
@@ -27,6 +27,7 @@ export default function EditorsChoice({
             color: "#C41E3A",
             fontWeight: 500,
             margin: "0 0 1px",
+            paddingLeft: 5,
           }}
         >
           {label}
@@ -38,8 +39,8 @@ export default function EditorsChoice({
               href={getArticleUrl(article)}
               className="flex items-baseline no-underline transition-colors duration-150"
               style={{
-                gap: 10,
-                padding: "10px 0",
+                gap: 8,
+                padding: "7px 0",
                 color: hoveredId === article.id ? "#C41E3A" : "inherit",
                 borderBottom:
                   i < articles.length - 1

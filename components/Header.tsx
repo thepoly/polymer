@@ -7,7 +7,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { Menu, Moon, Search, Sun, X } from "lucide-react";
 import SearchOverlay from "@/components/SearchOverlay";
 import { useHeaderTransition } from "@/components/HeaderTransitionProvider";
-import { ANIMATED_HEADER_ROUTES } from "@/components/headerAnimationRoutes";
+import {
+  shouldAnimateHeaderTransition,
+  shouldRenderAnimatedHeader,
+} from "@/components/headerAnimationRoutes";
 // import MaraudersFootsteps from "@/components/MaraudersFootsteps";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -404,7 +407,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
   const pathname = usePathname();
   const currentPath = pathname ?? "";
   const shouldEnableAnimatedHeaderTransition =
-    phase !== "idle" || ANIMATED_HEADER_ROUTES.has(currentPath);
+    phase !== "idle" || shouldRenderAnimatedHeader(currentPath);
   const logoOutlineLeftX = -4;
   const logoOutlineRightX = 464;
   const logoOutlineTopY = -89.5;
@@ -448,7 +451,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
     e.preventDefault();
     setIsMobileMenuOpen(false);
 
-    if (!ANIMATED_HEADER_ROUTES.has(href)) {
+    if (!shouldAnimateHeaderTransition(currentRoute, href)) {
       startTransition(() => {
         router.push(href);
       });

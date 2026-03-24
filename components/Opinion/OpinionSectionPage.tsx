@@ -13,6 +13,7 @@ import { opinionGroups } from "./opinionGroups";
 import RainbowDivider, { AnimatedLine } from "./RainbowDivider";
 import type { Article as ComponentArticle } from "@/components/FrontPage/types";
 import type { Article as PayloadArticle, User, Media } from "@/payload-types";
+import { Byline } from "@/components/FrontPage/Byline";
 
 function isPopulatedUser(author: number | User): author is User {
   return typeof author !== "number" && "firstName" in author;
@@ -50,17 +51,7 @@ function OpinionCard({ article, withImage = false, priority = false }: { article
         {article.title}
       </h3>
       {/* Byline — "BY" is muted, author name is accent */}
-      <div className="mt-2 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
-        {article.author && (
-          <span><span className="text-text-muted">BY </span><span className="text-accent dark:text-white">{article.author}</span></span>
-        )}
-        {article.author && article.date && (
-          <span className="text-text-muted mx-1.5">&bull;</span>
-        )}
-        {article.date && (
-          <span className="text-text-muted">{article.date}</span>
-        )}
-      </div>
+      <Byline author={article.author} date={article.date} className="mt-2 text-[13px]" />
       {/* Subdeck — readable but smaller than title, generous bottom margin for spacing */}
       {article.excerpt && (
         <p className="mt-0.5 font-meta text-[15px] font-medium leading-[1.5] text-text-main line-clamp-4">
@@ -215,7 +206,7 @@ export default function OpinionSectionPage({
           {col1[2] && <OpinionCard article={col1[2]} />}
 
           {/* Guest writer CTA */}
-          <div className="py-7 border-y border-rule" style={{ marginBottom: 30 }}>
+          <div className="py-3.5 border-y border-rule" style={{ marginBottom: 30 }}>
             <p className="font-copy text-[19px] leading-[1.5] text-text-main">
               Interested in being a guest writer?{" "}
               <TransitionLink
@@ -315,11 +306,7 @@ export default function OpinionSectionPage({
                     <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors">
                       {article.title}
                     </h3>
-                    {article.author && (
-                      <div className="mt-2 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
-                        <span className="text-text-muted">BY </span><span className="text-accent dark:text-white">{article.author}</span>
-                      </div>
-                    )}
+                    <Byline author={article.author} className="mt-2 text-[13px]" />
                   </TransitionLink>
                 );
               })}

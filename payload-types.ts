@@ -73,7 +73,6 @@ export interface Config {
     'job-titles': JobTitle;
     layout: Layout;
     'opinion-page-layout': OpinionPageLayout;
-    'news-page-layout': NewsPageLayout;
     'features-page-layout': FeaturesPageLayout;
     submissions: Submission;
     'event-submissions': EventSubmission;
@@ -90,7 +89,6 @@ export interface Config {
     'job-titles': JobTitlesSelect<false> | JobTitlesSelect<true>;
     layout: LayoutSelect<false> | LayoutSelect<true>;
     'opinion-page-layout': OpinionPageLayoutSelect<false> | OpinionPageLayoutSelect<true>;
-    'news-page-layout': NewsPageLayoutSelect<false> | NewsPageLayoutSelect<true>;
     'features-page-layout': FeaturesPageLayoutSelect<false> | FeaturesPageLayoutSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
     'event-submissions': EventSubmissionsSelect<false> | EventSubmissionsSelect<true>;
@@ -388,25 +386,6 @@ export interface OpinionPageLayout {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "news-page-layout".
- */
-export interface NewsPageLayout {
-  id: number;
-  name: string;
-  layout?:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "features-page-layout".
  */
 export interface FeaturesPageLayout {
@@ -519,10 +498,6 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'opinion-page-layout';
         value: number | OpinionPageLayout;
-      } | null)
-    | ({
-        relationTo: 'news-page-layout';
-        value: number | NewsPageLayout;
       } | null)
     | ({
         relationTo: 'features-page-layout';
@@ -743,16 +718,6 @@ export interface OpinionPageLayoutSelect<T extends boolean = true> {
         article?: T;
         id?: T;
       };
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "news-page-layout_select".
- */
-export interface NewsPageLayoutSelect<T extends boolean = true> {
-  name?: T;
-  layout?: T;
   updatedAt?: T;
   createdAt?: T;
 }
