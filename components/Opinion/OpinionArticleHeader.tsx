@@ -19,7 +19,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
     : null;
 
   return (
-    <div className="flex flex-col items-center mb-8" style={{ paddingTop: '40px' }}>
+    <div className="flex flex-col items-center gap-10 mb-8" style={{ paddingTop: '40px' }}>
       {/* Kicker + Opinion Type */}
       <div className="flex flex-col items-center gap-1 mb-4">
         <span className="font-meta text-accent font-bold uppercase text-sm tracking-widest">
@@ -36,21 +36,23 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
       <div className="w-8 border-t border-rule-strong mb-6" />
 
       {/* Title */}
-      <h1 data-ie-field="title" className="font-copy font-light text-[39px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center max-w-[600px] mx-auto px-4 mb-4">
-        {article.title}
-      </h1>
+      <div className="flex flex-col gap-4 max-w-[680px] w-full mx-auto">
+        <h1 data-ie-field="title" className="font-copy font-light text-[39px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center">
+          {article.title}
+        </h1>
 
-      {article.subdeck && (
-        <h2 data-ie-field="subdeck" className="font-meta text-xl md:text-2xl font-normal text-text-muted leading-snug text-center max-w-[680px] mx-auto px-4 mb-6">
-          {article.subdeck}
-        </h2>
-      )}
+        {article.subdeck && (
+          <h2 data-ie-field="subdeck" className="font-meta text-xl md:text-2xl font-normal text-text-muted leading-snug text-center">
+            {article.subdeck}
+          </h2>
+        )}
+      </div>
 
       {/* Featured Image + Caption + Credit */}
       {featuredImage?.url && (() => {
         const photographer = featuredImage.photographer && typeof featuredImage.photographer === 'object' ? featuredImage.photographer as User : null;
         return (
-          <div className="w-full max-w-[680px] mx-auto px-4 md:px-0 mb-8">
+          <div className="flex flex-col gap-1 max-w-[680px] w-full mx-auto">
             <div className="relative w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden">
               <Image
                 src={(featuredImage as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || featuredImage.url}
@@ -63,7 +65,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
               />
             </div>
             {(imageCaption || photographer || writeInPhotographer) && (
-              <div className="flex justify-between items-baseline gap-4 mt-2">
+              <div className="flex justify-between items-baseline gap-4 mt-1">
                 {imageCaption && (
                   <span data-ie-field="imageCaption" className="font-meta text-xs text-text-muted italic transition-colors">
                     {imageCaption}
@@ -85,7 +87,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
         );
       })()}
 
-      <div className="w-full max-w-[680px] mx-auto px-4">
+      <div className="max-w-[680px] w-full mx-auto">
         <ArticleByline article={article} />
       </div>
     </div>
