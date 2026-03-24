@@ -9,7 +9,7 @@ import { Byline } from "@/components/FrontPage/Byline";
 
 const PAGE_SIZE = 10;
 
-export default function OpinionListPage({
+export default function FeaturesListPage({
   title,
   articles,
 }: {
@@ -33,10 +33,10 @@ export default function OpinionListPage({
           {title}
         </h1>
         <TransitionLink
-          href="/opinion"
+          href="/features"
           className="font-meta text-[14px] uppercase tracking-[0.08em] text-accent hover:underline transition-colors"
         >
-          &larr; Back to Opinion
+          &larr; Back to Features
         </TransitionLink>
       </div>
 
@@ -63,7 +63,7 @@ export default function OpinionListPage({
               </div>
             )}
             <div className="flex flex-col justify-center">
-              <h2 className="font-copy font-medium leading-[1.15] text-[22px] text-text-main transition-colors">
+              <h2 className="font-copy font-medium leading-[1.15] text-[22px] text-text-main transition-colors group-hover:text-accent">
                 {article.title}
               </h2>
               <Byline author={article.author} date={article.date} className="text-[13px]" />

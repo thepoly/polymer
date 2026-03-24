@@ -4,12 +4,14 @@ import { useField, useFormFields, TextInput, FieldLabel } from '@payloadcms/ui'
 import { useCallback, useEffect, useRef } from 'react'
 
 function toSlug(value: string): string {
-  return value
+  const words = value
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
     .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 3)
+  return words.join('-')
 }
 
 export const SlugField = ({ path, label }: { path: string; label?: string }) => {
@@ -34,8 +36,9 @@ export const SlugField = ({ path, label }: { path: string; label?: string }) => 
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      userEditedRef.current = true
-      setValue(e.target.value)
+      const next = e.target.value
+      userEditedRef.current = next !== ''
+      setValue(next)
     },
     [setValue],
   )

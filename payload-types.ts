@@ -73,6 +73,9 @@ export interface Config {
     'job-titles': JobTitle;
     layout: Layout;
     'opinion-page-layout': OpinionPageLayout;
+    'features-page-layout': FeaturesPageLayout;
+    submissions: Submission;
+    'event-submissions': EventSubmission;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -86,6 +89,9 @@ export interface Config {
     'job-titles': JobTitlesSelect<false> | JobTitlesSelect<true>;
     layout: LayoutSelect<false> | LayoutSelect<true>;
     'opinion-page-layout': OpinionPageLayoutSelect<false> | OpinionPageLayoutSelect<true>;
+    'features-page-layout': FeaturesPageLayoutSelect<false> | FeaturesPageLayoutSelect<true>;
+    submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
+    'event-submissions': EventSubmissionsSelect<false> | EventSubmissionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -355,38 +361,93 @@ export interface Layout {
 export interface OpinionPageLayout {
   id: number;
   name: string;
-  /**
-   * Heading displayed above the curated picks (e.g. "Opinion's Choice")
-   */
+  layout?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   editorsChoiceLabel?: string | null;
-  /**
-   * First handpicked opinion article
-   */
   editorsChoice1?: (number | null) | Article;
-  /**
-   * Second handpicked opinion article
-   */
   editorsChoice2?: (number | null) | Article;
-  /**
-   * Third handpicked opinion article
-   */
   editorsChoice3?: (number | null) | Article;
-  /**
-   * Up to 3 pull quotes shown inline on the opinion page
-   */
   quotes?:
     | {
-        /**
-         * The quote text
-         */
         text: string;
-        /**
-         * The article this quote belongs to
-         */
         article: number | Article;
         id?: string | null;
       }[]
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "features-page-layout".
+ */
+export interface FeaturesPageLayout {
+  id: number;
+  name: string;
+  layout?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "submissions".
+ */
+export interface Submission {
+  id: number;
+  title: string;
+  opinionType:
+    | 'opinion'
+    | 'column'
+    | 'staff-editorial'
+    | 'editorial-notebook'
+    | 'endorsement'
+    | 'top-hat'
+    | 'candidate-profile'
+    | 'letter-to-the-editor'
+    | 'polys-recommendations'
+    | 'editors-notebook'
+    | 'derby'
+    | 'other';
+  authorName: string;
+  /**
+   * Email, phone, or other preferred method of contact
+   */
+  contact: string;
+  featuredImage?: (number | null) | Media;
+  featuredImageCaption?: string | null;
+  content: string;
+  status?: ('new' | 'reviewed' | 'published' | 'rejected') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "event-submissions".
+ */
+export interface EventSubmission {
+  id: number;
+  eventName: string;
+  date: string;
+  time: string;
+  description: string;
+  contactName?: string | null;
+  contactInfo?: string | null;
+  status?: ('new' | 'reviewed' | 'accepted' | 'rejected') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -437,6 +498,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'opinion-page-layout';
         value: number | OpinionPageLayout;
+      } | null)
+    | ({
+        relationTo: 'features-page-layout';
+        value: number | FeaturesPageLayout;
+      } | null)
+    | ({
+        relationTo: 'submissions';
+        value: number | Submission;
+      } | null)
+    | ({
+        relationTo: 'event-submissions';
+        value: number | EventSubmission;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -633,6 +706,7 @@ export interface LayoutSelect<T extends boolean = true> {
  */
 export interface OpinionPageLayoutSelect<T extends boolean = true> {
   name?: T;
+  layout?: T;
   editorsChoiceLabel?: T;
   editorsChoice1?: T;
   editorsChoice2?: T;
@@ -644,6 +718,47 @@ export interface OpinionPageLayoutSelect<T extends boolean = true> {
         article?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "features-page-layout_select".
+ */
+export interface FeaturesPageLayoutSelect<T extends boolean = true> {
+  name?: T;
+  layout?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "submissions_select".
+ */
+export interface SubmissionsSelect<T extends boolean = true> {
+  title?: T;
+  opinionType?: T;
+  authorName?: T;
+  contact?: T;
+  featuredImage?: T;
+  featuredImageCaption?: T;
+  content?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "event-submissions_select".
+ */
+export interface EventSubmissionsSelect<T extends boolean = true> {
+  eventName?: T;
+  date?: T;
+  time?: T;
+  description?: T;
+  contactName?: T;
+  contactInfo?: T;
+  status?: T;
   updatedAt?: T;
   createdAt?: T;
 }

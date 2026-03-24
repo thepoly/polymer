@@ -6,11 +6,11 @@ import Footer from '@/components/Footer';
 import SectionPage from '@/components/SectionPage';
 import OpinionSectionPage from '@/components/Opinion/OpinionSectionPage';
 import NewsSectionPage from '@/components/News/NewsSectionPage';
-import { Article as PayloadArticle } from '@/payload-types';
+import FeaturesSectionPage, { type FeaturesEvent, type SpotlightPhoto } from '@/components/Features/FeaturesSectionPage';
+import { Article as PayloadArticle, Media } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
-import type { QuoteData } from '@/components/Opinion/InlineQuote';
+import type { SpotlightAuthor } from '@/components/Opinion/AuthorSpotlightCarousel';
 import { formatArticle } from '@/utils/formatArticle';
-import { getArticleUrl } from '@/utils/getArticleUrl';
 import { opinionGroups } from '@/components/Opinion/opinionGroups';
 import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -148,87 +148,113 @@ export default async function SectionPageRoute({ params }: Args) {
     ],
   };
 
-  // Fetch opinion page layout if this is the opinion section
+  // Fetch opinion page layout — pinned articles per column + editors choice
+  let pinnedCol1: ComponentArticle[] = [];
+  let pinnedCol2: ComponentArticle[] = [];
+  let pinnedCol3: ComponentArticle[] = [];
   let editorsChoiceArticles: ComponentArticle[] = [];
   let editorsChoiceLabel = "Opinion\u2019s Choice";
-  let quotes: QuoteData[] = [];
+  let pinnedSpotlightAuthors: SpotlightAuthor[] = [];
 
   if (isOpinion) {
-    let layout: Record<string, unknown> | undefined;
+    type LayoutShape = {
+      column1?: (number | null)[];
+      column2?: (number | null)[];
+      column3?: (number | null)[];
+      editorsChoice?: (number | null)[];
+      editorsChoiceLabel?: string;
+      spotlight?: Array<{ userId: number; articleTitle?: string | null; articleUrl?: string | null }>;
+    };
+
+    let layoutJson: LayoutShape | undefined;
     try {
       const layoutResponse = await payload.find({
         collection: 'opinion-page-layout',
         limit: 1,
-        depth: 1,
-        select: {
-          editorsChoiceLabel: true,
-          editorsChoice1: true,
-          editorsChoice2: true,
-          editorsChoice3: true,
-          quotes: true,
-        },
+        depth: 0,
+        select: { layout: true },
       });
-      layout = layoutResponse.docs[0] as Record<string, unknown> | undefined;
+      const doc = layoutResponse.docs[0] as Record<string, unknown> | undefined;
+      if (doc?.layout && typeof doc.layout === 'object') {
+        layoutJson = doc.layout as LayoutShape;
+      }
     } catch {
-      // Table may not exist yet if migration hasn't run
+      // Table may not exist yet
     }
-    if (layout) {
-      if (layout.editorsChoiceLabel) editorsChoiceLabel = layout.editorsChoiceLabel as string;
 
-      // Resolve editor's choice article relationships
-      const choiceSlots = [layout.editorsChoice1, layout.editorsChoice2, layout.editorsChoice3];
-      const choiceIds = choiceSlots
-        .map((slot) => (typeof slot === 'number' ? slot : slot && typeof slot === 'object' && 'id' in slot ? slot.id : null))
-        .filter((id): id is number => id !== null);
+    if (layoutJson) {
+      if (layoutJson.editorsChoiceLabel) editorsChoiceLabel = layoutJson.editorsChoiceLabel;
 
-      if (choiceIds.length > 0) {
-        const choiceResponse = await payload.find({
+      // Collect all pinned IDs to fetch in one batch
+      const allPinnedIds = new Set<number>();
+      for (const col of [layoutJson.column1, layoutJson.column2, layoutJson.column3, layoutJson.editorsChoice]) {
+        if (col) for (const id of col) { if (id) allPinnedIds.add(id); }
+      }
+
+      if (allPinnedIds.size > 0) {
+        const pinnedResponse = await payload.find({
           collection: 'articles',
           where: {
             and: [
-              { id: { in: choiceIds } },
+              { id: { in: Array.from(allPinnedIds) } },
               { _status: { equals: 'published' } },
             ],
           },
-          limit: 3,
+          limit: allPinnedIds.size,
           depth: 1,
           select: {
-            title: true,
-            slug: true,
-            subdeck: true,
-            featuredImage: true,
-            section: true,
-            kicker: true,
-            publishedDate: true,
-            createdAt: true,
-            authors: true,
+            title: true, slug: true, subdeck: true, featuredImage: true,
+            section: true, kicker: true, publishedDate: true, createdAt: true,
+            authors: true, opinionType: true, writeInAuthors: true,
           },
         });
-
-        // Preserve the order from the layout slots
-        const choiceMap = new Map(
-          choiceResponse.docs.map((a) => [a.id, formatArticle(a)])
+        const pinnedMap = new Map(
+          pinnedResponse.docs.map((a) => [a.id, formatArticle(a)])
         );
-        editorsChoiceArticles = choiceIds
-          .map((id) => choiceMap.get(id))
-          .filter((a): a is ComponentArticle => a !== null && a !== undefined);
+
+        const resolveColumn = (ids: (number | null)[] | undefined): ComponentArticle[] =>
+          (ids || []).map((id) => (id ? pinnedMap.get(id) ?? null : null)).filter((a): a is ComponentArticle => a !== null);
+
+        pinnedCol1 = resolveColumn(layoutJson.column1);
+        pinnedCol2 = resolveColumn(layoutJson.column2);
+        pinnedCol3 = resolveColumn(layoutJson.column3);
+        editorsChoiceArticles = resolveColumn(layoutJson.editorsChoice);
       }
 
-      // Resolve quote article relationships
-      if (layout.quotes && Array.isArray(layout.quotes)) {
-        quotes = layout.quotes
-          .filter((q): q is { text: string; article: PayloadArticle | number; id?: string | null } => Boolean(q.text && q.article))
-          .map((q) => {
-            const article = typeof q.article === 'number' ? null : q.article as PayloadArticle;
-            return {
-              text: q.text,
-              articleTitle: article?.title || '',
-              articleUrl: article
-                ? getArticleUrl({ section: article.section, slug: article.slug, publishedDate: article.publishedDate, createdAt: article.createdAt })
-                : '#',
-            };
-          })
-          .filter((q) => q.articleTitle);
+      // Build pinned spotlight authors
+      if (layoutJson.spotlight && layoutJson.spotlight.length > 0) {
+        try {
+          const userIds = layoutJson.spotlight.map((e) => e.userId).filter(Boolean);
+          const userResponse = await payload.find({
+            collection: 'users',
+            where: { id: { in: userIds } },
+            limit: userIds.length,
+            depth: 1,
+            select: { firstName: true, lastName: true, headshot: true },
+          });
+          const userMap = new Map(userResponse.docs.map((u) => [u.id, u]));
+          pinnedSpotlightAuthors = layoutJson.spotlight
+            .map((entry) => {
+              const user = userMap.get(entry.userId);
+              if (!user) return null;
+              const headshot =
+                user.headshot && typeof user.headshot !== 'number'
+                  ? (user.headshot as Media).url || null
+                  : null;
+              return {
+                id: user.id,
+                name: `${user.firstName} ${user.lastName}`,
+                headshot,
+                latestArticle: {
+                  title: entry.articleTitle || '',
+                  url: entry.articleUrl || '/opinion',
+                },
+              } satisfies SpotlightAuthor;
+            })
+            .filter((a): a is SpotlightAuthor => a !== null);
+        } catch {
+          // silently skip if spotlight fetch fails
+        }
       }
     }
   }
@@ -353,6 +379,101 @@ export default async function SectionPageRoute({ params }: Args) {
     });
   }
 
+  // Fetch features page layout — 3-column with events + Row 2
+  let featuresPinnedOnCampus: ComponentArticle[] = [];
+  let featuresPinnedFeatured: ComponentArticle[] = [];
+  let featuresPinnedRight: ComponentArticle[] = [];
+  let featuresEvents: FeaturesEvent[] = [];
+  let featuresOnCampusImages: boolean[] = [false, false, false];
+  let featuresRightImages: boolean[] = [false, false, false];
+  // Row 2
+  let featuresPinnedTheArts: ComponentArticle[] = [];
+  let featuresTheArtsImages: boolean[] = [false, false, false];
+  let featuresPhotoSpotlight: SpotlightPhoto[] = [];
+  let featuresPinnedSpotlightSubs: ComponentArticle[] = [];
+  let featuresPinnedCollarCity: ComponentArticle[] = [];
+  let featuresCollarCityImages: boolean[] = [false, false, false];
+  let featuresPinnedWide: ComponentArticle[] = [];
+
+  if (section === 'features') {
+    type FeaturesLayoutShape = {
+      onCampus?: (number | null)[];
+      onCampusImages?: boolean[];
+      featured?: (number | null)[];
+      rightArticles?: (number | null)[];
+      rightImages?: boolean[];
+      events?: FeaturesEvent[];
+      theArts?: (number | null)[];
+      theArtsImages?: boolean[];
+      photoSpotlight?: SpotlightPhoto[];
+      spotlightSubs?: (number | null)[];
+      collarCity?: (number | null)[];
+      collarCityImages?: boolean[];
+      wideArticle?: (number | null)[];
+    };
+
+    try {
+      const layoutResponse = await payload.find({
+        collection: 'features-page-layout',
+        limit: 1,
+        depth: 0,
+        select: { layout: true },
+      });
+      const doc = layoutResponse.docs[0] as Record<string, unknown> | undefined;
+      const layoutJson = doc?.layout as FeaturesLayoutShape | undefined;
+
+      if (layoutJson) {
+        featuresEvents = layoutJson.events || [];
+        if (layoutJson.onCampusImages) featuresOnCampusImages = layoutJson.onCampusImages;
+        if (layoutJson.rightImages) featuresRightImages = layoutJson.rightImages;
+        if (layoutJson.theArtsImages) featuresTheArtsImages = layoutJson.theArtsImages;
+        featuresPhotoSpotlight = layoutJson.photoSpotlight || [];
+        if (layoutJson.collarCityImages) featuresCollarCityImages = layoutJson.collarCityImages;
+
+        // Collect all pinned IDs to fetch in one batch (Row 1 + Row 2)
+        const allPinnedIds = new Set<number>();
+        for (const col of [layoutJson.onCampus, layoutJson.featured, layoutJson.rightArticles, layoutJson.theArts, layoutJson.spotlightSubs, layoutJson.collarCity, layoutJson.wideArticle]) {
+          if (col) for (const id of col) { if (id) allPinnedIds.add(id); }
+        }
+
+        if (allPinnedIds.size > 0) {
+          const pinnedResponse = await payload.find({
+            collection: 'articles',
+            where: {
+              and: [
+                { id: { in: Array.from(allPinnedIds) } },
+                { _status: { equals: 'published' } },
+              ],
+            },
+            limit: allPinnedIds.size,
+            depth: 1,
+            select: {
+              title: true, slug: true, subdeck: true, featuredImage: true,
+              section: true, kicker: true, publishedDate: true, createdAt: true,
+              authors: true, writeInAuthors: true,
+            },
+          });
+          const pinnedMap = new Map(
+            pinnedResponse.docs.map((a) => [a.id, formatArticle(a)]),
+          );
+
+          const resolveColumn = (ids: (number | null)[] | undefined): ComponentArticle[] =>
+            (ids || []).map((id) => (id ? pinnedMap.get(id) ?? null : null)).filter((a): a is ComponentArticle => a !== null);
+
+          featuresPinnedOnCampus = resolveColumn(layoutJson.onCampus);
+          featuresPinnedFeatured = resolveColumn(layoutJson.featured);
+          featuresPinnedRight = resolveColumn(layoutJson.rightArticles);
+          featuresPinnedTheArts = resolveColumn(layoutJson.theArts);
+          featuresPinnedSpotlightSubs = resolveColumn(layoutJson.spotlightSubs);
+          featuresPinnedCollarCity = resolveColumn(layoutJson.collarCity);
+          featuresPinnedWide = resolveColumn(layoutJson.wideArticle);
+        }
+      }
+    } catch {
+      // Table may not exist yet
+    }
+  }
+
   return (
     <main className={`min-h-screen bg-bg-main section-${section} transition-colors duration-300`}>
       <script
@@ -365,10 +486,31 @@ export default async function SectionPageRoute({ params }: Args) {
           title={sectionTitle}
           articles={formattedArticles}
           rawArticles={articles}
+          pinnedCol1={pinnedCol1}
+          pinnedCol2={pinnedCol2}
+          pinnedCol3={pinnedCol3}
           editorsChoiceArticles={editorsChoiceArticles}
           editorsChoiceLabel={editorsChoiceLabel}
-          quotes={quotes}
           groupedArticles={groupedArticles}
+          pinnedSpotlightAuthors={pinnedSpotlightAuthors}
+        />
+      ) : section === 'features' ? (
+        <FeaturesSectionPage
+          title={sectionTitle}
+          articles={formattedArticles}
+          pinnedOnCampus={featuresPinnedOnCampus}
+          pinnedFeatured={featuresPinnedFeatured}
+          pinnedRight={featuresPinnedRight}
+          events={featuresEvents}
+          onCampusImages={featuresOnCampusImages}
+          rightImages={featuresRightImages}
+          pinnedTheArts={featuresPinnedTheArts}
+          theArtsImages={featuresTheArtsImages}
+          photoSpotlight={featuresPhotoSpotlight}
+          pinnedSpotlightSubs={featuresPinnedSpotlightSubs}
+          pinnedCollarCity={featuresPinnedCollarCity}
+          collarCityImages={featuresCollarCityImages}
+          pinnedWide={featuresPinnedWide}
         />
       ) : isNews ? (
         <NewsSectionPage

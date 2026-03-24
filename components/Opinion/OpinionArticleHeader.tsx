@@ -14,39 +14,44 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
   const opinionType = (article as unknown as Record<string, unknown>).opinionType as string | undefined;
   const imageCaption = (article as unknown as Record<string, unknown>).imageCaption as string | undefined;
   const typeLabel = opinionTypeLabels[opinionType || 'opinion'] || 'Op-Ed';
+  const hasFeaturedImage = Boolean(featuredImage?.url);
   const writeInPhotographer = featuredImage
     ? ((featuredImage as unknown as Record<string, unknown>).writeInPhotographer as string | null | undefined)
     : null;
 
   return (
-    <div className="flex flex-col items-center gap-10 mb-8" style={{ paddingTop: '40px' }}>
+    <div
+      className="flex flex-col items-center mb-8 gap-4"
+      style={{ paddingTop: '18px' }}
+    >
       {/* Kicker + Opinion Type */}
-      <div className="flex flex-col items-center gap-1 mb-4">
-        <span className="font-meta text-accent font-bold uppercase text-sm tracking-widest">
+      <div className="flex flex-col items-center gap-1 mb-1">
+        <span className="font-meta text-accent font-bold uppercase text-[16px] tracking-widest">
           Opinion
         </span>
         {opinionType && opinionType !== 'opinion' && (
-          <span className="font-meta font-bold uppercase text-sm tracking-wide text-text-main">
+          <span className="font-meta font-bold uppercase text-[16px] tracking-wide text-text-main">
             {typeLabel}
           </span>
         )}
       </div>
 
       {/* Divider */}
-      <div className="w-8 border-t border-rule-strong mb-6" />
+      <div className="w-8 border-t border-rule-strong mb-1" />
 
       {/* Title */}
       <div className="flex flex-col gap-4 max-w-[680px] w-full mx-auto">
         <h1 data-ie-field="title" className="font-copy font-light text-[39px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center">
           {article.title}
         </h1>
-
-        {article.subdeck && (
-          <h2 data-ie-field="subdeck" className="font-meta text-xl md:text-2xl font-normal text-text-muted leading-snug text-center">
-            {article.subdeck}
-          </h2>
-        )}
       </div>
+
+      {/* Date */}
+      {article.publishedDate && (
+        <div className="font-meta text-[15px] font-medium tracking-[0.06em] text-text-muted mb-1">
+          {new Date(article.publishedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+        </div>
+      )}
 
       {/* Featured Image + Caption + Credit */}
       {featuredImage?.url && (() => {
@@ -87,8 +92,8 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
         );
       })()}
 
-      <div className="max-w-[680px] w-full mx-auto">
-        <ArticleByline article={article} />
+      <div className={`w-full max-w-[680px] mx-auto px-4 ${hasFeaturedImage ? '' : '-mt-1'}`}>
+        <ArticleByline article={article} showDate={false} />
       </div>
     </div>
   );

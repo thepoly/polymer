@@ -191,15 +191,15 @@ html.dark {
   --foreground: #e8e8e8;
   --foreground-muted: #c8ced6;
   --accent-color: #e8e8e8;
-  --border-color: #1f1f1f;
+  --border-color: #3a3a3a;
 
   --header-top-bg: #0a0a0a;
   --header-top-text: #e8e8e8;
   --header-nav-bg: #0a0a0a;
   --header-nav-text: #e8e8e8;
-  --header-border: #1f1f1f;
-  --rule-color: rgba(255, 255, 255, 0.08);
-  --rule-strong-color: rgba(255, 255, 255, 0.25);
+  --header-border: #3a3a3a;
+  --rule-color: rgba(255, 255, 255, 0.18);
+  --rule-strong-color: rgba(255, 255, 255, 0.4);
 
   --opinions-choice-bg: rgba(255, 255, 255, 0.06);
   --opinions-choice-hover: rgba(255, 255, 255, 0.1);

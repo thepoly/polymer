@@ -13,7 +13,10 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { ANIMATED_HEADER_ROUTES } from "@/components/headerAnimationRoutes";
+import {
+  shouldAnimateHeaderTransition,
+  shouldRenderAnimatedHeader,
+} from "@/components/headerAnimationRoutes";
 
 const INITIAL_SUCK_DURATION_MS = 400;
 const INITIAL_SHOOT_DURATION_MS = 2000;
@@ -79,16 +82,20 @@ export default function HeaderTransitionProvider({
 }: {
   children: ReactNode;
 }) {
+  const pathname = usePathname() ?? "";
   const [animationKey, setAnimationKey] = useState(INITIAL_ANIMATION_KEY);
-  const [phase, setPhase] = useState<HeaderAnimationPhase>("shooting");
+  const [phase, setPhase] = useState<HeaderAnimationPhase>(() =>
+    shouldRenderAnimatedHeader(pathname) ? "shooting" : "idle",
+  );
   const speed = useSyncExternalStore<HeaderAnimationSpeed>(
     subscribeToHeaderAnimationSpeed,
     getStoredHeaderAnimationSpeed,
     () => "initial",
   );
-  const pathname = usePathname();
 
-  const phaseRef = useRef<HeaderAnimationPhase>("shooting");
+  const phaseRef = useRef<HeaderAnimationPhase>(
+    shouldRenderAnimatedHeader(pathname) ? "shooting" : "idle",
+  );
   const pendingNavigationRef = useRef(false);
   const pendingHrefRef = useRef<string | null>(null);
 
@@ -158,23 +165,8 @@ export default function HeaderTransitionProvider({
   }: NavigationOptions) => {
     if (phaseRef.current !== "idle") return;
 
-    if (!ANIMATED_HEADER_ROUTES.has(href)) {
+    if (!shouldAnimateHeaderTransition(currentPath, href)) {
       navigate(href);
-      return;
-    }
-
-    const isCurrentPage =
-      currentPath === href || (href === "/" && currentPath === "/");
-
-    if (isCurrentPage) {
-      clearAllTimers();
-      phaseRef.current = "sucking";
-      setPhase("sucking");
-      pendingNavigationRef.current = false;
-      pendingHrefRef.current = null;
-      suckTimerRef.current = window.setTimeout(() => {
-        startShootPhase();
-      }, suckDurationMs);
       return;
     }
 
@@ -205,6 +197,7 @@ export default function HeaderTransitionProvider({
   };
 
   useEffect(() => {
+    if (phaseRef.current !== "shooting") return;
     unlockAfterShoot();
   }, [unlockAfterShoot]);
 
