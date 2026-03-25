@@ -53,7 +53,7 @@ function FeaturesCard({
     >
       {withImage && article.image && (
         <div
-          className="relative overflow-hidden mb-3"
+          className="relative overflow-hidden mb-3 -mx-4 w-auto sm:mx-0 sm:w-full"
           style={{ aspectRatio: large ? "16/9" : "3/2" }}
         >
           <Image
@@ -61,13 +61,13 @@ function FeaturesCard({
             alt={article.title}
             fill
             className="object-cover"
-            sizes={large ? "50vw" : "33vw"}
+            sizes={large ? "(max-width: 640px) 100vw, 50vw" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"}
             priority={priority}
           />
         </div>
       )}
       {article.kicker && (
-        <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent block mb-1.5">
+        <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] block mb-1.5">
           {article.kicker}
         </span>
       )}
@@ -110,7 +110,7 @@ function UpcomingEvents({ events }: { events: FeaturesEvent[] }) {
     <div className="mb-8">
       <div
         style={{
-          borderTop: "2px solid #C41E3A",
+          borderTop: "2px solid var(--accent-color)",
           paddingTop: 10,
         }}
       >
@@ -119,7 +119,7 @@ function UpcomingEvents({ events }: { events: FeaturesEvent[] }) {
           style={{
             fontSize: 17,
             letterSpacing: "0.08em",
-            color: "#C41E3A",
+            color: "var(--accent-color)",
             fontWeight: 500,
             margin: "0 0 2px",
           }}
@@ -204,14 +204,14 @@ function PhotoSpotlightCarousel({ photos }: { photos: SpotlightPhoto[] }) {
       >
         Photo Spotlight
       </h2>
-      <div style={{ overflow: "hidden", borderRadius: 4 }}>
+      <div className="-mx-4 w-auto overflow-hidden sm:mx-0 sm:w-full" style={{ borderRadius: 4 }}>
         <div style={{ aspectRatio: "3/2", position: "relative" }}>
           <Image
             src={photos[current].url}
             alt={photos[current].caption || ""}
             fill
             className="object-cover"
-            sizes="50vw"
+            sizes="(max-width: 640px) 100vw, 50vw"
           />
         </div>
       </div>
@@ -245,7 +245,7 @@ function PhotoSpotlightCarousel({ photos }: { photos: SpotlightPhoto[] }) {
                   borderRadius: "50%",
                   border: "none",
                   cursor: "pointer",
-                  background: i === current ? "#C41E3A" : "#d9d9d9",
+                  background: i === current ? "var(--accent-color)" : "#d9d9d9",
                   transition: "background 0.2s",
                 }}
                 aria-label={`Photo ${i + 1}`}
@@ -275,12 +275,12 @@ function MobileSectionHeader({
   const heading = href ? (
     <TransitionLink
       href={href}
-      className="font-meta text-[20px] font-bold tracking-[0.04em] text-accent uppercase leading-[1] hover:opacity-75 transition-opacity"
+      className="font-meta text-[20px] font-bold tracking-[0.04em] text-accent dark:text-white uppercase leading-[1] hover:opacity-75 transition-opacity"
     >
       {title}
     </TransitionLink>
   ) : (
-    <span className="font-meta text-[20px] font-bold tracking-[0.04em] text-accent uppercase leading-[1]">
+    <span className="font-meta text-[20px] font-bold tracking-[0.04em] text-accent dark:text-white uppercase leading-[1]">
       {title}
     </span>
   );
@@ -307,7 +307,7 @@ function MobileFeaturesList({
   hideDates?: boolean;
 }) {
   return (
-    <div className="flex flex-col md:hidden">
+    <div className="flex flex-col">
       {articles.map((article, i) => (
         <div key={article.id} className={i > 0 ? "mt-10" : ""}>
           <FeaturesCard
@@ -426,56 +426,64 @@ export default function FeaturesSectionPage({
       style={{ maxWidth: 1280, margin: "0 auto", padding: `20px ${PAGE_SIDE_PADDING} 32px` }}
     >
       {/* Header */}
-      <div className="flex items-center mt-6 mb-10" style={{ gap: 24 }}>
+      <div className="mt-6 mb-8 flex flex-col items-center gap-4 text-center sm:mb-10 lg:flex-row lg:items-center lg:gap-6 lg:text-left">
         <h1
-          className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors"
-          style={{ fontSize: 60, fontWeight: 400, lineHeight: 1 }}
+          className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[44px] sm:text-[52px] lg:text-[60px]"
+          style={{ fontWeight: 400, lineHeight: 1 }}
         >
           {title}
         </h1>
-        <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground-muted)" }} />
-        <TransitionLink
-          href="/features/submit-event"
-          className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
-          style={{ fontSize: 36, fontWeight: 300 }}
-        >
-          Submit
-        </TransitionLink>
-        <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground-muted)" }} />
-        <a
-          href="mailto:features@poly.rpi.edu,eic@poly.rpi.edu?subject=Features%20Request%2FComment%20or%20Event%20Tip"
-          className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
-          style={{ fontSize: 36, fontWeight: 300 }}
-        >
-          Contact
-        </a>
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[24px] sm:text-[28px] lg:justify-start lg:text-[36px]">
+          <span className="hidden h-10 w-px shrink-0 bg-[var(--foreground-muted)] lg:block" />
+          <TransitionLink
+            href="/features/submit-event"
+            className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
+            style={{ fontWeight: 300 }}
+          >
+            Submit
+          </TransitionLink>
+          <span className="font-meta text-text-muted lg:hidden" aria-hidden="true">
+            &middot;
+          </span>
+          <span className="hidden h-10 w-px shrink-0 bg-[var(--foreground-muted)] lg:block" />
+          <a
+            href="mailto:features@poly.rpi.edu,eic@poly.rpi.edu?subject=Features%20Request%2FComment%20or%20Event%20Tip"
+            className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
+            style={{ fontWeight: 300 }}
+          >
+            Contact
+          </a>
+        </div>
       </div>
 
-      <div className="md:hidden">
+      <div className="lg:hidden">
         <div className="flex flex-col">
-          {featured[0] && (
-            <FeaturesCard article={featured[0]} withImage large priority showExcerpt />
-          )}
-          {featured[1] && (
-            <div className="mt-10">
-              <FeaturesCard article={featured[1]} withImage />
-            </div>
-          )}
-          {featured[2] && (
-            <div className="mt-10">
-              <FeaturesCard article={featured[2]} withImage />
-            </div>
-          )}
-          {wideArticle[0] && (
-            <div className="mt-10">
-              <FeaturesCard article={wideArticle[0]} withImage showExcerpt />
-            </div>
-          )}
+          <MobileSectionHeader title="On-Campus" href="/features" />
+          <MobileFeaturesList articles={onCampus} imageFlags={onCampusImages} hideDates />
         </div>
 
         <div className="mt-12">
-          <MobileSectionHeader title="On-Campus" href="/features" />
-          <MobileFeaturesList articles={onCampus} imageFlags={onCampusImages} hideDates />
+          <MobileSectionHeader title="Featured" href="/features" />
+          <div className="flex flex-col">
+            {featured[0] && (
+              <FeaturesCard article={featured[0]} withImage large priority showExcerpt />
+            )}
+            {featured[1] && (
+              <div className="mt-10">
+                <FeaturesCard article={featured[1]} withImage />
+              </div>
+            )}
+            {featured[2] && (
+              <div className="mt-10">
+                <FeaturesCard article={featured[2]} withImage />
+              </div>
+            )}
+            {wideArticle[0] && (
+              <div className="mt-10">
+                <FeaturesCard article={wideArticle[0]} withImage showExcerpt />
+              </div>
+            )}
+          </div>
         </div>
 
         {events.length > 0 && (
@@ -528,7 +536,7 @@ export default function FeaturesSectionPage({
 
       {/* Single grid — vertical lines are continuous, horizontal line breaks at intersections */}
       <div
-        className="hidden md:grid"
+        className="hidden lg:grid"
         style={{
           gridTemplateColumns: "240px 1fr 320px",
           gap: `0 ${COLUMN_GAP}`,
@@ -540,17 +548,16 @@ export default function FeaturesSectionPage({
         <div style={sectionColumnStyle}>
           <div
             style={{
-              borderTop: "2px solid #C41E3A",
+              borderTop: "2px solid var(--accent-color)",
               paddingTop: 4,
               marginBottom: 16,
             }}
           >
             <h2
-              className="font-meta uppercase"
+              className="font-meta uppercase text-accent dark:text-white"
               style={{
                 fontSize: 17,
                 letterSpacing: "0.08em",
-                color: "#C41E3A",
                 fontWeight: 500,
                 margin: "0 0 2px",
               }}
@@ -607,7 +614,7 @@ export default function FeaturesSectionPage({
             >
               <div>
                 {wideArticle[0].kicker && (
-                  <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent block mb-1.5">
+                  <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] block mb-1.5">
                     {wideArticle[0].kicker}
                   </span>
                 )}
@@ -769,7 +776,7 @@ export default function FeaturesSectionPage({
                 </div>
               )}
               {article.kicker && (
-                <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent block mb-1.5">
+                <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] block mb-1.5">
                   {article.kicker}
                 </span>
               )}

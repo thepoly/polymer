@@ -30,7 +30,7 @@ function NewsCard({ article, withImage = false, priority = false }: { article: C
       )}
       {/* Kicker */}
       {article.kicker && (
-        <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent block mb-1.5">
+        <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] block mb-1.5">
           {article.kicker}
         </span>
       )}
@@ -73,6 +73,8 @@ export default function NewsSectionPage({
   pinnedArticle: ComponentArticle | null;
   groupedArticles: Record<string, ComponentArticle[]>;
 }) {
+  const MAX_ITEMS_PER_COLUMN = 8;
+
   // Track shown article IDs to avoid repeats
   const shownIds = new Set<string | number>();
 
@@ -83,20 +85,24 @@ export default function NewsSectionPage({
   // Col 1: "Student Senate" and "Executive Board" kicker articles, ordered by date
   const col1 = articles.filter(
     (a) => !shownIds.has(a.id) && (a.kicker === "Student Senate" || a.kicker === "Executive Board")
-  );
+  ).slice(0, MAX_ITEMS_PER_COLUMN);
   col1.forEach((a) => shownIds.add(a.id));
 
   // Col 2: "Campus Infrastructure" and "Press Release" below the pinned lead
   const col2Rest = articles.filter(
     (a) => !shownIds.has(a.id) && (a.kicker === "Campus Infrastructure" || a.kicker === "Press Release")
-  );
+  ).slice(0, Math.max(0, MAX_ITEMS_PER_COLUMN - (col2Lead ? 1 : 0)));
   col2Rest.forEach((a) => shownIds.add(a.id));
 
   // Col 3: "Interview", "Town Hall", and "GM Week 2026"
   const col3 = articles.filter(
     (a) => !shownIds.has(a.id) && (a.kicker === "Interview" || a.kicker === "Town Hall" || a.kicker === "GM Week 2026")
-  );
+  ).slice(0, MAX_ITEMS_PER_COLUMN);
   col3.forEach((a) => shownIds.add(a.id));
+
+  const visibleBottomGroups = Object.entries(newsGroups).filter(
+    ([key]) => (groupedArticles[key] || []).length > 0
+  );
 
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-5 pb-8 md:px-[30px]">
@@ -118,13 +124,13 @@ export default function NewsSectionPage({
         </div>
         {/* Mobile: title then link below, centered */}
         <div className="md:hidden text-center">
-          <h1 className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[36px]" style={{ fontWeight: 400, lineHeight: 1 }}>
+          <h1 className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[44px] sm:text-[52px]" style={{ fontWeight: 400, lineHeight: 1 }}>
             {title}
           </h1>
-          <div className="flex items-center justify-center gap-3 mt-2">
+          <div className="mt-2 flex items-center justify-center gap-3 text-[24px] sm:text-[28px]">
             <a
               href="mailto:news@poly.rpi.edu,eic@poly.rpi.edu?subject=News%2C%20Request%2FComment"
-              className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors text-[18px]"
+              className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
               style={{ fontWeight: 300 }}
             >
               Contact
@@ -179,13 +185,13 @@ export default function NewsSectionPage({
         </div>
       </div>
 
-      <RainbowDivider />
+      {visibleBottomGroups.length > 0 && <RainbowDivider />}
 
       {/* ── Bottom sections: Interviews, Student Government, Other News ── */}
-      {Object.entries(newsGroups).map(([key, group], index) => {
-        const groupArticles = groupedArticles[key] || [];
-        if (groupArticles.length === 0) return null;
-        return (
+      {visibleBottomGroups
+        .map(([key, group], index) => {
+          const groupArticles = groupedArticles[key] || [];
+          return (
           <div key={key} className="mt-14">
             {index > 0 && (
               <AnimatedLine
@@ -225,7 +231,7 @@ export default function NewsSectionPage({
                     </div>
                   )}
                   {article.kicker && (
-                    <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-text-main block mb-1.5">
+                    <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-text-main dark:text-[#d96b76] block mb-1.5">
                       {article.kicker}
                     </span>
                   )}

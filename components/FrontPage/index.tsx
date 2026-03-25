@@ -138,7 +138,7 @@ export function SectionBlock({
         <h2 className="mt-4 md:mt-2">
           <Link
             href={`/${sectionSlug}`}
-            className="font-meta text-[20px] md:text-[22px] font-bold tracking-[0.04em] text-accent uppercase leading-[1] hover:opacity-75 transition-opacity"
+            className="font-meta text-[20px] md:text-[22px] font-bold tracking-[0.04em] text-accent dark:text-white uppercase leading-[1] hover:opacity-75 transition-opacity"
           >
             {title}
           </Link>
@@ -152,6 +152,7 @@ export function SectionBlock({
               article={article}
               showImage={Boolean(article.image)}
               imageAspectClassName="aspect-[3/2]"
+              showKicker
             />
           </div>
         ))}
@@ -182,6 +183,7 @@ export function SectionBlock({
                     showImage
                     imageAspectClassName="aspect-[3/2]"
                     excerptClassName="mt-2.5 line-clamp-4 text-[13px] leading-[1.45]"
+                    showKicker
                   />
 
                   <div className="flex flex-col gap-5">
@@ -190,6 +192,7 @@ export function SectionBlock({
                         key={article.id}
                         article={article}
                         showImage={false}
+                        showKicker
                       />
                     ))}
                   </div>
@@ -202,6 +205,7 @@ export function SectionBlock({
                         article={article}
                         showImage
                         imageAspectClassName="aspect-[3/2]"
+                        showKicker
                       />
                     ))}
                   </div>
@@ -215,6 +219,7 @@ export function SectionBlock({
                       article={featureStory}
                       showImage
                       imageAspectClassName="aspect-[3/2]"
+                      showKicker
                     />
                   </div>
                 ) : null}
@@ -234,6 +239,7 @@ export function SectionBlock({
                             key={article.id}
                             article={article}
                             showImage={false}
+                            showKicker
                           />
                         ))}
                       </div>

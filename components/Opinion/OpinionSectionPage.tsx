@@ -31,23 +31,23 @@ function OpinionCard({ article, withImage = false, priority = false }: { article
       className="group block mb-8"
     >
       {withImage && article.image && (
-        <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden mb-3 md:left-0 md:right-0 md:ml-0 md:mr-0 md:w-full" style={{ aspectRatio: "3/2" }}>
+        <div className="relative overflow-hidden mb-3 -mx-4 w-auto sm:mx-0 sm:w-full" style={{ aspectRatio: "3/2" }}>
           <Image
             src={article.image}
             alt={article.title}
             fill
             className="object-cover"
-            sizes="(max-width: 768px) 100vw, 33vw"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             priority={priority}
           />
         </div>
       )}
       {/* Opinion type — lighter weight, accent color, slightly bigger than byline */}
-      <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent block mb-1.5">
+      <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] block mb-1.5">
         {typeLabel}
       </span>
       {/* Title — largest, dominant */}
-      <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors">
+      <h3 className="font-copy font-medium leading-[1.12] text-[25px] sm:text-[28px] text-text-main transition-colors">
         {article.title}
       </h3>
       {/* Byline — "BY" is muted, author name is accent */}
@@ -174,33 +174,91 @@ export default function OpinionSectionPage({
     };
   }, [pinnedCol1, pinnedCol2, pinnedCol3, autoFillPool]);
 
+  const hasSpotlightAuthors =
+    spotlightAuthors.length > 0 ||
+    Boolean(pinnedSpotlightAuthors && pinnedSpotlightAuthors.length > 0);
+
+  const mobileOrderedArticles = [
+    col1[0],
+    col1[1],
+    col1[2],
+    col1[3],
+    col1[4],
+    col2[0],
+    col2[1],
+    col2[2],
+    col2[3],
+    col3[0],
+    col3[1],
+    col3[2],
+    col3[3],
+  ].filter((article): article is ComponentArticle => Boolean(article));
+
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-5 pb-8 md:px-[30px]">
       {/* Header */}
-      <div className="flex items-center mt-6 mb-10" style={{ gap: 24 }}>
-        <h1 className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors" style={{ fontSize: 60, fontWeight: 400, lineHeight: 1 }}>
+      <div className="mt-6 mb-8 flex flex-col items-center gap-4 text-center sm:mb-10 lg:flex-row lg:items-center lg:gap-6 lg:text-left">
+        <h1 className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[44px] sm:text-[52px] lg:text-[60px]" style={{ fontWeight: 400, lineHeight: 1 }}>
           {title}
         </h1>
-        <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground-muted)" }} />
-        <TransitionLink href="/submit" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors" style={{ fontSize: 36, fontWeight: 300 }}>
-          Submit
-        </TransitionLink>
-        <span style={{ width: 0, height: 50, flexShrink: 0, borderLeft: "1px solid var(--foreground-muted)" }} />
-        <a href="mailto:edop@poly.rpi.edu" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors" style={{ fontSize: 36, fontWeight: 300 }}>
-          Contact
-        </a>
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[24px] sm:text-[28px] lg:justify-start lg:text-[36px]">
+          <span className="hidden h-10 w-px shrink-0 bg-[var(--foreground-muted)] lg:block" />
+          <TransitionLink href="/submit" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors" style={{ fontWeight: 300 }}>
+            Submit
+          </TransitionLink>
+          <span className="font-meta text-text-muted lg:hidden" aria-hidden="true">
+            &middot;
+          </span>
+          <span className="hidden h-10 w-px shrink-0 bg-[var(--foreground-muted)] lg:block" />
+          <a href="mailto:edop@poly.rpi.edu" className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors" style={{ fontWeight: 300 }}>
+            Contact
+          </a>
+        </div>
+      </div>
+
+      <div className="lg:hidden">
+        {mobileOrderedArticles.slice(0, 2).map((article, index) => (
+          <OpinionCard
+            key={`mobile-top-${article.id}`}
+            article={article}
+            withImage={index === 0}
+            priority={index === 0}
+          />
+        ))}
+
+        {hasSpotlightAuthors && (
+          <div className="mb-10">
+            <AuthorSpotlightCarousel authors={spotlightAuthors} pinnedAuthors={pinnedSpotlightAuthors} />
+          </div>
+        )}
+
+        {mobileOrderedArticles.slice(2, 5).map((article) => (
+          <OpinionCard key={`mobile-middle-${article.id}`} article={article} />
+        ))}
+
+        {editorsChoiceArticles.length > 0 && (
+          <div className="mb-6">
+            <EditorsChoice
+              articles={editorsChoiceArticles}
+              label={editorsChoiceLabel}
+            />
+          </div>
+        )}
+
+        {mobileOrderedArticles.slice(5).map((article) => (
+          <OpinionCard key={`mobile-rest-${article.id}`} article={article} />
+        ))}
       </div>
 
       {/* 3-column grid — inline styles to guarantee layout */}
       <div
+        className="hidden lg:grid lg:grid-cols-3"
         style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: "0 24px",
+          columnGap: 24,
         }}
       >
         {/* ── Col 1: image, text, text, CTA, text, text ── */}
-        <div style={{ borderRight: "1px solid var(--rule-color)", paddingRight: 24 }}>
+        <div className="lg:border-r lg:border-rule lg:pr-6">
           {col1[0] && <OpinionCard article={col1[0]} withImage priority />}
           {col1[1] && <OpinionCard article={col1[1]} />}
           {col1[2] && <OpinionCard article={col1[2]} />}
@@ -223,11 +281,13 @@ export default function OpinionSectionPage({
         </div>
 
         {/* ── Col 2: text, carousel, text, image, text ── */}
-        <div style={{ borderRight: "1px solid var(--rule-color)", paddingRight: 24 }}>
+        <div className="lg:border-r lg:border-rule lg:pr-6">
           {col2[0] && <OpinionCard article={col2[0]} />}
 
-          {(spotlightAuthors.length > 0 || (pinnedSpotlightAuthors && pinnedSpotlightAuthors.length > 0)) && (
-            <AuthorSpotlightCarousel authors={spotlightAuthors} pinnedAuthors={pinnedSpotlightAuthors} />
+          {hasSpotlightAuthors && (
+            <div className="hidden lg:block">
+              <AuthorSpotlightCarousel authors={spotlightAuthors} pinnedAuthors={pinnedSpotlightAuthors} />
+            </div>
           )}
 
           {col2[1] && <OpinionCard article={col2[1]} />}
@@ -236,7 +296,7 @@ export default function OpinionSectionPage({
         </div>
 
         {/* ── Col 3: editors choice, text, text, text, image ── */}
-        <div className="sticky top-20 self-start">
+        <div>
           {editorsChoiceArticles.length > 0 && (
             <div className="mb-3">
               <EditorsChoice
@@ -269,8 +329,8 @@ export default function OpinionSectionPage({
                 style={{ marginTop: 24, marginBottom: 8 }}
               />
             )}
-            <div className="flex items-baseline justify-between mb-4">
-              <h2 className="font-meta uppercase tracking-[0.04em] text-text-main" style={{ fontSize: 28, fontWeight: 500 }}>
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
+              <h2 className="font-meta uppercase tracking-[0.04em] text-text-main text-[24px] sm:text-[28px]" style={{ fontWeight: 500 }}>
                 {group.label}
               </h2>
               <TransitionLink
@@ -290,17 +350,17 @@ export default function OpinionSectionPage({
                     className="group block"
                   >
                     {article.image && (
-                      <div className="relative overflow-hidden mb-3" style={{ aspectRatio: "3/2" }}>
+                      <div className="relative overflow-hidden mb-3 -mx-4 w-auto sm:mx-0 sm:w-full" style={{ aspectRatio: "3/2" }}>
                         <Image
                           src={article.image}
                           alt={article.title}
                           fill
                           className="object-cover"
-                          sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 20vw"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"
                         />
                       </div>
                     )}
-                    <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-text-main block mb-1.5">
+                    <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-text-main dark:text-[#d96b76] block mb-1.5">
                       {typeLabel}
                     </span>
                     <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors">

@@ -456,7 +456,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] overflow-y-auto bg-bg-main/95 backdrop-blur-sm transition-opacity ease-out"
+      className="fixed inset-0 z-[100] overflow-y-auto bg-bg-main/88 backdrop-blur-sm transition-opacity ease-out"
       onClick={(e) => {
         const target = e.target as HTMLElement;
         if (!target.closest("input, a, button, [data-search-area]")) handleClose();
@@ -528,7 +528,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
         {/* X button */}
         <button
           onClick={handleClose}
-          className="fixed top-[calc(var(--safe-area-top)+0.2rem)] right-3 z-20 flex h-7 w-7 items-center justify-center text-text-muted transition-colors hover:text-accent md:absolute md:top-6 md:right-6 md:h-10 md:w-10 xl:right-[30px]"
+          className="fixed top-[calc(var(--safe-area-top)-0.15rem)] right-3 z-20 flex h-7 w-7 items-center justify-center text-text-muted/70 transition-colors hover:text-accent md:absolute md:top-[0.45rem] md:right-6 md:h-10 md:w-10 xl:right-[30px]"
           style={{
             opacity: stage >= 2 ? 1 : 0,
             transform: stage >= 2 ? "translateY(0)" : "translateY(-20px)",

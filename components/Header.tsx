@@ -629,7 +629,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
               </div>
               
               <button 
-                className="group relative flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 text-text-main" 
+                className="group relative flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-rule px-3 text-text-main transition-colors" 
                 data-marauders-origin="search"
                 onClick={openSearchOverlay}
               >

@@ -56,7 +56,7 @@ export const ArticleCard = ({
     )}
     <div>
       {article.kicker && (
-        <p className={`font-meta text-[12px] font-[600] uppercase tracking-[0.08em] text-accent mb-1 [overflow-wrap:anywhere] break-words ${showKicker ? "" : "lg:hidden"}`}>
+        <p className={`font-meta text-[12px] font-[600] uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] mb-1 [overflow-wrap:anywhere] break-words ${showKicker ? "" : "lg:hidden"}`}>
           {article.kicker}
         </p>
       )}

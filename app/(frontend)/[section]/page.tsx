@@ -84,8 +84,8 @@ export default async function SectionPageRoute({ params }: Args) {
   const isOpinion = section === 'opinion';
   const isNews = section === 'news';
 
-  const fourWeeksAgo = new Date();
-  fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+  const eightWeeksAgo = new Date();
+  eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
 
   const articlesResponse = await payload.find({
     collection: 'articles',
@@ -98,7 +98,7 @@ export default async function SectionPageRoute({ params }: Args) {
       },
       ...(isNews && {
         publishedDate: {
-          greater_than_equal: fourWeeksAgo.toISOString(),
+          greater_than_equal: eightWeeksAgo.toISOString(),
         },
       }),
     },

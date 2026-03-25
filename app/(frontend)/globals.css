@@ -190,7 +190,7 @@ html.dark {
   --background: #0a0a0a;
   --foreground: #e8e8e8;
   --foreground-muted: #c8ced6;
-  --accent-color: #e8e8e8;
+  --accent-color: #d96b76;
   --border-color: #3a3a3a;
 
   --header-top-bg: #0a0a0a;
@@ -209,7 +209,7 @@ html.dark {
 }
 
 html.dark .homepage-zodiac {
-  --accent-color: #cc4557;
+  --accent-color: #d96b76;
 }
 
 html {

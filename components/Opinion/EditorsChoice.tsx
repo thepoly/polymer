@@ -18,13 +18,13 @@ export default function EditorsChoice({
 
   return (
     <div>
-      <div style={{ borderTop: "2px solid #C41E3A", paddingTop: 8, marginLeft: -1, marginRight: -1 }}>
+      <div style={{ borderTop: "2px solid var(--accent-color)", paddingTop: 8, marginLeft: -1, marginRight: -1 }}>
         <p
           className="font-meta uppercase"
           style={{
             fontSize: 15,
             letterSpacing: "0.08em",
-            color: "#C41E3A",
+            color: "var(--accent-color)",
             fontWeight: 500,
             margin: "0 0 1px",
             paddingLeft: 5,
@@ -41,7 +41,7 @@ export default function EditorsChoice({
               style={{
                 gap: 8,
                 padding: "7px 0",
-                color: hoveredId === article.id ? "#C41E3A" : "inherit",
+                color: hoveredId === article.id ? "var(--accent-color)" : "inherit",
                 borderBottom:
                   i < articles.length - 1
                     ? "1px solid var(--rule-color, #e0e0e0)"
@@ -55,7 +55,7 @@ export default function EditorsChoice({
                 style={{
                   fontSize: 26,
                   fontWeight: 500,
-                  color: "#C41E3A",
+                  color: "var(--accent-color)",
                   minWidth: 20,
                 }}
               >

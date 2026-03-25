@@ -44,7 +44,7 @@ function GridArticleCard({
 
   const textContent = (
     <div data-header-anchor="text" className={isHorizontal ? "flex-1 min-w-0" : ""}>
-      <p className="font-meta mb-1 text-[13px] md:text-[12px] font-[600] md:font-[440] italic capitalize tracking-[0.04em] text-accent">
+      <p className="font-meta mb-1 text-[13px] md:text-[12px] font-[600] md:font-[440] italic capitalize tracking-[0.04em] text-accent dark:text-[#d96b76]">
         {article.section}
       </p>
       <h3
@@ -146,7 +146,7 @@ function MobileArticleCard({ article }: { article: Article }) {
           />
         </div>
       )}
-      <p className="font-meta mb-1 text-[13px] font-[600] italic capitalize tracking-[0.04em] text-accent">
+      <p className="font-meta mb-1 text-[13px] font-[600] italic capitalize tracking-[0.04em] text-accent dark:text-[#d96b76]">
         {article.section}
       </p>
       <h3

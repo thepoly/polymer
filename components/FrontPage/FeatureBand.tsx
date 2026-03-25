@@ -11,7 +11,7 @@ export const FeatureBand = ({ article }: { article: Article }) => (
     className="group grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)] lg:items-start"
   >
     <div>
-      <p className="font-meta mb-2 text-[11px] md:text-[12px] font-[440] italic capitalize tracking-[0.04em] text-accent">
+      <p className="font-meta mb-2 text-[11px] md:text-[12px] font-[440] italic capitalize tracking-[0.04em] text-accent dark:text-[#d96b76]">
         {article.section}
       </p>
       <h3 className={`font-copy text-[24px] font-bold leading-[1.06] tracking-[-0.018em] text-text-main transition-colors md:text-[30px] ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[25px] md:text-[31px]" : ""}`}>

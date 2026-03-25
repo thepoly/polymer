@@ -32,7 +32,7 @@ export const LeadArticle = ({
             className={imageFirstOnMobile && article.image ? "order-2 mt-4 md:order-1 md:mt-0" : ""}
         >
             {!hideKicker && (
-                <p className="font-meta mb-1 text-[12px] font-[600] uppercase tracking-[0.08em] text-accent">
+                <p className="font-meta mb-1 text-[12px] font-[600] uppercase tracking-[0.08em] text-accent dark:text-[#d96b76]">
                     {article.section}
                 </p>
             )}
