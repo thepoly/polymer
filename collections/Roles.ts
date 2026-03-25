@@ -58,6 +58,15 @@ export const Roles: CollectionConfig = {
     {
       name: 'permissions',
       type: 'group',
+      defaultValue: {
+        admin: false,
+        manageUsers: false,
+        manageArticles: false,
+        publishArticles: false,
+        manageSectionArticles: false,
+        manageLayout: false,
+        manageSubmissions: false,
+      },
       fields: [
         { name: 'admin', type: 'checkbox', label: 'Administrator' },
         { name: 'manageUsers', type: 'checkbox', label: 'Manage Users & Roles' },
