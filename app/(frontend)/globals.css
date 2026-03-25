@@ -433,3 +433,32 @@ html.standalone-pwa body::after {
   column-gap: 20px;
   column-rule: 1px solid var(--rule-color);
 }
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes archive-dot-shift {
+  0% { background-position: 0% 50%; filter: hue-rotate(0deg); }
+  50% { background-position: 100% 50%; filter: hue-rotate(90deg); }
+  100% { background-position: 0% 50%; filter: hue-rotate(180deg); }
+}
+
+.archive-selected-dot {
+  background: linear-gradient(120deg, #ff4d4d, #ffb84d, #fff275, #7fe08a, #70b7ff, #c38bff, #ff4d4d);
+  background-size: 220% 220%;
+  animation: archive-dot-shift 3s linear infinite;
+  box-shadow: 0 0 20px rgba(255, 77, 77, 0.35);
+}
+
+.archive-preview-dot {
+  background: linear-gradient(120deg, #ff6a6a, #ffc266, #fff6a0, #98e89f, #8ac7ff, #d3a2ff, #ff6a6a);
+  background-size: 220% 220%;
+  animation: archive-dot-shift 3s linear infinite;
+  box-shadow: 0 0 12px rgba(255, 106, 106, 0.2);
+}

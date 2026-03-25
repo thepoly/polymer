@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, X } from "lucide-react";
 import { Article } from "@/components/FrontPage/types";
 import { Byline } from "@/components/FrontPage/Byline";
 import TransitionLink from "@/components/TransitionLink";
@@ -13,6 +14,7 @@ import {
   MAX_SEARCH_QUERY_LENGTH,
   sanitizeSearchQuery,
 } from "@/utils/search";
+import { parseArchiveDateQuery } from "@/lib/archiveDateQuery";
 import posthog from "posthog-js";
 
 const OVERLAY_TRANSITION_MS = 420;
@@ -53,6 +55,82 @@ type SpellCorrectionState = {
   suggestedQuery: string;
   suggestedResults: number;
 };
+
+export function SearchBarTrigger({
+  onClick,
+  className = "",
+  compact = false,
+}: {
+  onClick: () => void;
+  className?: string;
+  compact?: boolean;
+}) {
+  const { isDarkMode } = useTheme();
+  const logoSrc = isDarkMode ? "/logo-dark-mobile.svg" : "/logo-light-mobile.svg";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group relative block text-left ${className}`}
+    >
+      <div className={`relative flex items-center ${compact ? "min-w-[180px]" : "min-w-[220px]"}`}>
+        <div className="absolute bottom-0 left-0 right-0 h-[8px] overflow-hidden">
+          <div className="absolute bottom-0 left-0 right-0 h-[2px] origin-left bg-accent transition-opacity duration-200 group-hover:opacity-100" />
+        </div>
+        <div
+          className={`w-full bg-transparent py-2 pl-3 font-meta font-bold text-text-main transition-colors group-hover:text-accent ${
+            compact ? "pr-20 text-base" : "pr-28 text-xl"
+          }`}
+        >
+          Search...
+        </div>
+        <Image
+          src={logoSrc}
+          alt="The Polytechnic"
+          width={compact ? 72 : 110}
+          height={compact ? 20 : 28}
+          className={`pointer-events-none absolute right-2 top-1/2 h-auto -translate-y-[38%] opacity-50 ${
+            compact ? "w-[72px]" : "w-[110px]"
+          }`}
+        />
+      </div>
+    </button>
+  );
+}
+
+export function SearchOverlayTrigger({
+  onClick,
+  className = "",
+  alwaysShowBorder = false,
+}: {
+  onClick: () => void;
+  className?: string;
+  alwaysShowBorder?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      className={`group relative flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-rule px-3 text-text-main transition-colors ${className}`}
+      data-marauders-origin="search"
+      onClick={onClick}
+    >
+      <span
+        className={`pointer-events-none absolute inset-0 overflow-hidden rounded-full p-[1px] transition-opacity duration-300 ${alwaysShowBorder ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+        style={{
+          WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
+          WebkitMaskComposite: "xor",
+          maskComposite: "exclude",
+        }}
+      >
+        <span className="absolute left-1/2 top-1/2 aspect-square w-[300%] -translate-x-1/2 -translate-y-1/2 animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_0deg,#ef4444,#f59e0b,#10b981,#3b82f6,#8b5cf6,#ef4444)]" />
+      </span>
+
+      <Search className="relative z-10 h-3.5 w-3.5 shrink-0" />
+      <span className="relative z-10 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.1em]">Search</span>
+    </button>
+  );
+}
 
 function formatRetryCountdown(totalSeconds: number): string {
   const mins = Math.floor(totalSeconds / 60);
@@ -97,6 +175,7 @@ async function fetchSearchResults(
 }
 
 export default function SearchOverlay({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
   const { isDarkMode } = useTheme();
   const logoSrc = isDarkMode ? "/logo-dark-mobile.svg" : "/logo-light-mobile.svg";
   const [query, setQuery] = useState("");
@@ -277,6 +356,11 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
       return;
     }
 
+    if (parseArchiveDateQuery(q)) {
+      router.push(`/archive?date=${encodeURIComponent(q)}&source=search-overlay`);
+      return;
+    }
+
     const controller = new AbortController();
     abortRef.current = controller;
     setIsLoading(true);
@@ -355,7 +439,7 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
       }
       setIsLoading(false);
     }
-  }, [animateCount]);
+  }, [animateCount, router]);
 
   useEffect(() => {
     if (rateLimitUntil && rateLimitUntil > Date.now()) return;

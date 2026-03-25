@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Article } from "@/components/FrontPage/types";
 import { Byline } from "@/components/FrontPage/Byline";
 import TransitionLink from "@/components/TransitionLink";
@@ -12,6 +13,7 @@ import {
   MAX_SEARCH_QUERY_LENGTH,
   sanitizeSearchQuery,
 } from "@/utils/search";
+import { parseArchiveDateQuery } from "@/lib/archiveDateQuery";
 import posthog from "posthog-js";
 
 const WAVE_LAMBDA = 600; // px, wavelength
@@ -103,6 +105,7 @@ export default function SearchInput({
   autoFocus?: boolean,
   forceRainbow?: boolean,
 }) {
+  const router = useRouter();
   const { isDarkMode } = useTheme();
   const logoSrc = isDarkMode ? "/logo-dark-mobile.svg" : "/logo-light-mobile.svg";
   const [query, setQuery] = useState(defaultValue || "");
@@ -264,6 +267,11 @@ export default function SearchInput({
       return;
     }
 
+    if (parseArchiveDateQuery(q)) {
+      router.push(`/archive?date=${encodeURIComponent(q)}&source=search-inline`);
+      return;
+    }
+
     const controller = new AbortController();
     abortRef.current = controller;
     setIsLoading(true);
@@ -342,7 +350,7 @@ export default function SearchInput({
       }
       setIsLoading(false);
     }
-  }, [animateCount]);
+  }, [animateCount, router]);
 
   useEffect(() => {
     if (rateLimitUntil && rateLimitUntil > Date.now()) return;

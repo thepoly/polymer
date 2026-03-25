@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, Moon, Search, Sun, X } from "lucide-react";
-import SearchOverlay from "@/components/SearchOverlay";
+import SearchOverlay, { SearchOverlayTrigger } from "@/components/SearchOverlay";
 import { useHeaderTransition } from "@/components/HeaderTransitionProvider";
 import {
   shouldAnimateHeaderTransition,
@@ -23,7 +23,7 @@ const primaryNavItems = [
 
 const secondaryNavItems = [
   { label: "About", href: "/about" },
-  { label: "Archives", href: "https://digitalassets.archives.rpi.edu/do/235be3d2-f018-48af-a413-b50e16dd6dc7" },
+  { label: "Archives", href: "/archive" },
   { label: "Staff", href: "/staff" },
   { label: "Contact", href: "/contact" },
   { label: "Submit", href: "mailto:edop@poly.rpi.edu?subject=Submitting%20Edop%3A%20%22%5BARTICLE%20TITLE%20HERE%5D%22&body=Thank%20you%20for%20submitting%20an%20Editorial%2FOpinion%20article%20to%20%F0%9D%98%9B%F0%9D%98%A9%F0%9D%98%A6%20%F0%9D%98%97%F0%9D%98%B0%F0%9D%98%AD%F0%9D%98%BA%F0%9D%98%B5%F0%9D%98%A6%F0%9D%98%A4%F0%9D%98%A9%F0%9D%98%AF%F0%9D%98%AA%F0%9D%98%A4%21%20Please%20replace%20%5BARTICLE%20TITLE%20HERE%5D%20in%20the%20subject%20line%20with%20the%20title%20of%20your%20article%2C%20and%20sign%20this%20email%20with%20your%20name.%20Attach%20your%20article%20as%20a%20PDF.%20Thanks%21%0A%0A%F0%9D%98%9B%F0%9D%98%A9%F0%9D%98%A6%20%F0%9D%98%97%F0%9D%98%B0%F0%9D%98%AD%F0%9D%98%BA%F0%9D%98%B5%F0%9D%98%A6%F0%9D%98%A4%F0%9D%98%A9%F0%9D%98%AF%F0%9D%98%AA%F0%9D%98%A4" },
@@ -366,24 +366,11 @@ function MobileMenuDrawer({
             <div className="border-t border-rule pt-4">
               <p className="font-meta text-[14px] leading-[1.35] text-text-muted">
                 Or{" "}
-                <button
+                <SearchOverlayTrigger
                   onClick={onSearchOpen}
-                  className="group relative inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-4 align-middle text-text-main"
-                >
-                  <span
-                    className="pointer-events-none absolute inset-0 overflow-hidden rounded-full p-[1px] opacity-100"
-                    style={{
-                      WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-                      WebkitMaskComposite: "xor",
-                      maskComposite: "exclude",
-                    }}
-                  >
-                    <span className="absolute left-1/2 top-1/2 aspect-square w-[300%] -translate-x-1/2 -translate-y-1/2 animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_0deg,#ef4444,#f59e0b,#10b981,#3b82f6,#8b5cf6,#ef4444)]" />
-                  </span>
-
-                  <Search className="relative z-10 h-3.5 w-3.5 shrink-0" />
-                  <span className="relative z-10 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.1em]">Search</span>
-                </button>{" "}
+                  className="inline-flex px-4 align-middle"
+                  alwaysShowBorder
+                />{" "}
                 our archives.
               </p>
             </div>
@@ -628,25 +615,7 @@ export default function Header({ compact = false, mobileTight = false }: { compa
                 )}
               </div>
               
-              <button 
-                className="group relative flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-full border border-rule px-3 text-text-main transition-colors" 
-                data-marauders-origin="search"
-                onClick={openSearchOverlay}
-              >
-                <span 
-                  className="pointer-events-none absolute inset-0 overflow-hidden rounded-full p-[1px] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                  style={{
-                    WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
-                    WebkitMaskComposite: "xor",
-                    maskComposite: "exclude"
-                  }}
-                >
-                  <span className="absolute left-1/2 top-1/2 aspect-square w-[300%] -translate-x-1/2 -translate-y-1/2 animate-[spin_3s_linear_infinite] bg-[conic-gradient(from_0deg,#ef4444,#f59e0b,#10b981,#3b82f6,#8b5cf6,#ef4444)]" />
-                </span>
-                
-                <Search className="relative z-10 h-3.5 w-3.5 shrink-0" />
-                <span className="relative z-10 whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.1em]">Search</span>
-              </button>
+              <SearchOverlayTrigger onClick={openSearchOverlay} />
 
             </div>
           </div>

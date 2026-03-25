@@ -12,7 +12,7 @@ import { Article as ComponentArticle } from '@/components/FrontPage/types';
 import type { SpotlightAuthor } from '@/components/Opinion/AuthorSpotlightCarousel';
 import { formatArticle } from '@/utils/formatArticle';
 import { opinionGroups } from '@/components/Opinion/opinionGroups';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
 export const revalidate = 60;
@@ -50,10 +50,6 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
 
 export default async function SectionPageRoute({ params }: Args) {
   const { section } = await params;
-
-  if (section === 'archives') {
-    redirect('https://digitalassets.archives.rpi.edu/do/235be3d2-f018-48af-a413-b50e16dd6dc7');
-  }
 
   const contentSections = ['news', 'sports', 'features', 'opinion'];
   const placeholderSections = ['about', 'checkmate', 'contact', 'submit'];
