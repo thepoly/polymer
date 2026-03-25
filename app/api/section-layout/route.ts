@@ -12,9 +12,7 @@ const SECTIONS = ['news', 'features', 'opinion', 'sports'];
 
 function canEditSection(user: UserWithMeta, section: string): boolean {
   const roles = user.roles || [];
-  if (roles.includes('admin') || roles.includes('eic')) return true;
-  if (roles.includes('editor') && user.section === section) return true;
-  return false;
+  return roles.includes('admin') || roles.includes('eic');
 }
 
 /** GET: returns the current section layout data + user's editable sections */

@@ -45,7 +45,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const roles = (user as unknown as { roles?: string[] }).roles || [];
-    const canEdit = roles.some((r: string) => ['admin', 'eic', 'editor'].includes(r));
+    const canEdit = roles.some((r: string) => ['admin', 'eic'].includes(r));
     if (!canEdit) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }

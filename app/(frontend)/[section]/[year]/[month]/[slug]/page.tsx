@@ -215,6 +215,7 @@ export default async function ArticlePage({ params }: Args) {
   const { user: authUser } = await payload.auth({ headers: await headers() });
   const wordCount = calculateWordCount(article.content);
   const isStaff = !!authUser;
+  const canEdit = authUser && Array.isArray(authUser.roles) && authUser.roles.some(role => ['admin', 'eic'].includes(role));
 
   // Prepare content (clean up flags if necessary)
   let cleanContent = article.content;
@@ -321,7 +322,7 @@ export default async function ArticlePage({ params }: Args) {
       />
       <ArticleScrollBar title={article.title} section={article.section} />
       <LayoutComponent article={article as unknown as Article} content={cleanContent} />
-      {isStaff && <InlineEditor articleId={article.id} />}
+      {canEdit && <InlineEditor articleId={article.id} />}
     </>
   );
 }
