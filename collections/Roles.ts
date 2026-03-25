@@ -17,6 +17,28 @@ export const Roles: CollectionConfig = {
     delete: ({ req: { user } }) => Boolean((user as any)?.mergedPermissions?.admin || (user as any)?.mergedPermissions?.manageUsers),
   },
   hooks: {
+    afterRead: [
+      ({ doc }) => {
+        if (!doc.permissions) {
+          doc.permissions = {}
+        }
+        const perms = [
+          'admin',
+          'manageUsers',
+          'manageArticles',
+          'publishArticles',
+          'manageSectionArticles',
+          'manageLayout',
+          'manageSubmissions'
+        ]
+        for (const p of perms) {
+          if (doc.permissions[p] === null || doc.permissions[p] === undefined) {
+            doc.permissions[p] = false
+          }
+        }
+        return doc
+      }
+    ],
     afterChange: [
       async ({ doc, req }) => {
         // When a role is changed, we need to trigger an update on all users 
@@ -58,23 +80,14 @@ export const Roles: CollectionConfig = {
     {
       name: 'permissions',
       type: 'group',
-      defaultValue: {
-        admin: false,
-        manageUsers: false,
-        manageArticles: false,
-        publishArticles: false,
-        manageSectionArticles: false,
-        manageLayout: false,
-        manageSubmissions: false,
-      },
       fields: [
-        { name: 'admin', type: 'checkbox', label: 'Administrator' },
-        { name: 'manageUsers', type: 'checkbox', label: 'Manage Users & Roles' },
-        { name: 'manageArticles', type: 'checkbox', label: 'Manage All Articles' },
-        { name: 'publishArticles', type: 'checkbox', label: 'Publish Articles' },
-        { name: 'manageSectionArticles', type: 'checkbox', label: 'Manage Section Articles' },
-        { name: 'manageLayout', type: 'checkbox', label: 'Manage Homepage & Layouts' },
-        { name: 'manageSubmissions', type: 'checkbox', label: 'Manage Submissions (Write-ins & Events)' },
+        { name: 'admin', type: 'checkbox', label: 'Administrator', defaultValue: false },
+        { name: 'manageUsers', type: 'checkbox', label: 'Manage Users & Roles', defaultValue: false },
+        { name: 'manageArticles', type: 'checkbox', label: 'Manage All Articles', defaultValue: false },
+        { name: 'publishArticles', type: 'checkbox', label: 'Publish Articles', defaultValue: false },
+        { name: 'manageSectionArticles', type: 'checkbox', label: 'Manage Section Articles', defaultValue: false },
+        { name: 'manageLayout', type: 'checkbox', label: 'Manage Homepage & Layouts', defaultValue: false },
+        { name: 'manageSubmissions', type: 'checkbox', label: 'Manage Submissions (Write-ins & Events)', defaultValue: false },
       ],
     },
   ],
