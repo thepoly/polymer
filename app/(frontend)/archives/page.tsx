@@ -1,4 +1,4 @@
-import ArchivePage, { metadata as archiveMetadata, revalidate as archiveRevalidate } from '../archive/page';
+import ArchivePage, { metadata as archiveMetadata } from '../archive/page';
 
 export const metadata = {
   ...archiveMetadata,
@@ -9,6 +9,7 @@ export const metadata = {
   },
 };
 
-export const revalidate = archiveRevalidate;
+// Next.js (especially Turbopack) requires literal values for route configs
+export const revalidate = 60;
 
 export default ArchivePage;
