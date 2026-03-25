@@ -152,6 +152,10 @@ function safeJsonLd(data: Record<string, unknown>): string {
 
 export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const { slug, section, year, month } = await params;
+  
+  const validSections = ['news', 'features', 'sports', 'opinion', 'editorial'];
+  if (!validSections.includes(section)) return {};
+
   const article = await getArticle(slug, section);
 
   if (!article || !matchesRequestedDate(article, year, month)) return {};
@@ -201,6 +205,12 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
 
 export default async function ArticlePage({ params }: Args) {
   const { slug, section, year, month } = await params;
+
+  const validSections = ['news', 'features', 'sports', 'opinion', 'editorial'];
+  if (!validSections.includes(section)) {
+    notFound();
+  }
+
   const article = await getArticle(slug, section);
 
   if (!article || !matchesRequestedDate(article, year, month)) {
