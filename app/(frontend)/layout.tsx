@@ -123,7 +123,8 @@ export default async function RootLayout({
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
-          roles: user.roles,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          roles: Array.isArray(user.roles) ? user.roles.map((r: any) => typeof r === 'object' && r !== null ? r.name : String(r)) : null,
           slug: user.slug,
           blackTheme: user.blackTheme,
           has_bio: !!user.bio,

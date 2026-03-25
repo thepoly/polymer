@@ -2,24 +2,26 @@ import { randomBytes } from 'crypto'
 import type { CollectionConfig, FieldAccess, Access } from 'payload'
 import { getPostHogClient } from '../lib/posthog-server'
 
-type UserWithRoles = {
+type UserWithPermissions = {
   id: string | number
-  roles?: string[]
+  mergedPermissions?: Record<string, boolean>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  roles?: (string | number)[] | any[]
 }
 
 const isAdminOrEIC: Access = ({ req: { user } }) => {
-  const u = user as unknown as UserWithRoles
-  return Boolean(u?.roles?.some((role) => ['admin', 'eic'].includes(role)))
+  const u = user as unknown as UserWithPermissions
+  return Boolean(u?.mergedPermissions?.admin || u?.mergedPermissions?.manageUsers)
 }
 
 const isAdminOrEICField: FieldAccess = ({ req: { user } }) => {
-  const u = user as unknown as UserWithRoles
-  return Boolean(u?.roles?.some((role) => ['admin', 'eic'].includes(role)))
+  const u = user as unknown as UserWithPermissions
+  return Boolean(u?.mergedPermissions?.admin || u?.mergedPermissions?.manageUsers)
 }
 
 const isAdminField: FieldAccess = ({ req: { user } }) => {
-  const u = user as unknown as UserWithRoles
-  return Boolean(u?.roles?.includes('admin'))
+  const u = user as unknown as UserWithPermissions
+  return Boolean(u?.mergedPermissions?.admin)
 }
 
 export const Users: CollectionConfig = {
@@ -35,8 +37,8 @@ export const Users: CollectionConfig = {
   access: {
     read: ({ req: { user } }) => {
       if (!user) return false
-      const u = user as unknown as UserWithRoles
-      if (u.roles?.some((role) => ['admin', 'eic'].includes(role))) return true
+      const u = user as unknown as UserWithPermissions
+      if (u.mergedPermissions?.admin || u.mergedPermissions?.manageUsers) return true
       return {
         id: {
           equals: user.id,
@@ -46,8 +48,8 @@ export const Users: CollectionConfig = {
     create: isAdminOrEIC,
     update: ({ req: { user } }) => {
       if (!user) return false
-      const u = user as unknown as UserWithRoles
-      if (u.roles?.some((role) => ['admin', 'eic'].includes(role))) return true
+      const u = user as unknown as UserWithPermissions
+      if (u.mergedPermissions?.admin || u.mergedPermissions?.manageUsers) return true
       return {
         id: {
           equals: user.id,
@@ -58,7 +60,36 @@ export const Users: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
-      async ({ data, operation, originalDoc }) => {
+      async ({ data, operation, originalDoc, req }) => {
+        // Calculate mergedPermissions
+        if (data.roles) {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const roleIds = data.roles.map((r: any) => typeof r === 'object' ? r.id : r)
+            const permissions: Record<string, boolean> = {}
+            
+            if (roleIds.length > 0) {
+              const rolesDocs = await req.payload.find({
+                collection: 'roles',
+                where: { id: { in: roleIds } },
+                depth: 0,
+                pagination: false,
+              })
+              
+              for (const roleDoc of rolesDocs.docs) {
+                if (roleDoc.permissions) {
+                  for (const [key, val] of Object.entries(roleDoc.permissions)) {
+                    if (val === true) permissions[key] = true
+                  }
+                }
+              }
+            }
+            data.mergedPermissions = permissions
+          } catch (e) {
+            console.error('Error computing mergedPermissions', e)
+          }
+        }
+
         if (operation !== 'update') {
           return data
         }
@@ -85,7 +116,8 @@ export const Users: CollectionConfig = {
               lastName: doc.lastName,
               name: `${doc.firstName || ''} ${doc.lastName || ''}`.trim() || undefined,
               slug: doc.slug,
-              roles: doc.roles,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              roles: Array.isArray(doc.roles) ? doc.roles.map((r: any) => typeof r === 'object' ? r.name : r) : [],
               blackTheme: doc.blackTheme,
               has_bio: !!doc.bio,
               position_count: doc.positions?.length || 0,
@@ -144,17 +176,22 @@ export const Users: CollectionConfig = {
     },
     {
       name: 'roles',
-      type: 'select',
+      type: 'relationship',
+      relationTo: 'roles',
       hasMany: true,
-      defaultValue: ['writer'],
-      options: [
-        { label: 'Admin', value: 'admin' },
-        { label: 'Editor in Chief', value: 'eic' },
-        { label: 'Section Editor', value: 'editor' },
-        { label: 'Writer', value: 'writer' },
-      ],
       access: {
         update: isAdminOrEICField,
+      },
+    },
+    {
+      name: 'mergedPermissions',
+      type: 'json',
+      admin: {
+        hidden: true,
+      },
+      access: {
+        read: () => true,
+        update: () => false,
       },
     },
     {
@@ -162,8 +199,8 @@ export const Users: CollectionConfig = {
       type: 'select',
       label: 'Assigned Section',
       admin: {
-        description: 'Which section this editor manages (only applies to Section Editor role)',
-        condition: (data) => data?.roles?.includes('editor'),
+        description: 'Which section this editor manages (only applies if they have the manageSectionArticles permission)',
+        condition: (data) => Boolean(data?.mergedPermissions?.manageSectionArticles),
       },
       options: [
         { label: 'News', value: 'news' },
@@ -263,8 +300,9 @@ export const Users: CollectionConfig = {
       defaultValue: '0.0.0',
       admin: {
         condition: (_, __, { user }) => {
-          const currentUser = user as unknown as UserWithRoles | undefined
-          return Boolean(currentUser?.roles?.includes('admin'))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const currentUser = user as any
+          return Boolean(currentUser?.mergedPermissions?.admin)
         },
         disableListColumn: true,
       },

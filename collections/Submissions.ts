@@ -16,13 +16,15 @@ const Submissions: CollectionConfig = {
     create: () => true,
     update: ({ req: { user } }) => {
       if (!user) return false
-      const roles = (user as unknown as { roles?: string[] }).roles || []
-      return roles.some((role: string) => ['admin', 'eic', 'editor'].includes(role))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const perms = (user as any).mergedPermissions || {}
+      return Boolean(perms.admin || perms.manageSubmissions)
     },
     delete: ({ req: { user } }) => {
       if (!user) return false
-      const roles = (user as unknown as { roles?: string[] }).roles || []
-      return roles.includes('admin')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const perms = (user as any).mergedPermissions || {}
+      return Boolean(perms.admin)
     },
   },
   fields: [

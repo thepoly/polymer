@@ -1,12 +1,12 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import type { CollectionConfig, Access } from 'payload'
-import { User } from '@/payload-types'
 
 const isAdmin: Access = ({ req: { user } }) => {
   if (!user) return false
-  const roles = (user as User)?.roles || []
-  return roles.includes('admin')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const perms = (user as any).mergedPermissions || {}
+  return Boolean(perms.admin)
 }
 
 const mediaDir = process.env.MEDIA_DIR || '/var/www/polymer-media'

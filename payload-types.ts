@@ -76,6 +76,7 @@ export interface Config {
     'features-page-layout': FeaturesPageLayout;
     submissions: Submission;
     'event-submissions': EventSubmission;
+    roles: Role;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -92,6 +93,7 @@ export interface Config {
     'features-page-layout': FeaturesPageLayoutSelect<false> | FeaturesPageLayoutSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
     'event-submissions': EventSubmissionsSelect<false> | EventSubmissionsSelect<true>;
+    roles: RolesSelect<false> | RolesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -137,9 +139,18 @@ export interface User {
   firstName: string;
   lastName: string;
   slug?: string | null;
-  roles?: ('admin' | 'eic' | 'editor' | 'writer')[] | null;
+  roles?: (number | Role)[] | null;
+  mergedPermissions?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   /**
-   * Which section this editor manages (only applies to Section Editor role)
+   * Which section this editor manages (only applies if they have the manageSectionArticles permission)
    */
   section?: ('news' | 'features' | 'opinion' | 'sports') | null;
   headshot?: (number | null) | Media;
@@ -190,6 +201,32 @@ export interface User {
     | null;
   password?: string | null;
   collection: 'users';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "roles".
+ */
+export interface Role {
+  id: number;
+  name: string;
+  /**
+   * Hex color for the role (e.g., #ff0000)
+   */
+  color?: string | null;
+  permissions?: {
+    /**
+     * Grants all permissions implicitly.
+     */
+    admin?: boolean | null;
+    manageUsers?: boolean | null;
+    manageArticles?: boolean | null;
+    publishArticles?: boolean | null;
+    manageSectionArticles?: boolean | null;
+    manageLayout?: boolean | null;
+    manageSubmissions?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -510,6 +547,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'event-submissions';
         value: number | EventSubmission;
+      } | null)
+    | ({
+        relationTo: 'roles';
+        value: number | Role;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -562,6 +603,7 @@ export interface UsersSelect<T extends boolean = true> {
   lastName?: T;
   slug?: T;
   roles?: T;
+  mergedPermissions?: T;
   section?: T;
   headshot?: T;
   bio?: T;
@@ -759,6 +801,27 @@ export interface EventSubmissionsSelect<T extends boolean = true> {
   contactName?: T;
   contactInfo?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "roles_select".
+ */
+export interface RolesSelect<T extends boolean = true> {
+  name?: T;
+  color?: T;
+  permissions?:
+    | T
+    | {
+        admin?: T;
+        manageUsers?: T;
+        manageArticles?: T;
+        publishArticles?: T;
+        manageSectionArticles?: T;
+        manageLayout?: T;
+        manageSubmissions?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

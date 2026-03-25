@@ -26,7 +26,7 @@ type PublicStaffCard = {
   lastName: string;
   slug?: string | null;
   retired?: boolean | null;
-  roles?: User['roles'];
+  roles?: string[] | null;
   headshot?: {
     url?: string | null;
   } | null;
@@ -52,7 +52,8 @@ const toPublicStaffCard = (user: PublicStaffCardSource): PublicStaffCard => ({
   lastName: user.lastName,
   slug: user.slug,
   retired: user.retired,
-  roles: user.roles,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  roles: user.roles?.map((r: any) => typeof r === 'object' && r !== null ? r.name : String(r)) as any,
   headshot: typeof user.headshot === 'object' && user.headshot ? { url: user.headshot.url } : null,
   positions: user.positions?.map((position) => ({
     startDate: position.startDate,

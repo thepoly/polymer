@@ -10,10 +10,10 @@ const Articles: CollectionConfig = {
   access: {
     update: ({ req: { user } }) => {
       if (!user) return false
-      const u = user as unknown as { roles?: string[]; section?: string }
-      const roles = u.roles || []
-      if (roles.some((role: string) => ['admin', 'eic'].includes(role))) return true
-      if (roles.includes('editor') && u.section) return { section: { equals: u.section } }
+      const u = user as unknown as { mergedPermissions?: Record<string, boolean>; section?: string }
+      const perms = u.mergedPermissions || {}
+      if (perms.admin || perms.manageArticles) return true
+      if (perms.manageSectionArticles && u.section) return { section: { equals: u.section } }
       return false
     },
     // Anonymous readers can only see published articles. Authenticated staff keep full access
@@ -28,13 +28,15 @@ const Articles: CollectionConfig = {
     },
     create: ({ req: { user } }) => {
       if (!user) return false
-      const roles = (user)?.roles || []
-      return roles.some((role: string) => ['admin', 'eic', 'editor'].includes(role))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const perms = (user as any).mergedPermissions || {}
+      return Boolean(perms.admin || perms.manageArticles || perms.manageSectionArticles)
     },
     delete: ({ req: { user } }) => {
       if (!user) return false
-      const roles = (user)?.roles || []
-      return roles.includes('admin')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const perms = (user as any).mergedPermissions || {}
+      return Boolean(perms.admin || perms.manageArticles)
     },
   },
   versions: {
@@ -42,12 +44,52 @@ const Articles: CollectionConfig = {
   },
   hooks: {
     afterChange: [
-      ({ doc, previousDoc, req }) => {
+      ({ doc, previousDoc, req, operation }) => {
+        const posthog = getPostHogClient()
+
+        if (operation === 'update' && previousDoc) {
+          const isInlineEdit = req.context?.isInlineEdit === true
+          const changedFields: Record<string, { old: string, new: string }> = {}
+          const fieldsToCheck = [
+            'title', 'subdeck', 'kicker', 'imageCaption', 'content', 
+            'section', 'authors', 'writeInAuthors', 'featuredImage', 
+            'slug', 'seoTitle', 'searchDescription', '_status'
+          ]
+          
+          for (const key of fieldsToCheck) {
+            const oldValStr = JSON.stringify(previousDoc[key]) || 'null'
+            const newValStr = JSON.stringify(doc[key]) || 'null'
+            if (oldValStr !== newValStr) {
+              changedFields[key] = {
+                old: oldValStr,
+                new: newValStr,
+              }
+            }
+          }
+
+          if (Object.keys(changedFields).length > 0 && posthog) {
+            const user = req.user as unknown as { id?: number | string; email?: string; roles?: string[] } | null
+            posthog.capture({
+              distinctId: String(user?.id || 'unknown'),
+              event: 'article_edited',
+              properties: {
+                article_id: doc.id,
+                article_title: doc.title,
+                edit_context: isInlineEdit ? 'inline' : 'payload_cms',
+                changed_fields: Object.keys(changedFields),
+                diff: JSON.stringify(changedFields),
+                timestamp: new Date().toISOString(),
+                user_email: user?.email || 'unknown',
+                user_roles: user?.roles || [],
+              }
+            })
+          }
+        }
+
         const isNowPublished = doc._status === 'published'
         const wasPublished = previousDoc?._status === 'published'
 
         if (isNowPublished && !wasPublished) {
-          const posthog = getPostHogClient()
           posthog?.capture({
             distinctId: String(req.user?.id || 'unknown'),
             event: 'article_published',

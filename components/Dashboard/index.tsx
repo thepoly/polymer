@@ -42,7 +42,8 @@ const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: strin
   const shouldShowNewsroomMoveNotice =
     ((user as (User & { latestVersion?: string | null }) | null)?.latestVersion || '0.0.0') !==
     '1.0.0'
-  const isAdmin = Boolean(user?.roles?.includes('admin'))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const isAdmin = Boolean((user as any)?.mergedPermissions?.admin)
 
   const { search } = await searchParams
   const rawSearchQuery = Array.isArray(search) ? search[0] : search

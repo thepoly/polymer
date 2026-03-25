@@ -44,8 +44,9 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const roles = (user as unknown as { roles?: string[] }).roles || [];
-    const canEdit = roles.some((r: string) => ['admin', 'eic'].includes(r));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const perms = (user as any).mergedPermissions || {};
+    const canEdit = perms.admin || perms.manageArticles || perms.manageSectionArticles;
     if (!canEdit) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
@@ -81,6 +82,10 @@ export async function PATCH(req: NextRequest) {
       data: updateData,
       draft: false,
       user,
+      overrideAccess: false,
+      context: {
+        isInlineEdit: true,
+      },
     });
 
     return NextResponse.json({ success: true, id: result.id });

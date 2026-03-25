@@ -215,7 +215,15 @@ export default async function ArticlePage({ params }: Args) {
   const { user: authUser } = await payload.auth({ headers: await headers() });
   const wordCount = calculateWordCount(article.content);
   const isStaff = !!authUser;
-  const canEdit = authUser && Array.isArray(authUser.roles) && authUser.roles.some(role => ['admin', 'eic'].includes(role));
+  let canEdit = false;
+  if (authUser) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const perms = (authUser as any).mergedPermissions || {};
+    const isGlobalEditor = perms.admin || perms.manageArticles;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const isSectionEditor = perms.manageSectionArticles && (authUser as any).section === article.section;
+    canEdit = isGlobalEditor || isSectionEditor;
+  }
 
   // Prepare content (clean up flags if necessary)
   let cleanContent = article.content;

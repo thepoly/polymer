@@ -1,10 +1,10 @@
 import type { CollectionConfig, Access } from 'payload'
-import { User } from '@/payload-types'
 
 const isAdminOrEIC: Access = ({ req: { user } }) => {
   if (!user) return false
-  const roles = (user as User)?.roles || []
-  return roles.some((role: string) => ['admin', 'eic'].includes(role))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const perms = (user as any).mergedPermissions || {}
+  return Boolean(perms.admin || perms.manageUsers)
 }
 
 export const JobTitles: CollectionConfig = {

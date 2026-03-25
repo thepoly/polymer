@@ -11,7 +11,8 @@ const requireAdmin = async (request: Request) => {
   const payload = await getPayload({ config: configPromise })
   const { user } = await payload.auth({ headers: request.headers })
 
-  if (!user?.roles?.includes('admin')) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (!(user as any)?.mergedPermissions?.admin) {
     return null
   }
 

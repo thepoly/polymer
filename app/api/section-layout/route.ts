@@ -11,8 +11,11 @@ type UserWithMeta = {
 const SECTIONS = ['news', 'features', 'opinion', 'sports'];
 
 function canEditSection(user: UserWithMeta, section: string): boolean {
-  const roles = user.roles || [];
-  return roles.includes('admin') || roles.includes('eic');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const perms = (user as any).mergedPermissions || {};
+  if (perms.admin || perms.manageLayout) return true;
+  if (perms.manageSectionArticles && user.section === section) return true;
+  return false;
 }
 
 /** GET: returns the current section layout data + user's editable sections */

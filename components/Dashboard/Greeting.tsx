@@ -8,11 +8,12 @@ export const Greeting = ({ user }: { user: User | null | undefined }) => {
   const firstName = user?.firstName || user?.email || 'Editor'
   
   // Get the highest role to show as status
-  const roles = user?.roles || []
-  const status = roles.includes('admin') ? 'Admin' 
-               : roles.includes('eic') ? 'EIC'
-               : roles.includes('editor') ? 'Section Editor'
-               : 'Writer'
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const perms = (user as any)?.mergedPermissions || {}
+  const status = perms.admin ? 'Admin'
+               : perms.manageUsers ? 'Management'
+               : perms.manageSectionArticles ? 'Section Editor'
+               : 'Staff'
 
   const headshot = user?.headshot && typeof user.headshot === 'object' ? user.headshot : null
 
