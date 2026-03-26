@@ -12,8 +12,6 @@ type Props = {
 const getAuthors = (article: Article): User[] =>
   (article.authors || []).flatMap((author) => (typeof author === 'number' ? [] : [author as User]));
 
-const hasBio = (user: User) => Boolean(user.bio?.root?.children?.length);
-
 const lexicalToPlainText = (nodes: LexicalNode[] | undefined): string => {
   if (!nodes || nodes.length === 0) return '';
 
@@ -58,6 +56,13 @@ export const ArticleStaffBios: React.FC<Props> = ({
         {authors.map((user) => {
           const headshot = user.headshot as Media | null;
           const href = `/staff/${user.slug || user.id}`;
+          const bioText = lexicalToPlainText(user.bio?.root?.children as LexicalNode[] | undefined);
+          const fullName = `${user.firstName} ${user.lastName}`;
+          const cleanedBio = bioText.startsWith(fullName)
+            ? bioText.slice(fullName.length).replace(/^[\s,]+/, '')
+            : bioText.startsWith(user.firstName)
+            ? bioText.slice(user.firstName.length).replace(/^[\s,]+/, '')
+            : bioText;
 
           return (
             <div key={user.id} className="flex items-start gap-4">
@@ -84,16 +89,13 @@ export const ArticleStaffBios: React.FC<Props> = ({
                     >
                       {user.firstName} {user.lastName}
                     </Link>
-                    {hasBio(user) ? (
+                    {cleanedBio.length > 0 && (
                       <>
                         {' '}
-                        {lexicalToPlainText(user.bio?.root?.children as LexicalNode[] | undefined)}
+                        {cleanedBio}
                       </>
-                    ) : null}
+                    )}
                   </p>
-                  {!hasBio(user) ? (
-                    <p className="italic text-text-muted">No biography available.</p>
-                  ) : null}
                 </div>
               </div>
             </div>

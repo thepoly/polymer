@@ -218,6 +218,14 @@ export function StaffProfile({
     };
   }, [hasMorePhotos, isLoadingPhotos, nextPhotoPage, user.id, user.slug]);
 
+  const bioText = lexicalToPlainText(bio?.root?.children);
+  const fullName = `${user.firstName} ${user.lastName}`;
+  const cleanedBio = bioText.startsWith(fullName)
+    ? bioText.slice(fullName.length).replace(/^[\s,]+/, '')
+    : bioText.startsWith(user.firstName)
+    ? bioText.slice(user.firstName.length).replace(/^[\s,]+/, '')
+    : bioText;
+
   return (
     <div className="flex flex-col gap-16 text-text-main transition-colors duration-300">
       <div className="flex flex-col md:flex-row gap-12 items-start">
@@ -268,19 +276,17 @@ export function StaffProfile({
         {/* Right Column: Bio & Articles */}
         <div className="w-full md:w-2/3">
           {/* Biography Section */}
-          <section className="mb-12">
-            {bio && bio.root && bio.root.children ? (
+          {cleanedBio.length > 0 && (
+            <section className="mb-12">
               <p className="font-meta text-[17px] md:text-[18px] !text-text-main leading-relaxed transition-colors">
                 <span>
                   {user.firstName}
                 </span>
                 {' '}
-                {lexicalToPlainText(bio.root.children)}
+                {cleanedBio}
               </p>
-            ) : (
-                <p className="text-text-muted italic text-sm transition-colors">No biography available.</p>
-            )}
-          </section>
+            </section>
+          )}
 
           {/* Articles Section */}
           {articles.length > 0 && (
