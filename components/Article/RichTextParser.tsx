@@ -63,9 +63,26 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
         ) : null;
 
         switch (node.type) {
-          case 'heading':
-            const Tag = node.tag as React.ElementType;
-            return <Tag key={index} className="font-copy font-bold text-text-main my-4 leading-tight transition-colors">{serializedChildren}</Tag>;
+          case 'heading': {
+            const Tag = (node.tag || 'h1') as React.ElementType;
+            const headingClasses: Record<string, string> = {
+              h1: 'text-3xl md:text-4xl mb-6 mt-12',
+              h2: 'text-2xl md:text-3xl mb-5 mt-10',
+              h3: 'text-xl md:text-2xl mb-4 mt-8',
+              h4: 'text-lg md:text-xl mb-3 mt-6',
+              h5: 'text-base md:text-lg mb-2 mt-4',
+              h6: 'text-sm md:text-base mb-1 mt-2',
+            };
+            const classes = headingClasses[Tag as string] || headingClasses.h1;
+            return (
+              <Tag
+                key={index}
+                className={`font-copy font-bold text-text-main leading-tight transition-colors ${classes}`}
+              >
+                {serializedChildren}
+              </Tag>
+            );
+          }
 
           case 'paragraph': {
             const isFirst = paragraphCount === 0;
