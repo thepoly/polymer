@@ -1,5 +1,6 @@
 import React from 'react';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 export default async function About() {
   return (<main className="min-h-screen bg-bg-main transition-colors duration-300">
@@ -27,5 +28,6 @@ export default async function About() {
             </p>
         </div>
       </div>
-  </main>);
+      <Footer />
+    </main>);
 }
