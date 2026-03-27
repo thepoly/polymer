@@ -1,3 +1,4 @@
 export * from './ArticleHeader';
 export * from './ArticleContent';
-export { ArticleFooter } from '../ArticleFooter';
+export { ArticleDivider } from '../ArticleDivider';
+export { ArticleStaffBios } from '../ArticleStaffBios';

@@ -1,0 +1,7 @@
+▲ Next.js 16.1.6
+- Local:         http://localhost:3000
+- Network:       http://129.161.145.119:3000
+
+✓ Starting...
+✓ Ready in 593ms
+[17:30:47] [33mWARN[39m: [36mNo email adapter provided. Email will be written to console. More info at https://payloadcms.com/docs/email/overview.[39m

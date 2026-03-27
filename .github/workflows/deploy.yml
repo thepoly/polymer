@@ -1,55 +1,184 @@
 name: Deploy to polymer@archlinux
 
 on:
-  push:
+  workflow_run:
+    workflows: [ "CI" ]
+    types: [ completed ]
     branches: [ "main" ]
+
+concurrency:
+  group: polymer-production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
     runs-on: self-hosted
+    timeout-minutes: 30
+    env:
+      DEPLOY_ROOT: /var/www/polymer
+      SHARED_DIR: /var/www/polymer/shared
+      MEDIA_DIR: /var/www/polymer-media
+      RELEASES_DIR: /var/www/polymer/releases
+      RELEASE_ID: ${{ github.event.workflow_run.head_sha }}-${{ github.run_attempt }}
+      RELEASE_DIR: /var/www/polymer/releases/${{ github.event.workflow_run.head_sha }}-${{ github.run_attempt }}
+      BASE_URL: ${{ vars.BASE_URL != '' && vars.BASE_URL || 'http://127.0.0.1:3000' }}
+      HEALTHCHECK_URL: ${{ vars.HEALTHCHECK_URL != '' && vars.HEALTHCHECK_URL || 'http://127.0.0.1:3000/api/health' }}
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
-      - name: Sync Files
+      - name: Prepare Release Directory
         run: |
-          # Sync code without nuking the directory first.
-          # --delete ensures files removed from Git are removed from the server.
-          # Exclude keeps node_modules and .next from being wiped during the sync.
-          rsync -av --delete             --exclude '.git'             --exclude 'node_modules'             --exclude '.next'      --exclude 'media'             ./ /var/www/polymer/
+          set -euo pipefail
 
-          # Ensure persistent media symlink exists
-          ln -sfn /var/www/polymer-media /var/www/polymer/media
+          mkdir -p "$RELEASES_DIR" "$SHARED_DIR" "$MEDIA_DIR"
+          mkdir -p "$RELEASE_DIR"
 
-      - name: Create .env file
-        working-directory: /var/www/polymer
+          # Build in a fresh release directory so the live app is not mutated in place.
+          rsync -av --delete \
+            --exclude '.git' \
+            --exclude 'node_modules' \
+            --exclude '.next' \
+            --exclude 'media' \
+            ./ "$RELEASE_DIR/"
+
+      - name: Create Shared Runtime Files
         run: |
-          # Use '>' to overwrite the old .env with fresh secrets
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" > .env
-          echo "PAYLOAD_SECRET=${{ secrets.PAYLOAD_SECRET }}" >> .env
+          set -euo pipefail
+
+          printf '%s\n' \
+            "DATABASE_URL=${{ secrets.DATABASE_URL }}" \
+            "PAYLOAD_SECRET=${{ secrets.PAYLOAD_SECRET }}" \
+            "LEGACY_DATABASE_URI=${{ secrets.LEGACY_DATABASE_URI }}" \
+            "NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}" \
+            "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}" \
+            "NEXT_PUBLIC_POSTHOG_HOST=${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}" \
+            > "$SHARED_DIR/.env"
+
+          # Runtime may not use the same UNIX user as the deploy runner.
+          # Keep the file readable by the app process user to avoid startup
+          # failures like "missing secret key" caused by EACCES on .env.
+          chmod 644 "$SHARED_DIR/.env"
 
       - name: Install Dependencies
-        working-directory: /var/www/polymer
-        run: pnpm install --no-frozen-lockfile
+        working-directory: ${{ env.RELEASE_DIR }}
+        run: pnpm install --frozen-lockfile
 
-      - name: Run Migrations
-        working-directory: /var/www/polymer
+      - name: Link Shared Runtime Assets
+        run: |
+          set -euo pipefail
+
+          # Link runtime state only after install so dependency lifecycle scripts
+          # do not receive production secrets by default.
+          rm -f "$RELEASE_DIR/.env"
+          ln -sfn "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
+          ln -sfn "$MEDIA_DIR" "$RELEASE_DIR/media"
+
+      - name: Run migrations via SQL
+        working-directory: ${{ env.RELEASE_DIR }}
         env:
           DATABASE_URL: "${{ secrets.DATABASE_URL }}"
-          PAYLOAD_SECRET: "${{ secrets.PAYLOAD_SECRET }}"
-        run: pnpm payload migrate
+        run: |
+          set -euo pipefail
+
+          # For zero-downtime deploys, DB changes in this block must remain
+          # backward compatible with the currently serving release until reload.
+          ./scripts/run_deploy_sql_migrations.sh
 
       - name: Build App
-        working-directory: /var/www/polymer
+        working-directory: ${{ env.RELEASE_DIR }}
         env:
           DATABASE_URL: "${{ secrets.DATABASE_URL }}"
           PAYLOAD_SECRET: "${{ secrets.PAYLOAD_SECRET }}"
+          LEGACY_DATABASE_URI: "${{ secrets.LEGACY_DATABASE_URI }}"
         run: pnpm run build
 
-      - name: Start App
-        working-directory: /var/www/polymer
+      - name: Record Previous Release
         run: |
-          # Reload ensures zero-downtime if possible
-          pm2 describe polymer > /dev/null && pm2 reload polymer || pm2 start "pnpm start" --name "polymer"
+          set -euo pipefail
+
+          if [ -L "$DEPLOY_ROOT/current" ]; then
+            PREVIOUS_RELEASE="$(readlink -f "$DEPLOY_ROOT/current")"
+            echo "PREVIOUS_RELEASE=$PREVIOUS_RELEASE" >> "$GITHUB_ENV"
+          fi
+
+      - name: Activate Release
+        run: |
+          set -euo pipefail
+
+          ln -sfn "$RELEASE_DIR" "$DEPLOY_ROOT/current.next"
+          mv -Tf "$DEPLOY_ROOT/current.next" "$DEPLOY_ROOT/current"
+
+      - name: Reload App
+        run: |
+          set -euo pipefail
+
+          CONFIG_PATH="$RELEASE_DIR/ecosystem.config.cjs"
+
+          # Rewrite the cwd in the ecosystem config from the symlink path to the
+          # literal release path so PM2 doesn't have to follow /current at start
+          # time (which fails when PM2 runs as a different user than the symlink owner).
+          sed -i "s|/var/www/polymer/current|$RELEASE_DIR|g" "$CONFIG_PATH"
+
+          # Replace any stale process definition before starting from the
+          # ecosystem file. A previous "pm2 start \"pnpm start\"" style app
+          # can keep an incompatible script path/interpreter combination that
+          # survives reloads and leaves the process crash-looping.
+          pm2 delete polymer || true
+          pm2 start "$CONFIG_PATH" --only polymer --env production
           pm2 save
+
+      - name: Verify Release
+        working-directory: ${{ env.RELEASE_DIR }}
+        run: |
+          set -euo pipefail
+
+          curl --fail --silent --show-error \
+            --retry 20 \
+            --retry-delay 2 \
+            --retry-all-errors \
+            "$HEALTHCHECK_URL" >/dev/null
+
+      - name: Roll Back Release
+        if: failure()
+        run: |
+          set -euo pipefail
+
+          if [ -z "${PREVIOUS_RELEASE:-}" ] || [ ! -d "$PREVIOUS_RELEASE" ]; then
+            echo "Rollback requested, but no previous release is available." >&2
+            exit 1
+          fi
+
+          ln -sfn "$PREVIOUS_RELEASE" "$DEPLOY_ROOT/current.next"
+          mv -Tf "$DEPLOY_ROOT/current.next" "$DEPLOY_ROOT/current"
+
+          CONFIG_PATH="$DEPLOY_ROOT/current/ecosystem.config.cjs"
+          pm2 delete polymer || true
+          pm2 start "$CONFIG_PATH" --only polymer --env production
+          pm2 save
+
+      - name: Prune Old Releases
+        if: success()
+        run: |
+          set -euo pipefail
+
+          if [ ! -d "$RELEASES_DIR" ]; then
+            exit 0
+          fi
+
+          mapfile -t releases < <(find "$RELEASES_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | awk '{print $2}')
+
+          if [ "${#releases[@]}" -le 5 ]; then
+            exit 0
+          fi
+
+          for release in "${releases[@]:5}"; do
+            rm -rf "$release"
+          done

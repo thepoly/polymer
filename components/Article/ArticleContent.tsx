@@ -6,7 +6,7 @@ type Props = {
     root: {
       children: LexicalNode[];
     };
-  } | null | undefined; 
+  } | null | undefined;
 };
 
 export const ArticleContent: React.FC<Props> = ({ content }) => {
@@ -15,7 +15,7 @@ export const ArticleContent: React.FC<Props> = ({ content }) => {
   }
 
   return (
-    <div className="max-w-[680px] mx-auto">
+    <div className="max-w-[680px] mx-auto article-body">
       <SerializeLexical nodes={content.root.children} />
     </div>
   );

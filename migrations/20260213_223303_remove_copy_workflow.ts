@@ -1,6 +1,6 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
-export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
+export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
    ALTER TABLE "articles" DROP CONSTRAINT "articles_copy_editor1_id_users_id_fk";
   
@@ -37,7 +37,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   DROP TYPE "public"."article_status_enum";`)
 }
 
-export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
+export async function down({ db }: MigrateDownArgs): Promise<void> {
   await db.execute(sql`
    CREATE TYPE "public"."article_status_enum" AS ENUM('draft', 'needs-copy', 'needs-1st', 'needs-2nd', 'needs-3rd', 'ready');
   ALTER TYPE "public"."enum_users_roles" ADD VALUE 'copy-editor' BEFORE 'editor';

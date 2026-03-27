@@ -1,5 +1,6 @@
 import { StandardLayout } from './Standard';
 import { PhotofeatureLayout } from './Photofeature';
+import { OpinionLayout } from './Opinion';
 import { Article } from '@/payload-types';
 import { LexicalNode } from '@/components/Article/RichTextParser';
 
@@ -10,8 +11,7 @@ export const ArticleLayouts = {
   news: StandardLayout,
   sports: StandardLayout,
   features: StandardLayout,
-  editorial: StandardLayout,
-  opinion: StandardLayout,
+  opinion: OpinionLayout,
 };
 
 export type ArticleLayoutType = keyof typeof ArticleLayouts;
@@ -32,7 +32,6 @@ export const getArticleLayout = (article: Article): ArticleLayoutType => {
   if (article.section === 'news') return 'news';
   if (article.section === 'sports') return 'sports';
   if (article.section === 'features') return 'features';
-  if (article.section === 'editorial') return 'editorial';
   if (article.section === 'opinion') return 'opinion';
 
   // Default fallback
