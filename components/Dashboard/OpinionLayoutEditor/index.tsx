@@ -50,8 +50,11 @@ type UserData = {
 
 type OpinionLayout = {
   column1: (number | null)[];
+  column1Images: boolean[];
   column2: (number | null)[];
+  column2Images: boolean[];
   column3: (number | null)[];
+  column3Images: boolean[];
   editorsChoice: (number | null)[];
   editorsChoiceLabel: string;
   spotlight: SpotlightEntry[];
@@ -69,8 +72,11 @@ const pointerThenCenter: CollisionDetection = (args) => {
 
 const EMPTY_LAYOUT: OpinionLayout = {
   column1: [null, null, null, null, null],
+  column1Images: [false, false, false, false, false],
   column2: [null, null, null, null],
+  column2Images: [false, false, false, false],
   column3: [null, null, null, null],
+  column3Images: [false, false, false, false],
   editorsChoice: [null, null, null],
   editorsChoiceLabel: "Opinion\u2019s Choice",
   spotlight: [],
@@ -179,7 +185,7 @@ function SlotPreview({ article, showImage }: { article: ArticleData; showImage?:
 // ---------------------------------------------------------------------------
 
 function DropSlot({
-  slotId, label, article, showImage, onClear, isImageSlot,
+  slotId, label, article, showImage, onClear, isImageSlot, imageToggle,
 }: {
   slotId: string;
   label: string;
@@ -187,6 +193,7 @@ function DropSlot({
   showImage?: boolean;
   onClear: () => void;
   isImageSlot?: boolean;
+  imageToggle?: React.ReactNode;
 }) {
   const { isOver, setNodeRef } = useDroppable({
     id: `drop-${slotId}`,
@@ -200,9 +207,12 @@ function DropSlot({
     >
       <div className="ole-slot-header">
         <span className="ole-slot-label">{label}</span>
-        {article && (
-          <button className="ole-slot-clear" onClick={onClear} title="Remove article">&times;</button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {imageToggle}
+          {article && (
+            <button className="ole-slot-clear" onClick={onClear} title="Remove article">&times;</button>
+          )}
+        </div>
       </div>
       {article ? (
         <DraggableSlotArticle article={article} slotId={slotId} showImage={showImage} />
@@ -313,13 +323,8 @@ function ArticlePool({
   return (
     <div
       ref={setNodeRef}
+      className="ole-pool"
       style={{
-        borderLeft: '1px solid #e5e5e5',
-        display: 'flex',
-        flexDirection: 'column',
-        height: 'calc(100vh - 53px)',
-        position: 'sticky',
-        top: '53px',
         background: isOver ? 'rgba(59,130,246,0.04)' : undefined,
         outline: isOver ? '2px dashed #3b82f6' : undefined,
         outlineOffset: isOver ? '-2px' : undefined,
@@ -332,25 +337,14 @@ function ArticlePool({
           placeholder="Search articles..."
           value={search}
           onChange={(e) => onSearch(e.target.value)}
-          style={{
-            display: 'block',
-            width: '100%',
-            boxSizing: 'border-box',
-            padding: '6px 10px',
-            fontSize: '13px',
-            lineHeight: '1.4',
-            border: '1px solid #ccc',
-            borderRadius: '6px',
-            outline: 'none',
-            background: '#f5f5f5',
-          }}
+          className="ole-pool-search"
         />
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '6px 10px 16px', display: 'flex', flexDirection: 'column', gap: '1px' }}>
         {filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '32px 16px', opacity: 0.3, fontSize: '0.75rem' }}>No articles found</div>
         )}
-        {filtered.slice(0, 10).map((article) => (
+        {filtered.slice(0, 20).map((article) => (
           <DraggablePoolCard key={article.id} article={article} isUsed={usedIds.has(article.id)} />
         ))}
       </div>
@@ -435,10 +429,22 @@ export function OpinionLayoutEditor() {
         if (layoutData) {
           const savedLayout = layoutData.layout as OpinionLayout | undefined;
           if (savedLayout && typeof savedLayout === 'object') {
+            const c1 = padArray(savedLayout.column1, 5);
+            const c2 = padArray(savedLayout.column2, 4);
+            const c3 = padArray(savedLayout.column3, 4);
             setLayout({
-              column1: padArray(savedLayout.column1, 5),
-              column2: padArray(savedLayout.column2, 4),
-              column3: padArray(savedLayout.column3, 4),
+              column1: c1,
+              column1Images: savedLayout.column1Images
+                ? padBoolArray(savedLayout.column1Images, c1.length)
+                : padBoolArray([true], c1.length), // col1[0] previously always had image
+              column2: c2,
+              column2Images: savedLayout.column2Images
+                ? padBoolArray(savedLayout.column2Images, c2.length)
+                : padBoolArray([false, false, true], c2.length), // col2[2] previously always had image
+              column3: c3,
+              column3Images: savedLayout.column3Images
+                ? padBoolArray(savedLayout.column3Images, c3.length)
+                : padBoolArray([false, false, false, true], c3.length), // col3[3] previously always had image
               editorsChoice: padArray(savedLayout.editorsChoice, 3),
               editorsChoiceLabel: savedLayout.editorsChoiceLabel || "Opinion\u2019s Choice",
               spotlight: (savedLayout as OpinionLayout).spotlight || [],
@@ -487,6 +493,27 @@ export function OpinionLayoutEditor() {
     if (!parsed) return;
     setSlot(parsed.column, parsed.index, null);
   }, [setSlot]);
+
+  const toggleColumnImage = useCallback((column: 'column1' | 'column2' | 'column3', index: number) => {
+    const imagesKey = (column + 'Images') as 'column1Images' | 'column2Images' | 'column3Images';
+    setLayout((prev) => {
+      const imgs = [...prev[imagesKey]];
+      while (imgs.length <= index) imgs.push(false);
+      imgs[index] = !imgs[index];
+      return { ...prev, [imagesKey]: imgs };
+    });
+    markDirty();
+  }, [markDirty]);
+
+  const addSlot = useCallback((column: 'column1' | 'column2' | 'column3') => {
+    const imagesKey = (column + 'Images') as 'column1Images' | 'column2Images' | 'column3Images';
+    setLayout((prev) => ({
+      ...prev,
+      [column]: [...prev[column], null],
+      [imagesKey]: [...prev[imagesKey], false],
+    }));
+    markDirty();
+  }, [markDirty]);
 
   // ---- Spotlight ----
   const addSpotlight = useCallback((userId: number) => {
@@ -594,10 +621,16 @@ export function OpinionLayoutEditor() {
     setError(null);
     try {
       // Trim trailing nulls from columns
+      const tc1 = trimTrailingNulls(layout.column1);
+      const tc2 = trimTrailingNulls(layout.column2);
+      const tc3 = trimTrailingNulls(layout.column3);
       const trimmed = {
-        column1: trimTrailingNulls(layout.column1),
-        column2: trimTrailingNulls(layout.column2),
-        column3: trimTrailingNulls(layout.column3),
+        column1: tc1,
+        column1Images: layout.column1Images.slice(0, tc1.length),
+        column2: tc2,
+        column2Images: layout.column2Images.slice(0, tc2.length),
+        column3: tc3,
+        column3Images: layout.column3Images.slice(0, tc3.length),
         editorsChoice: trimTrailingNulls(layout.editorsChoice),
         editorsChoiceLabel: layout.editorsChoiceLabel,
         spotlight: layout.spotlight || [],
@@ -666,7 +699,7 @@ export function OpinionLayoutEditor() {
             </button>
           </div>
         </div>
-        <div className="ole-body" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 0, minHeight: 'calc(100vh - 53px)' }}>
+        <div className="ole-body">
           {/* Left: canvas */}
           <div className="ole-canvas-wrap">
             {/* 3-column layout canvas */}
@@ -676,9 +709,23 @@ export function OpinionLayoutEditor() {
                 <div className="ole-column-header">
                   <span className="ole-column-title">Column 1</span>
                 </div>
-                <DropSlot slotId="col1-0" label={COL1_LABELS[0]} article={getArticle('column1', 0)} showImage onClear={() => clearSlot('col1-0')} isImageSlot />
-                <DropSlot slotId="col1-1" label={COL1_LABELS[1]} article={getArticle('column1', 1)} onClear={() => clearSlot('col1-1')} />
-                <DropSlot slotId="col1-2" label={COL1_LABELS[2]} article={getArticle('column1', 2)} onClear={() => clearSlot('col1-2')} />
+                {layout.column1.slice(0, 3).map((_, i) => (
+                  <DropSlot
+                    key={`col1-${i}`}
+                    slotId={`col1-${i}`}
+                    label={COL1_LABELS[i] ?? 'Article'}
+                    article={getArticle('column1', i)}
+                    showImage={layout.column1Images[i]}
+                    isImageSlot={layout.column1Images[i]}
+                    onClear={() => clearSlot(`col1-${i}`)}
+                    imageToggle={
+                      <label className="ole-image-toggle" title="Toggle image">
+                        <input type="checkbox" checked={!!layout.column1Images[i]} onChange={() => toggleColumnImage('column1', i)} style={{ position: 'relative', top: '1px' }} />
+                        <span style={{ textTransform: 'uppercase', color: '#999', fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.06em', position: 'relative', top: '-1px' }}>IMG</span>
+                      </label>
+                    }
+                  />
+                ))}
 
                 {/* Fixed CTA */}
                 <div className="ole-cta-block">
@@ -687,8 +734,27 @@ export function OpinionLayoutEditor() {
                   </p>
                 </div>
 
-                <DropSlot slotId="col1-3" label={COL1_LABELS[3]} article={getArticle('column1', 3)} onClear={() => clearSlot('col1-3')} />
-                <DropSlot slotId="col1-4" label={COL1_LABELS[4]} article={getArticle('column1', 4)} onClear={() => clearSlot('col1-4')} />
+                {layout.column1.slice(3).map((_, ii) => {
+                  const i = ii + 3;
+                  return (
+                    <DropSlot
+                      key={`col1-${i}`}
+                      slotId={`col1-${i}`}
+                      label={COL1_LABELS[i] ?? 'Article'}
+                      article={getArticle('column1', i)}
+                      showImage={layout.column1Images[i]}
+                      isImageSlot={layout.column1Images[i]}
+                      onClear={() => clearSlot(`col1-${i}`)}
+                      imageToggle={
+                        <label className="ole-image-toggle" title="Toggle image">
+                          <input type="checkbox" checked={!!layout.column1Images[i]} onChange={() => toggleColumnImage('column1', i)} style={{ position: 'relative', top: '1px' }} />
+                          <span style={{ textTransform: 'uppercase', color: '#999', fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.06em', position: 'relative', top: '-1px' }}>IMG</span>
+                        </label>
+                      }
+                    />
+                  );
+                })}
+                <button className="ole-add-slot-btn" onClick={() => addSlot('column1')}>+ Add slot</button>
               </div>
 
               {/* Column 2 */}
@@ -696,7 +762,20 @@ export function OpinionLayoutEditor() {
                 <div className="ole-column-header">
                   <span className="ole-column-title">Column 2</span>
                 </div>
-                <DropSlot slotId="col2-0" label={COL2_LABELS[0]} article={getArticle('column2', 0)} onClear={() => clearSlot('col2-0')} />
+                <DropSlot
+                  slotId="col2-0"
+                  label={COL2_LABELS[0]}
+                  article={getArticle('column2', 0)}
+                  showImage={layout.column2Images[0]}
+                  isImageSlot={layout.column2Images[0]}
+                  onClear={() => clearSlot('col2-0')}
+                  imageToggle={
+                    <label className="ole-image-toggle" title="Toggle image">
+                      <input type="checkbox" checked={!!layout.column2Images[0]} onChange={() => toggleColumnImage('column2', 0)} style={{ position: 'relative', top: '1px' }} />
+                      <span style={{ textTransform: 'uppercase', color: '#999', fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.06em', position: 'relative', top: '-1px' }}>IMG</span>
+                    </label>
+                  }
+                />
 
                 {/* Author Spotlight Carousel — inline editor */}
                 <div className="ole-spotlight-section">
@@ -763,9 +842,27 @@ export function OpinionLayoutEditor() {
                   </div>
                 </div>
 
-                <DropSlot slotId="col2-1" label={COL2_LABELS[1]} article={getArticle('column2', 1)} onClear={() => clearSlot('col2-1')} />
-                <DropSlot slotId="col2-2" label={COL2_LABELS[2]} article={getArticle('column2', 2)} showImage onClear={() => clearSlot('col2-2')} isImageSlot />
-                <DropSlot slotId="col2-3" label={COL2_LABELS[3]} article={getArticle('column2', 3)} onClear={() => clearSlot('col2-3')} />
+                {layout.column2.slice(1).map((_, ii) => {
+                  const i = ii + 1;
+                  return (
+                    <DropSlot
+                      key={`col2-${i}`}
+                      slotId={`col2-${i}`}
+                      label={COL2_LABELS[i] ?? 'Article'}
+                      article={getArticle('column2', i)}
+                      showImage={layout.column2Images[i]}
+                      isImageSlot={layout.column2Images[i]}
+                      onClear={() => clearSlot(`col2-${i}`)}
+                      imageToggle={
+                        <label className="ole-image-toggle" title="Toggle image">
+                          <input type="checkbox" checked={!!layout.column2Images[i]} onChange={() => toggleColumnImage('column2', i)} style={{ position: 'relative', top: '1px' }} />
+                          <span style={{ textTransform: 'uppercase', color: '#999', fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.06em', position: 'relative', top: '-1px' }}>IMG</span>
+                        </label>
+                      }
+                    />
+                  );
+                })}
+                <button className="ole-add-slot-btn" onClick={() => addSlot('column2')}>+ Add slot</button>
               </div>
 
               {/* Column 3 */}
@@ -788,10 +885,24 @@ export function OpinionLayoutEditor() {
                   ))}
                 </div>
 
-                <DropSlot slotId="col3-0" label={COL3_LABELS[0]} article={getArticle('column3', 0)} onClear={() => clearSlot('col3-0')} />
-                <DropSlot slotId="col3-1" label={COL3_LABELS[1]} article={getArticle('column3', 1)} onClear={() => clearSlot('col3-1')} />
-                <DropSlot slotId="col3-2" label={COL3_LABELS[2]} article={getArticle('column3', 2)} onClear={() => clearSlot('col3-2')} />
-                <DropSlot slotId="col3-3" label={COL3_LABELS[3]} article={getArticle('column3', 3)} showImage onClear={() => clearSlot('col3-3')} isImageSlot />
+                {layout.column3.map((_, i) => (
+                  <DropSlot
+                    key={`col3-${i}`}
+                    slotId={`col3-${i}`}
+                    label={COL3_LABELS[i] ?? 'Article'}
+                    article={getArticle('column3', i)}
+                    showImage={layout.column3Images[i]}
+                    isImageSlot={layout.column3Images[i]}
+                    onClear={() => clearSlot(`col3-${i}`)}
+                    imageToggle={
+                      <label className="ole-image-toggle" title="Toggle image">
+                        <input type="checkbox" checked={!!layout.column3Images[i]} onChange={() => toggleColumnImage('column3', i)} style={{ position: 'relative', top: '1px' }} />
+                        <span style={{ textTransform: 'uppercase', color: '#999', fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.06em', position: 'relative', top: '-1px' }}>IMG</span>
+                      </label>
+                    }
+                  />
+                ))}
+                <button className="ole-add-slot-btn" onClick={() => addSlot('column3')}>+ Add slot</button>
               </div>
             </div>
           </div>
@@ -827,4 +938,10 @@ function trimTrailingNulls(arr: (number | null)[]): (number | null)[] {
   const result = [...arr];
   while (result.length > 0 && result[result.length - 1] === null) result.pop();
   return result;
+}
+
+function padBoolArray(arr: boolean[] | undefined, len: number): boolean[] {
+  const result = [...(arr || [])];
+  while (result.length < len) result.push(false);
+  return result.slice(0, len);
 }

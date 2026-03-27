@@ -519,18 +519,27 @@
 
 /* ---- Image toggle ---- */
 .fle-image-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.64rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  opacity: 0.5;
-  cursor: pointer;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  align-self: center !important;
+  gap: 4px !important;
+  font-size: 0.68rem !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  color: var(--theme-text, #fff) !important;
+  opacity: 0.4 !important;
+  cursor: pointer !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 .fle-image-toggle input {
   cursor: pointer;
+  vertical-align: middle;
+  margin: 0 !important;
+  flex-shrink: 0;
 }
 
 /* ---- Photo Spotlight ---- */
