@@ -15,6 +15,7 @@ import * as migration_20260322_220000_add_more_to_opinion_type_enum from './2026
 import * as migration_20260322_230000_add_write_in_photographer_to_media from './20260322_230000_add_write_in_photographer_to_media';
 import * as migration_20260322_231000_add_user_retired from './20260322_231000_add_user_retired';
 import * as migration_20260324_220000_add_user_seen_newsroom_notice from './20260324_220000_add_user_seen_newsroom_notice';
+import * as migration_20260328_000000_add_user_one_liner from './20260328_000000_add_user_one_liner';
 
 export const migrations = [
   {
@@ -101,5 +102,10 @@ export const migrations = [
     up: migration_20260324_220000_add_user_seen_newsroom_notice.up,
     down: migration_20260324_220000_add_user_seen_newsroom_notice.down,
     name: '20260324_220000_add_user_seen_newsroom_notice',
+  },
+  {
+    up: migration_20260328_000000_add_user_one_liner.up,
+    down: migration_20260328_000000_add_user_one_liner.down,
+    name: '20260328_000000_add_user_one_liner',
   },
 ];
