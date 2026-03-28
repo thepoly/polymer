@@ -81,6 +81,14 @@ jobs:
           ln -sfn "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
           ln -sfn "$MEDIA_DIR" "$RELEASE_DIR/media"
 
+      - name: Backup Database
+        env:
+          DATABASE_URL: "${{ secrets.DATABASE_URL }}"
+        run: |
+          set -euo pipefail
+          mkdir -p "$SHARED_DIR/backups"
+          pg_dump "$DATABASE_URL" > "$SHARED_DIR/backups/pre-deploy-$(date +%Y%m%d-%H%M%S).sql"
+
       - name: Run migrations via SQL
         working-directory: ${{ env.RELEASE_DIR }}
         env:
@@ -146,6 +154,20 @@ jobs:
             --retry-all-errors \
             "$HEALTHCHECK_URL" >/dev/null
 
+      - name: Verify DB Schema
+        env:
+          DATABASE_URL: "${{ secrets.DATABASE_URL }}"
+        run: |
+          set -euo pipefail
+
+          # Validate that columns the app queries actually exist in the live DB.
+          # LIMIT 0 touches no rows but will error if any column is missing,
+          # causing this step to fail and triggering the rollback below.
+          psql "$DATABASE_URL" <<'SQL'
+            SELECT one_liner FROM users LIMIT 0;
+            SELECT opinion_type, image_caption FROM articles LIMIT 0;
+SQL
+
       - name: Roll Back Release
         if: failure()
         run: |
@@ -175,10 +197,24 @@ jobs:
 
           mapfile -t releases < <(find "$RELEASES_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' | sort -nr | awk '{print $2}')
 
-          if [ "${#releases[@]}" -le 5 ]; then
-            exit 0
+          if [ "${#releases[@]}" -gt 5 ]; then
+            for release in "${releases[@]:5}"; do
+              rm -rf "$release"
+            done
           fi
 
-          for release in "${releases[@]:5}"; do
-            rm -rf "$release"
-          done
+          # Prune backups older than 30 days, keeping at least 5.
+          BACKUP_DIR="$SHARED_DIR/backups"
+          if [ -d "$BACKUP_DIR" ]; then
+            mapfile -t backups < <(find "$BACKUP_DIR" -maxdepth 1 -name '*.sql' -printf '%T@ %p\n' | sort -nr | awk '{print $2}')
+            cutoff=$(date -d '30 days ago' +%s)
+            for i in "${!backups[@]}"; do
+              if [ "$i" -lt 5 ]; then
+                continue
+              fi
+              mtime=$(stat -c '%Y' "${backups[$i]}")
+              if [ "$mtime" -lt "$cutoff" ]; then
+                rm -f "${backups[$i]}"
+              fi
+            done
+          fi
