@@ -18,17 +18,17 @@ export const OpinionCard = ({ article, hasImage }: { article: Article, hasImage?
                 />
             </div>
         )}
-        <p className="font-meta mb-2 text-[11px] md:text-[12px] font-[440] italic capitalize tracking-[0.04em] text-accent">
+        <p className="font-meta mb-2 text-[11px] md:text-[12px] font-[440] italic capitalize tracking-[0.04em] text-accent dark:text-[#d96b76]">
           {article.section}
         </p>
-        <h3 className={`font-display mb-1 text-[24px] md:text-[26px] font-bold leading-[1.04] text-text-main transition-colors group-hover:text-accent ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic text-[25px] md:text-[27px]" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
+        <h3 className={`font-copy mb-1 text-[24px] md:text-[26px] font-bold leading-[1.04] text-text-main transition-colors ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[25px] md:text-[27px]" : ""}`}>
             {article.title}
         </h3>
+        <Byline author={article.author} date={article.date} />
         {hasImage && article.excerpt && (
             <p className="font-meta mb-1 text-[12px] font-normal leading-[1.38] text-text-main transition-colors">
                 {article.excerpt}
             </p>
         )}
-        <Byline author={article.author} date={article.date} />
     </Link>
 );

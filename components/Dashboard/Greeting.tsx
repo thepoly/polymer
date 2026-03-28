@@ -29,7 +29,7 @@ export const Greeting = ({ user }: { user: User | null | undefined }) => {
           </div>
         </div>
       </div>
-      <Link href="/admin/account" className="profile-link">
+      <Link href="/newsroom/account" className="profile-link">
         {headshot?.url && (
           <div className="profile-picture">
             <Image 

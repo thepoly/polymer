@@ -137,7 +137,75 @@
   opacity: 0.9;
 }
 
+.btn-icon {
+  margin-right: 8px;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
 /* Search Bar */
+.dashboard-version-chart {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+  margin-bottom: 32px;
+  padding: 24px 28px;
+  border: 1px solid var(--theme-elevation-150, #333);
+  border-radius: 22px;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--theme-bg, #000) 74%, white 26%),
+      color-mix(in srgb, var(--theme-bg, #000) 90%, black 10%)
+    );
+}
+
+.dashboard-version-chart-graphic {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: 10px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 18px var(--theme-bg, #000), 0 16px 40px rgba(0, 0, 0, 0.28);
+}
+
+.dashboard-version-chart-copy h2 {
+  margin: 0;
+  color: var(--theme-text, white);
+}
+
+.dashboard-version-chart-copy .subtext {
+  margin-bottom: 18px;
+}
+
+.dashboard-version-chart-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dashboard-version-chart-item {
+  display: grid;
+  grid-template-columns: 14px minmax(0, auto) 1fr;
+  gap: 12px;
+  align-items: center;
+  color: var(--theme-text, white);
+}
+
+.dashboard-version-chart-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+}
+
+.dashboard-version-chart-version {
+  font-weight: 800;
+}
+
+.dashboard-version-chart-count {
+  opacity: 0.72;
+}
+
 .dashboard-search {
   margin-bottom: 60px;
 }
@@ -165,6 +233,142 @@
 
 .dashboard-articles-section {
   width: 100%;
+}
+
+.newsroom-notice-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background:
+    radial-gradient(circle at top, rgba(214, 0, 28, 0.24), transparent 32%),
+    rgba(8, 8, 8, 0.84);
+  backdrop-filter: blur(10px);
+}
+
+.newsroom-notice-modal {
+  width: min(860px, 100%);
+  padding: 36px 36px 32px;
+  border: 1px solid rgba(176, 220, 255, 0.72);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(232, 246, 255, 0.98), rgba(201, 229, 255, 0.96)),
+    #d9eeff;
+  box-shadow: 0 28px 90px rgba(0, 24, 48, 0.34);
+}
+
+.newsroom-notice-version {
+  margin: 0 0 14px;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(20, 58, 92, 0.64);
+}
+
+@keyframes newsroomRainbowOscillate {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    filter: hue-rotate(120deg);
+  }
+  100% {
+    filter: hue-rotate(0deg);
+  }
+}
+
+.newsroom-notice-rainbow {
+  display: inline-block;
+  background-image: linear-gradient(90deg, #d6001c, #f97316, #eab308, #16a34a, #0ea5e9, #7c3aed, #d6001c);
+  background-size: 200% 100%;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: newsroomRainbowOscillate 8s ease-in-out infinite;
+}
+
+.newsroom-notice-modal h2 {
+  margin: 0;
+  font-size: clamp(1.9rem, 4vw, 3.15rem);
+  line-height: 0.96;
+  text-transform: uppercase;
+  color: #0f3554;
+  white-space: nowrap;
+}
+
+.newsroom-notice-body {
+  margin-top: 24px;
+  color: rgba(15, 53, 84, 0.95);
+  font-size: 1.02rem;
+  line-height: 1.5;
+}
+
+.newsroom-notice-body p {
+  margin: 0 0 12px;
+}
+
+.newsroom-notice-list {
+  margin: 0;
+  padding-left: 1.4rem;
+}
+
+.newsroom-notice-list li {
+  margin: 0 0 12px;
+}
+
+.newsroom-notice-list li:last-child {
+  margin-bottom: 0;
+}
+
+.newsroom-notice-heading {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.newsroom-notice-button {
+  margin-top: 14px;
+  border: none;
+  border-radius: 999px;
+  padding: 14px 22px;
+  background: linear-gradient(135deg, #0f3554, #1f5f94);
+  color: #f7fbff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.newsroom-notice-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+@media (max-width: 900px) {
+  .dashboard-version-chart {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .dashboard-version-chart-item {
+    grid-template-columns: 14px auto auto;
+    justify-content: center;
+  }
+
+  .dashboard-header {
+    align-items: stretch;
+  }
+
+  .greeting-container {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 .dashboard-global-results {

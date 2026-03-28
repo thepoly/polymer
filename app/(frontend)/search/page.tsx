@@ -2,6 +2,7 @@ import React from 'react';
 import type { Metadata } from 'next';
 import Header from '@/components/Header';
 import SearchInput from '@/components/SearchInput';
+import { sanitizeSearchQuery } from '@/utils/search';
 
 export const metadata: Metadata = {
   title: 'Search',
@@ -16,7 +17,7 @@ type Args = {
 
 export default async function SearchPage({ searchParams }: Args) {
   const { q } = await searchParams;
-  const query = q?.trim() || '';
+  const query = sanitizeSearchQuery(q);
 
   return (
     <main className="min-h-screen bg-bg-main transition-colors duration-300">

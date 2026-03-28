@@ -22,7 +22,7 @@ export const promoteVisualLead = (articles: Article[]) => {
 };
 
 export const StoryKicker = ({ section }: { section: string }) => (
-  <p className="font-meta mb-2 text-[11px] md:text-[12px] font-[440] italic capitalize tracking-[0.04em] text-accent">
+  <p className="font-meta mb-2 text-[11px] md:text-[12px] font-[440] italic capitalize tracking-[0.04em] text-accent dark:text-[#d96b76]">
     {section}
   </p>
 );
@@ -30,7 +30,7 @@ export const StoryKicker = ({ section }: { section: string }) => (
 export const SectionHeading = ({ title }: { title: string }) => (
   <div className="mb-5 mb-2 pb-3">
     <Link href={`/${title.toLowerCase()}`} className="group inline-block">
-      <h2 className="font-meta text-[14px] font-bold capitalize tracking-[0.04em] text-accent transition-colors group-hover:text-accent/70 md:text-[15px]">
+      <h2 className="font-meta text-[14px] font-bold uppercase tracking-[0.04em] text-accent dark:text-white transition-colors group-hover:text-accent/70 md:text-[15px]">
         {title}
       </h2>
     </Link>
@@ -61,16 +61,16 @@ export const LeadStory = ({
 
     <StoryKicker section={article.section} />
     <h3
-      className={`font-display font-bold leading-[0.97] tracking-[-0.02em] text-text-main transition-colors group-hover:text-accent ${titleClassName} ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic text-[24px] md:text-[28px]" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}
+      className={`font-copy font-bold leading-[0.97] tracking-[-0.02em] text-text-main transition-colors ${titleClassName} ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[24px] md:text-[28px]" : ""}`}
     >
       {article.title}
     </h3>
+    <Byline author={article.author} date={article.date} />
     {article.excerpt ? (
-      <p className="font-meta mt-3 max-w-2xl text-[13px] font-normal leading-[1.4] text-text-muted">
+      <p className="font-meta mt-3 max-w-2xl text-[13px] font-normal leading-[1.4] text-black dark:text-white">
         {article.excerpt}
       </p>
     ) : null}
-    <Byline author={article.author} date={article.date} />
   </Link>
 );
 
@@ -86,16 +86,16 @@ export const TextStory = ({
   <Link href={getArticleUrl(article)} className="group block">
     <StoryKicker section={article.section} />
     <h3
-      className={`font-display font-bold leading-[1.04] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent ${titleClassName} ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic text-[22px] md:text-[24px]" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}
+      className={`font-copy font-bold leading-[1.04] tracking-[-0.015em] text-text-main transition-colors ${titleClassName} ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[22px] md:text-[24px]" : ""}`}
     >
       {article.title}
     </h3>
+    <Byline author={article.author} date={article.date} />
     {showExcerpt && article.excerpt ? (
-      <p className="font-meta mt-2 line-clamp-3 text-[12px] font-normal leading-[1.38] text-text-muted">
+      <p className="font-meta mt-2 line-clamp-3 text-[12px] font-normal leading-[1.38] text-black dark:text-white">
         {article.excerpt}
       </p>
     ) : null}
-    <Byline author={article.author} date={article.date} />
   </Link>
 );
 
@@ -117,16 +117,16 @@ export const ThumbStory = ({
     <div>
       <StoryKicker section={article.section} />
       <h3
-        className={`font-display font-bold leading-[1.04] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent ${titleClassName} ${article.section === "news" ? "font-display-news uppercase" : ""} ${article.section === "features" ? "font-normal italic text-[22px] md:text-[24px]" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}
+        className={`font-copy font-bold leading-[1.04] tracking-[-0.015em] text-text-main transition-colors ${titleClassName} ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[22px] md:text-[24px]" : ""}`}
       >
         {article.title}
       </h3>
+      <Byline author={article.author} date={article.date} />
       {showExcerpt && article.excerpt ? (
-        <p className="font-meta mt-2 line-clamp-3 text-[12px] font-normal leading-[1.38] text-text-muted">
+        <p className="font-meta mt-2 line-clamp-3 text-[12px] font-normal leading-[1.38] text-black dark:text-white">
           {article.excerpt}
         </p>
       ) : null}
-      <Byline author={article.author} date={article.date} />
     </div>
 
     {article.image ? (
@@ -160,15 +160,15 @@ const SparseSection = ({
   const textBlock = (
     <div>
       <StoryKicker section={lead.section} />
-      <h3 className={`font-display text-[24px] font-bold leading-[1.08] tracking-[-0.018em] text-text-main transition-colors group-hover:text-accent md:text-[28px] ${lead.section === "news" ? "font-display-news uppercase" : ""} ${lead.section === "features" ? "font-normal italic text-[25px] md:text-[29px]" : ""} ${lead.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
+      <h3 className={`font-copy text-[24px] font-bold leading-[1.08] tracking-[-0.018em] text-text-main transition-colors md:text-[28px] ${lead.section === "news" ? "!text-[1.2em]" : ""} ${lead.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${lead.section === "features" ? "font-light text-[25px] md:text-[29px]" : ""}`}>
         {lead.title}
       </h3>
+      <Byline author={lead.author} date={lead.date} />
       {lead.excerpt ? (
-        <p className="font-meta mt-3 max-w-2xl text-[13px] font-normal leading-[1.4] text-text-muted">
+        <p className="font-meta mt-3 max-w-2xl text-[13px] font-normal leading-[1.4] text-black dark:text-white">
           {lead.excerpt}
         </p>
       ) : null}
-      <Byline author={lead.author} date={lead.date} />
     </div>
   );
 
@@ -215,7 +215,7 @@ const SparseSection = ({
             <TextStory
               key={article.id}
               article={article}
-              titleClassName="text-[24px] md:text-[26px]"
+              titleClassName="text-[20px] md:text-[22px]"
               showExcerpt
             />
           ))}
@@ -237,7 +237,7 @@ const NewsSection = ({ articles }: { articles: Article[] }) => {
     <>
       <div className="grid gap-8 xl:grid-cols-12">
         <div className="xl:col-span-7">
-          <LeadStory article={lead} titleClassName="text-[25px] md:text-[30px]" />
+          <LeadStory article={lead} titleClassName="text-[24px] md:text-[28px]" />
         </div>
 
         <div className="xl:col-span-5 xl:pl-6">
@@ -246,7 +246,7 @@ const NewsSection = ({ articles }: { articles: Article[] }) => {
               <div key={article.id}>
                 <ThumbStory
                   article={article}
-                  titleClassName="text-[24px] md:text-[26px]"
+                  titleClassName="text-[20px] md:text-[22px]"
                   showExcerpt={index === 0}
                   thumbWidth={120}
                 />
@@ -260,7 +260,7 @@ const NewsSection = ({ articles }: { articles: Article[] }) => {
         <div className="mt-7 grid gap-5 mt-6 pt-6 md:grid-cols-2 xl:grid-cols-4">
           {tertiary.map((article) => (
             <div key={article.id}>
-              <LeadStory article={article} titleClassName="text-[19px]" />
+              <LeadStory article={article} titleClassName="text-[20px]" />
             </div>
           ))}
         </div>
@@ -286,7 +286,7 @@ const FeaturesSection = ({ articles }: { articles: Article[] }) => {
               <div key={article.id}>
                 <TextStory
                   article={article}
-                  titleClassName="text-[19px]"
+                  titleClassName="text-[20px]"
                   showExcerpt={index === 0}
                 />
               </div>
@@ -295,7 +295,7 @@ const FeaturesSection = ({ articles }: { articles: Article[] }) => {
         </div>
 
         <div className="xl:col-span-8">
-          <LeadStory article={lead} titleClassName="text-[21px] md:text-[26px]" />
+          <LeadStory article={lead} titleClassName="text-[24px] md:text-[28px]" />
         </div>
       </div>
 
@@ -305,7 +305,7 @@ const FeaturesSection = ({ articles }: { articles: Article[] }) => {
             <div key={article.id}>
               <ThumbStory
                 article={article}
-                titleClassName="text-[19px]"
+                titleClassName="text-[20px]"
                 showExcerpt={index === 0}
                 thumbWidth={116}
               />
@@ -335,15 +335,15 @@ const SportsSection = ({ articles }: { articles: Article[] }) => {
           >
             <div>
               <StoryKicker section={lead.section} />
-              <h3 className={`font-display text-[20px] font-bold leading-[1.08] tracking-[-0.018em] text-text-main transition-colors group-hover:text-accent md:text-[24px] ${lead.section === "news" ? "font-display-news uppercase" : ""} ${lead.section === "features" ? "font-normal italic text-[21px] md:text-[25px]" : ""} ${lead.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
+              <h3 className={`font-copy text-[20px] font-bold leading-[1.08] tracking-[-0.018em] text-text-main transition-colors md:text-[24px] ${lead.section === "news" ? "!text-[1.2em]" : ""} ${lead.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${lead.section === "features" ? "font-light text-[21px] md:text-[25px]" : ""}`}>
                 {lead.title}
               </h3>
+              <Byline author={lead.author} date={lead.date} />
               {lead.excerpt ? (
-                <p className="font-copy mt-3 max-w-2xl text-[13px] leading-[1.4] text-text-muted">
+                <p className="font-copy mt-3 max-w-2xl text-[13px] leading-[1.4] text-black dark:text-white">
                   {lead.excerpt}
                 </p>
               ) : null}
-              <Byline author={lead.author} date={lead.date} />
             </div>
 
             {lead.image ? (
@@ -366,7 +366,7 @@ const SportsSection = ({ articles }: { articles: Article[] }) => {
           <div className="flex flex-col gap-6">
             {secondary.map((article) => (
               <div key={article.id}>
-                <TextStory article={article} titleClassName="text-[19px]" />
+                <TextStory article={article} titleClassName="text-[20px]" />
               </div>
             ))}
           </div>
@@ -376,7 +376,7 @@ const SportsSection = ({ articles }: { articles: Article[] }) => {
       {tertiary.length > 0 ? (
         <div className="mt-7 grid gap-5 mt-6 pt-6 md:grid-cols-3">
           {tertiary.map((article) => (
-            <TextStory key={article.id} article={article} titleClassName="text-[19px]" />
+            <TextStory key={article.id} article={article} titleClassName="text-[20px]" />
           ))}
         </div>
       ) : null}
@@ -396,14 +396,14 @@ const OpinionSection = ({ articles }: { articles: Article[] }) => {
     <>
       <div className="grid gap-8 xl:grid-cols-12">
         <div className="xl:col-span-7">
-          <LeadStory article={lead} titleClassName="text-[20px] md:text-[24px]" />
+          <LeadStory article={lead} titleClassName="text-[22px] md:text-[26px]" />
         </div>
 
         <div className="xl:col-span-5 xl:pl-6">
           <div className="flex flex-col gap-6">
             {secondary.map((article) => (
               <div key={article.id}>
-                <TextStory article={article} titleClassName="text-[19px]" />
+                <TextStory article={article} titleClassName="text-[20px]" />
               </div>
             ))}
           </div>
@@ -413,7 +413,7 @@ const OpinionSection = ({ articles }: { articles: Article[] }) => {
       {tertiary.length > 0 ? (
         <div className="mt-7 grid gap-5 mt-6 pt-6 md:grid-cols-3">
           {tertiary.map((article) => (
-            <TextStory key={article.id} article={article} titleClassName="text-[19px]" />
+            <TextStory key={article.id} article={article} titleClassName="text-[20px]" />
           ))}
         </div>
       ) : null}

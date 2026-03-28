@@ -106,6 +106,38 @@
   font-display: swap;
 }
 
+/* Bebas Neue Pro */
+@font-face {
+  font-family: "Bebas Neue Pro";
+  src: url("/fonts/bebas-neue-pro/Bebas Neue Pro Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Bebas Neue Pro";
+  src: url("/fonts/bebas-neue-pro/Bebas Neue Pro Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Raleway */
+@font-face {
+  font-family: "Raleway";
+  src: url("/fonts/raleway/Raleway-Variable.ttf") format("truetype");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Raleway";
+  src: url("/fonts/raleway/Raleway-Italic-Variable.ttf") format("truetype");
+  font-weight: 300 700;
+  font-style: italic;
+  font-display: swap;
+}
+
 @theme inline {
   --color-bg-main: var(--background);
   --color-text-main: var(--foreground);
@@ -143,25 +175,46 @@
   --font-copy: "Minion Pro", "Iowan Old Style", Georgia, serif;
   --font-ui: "Myriad Pro", "Helvetica Neue", Arial, sans-serif;
   --font-meta: "Raleway", "Helvetica Neue", Arial, sans-serif;
+  --font-display-news: "Bebas Neue Pro", Impact, "Arial Narrow", sans-serif;
+
+  --opinions-choice-bg: #f2f2f2;
+  --opinions-choice-hover: #e8e8e8;
+
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
 }
 
 html.dark {
   --background: #0a0a0a;
   --foreground: #e8e8e8;
-  --foreground-muted: #6b7280;
-  --accent-color: #e8e8e8;
-  --border-color: #1f1f1f;
+  --foreground-muted: #c8ced6;
+  --accent-color: #d96b76;
+  --border-color: #3a3a3a;
 
   --header-top-bg: #0a0a0a;
   --header-top-text: #e8e8e8;
   --header-nav-bg: #0a0a0a;
   --header-nav-text: #e8e8e8;
-  --header-border: #1f1f1f;
-  --rule-color: rgba(255, 255, 255, 0.08);
-  --rule-strong-color: rgba(255, 255, 255, 0.25);
+  --header-border: #3a3a3a;
+  --rule-color: rgba(255, 255, 255, 0.18);
+  --rule-strong-color: rgba(255, 255, 255, 0.4);
+
+  --opinions-choice-bg: rgba(255, 255, 255, 0.06);
+  --opinions-choice-hover: rgba(255, 255, 255, 0.1);
 
   --logo-filter: none;
   --header-logo-invert: none;
+}
+
+html.dark .homepage-zodiac {
+  --accent-color: #d96b76;
+}
+
+html {
+  background-color: var(--background);
+  color-scheme: light dark;
 }
 
 body {
@@ -173,6 +226,7 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   transition: color 0.3s ease, background-color 0.3s ease;
+  min-height: 100dvh;
 }
 
 * {
@@ -241,6 +295,37 @@ h6.font-display.italic {
   animation: search-icon-slide 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
+@keyframes rainbow-swirl-border {
+  from { background-position: 0% 50%, 0 0; }
+  to { background-position: 200% 50%, 0 0; }
+}
+
+@keyframes rainbow-swirl-color {
+  0% { color: #ff6b6b; }
+  16% { color: #ffb86b; }
+  33% { color: #fff08a; }
+  50% { color: #8de39a; }
+  66% { color: #7fb2ff; }
+  83% { color: #d7a6ff; }
+  100% { color: #ff6b6b; }
+}
+
+.rainbow-search-trigger {
+  border: 1px solid var(--rule-color);
+  background: var(--background);
+}
+
+.rainbow-search-trigger:hover {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--background), var(--background)) padding-box,
+    linear-gradient(120deg, #ff6b6b, #ffb86b, #fff08a, #8de39a, #7fb2ff, #d7a6ff, #ff6b6b) border-box;
+  background-size: 100% 100%, 220% 100%;
+  background-position: 0 0, 0% 50%;
+  background-repeat: no-repeat;
+  animation: rainbow-swirl-border 1.25s linear infinite;
+}
+
 /* ── Theme circle-reveal transition ── */
 
 ::view-transition-old(root),
@@ -269,4 +354,111 @@ h6.font-display.italic {
 .theme-switching,
 .theme-switching * {
   transition: none !important;
+}
+
+.safe-area-top {
+  padding-top: var(--safe-area-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: var(--safe-area-bottom);
+}
+
+@media (max-width: 1023px) {
+  .safe-area-top {
+    padding-top: calc(var(--safe-area-top) + 0.75rem);
+    padding-bottom: 1.1rem;
+  }
+
+  .safe-area-top.mobile-header-tight {
+    padding-bottom: 0.88rem;
+  }
+
+  .mobile-chrome-header-inner {
+    padding-top: 0;
+  }
+
+  .safe-area-mobile-header-x {
+    padding-left: calc(0.75rem + var(--safe-area-left));
+    padding-right: calc(0.35rem + var(--safe-area-right));
+  }
+
+  .safe-area-mobile-page-x {
+    padding-left: calc(1rem + var(--safe-area-left));
+    padding-right: calc(1rem + var(--safe-area-right));
+  }
+
+  .safe-area-mobile-drawer {
+    padding-top: calc(0.875rem + var(--safe-area-top));
+    padding-right: calc(1.125rem + var(--safe-area-right));
+    padding-bottom: calc(1.25rem + var(--safe-area-bottom));
+    padding-left: calc(1.125rem + var(--safe-area-left));
+  }
+}
+
+html.standalone-pwa .mobile-chrome-header-inner {
+  padding-top: 0;
+}
+
+
+/* --- Seamless mobile PWA chrome (top + bottom) --- */
+html:not(.standalone-pwa) body::before,
+html:not(.standalone-pwa) body::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  background: var(--background);
+  pointer-events: none;
+  z-index: 0;
+}
+
+html:not(.standalone-pwa) body::before {
+  top: 0;
+  height: var(--safe-area-top);
+}
+
+html:not(.standalone-pwa) body::after {
+  bottom: 0;
+  height: var(--safe-area-bottom);
+}
+
+html.standalone-pwa body::before,
+html.standalone-pwa body::after {
+  display: none;
+}
+
+/* ── Opinion section grid ── */
+.opinion-grid {
+  column-gap: 20px;
+  column-rule: 1px solid var(--rule-color);
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes archive-dot-shift {
+  0% { background-position: 0% 50%; filter: hue-rotate(0deg); }
+  50% { background-position: 100% 50%; filter: hue-rotate(90deg); }
+  100% { background-position: 0% 50%; filter: hue-rotate(180deg); }
+}
+
+.archive-selected-dot {
+  background: linear-gradient(120deg, #ff4d4d, #ffb84d, #fff275, #7fe08a, #70b7ff, #c38bff, #ff4d4d);
+  background-size: 220% 220%;
+  animation: archive-dot-shift 3s linear infinite;
+  box-shadow: 0 0 20px rgba(255, 77, 77, 0.35);
+}
+
+.archive-preview-dot {
+  background: linear-gradient(120deg, #ff6a6a, #ffc266, #fff6a0, #98e89f, #8ac7ff, #d3a2ff, #ff6a6a);
+  background-size: 220% 220%;
+  animation: archive-dot-shift 3s linear infinite;
+  box-shadow: 0 0 12px rgba(255, 106, 106, 0.2);
 }

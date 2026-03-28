@@ -6,9 +6,12 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'The Poly',
     description: 'Serving the Rensselaer Community Since 1885',
     start_url: '/',
+    scope: '/',
     display: 'standalone',
+    display_override: ['standalone', 'minimal-ui', 'browser'],
+    orientation: 'portrait',
     background_color: '#ffffff',
-    theme_color: '#D6001C',
+    theme_color: '#ffffff',
     icons: [
       {
         src: '/static-app-icon.svg',

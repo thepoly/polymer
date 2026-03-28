@@ -72,6 +72,10 @@ export interface Config {
     articles: Article;
     'job-titles': JobTitle;
     layout: Layout;
+    'opinion-page-layout': OpinionPageLayout;
+    'features-page-layout': FeaturesPageLayout;
+    submissions: Submission;
+    'event-submissions': EventSubmission;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -84,6 +88,10 @@ export interface Config {
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
     'job-titles': JobTitlesSelect<false> | JobTitlesSelect<true>;
     layout: LayoutSelect<false> | LayoutSelect<true>;
+    'opinion-page-layout': OpinionPageLayoutSelect<false> | OpinionPageLayoutSelect<true>;
+    'features-page-layout': FeaturesPageLayoutSelect<false> | FeaturesPageLayoutSelect<true>;
+    submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
+    'event-submissions': EventSubmissionsSelect<false> | EventSubmissionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -130,6 +138,10 @@ export interface User {
   lastName: string;
   slug?: string | null;
   roles?: ('admin' | 'eic' | 'editor' | 'writer')[] | null;
+  /**
+   * Which section this editor manages (only applies to Section Editor role)
+   */
+  section?: ('news' | 'features' | 'opinion' | 'sports') | null;
   headshot?: (number | null) | Media;
   /**
    * A short one-line description (e.g. "is a senior studying computer science")
@@ -159,6 +171,11 @@ export interface User {
       }[]
     | null;
   blackTheme?: boolean | null;
+  /**
+   * Marks this staffer as retired. Retired staff are shown in the RETIRED section on the staff page as "Poly Emeritus" from the end of their last role through the present, and their password is replaced with a long scrambled value without notifying them.
+   */
+  retired?: boolean | null;
+  latestVersion?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -186,6 +203,8 @@ export interface Media {
   id: number;
   alt?: string | null;
   photographer?: (number | null) | User;
+  writeInPhotographer?: string | null;
+  sourceUrl?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -197,6 +216,24 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+  sizes?: {
+    gallery?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -214,13 +251,10 @@ export interface JobTitle {
  */
 export interface Article {
   id: number;
+  section: 'news' | 'sports' | 'features' | 'opinion';
   title: string;
   kicker?: string | null;
   subdeck?: string | null;
-  section: 'news' | 'sports' | 'features' | 'opinion';
-  /**
-   * Categorizes opinion articles. Only visible when section is Opinion.
-   */
   opinionType?:
     | (
         | 'opinion'
@@ -235,14 +269,22 @@ export interface Article {
         | 'editors-notebook'
         | 'derby'
         | 'other'
+        | 'more'
       )
     | null;
-  authors: (number | User)[];
+  authors?: (number | User)[] | null;
+  /**
+   * External contributors who are not staff users
+   */
+  writeInAuthors?:
+    | {
+        name: string;
+        photo?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
   publishedDate?: string | null;
   featuredImage?: (number | null) | Media;
-  /**
-   * Caption for the featured image (e.g. "Illustration by The Polytechnic")
-   */
   imageCaption?: string | null;
   content?: {
     root: {
@@ -260,6 +302,14 @@ export interface Article {
     [k: string]: unknown;
   } | null;
   slug?: string | null;
+  /**
+   * Overrides the article title in search results. Leave blank to use the article title.
+   */
+  seoTitle?: string | null;
+  /**
+   * Summary shown in search engine results (150–160 characters recommended).
+   */
+  searchDescription?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -271,7 +321,31 @@ export interface Article {
 export interface Layout {
   id: number;
   name: string;
-  mainArticle: number | Article;
+  skeleton?: ('custom' | 'aries' | 'taurus') | null;
+  grid?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  volume?: number | null;
+  edition?: number | null;
+  /**
+   * Per-section layout configuration (skeleton + pinned articles)
+   */
+  sectionLayouts?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  mainArticle?: (number | null) | Article;
   top1?: (number | null) | Article;
   top2?: (number | null) | Article;
   top3?: (number | null) | Article;
@@ -281,6 +355,103 @@ export interface Layout {
   op3?: (number | null) | Article;
   op4?: (number | null) | Article;
   special?: (number | null) | Article;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "opinion-page-layout".
+ */
+export interface OpinionPageLayout {
+  id: number;
+  name: string;
+  layout?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  editorsChoiceLabel?: string | null;
+  editorsChoice1?: (number | null) | Article;
+  editorsChoice2?: (number | null) | Article;
+  editorsChoice3?: (number | null) | Article;
+  quotes?:
+    | {
+        text: string;
+        article: number | Article;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "features-page-layout".
+ */
+export interface FeaturesPageLayout {
+  id: number;
+  name: string;
+  layout?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "submissions".
+ */
+export interface Submission {
+  id: number;
+  title: string;
+  opinionType:
+    | 'opinion'
+    | 'column'
+    | 'staff-editorial'
+    | 'editorial-notebook'
+    | 'endorsement'
+    | 'top-hat'
+    | 'candidate-profile'
+    | 'letter-to-the-editor'
+    | 'polys-recommendations'
+    | 'editors-notebook'
+    | 'derby'
+    | 'other';
+  authorName: string;
+  /**
+   * Email, phone, or other preferred method of contact
+   */
+  contact: string;
+  featuredImage?: (number | null) | Media;
+  featuredImageCaption?: string | null;
+  content: string;
+  status?: ('new' | 'reviewed' | 'published' | 'rejected') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "event-submissions".
+ */
+export interface EventSubmission {
+  id: number;
+  eventName: string;
+  date: string;
+  time: string;
+  description: string;
+  contactName?: string | null;
+  contactInfo?: string | null;
+  status?: ('new' | 'reviewed' | 'accepted' | 'rejected') | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -327,6 +498,22 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'layout';
         value: number | Layout;
+      } | null)
+    | ({
+        relationTo: 'opinion-page-layout';
+        value: number | OpinionPageLayout;
+      } | null)
+    | ({
+        relationTo: 'features-page-layout';
+        value: number | FeaturesPageLayout;
+      } | null)
+    | ({
+        relationTo: 'submissions';
+        value: number | Submission;
+      } | null)
+    | ({
+        relationTo: 'event-submissions';
+        value: number | EventSubmission;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -379,6 +566,7 @@ export interface UsersSelect<T extends boolean = true> {
   lastName?: T;
   slug?: T;
   roles?: T;
+  section?: T;
   headshot?: T;
   oneLiner?: T;
   bio?: T;
@@ -391,6 +579,8 @@ export interface UsersSelect<T extends boolean = true> {
         id?: T;
       };
   blackTheme?: T;
+  retired?: T;
+  latestVersion?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -415,6 +605,8 @@ export interface UsersSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   photographer?: T;
+  writeInPhotographer?: T;
+  sourceUrl?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -426,23 +618,56 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+  sizes?:
+    | T
+    | {
+        gallery?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        card?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "articles_select".
  */
 export interface ArticlesSelect<T extends boolean = true> {
+  section?: T;
   title?: T;
   kicker?: T;
   subdeck?: T;
-  section?: T;
   opinionType?: T;
   authors?: T;
+  writeInAuthors?:
+    | T
+    | {
+        name?: T;
+        photo?: T;
+        id?: T;
+      };
   publishedDate?: T;
   featuredImage?: T;
   imageCaption?: T;
   content?: T;
   slug?: T;
+  seoTitle?: T;
+  searchDescription?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -462,6 +687,11 @@ export interface JobTitlesSelect<T extends boolean = true> {
  */
 export interface LayoutSelect<T extends boolean = true> {
   name?: T;
+  skeleton?: T;
+  grid?: T;
+  volume?: T;
+  edition?: T;
+  sectionLayouts?: T;
   mainArticle?: T;
   top1?: T;
   top2?: T;
@@ -472,6 +702,68 @@ export interface LayoutSelect<T extends boolean = true> {
   op3?: T;
   op4?: T;
   special?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "opinion-page-layout_select".
+ */
+export interface OpinionPageLayoutSelect<T extends boolean = true> {
+  name?: T;
+  layout?: T;
+  editorsChoiceLabel?: T;
+  editorsChoice1?: T;
+  editorsChoice2?: T;
+  editorsChoice3?: T;
+  quotes?:
+    | T
+    | {
+        text?: T;
+        article?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "features-page-layout_select".
+ */
+export interface FeaturesPageLayoutSelect<T extends boolean = true> {
+  name?: T;
+  layout?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "submissions_select".
+ */
+export interface SubmissionsSelect<T extends boolean = true> {
+  title?: T;
+  opinionType?: T;
+  authorName?: T;
+  contact?: T;
+  featuredImage?: T;
+  featuredImageCaption?: T;
+  content?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "event-submissions_select".
+ */
+export interface EventSubmissionsSelect<T extends boolean = true> {
+  eventName?: T;
+  date?: T;
+  time?: T;
+  description?: T;
+  contactName?: T;
+  contactInfo?: T;
+  status?: T;
   updatedAt?: T;
   createdAt?: T;
 }

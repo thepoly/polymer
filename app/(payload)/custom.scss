@@ -426,6 +426,14 @@ header .status,
   border: 1px solid var(--theme-elevation-200);
 }
 
+.user-retired-field {
+  .field-description,
+  .description {
+    color: #d6001c !important;
+    font-weight: 700;
+  }
+}
+
 @keyframes fadeIn {
 
 
@@ -475,7 +483,6 @@ header .status,
 
 
 }
-
 
 
 

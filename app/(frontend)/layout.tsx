@@ -1,10 +1,15 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, Cinzel } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import HeaderTransitionProvider from "@/components/HeaderTransitionProvider";
-import { cookies } from "next/headers";
+import SiteAnalytics, { AnalyticsUser } from "@/components/analytics/SiteAnalytics";
+import WebVitals from "@/components/analytics/WebVitals";
+import { cookies, headers } from "next/headers";
+import { getPayload } from "payload";
+import configPromise from "@/payload.config";
+import { User } from "@/payload-types";
 
 const cinzel = Cinzel({
   variable: "--font-cinzel",
@@ -38,11 +43,20 @@ const bebasNeuePro = localFont({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://poly.rpi.edu'),
+  applicationName: "The Polytechnic",
   title: {
     default: "The Polytechnic",
     template: "%s | The Polytechnic",
   },
   description: "The Polytechnic is Rensselaer Polytechnic Institute's independent student newspaper, serving the RPI community since 1885.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "The Poly",
+  },
+  formatDetection: {
+    telephone: false,
+  },
   openGraph: {
     type: 'website',
     siteName: 'The Polytechnic',
@@ -67,6 +81,17 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+};
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -77,21 +102,66 @@ export default async function RootLayout({
 
   const isDarkMode = theme === "dark";
 
+  // Fetch current user if logged in
+  const payload = await getPayload({ config: configPromise });
+  const headersList = await headers();
+  const { user: authUser } = await payload.auth({ headers: headersList });
+
+  let analyticsUser: AnalyticsUser | null = null;
+  if (authUser) {
+    try {
+      const user = await payload.findByID({
+        collection: "users",
+        id: authUser.id,
+        depth: 0,
+        disableErrors: true,
+      }) as User | null;
+
+      if (user) {
+        analyticsUser = {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          roles: user.roles,
+          slug: user.slug,
+          blackTheme: user.blackTheme,
+          has_bio: !!user.bio,
+          position_count: user.positions?.length || 0,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        };
+      }
+    } catch (err) {
+      console.error("[RootLayout] Failed to fetch user for analytics:", err);
+    }
+  }
+
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""}>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&display=swap"
-          rel="stylesheet"
+          rel="preload"
+          href="/fonts/raleway/Raleway-Variable.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/raleway/Raleway-Italic-Variable.ttf"
+          as="font"
+          type="font/ttf"
+          crossOrigin="anonymous"
         />
       </head>
       <body
         className={`${cinzel.variable} ${barlowCondensed.variable} ${bebasNeuePro.variable} antialiased`}
       >
         <ThemeProvider initialDarkMode={isDarkMode}>
-          <HeaderTransitionProvider>{children}</HeaderTransitionProvider>
+          <SiteAnalytics user={analyticsUser} />
+          <WebVitals />
+<HeaderTransitionProvider>{children}</HeaderTransitionProvider>
         </ThemeProvider>
       </body>
     </html>

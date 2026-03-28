@@ -1,5 +1,6 @@
 import React, { cache } from 'react';
 import { notFound } from 'next/navigation';
+import { headers } from 'next/headers';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
 import { getArticleLayout, ArticleLayouts } from '@/components/Article/Layouts';
@@ -9,7 +10,10 @@ import { OpinionArticleHeader } from '@/components/Opinion/OpinionArticleHeader'
 import OpinionScrollBar from '@/components/Opinion/OpinionScrollBar';
 import { OpinionArticleFooter } from '@/components/Opinion/OpinionArticleFooter';
 import { ArticleContent, ArticleFooter } from '@/components/Article';
-import { deriveSlug } from '@/utils/deriveSlug';
+import ArticleScrollBar from '@/components/ArticleScrollBar';
+import ArticleAnalytics from '@/components/analytics/ArticleAnalytics';
+import { InlineEditor } from '@/components/Article/InlineEditor';
+import { calculateWordCount } from '@/utils/wordCount';
 import { getArticleUrl } from '@/utils/getArticleUrl';
 import type { Metadata } from 'next';
 import type { Article, Media, User } from '@/payload-types';
@@ -25,16 +29,127 @@ type Args = {
   }>;
 };
 
-const getArticle = cache(async (slug: string) => {
+type PublicArticleUser = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  slug?: string | null;
+  headshot?: { url?: string | null } | null;
+  bio?: {
+    root?: {
+      children?: LexicalNode[];
+    };
+  } | null;
+  positions?:
+    | {
+        startDate: string;
+        endDate?: string | null;
+        jobTitle?: {
+          title?: string | null;
+        } | null;
+      }[]
+    | null;
+};
+
+type PublicArticleMedia = {
+  id: number;
+  url?: string | null;
+  alt?: string | null;
+  width?: number | null;
+  height?: number | null;
+  photographer?: PublicArticleUser | null;
+  writeInPhotographer?: string | null;
+};
+
+const toPublicArticleUser = (user: User): PublicArticleUser => ({
+  id: user.id,
+  firstName: user.firstName,
+  lastName: user.lastName,
+  slug: user.slug,
+  headshot: typeof user.headshot === 'object' && user.headshot ? { url: user.headshot.url } : null,
+  bio: user.bio
+    ? {
+        root: {
+          children: user.bio.root?.children as LexicalNode[] | undefined,
+        },
+      }
+    : null,
+  positions: user.positions?.map((position) => ({
+    startDate: position.startDate,
+    endDate: position.endDate,
+    jobTitle: typeof position.jobTitle === 'object' && position.jobTitle ? { title: position.jobTitle.title } : null,
+  })) || null,
+});
+
+const toPublicArticleMedia = (media: Article['featuredImage']): PublicArticleMedia | null => {
+  if (!media || typeof media === 'number') return null;
+
+  const photographer = media.photographer && typeof media.photographer === 'object'
+    ? toPublicArticleUser(media.photographer as User)
+    : null;
+
+  return {
+    id: media.id,
+    url: media.url,
+    alt: media.alt,
+    width: media.width,
+    height: media.height,
+    photographer,
+    writeInPhotographer: (media as unknown as Record<string, unknown>).writeInPhotographer as string | null | undefined,
+  };
+};
+
+const toPublicArticle = (article: Article): Article => ({
+  ...article,
+  authors: (article.authors || [])
+    .filter((author): author is User => typeof author !== 'number')
+    .map(toPublicArticleUser),
+  featuredImage: toPublicArticleMedia(article.featuredImage),
+  imageCaption: (article as unknown as Record<string, unknown>).imageCaption as string | null | undefined,
+  opinionType: (article as unknown as Record<string, unknown>).opinionType as Article['opinionType'],
+} as Article);
+
+const getArticle = cache(async (slug: string, section?: string): Promise<Article | undefined> => {
   const payload = await getPayload({ config });
   const result = await payload.find({
     collection: 'articles',
-    where: { slug: { equals: slug } },
+    where: {
+      and: [
+        { slug: { equals: slug } },
+        { _status: { equals: 'published' } },
+        ...(section ? [{ section: { equals: section as Article['section'] } }] : []),
+      ],
+    },
     limit: 1,
     depth: 2,
+    select: {
+      title: true,
+      kicker: true,
+      subdeck: true,
+      section: true,
+      opinionType: true,
+      authors: true,
+      writeInAuthors: true,
+      publishedDate: true,
+      featuredImage: true,
+      imageCaption: true,
+      content: true,
+      slug: true,
+      updatedAt: true,
+      createdAt: true,
+    },
   });
-  return result.docs[0] as Article | undefined;
+  const article = result.docs[0] as Article | undefined;
+  return article ? toPublicArticle(article) : undefined;
 });
+
+function matchesRequestedDate(article: Article, year: string, month: string): boolean {
+  const dateValue = article.publishedDate || article.createdAt;
+  if (!dateValue) return false;
+  const date = new Date(dateValue);
+
+  return date.getFullYear().toString() === year && String(date.getMonth() + 1).padStart(2, '0') === month;
+}
 
 function safeJsonLd(data: Record<string, unknown>): string {
   return JSON.stringify(data).replace(/</g, '\\u003c');
@@ -42,13 +157,17 @@ function safeJsonLd(data: Record<string, unknown>): string {
 
 export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const { slug, section, year, month } = await params;
-  const article = await getArticle(slug);
+  const article = await getArticle(slug, section);
 
-  if (!article) return {};
+  if (!article || !matchesRequestedDate(article, year, month)) return {};
 
-  const authors = (article.authors || [])
+  const staffAuthorNames = (article.authors || [])
     .map((a) => (typeof a === 'number' ? null : `${a.firstName} ${a.lastName}`))
     .filter(Boolean) as string[];
+  const writeInAuthorNames = (((article as unknown as Record<string, unknown>).writeInAuthors || []) as Array<{ name: string }>)
+    .map((a) => a.name)
+    .filter(Boolean);
+  const authors = [...staffAuthorNames, ...writeInAuthorNames];
 
   const image = article.featuredImage as Media | null;
   const imageUrl = image?.url || undefined;
@@ -86,38 +205,23 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
 }
 
 export default async function ArticlePage({ params }: Args) {
-  const { section, slug } = await params;
-  const payload = await getPayload({ config });
+  const { slug, section, year, month } = await params;
+  const article = await getArticle(slug, section);
 
-  let article = await getArticle(slug);
-
-  // Fallback: try matching by derived slug (for articles without saved slugs)
-  if (!article) {
-    const allInSection = await payload.find({
-      collection: 'articles',
-      where: { section: { equals: section } },
-      limit: 200,
-    });
-
-    const match = allInSection.docs.find((doc) => deriveSlug(doc.title) === slug);
-
-    if (match) {
-      await payload.update({
-        collection: 'articles',
-        id: match.id,
-        data: { slug },
-      });
-      article = match as Article;
-    }
-  }
-
-  if (!article) {
+  if (!article || !matchesRequestedDate(article, year, month)) {
     notFound();
   }
 
   const layoutType = getArticleLayout(article);
   const LayoutComponent = ArticleLayouts[layoutType];
 
+  const payload = await getPayload({ config });
+  const { user: authUser } = await payload.auth({ headers: await headers() });
+  const wordCount = calculateWordCount(article.content);
+  const isStaff = !!authUser;
+  const canEdit = authUser && Array.isArray(authUser.roles) && authUser.roles.some(role => ['admin', 'eic'].includes(role));
+
+  // Prepare content (clean up flags if necessary)
   let cleanContent = article.content;
 
   if (layoutType === 'photofeature') {
@@ -154,9 +258,8 @@ export default async function ArticlePage({ params }: Args) {
     );
   }
 
-  const authors = (article.authors || [])
-    .map((a) => (typeof a === 'number' ? null : a))
-    .filter(Boolean) as User[];
+  const staffAuthorsForJsonLd = (article.authors || []).filter((author): author is User => typeof author !== 'number');
+  const writeInAuthorsForJsonLd = ((article as unknown as Record<string, unknown>).writeInAuthors || []) as Array<{ name: string }>;
   const image = article.featuredImage as Media | null;
   const articleUrl = getArticleUrl(article);
 
@@ -180,11 +283,17 @@ export default async function ArticlePage({ params }: Args) {
     ...(image?.url && { image: [image.url] }),
     datePublished: article.publishedDate || article.createdAt,
     dateModified: article.updatedAt,
-    author: authors.map((a) => ({
-      '@type': 'Person',
-      name: `${a.firstName} ${a.lastName}`,
-      ...(a.slug && { url: `/staff/${a.slug}` }),
-    })),
+    author: [
+      ...staffAuthorsForJsonLd.map((a) => ({
+        '@type': 'Person',
+        name: `${a.firstName} ${a.lastName}`,
+        ...(a.slug && { url: `/staff/${a.slug}` }),
+      })),
+      ...writeInAuthorsForJsonLd.map((a) => ({
+        '@type': 'Person',
+        name: a.name,
+      })),
+    ],
     publisher: {
       '@type': 'Organization',
       name: 'The Polytechnic',
@@ -207,7 +316,19 @@ export default async function ArticlePage({ params }: Args) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
-      <LayoutComponent article={article} content={cleanContent} />
+      <ArticleAnalytics
+        articleId={article.id}
+        pathname={`/${section}/${year}/${month}/${slug}`}
+        publishedDate={article.publishedDate || article.createdAt}
+        section={article.section}
+        slug={article.slug}
+        title={article.title}
+        wordCount={wordCount}
+        isStaff={isStaff}
+      />
+      <ArticleScrollBar title={article.title} section={article.section} />
+      <LayoutComponent article={article as unknown as Article} content={cleanContent} />
+      {canEdit && <InlineEditor articleId={article.id} />}
     </>
   );
 }
@@ -216,6 +337,9 @@ export async function generateStaticParams() {
   const payload = await getPayload({ config });
   const articles = await payload.find({
     collection: 'articles',
+    where: {
+      _status: { equals: 'published' },
+    },
     limit: 1000,
     select: {
       slug: true,

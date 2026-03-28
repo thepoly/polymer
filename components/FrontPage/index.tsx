@@ -1,15 +1,21 @@
 import React from "react";
+import Link from "next/link";
 import { LeadArticle } from "./LeadArticle";
 import { ArticleCard } from "./ArticleCard";
 import { ArticleListItem } from "./ArticleListItem";
-import { DynamicSectionHeader } from "./DynamicSectionHeader";
 import { Article } from "./types";
-import TransitionLink from "@/components/TransitionLink";
 
 interface FrontPageProps {
   topStories: {
     lead: Article;
     list: Article[];
+    /** When provided, override the default left/right split */
+    heroLeft?: Article[];
+    heroRight?: Article[];
+    /** Optional bottom slots for Aries; preserve nulls so fixed positions render correctly */
+    bottomRow?: (Article | null)[];
+    /** When true, lead headline is bolder and uppercase */
+    leadImportant?: boolean;
   };
   sections: {
     news: Article[];
@@ -100,7 +106,7 @@ const chunkIntoColumns = (articles: Article[], columnCount: number) => {
   return columns;
 };
 
-function SectionBlock({
+export function SectionBlock({
   title,
   articles,
 }: {
@@ -127,14 +133,26 @@ function SectionBlock({
 
   return (
     <section data-section={sectionSlug}>
+      <div className="mb-3">
+        <div className="relative -left-2 w-[calc(100%+0.5rem)] border-t border-black dark:border-white" />
+        <h2 className="mt-4 md:mt-2">
+          <Link
+            href={`/${sectionSlug}`}
+            className="font-meta text-[20px] md:text-[22px] font-bold tracking-[0.04em] text-accent dark:text-white uppercase leading-[1] hover:opacity-75 transition-opacity"
+          >
+            {title}
+          </Link>
+        </h2>
+      </div>
       {/* Mobile: flat list with dividers */}
-      <div className="flex flex-col lg:hidden">
+      <div className="flex flex-col md:hidden">
         {allSectionArticles.map((article, i) => (
           <div key={article.id} className={i > 0 ? "mt-12" : ""}>
             <ArticleCard
               article={article}
               showImage={Boolean(article.image)}
               imageAspectClassName="aspect-[3/2]"
+              showKicker
             />
           </div>
         ))}
@@ -143,7 +161,7 @@ function SectionBlock({
       {/* Desktop: rich grid layout */}
       <div
         data-section-body
-        className={`hidden lg:grid gap-6 ${
+        className={`hidden md:grid gap-6 pt-0 ${
           hasBlocks && listStories.length > 0
             ? "lg:grid-cols-[minmax(0,1.7fr)_minmax(280px,1fr)] lg:items-start"
             : ""
@@ -165,6 +183,7 @@ function SectionBlock({
                     showImage
                     imageAspectClassName="aspect-[3/2]"
                     excerptClassName="mt-2.5 line-clamp-4 text-[13px] leading-[1.45]"
+                    showKicker
                   />
 
                   <div className="flex flex-col gap-5">
@@ -173,6 +192,7 @@ function SectionBlock({
                         key={article.id}
                         article={article}
                         showImage={false}
+                        showKicker
                       />
                     ))}
                   </div>
@@ -185,6 +205,7 @@ function SectionBlock({
                         article={article}
                         showImage
                         imageAspectClassName="aspect-[3/2]"
+                        showKicker
                       />
                     ))}
                   </div>
@@ -198,6 +219,7 @@ function SectionBlock({
                       article={featureStory}
                       showImage
                       imageAspectClassName="aspect-[3/2]"
+                      showKicker
                     />
                   </div>
                 ) : null}
@@ -217,6 +239,7 @@ function SectionBlock({
                             key={article.id}
                             article={article}
                             showImage={false}
+                            showKicker
                           />
                         ))}
                       </div>
@@ -236,15 +259,6 @@ function SectionBlock({
           </ul>
         )}
       </div>
-
-      <div className="mt-4 flex justify-end">
-        <TransitionLink
-          href={`/${sectionSlug}`}
-          className="font-meta text-[11px] font-bold uppercase tracking-[0.06em] text-accent transition-colors hover:text-accent/70"
-        >
-          More {title} &rarr;
-        </TransitionLink>
-      </div>
     </section>
   );
 }
@@ -253,72 +267,140 @@ export default function FrontPage({
   topStories,
   sections,
 }: FrontPageProps) {
-  const heroStories = arrangeHeroStories(topStories.list);
+  const heroStories: HeroColumns = topStories.heroLeft && topStories.heroRight
+    ? { left: topStories.heroLeft, right: topStories.heroRight }
+    : arrangeHeroStories(topStories.list);
   const heroImageCount = [...heroStories.left, ...heroStories.right].filter(
     (article) => article.image,
   ).length;
   const leadIsCompact = heroImageCount >= 2;
 
   return (
-    <div className="w-full bg-bg-main text-text-main transition-colors duration-300">
+    <div className="homepage-zodiac w-full bg-bg-main text-text-main transition-colors duration-300">
       <div className="mx-auto max-w-[1280px] px-4 pb-14 md:px-6 xl:px-[30px]">
-        {/* Mobile: lead + flat list with dividers */}
-        <div className="pt-6 flex flex-col lg:hidden" data-frontpage-top>
-          <LeadArticle article={topStories.lead} compact={false} />
-          {[...heroStories.left, ...heroStories.right].map((article) => (
-            <div key={article.id} className="mt-20">
-              <ArticleCard article={article} />
-            </div>
-          ))}
+        {/* Mobile: lead first, then a text article, then the rest */}
+        <div className="pt-2 flex flex-col md:hidden" data-frontpage-top>
+          <LeadArticle article={topStories.lead} compact={false} hideKicker />
+          {(() => {
+            const heroArticles = [...heroStories.left, ...heroStories.right];
+            const bottomArticles = topStories.bottomRow || [];
+            const all = [...heroArticles, ...bottomArticles].filter((article): article is Article => Boolean(article));
+            const textIdx = all.findIndex((a) => !a.image);
+            const textFirst = textIdx >= 0 ? all[textIdx] : null;
+            const rest = textFirst ? [...all.slice(0, textIdx), ...all.slice(textIdx + 1)] : all;
+            const ordered = textFirst ? [textFirst, ...rest] : rest;
+            return ordered.map((article, i) => (
+              <div key={`${article.id}-${i}`} className="mt-10">
+                <ArticleCard article={article} />
+              </div>
+            ));
+          })()}
         </div>
 
-        {/* Desktop: two-column hero grid */}
+        {/* Desktop: hero + bottom row as two flowing columns */}
         <div
           data-frontpage-top
-          className={`hidden pt-6 md:pt-7 lg:grid gap-7 ${
-            leadIsCompact
-              ? "lg:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]"
-              : "lg:grid-cols-[minmax(0,0.97fr)_minmax(0,1.03fr)]"
-          }`}
+          className="relative z-[1] hidden md:mr-auto md:grid md:w-[calc(100%-6px)] md:grid-cols-[1fr_1px_1fr] gap-x-5 pt-6 md:pt-7 pb-8 items-start xl:w-[calc(100%-8px)]"
         >
-          <div data-header-scope="primary">
-            <LeadArticle article={topStories.lead} compact={leadIsCompact} />
+          {/* Left column: lead + bottom-left articles */}
+          <div className="flex flex-col gap-5">
+            <LeadArticle article={topStories.lead} compact={leadIsCompact} important={topStories.leadImportant} />
+            {topStories.bottomRow?.[0] && (
+              <ArticleCard
+                article={topStories.bottomRow[0]}
+                showImage={false}
+                contained
+                showKicker
+              />
+            )}
+            {(topStories.bottomRow?.[1] || topStories.bottomRow?.[2]) && (
+              <div className="grid grid-cols-[1fr_1px_1fr] gap-x-5 items-start">
+                {topStories.bottomRow[1] && (
+                  <ArticleCard article={topStories.bottomRow[1]} showImage={false} contained showKicker />
+                )}
+                <div className="self-stretch bg-rule" />
+                {topStories.bottomRow[2] && (
+                  <ArticleCard article={topStories.bottomRow[2]} showImage={false} contained showKicker />
+                )}
+              </div>
+            )}
+            {topStories.bottomRow?.[3] && (
+              <ArticleCard
+                article={topStories.bottomRow[3]}
+                showImage={false}
+                contained
+                showKicker
+              />
+            )}
           </div>
-          <div className="grid grid-cols-2 gap-4 items-start">
-            <div className="flex flex-col gap-5">
-              {heroStories.left.map((article) => (
-                <ArticleCard
-                  key={article.id}
-                  article={article}
-                />
-              ))}
+          {/* Column divider */}
+          <div className="self-stretch bg-rule" />
+          {/* Right column: hero columns + bottom-right articles */}
+          <div className="flex flex-col gap-5">
+            <div className="grid grid-cols-[1fr_1px_1fr] gap-x-5">
+              <div className="flex flex-col">
+                {heroStories.left.map((article, i) => (
+                  <div key={article.id} className={i > 0 ? "pt-3" : "pb-3"}>
+                    <ArticleCard article={article} showKicker />
+                  </div>
+                ))}
+              </div>
+              <div className="self-stretch bg-rule" />
+              <div className="flex flex-col">
+                {heroStories.right.map((article, i) => (
+                  <div key={article.id} className={i > 0 ? "pt-3" : "pb-3"}>
+                    <ArticleCard article={article} showKicker />
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-col gap-5">
-              {heroStories.right.map((article) => (
-                <ArticleCard
-                  key={article.id}
-                  article={article}
-                />
-              ))}
-            </div>
+            {topStories.bottomRow?.[4] && (
+              <ArticleCard
+                article={topStories.bottomRow[4]}
+                contained
+                showKicker
+                imageRight
+                imageAspectClassName="aspect-[4/3]"
+              />
+            )}
+            {(topStories.bottomRow?.[5] || topStories.bottomRow?.[6]) && (
+              <div className="grid grid-cols-[1fr_1px_1fr] gap-x-5 items-start">
+                {topStories.bottomRow[5] && (
+                  <ArticleCard article={topStories.bottomRow[5]} showImage={false} contained showKicker />
+                )}
+                <div className="self-stretch bg-rule" />
+                {topStories.bottomRow[6] && (
+                  <ArticleCard article={topStories.bottomRow[6]} showImage={false} contained showKicker />
+                )}
+              </div>
+            )}
+            {topStories.bottomRow?.[7] && (
+              <ArticleCard
+                article={topStories.bottomRow[7]}
+                showImage={false}
+                showExcerpt={false}
+                contained
+                showKicker
+              />
+            )}
           </div>
         </div>
 
-        <div className="mt-6 flex flex-col gap-8 lg:gap-6">
+        <div className="relative z-[0] mt-8 md:mt-4 flex flex-col gap-0">
           <div>
-            <DynamicSectionHeader title="News" href="/news" mobileOffsetY={1} />
+            {/* <DynamicSectionHeader title="News" href="/news" mobileOffsetY={1} /> */}
             <SectionBlock title="News" articles={sections.news} />
           </div>
-          <div>
-            <DynamicSectionHeader title="Features" href="/features" />
+          <div className="mt-12 md:mt-8">
+            {/* <DynamicSectionHeader title="Features" href="/features" /> */}
             <SectionBlock title="Features" articles={sections.features} />
           </div>
-          <div>
-            <DynamicSectionHeader title="Opinion" href="/opinion" />
+          <div className="mt-12 md:mt-8">
+            {/* <DynamicSectionHeader title="Opinion" href="/opinion" offsetX={2.5} offsetY={-2} /> */}
             <SectionBlock title="Opinion" articles={sections.opinion} />
           </div>
-          <div>
-            <DynamicSectionHeader title="Sports" href="/sports" />
+          <div className="mt-12 md:mt-8">
+            {/* <DynamicSectionHeader title="Sports" href="/sports" offsetX={4.5} /> */}
             <SectionBlock title="Sports" articles={sections.sports} />
           </div>
         </div>

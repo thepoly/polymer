@@ -1,75 +1,187 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This document is the canonical project + operations reference for Claude Code in this repository.
 
 ## Project Overview
 
-This is **The Polytechnic** — the website for RPI's student newspaper ("Serving Rensselaer Since 1885"). It's a Next.js 16 app with Payload CMS v3 as the headless CMS, backed by PostgreSQL. The package manager is pnpm.
+Polymer is The Polytechnic's web platform (public newspaper site + Payload CMS admin) built on Next.js + Payload + PostgreSQL.
 
-## Commands
+## Stack
 
-- `pnpm dev` — start dev server
-- `pnpm build` — production build
-- `pnpm lint` — run ESLint
-- `pnpm test:smoke` — run Playwright smoke tests (`tests/smoke.spec.ts`)
-- `pnpm generate:types` — regenerate `payload-types.ts` from Payload collections
+- Next.js `16.1.6` (App Router, Turbopack build)
+- React `19.2.3`
+- Payload CMS `3.75.0`
+- PostgreSQL (`@payloadcms/db-postgres`)
+- TypeScript
+- Tailwind CSS 4
+- pnpm
 
-## Architecture
+## Repository Layout
 
-### Route Groups
+- `app/(frontend)/`: public site routes (`/`, section pages, article pages, staff, search)
+- `app/(payload)/`: Payload admin/app API integration routes
+- `app/api/`: custom API routes (`/api/health`, search, weather, etc.)
+- `collections/`: Payload collection definitions
+- `components/`: UI + article layout components
+- `migrations/`: migration assets
+- `scripts/`: deploy/runtime scripts (`run_deploy_sql_migrations.sh`, `deploy-smoke.mjs`)
+- `.github/workflows/`: CI and production deployment workflows
 
-The app uses Next.js route groups to separate concerns:
-- `app/(frontend)/` — public-facing newspaper site (front page, article pages, section pages, staff pages, search)
-- `app/(payload)/` — Payload CMS admin panel and API routes (GraphQL, REST)
-- `app/api/` — custom API routes (search, weather)
+## Core Behavior
 
-### Article URL Structure
+- Article URL format: `/:section/:year/:month/:slug`
+- Homepage composition comes from `layout` + recent section stories (`app/(frontend)/page.tsx`)
+- Article layouts:
+  - standard/news/sports/features -> `StandardLayout`
+  - opinion -> `OpinionLayout`
+  - `#photofeature#` flag in first content paragraph -> `PhotofeatureLayout`
 
-Articles use the pattern `/{section}/{year}/{month}/{slug}` (e.g., `/news/2026/03/rpi-budget`). The URL is constructed from the article's section, publishedDate, and slug fields. See `utils/getArticleUrl.ts`.
+## Data Model (Current)
 
-### Payload Collections (in `collections/`)
+- `articles`: draft/publish enabled (`versions.drafts: true`), `publishedDate` set on first publish in a `beforeChange` hook
+- `layout`: homepage slot/pinning collection
+- `users`: staff/auth/roles
+- `media`: uploaded assets
+- `job-titles`: staff position metadata
 
-- **Articles** — main content type with title, kicker, subdeck, section (news/sports/features/editorial/opinion), authors, featuredImage, richText content, slug. Has draft/publish workflow — `publishedDate` is auto-set on first publish via a `beforeChange` hook. Role-based access control (admin/eic/editor/writer).
-- **Layout** — singleton-ish collection that controls the front page layout. Has slots for mainArticle, top1-3, op1-4, special (all article relationships). The front page (`app/(frontend)/page.tsx`) reads this to determine article placement, then fills remaining slots from recent articles per section.
-- **Users** — staff members with roles and profile info (firstName, lastName, etc.)
-- **Media** — file uploads
-- **JobTitles** — editorial positions
+Role access in `articles`:
+- update: `admin`, `eic`, `editor`
+- create: `admin`, `eic`, `editor`, `writer`
+- delete: `admin`
+- anonymous read: published only
 
-### Article Layouts
+## Local Development
 
-Articles support multiple display layouts determined by content flags:
-- **Standard** — default article layout (`components/Article/Layouts/Standard.tsx`)
-- **Photofeature** — triggered when the first line of article content is `#photofeature#`. Uses a fullscreen hero image with overlay text. Components in `components/Article/Photofeature/`.
+### Prerequisites
 
-Layout detection happens in `components/Article/Layouts/index.ts`; the article page (`app/(frontend)/[section]/[year]/[month]/[slug]/page.tsx`) strips the flag before rendering.
+- Node 20+
+- pnpm
+- PostgreSQL
 
-### Front Page Data Flow
+### Environment
 
-The front page (`app/(frontend)/page.tsx`) uses a deduplication system to avoid showing the same article twice. It:
-1. Reads the Layout collection for editorially-pinned articles
-2. Fetches recent articles per section
-3. Fills empty layout slots with recent articles, deduplicating across all sections
+Required:
+- `DATABASE_URL`
+- `PAYLOAD_SECRET`
 
-### Theming
+Optional:
+- `LEGACY_DATABASE_URI`
+- `NEXT_PUBLIC_SITE_URL`
+- `BASE_URL`
+- `PLAYWRIGHT_WEB_SERVER`
+- `PLAYWRIGHT_WEB_SERVER_COMMAND`
 
-- Dark mode via cookie (`theme` cookie) + `ThemeProvider` component + Tailwind `dark` class on `<html>`
-- Section-specific accent colors defined in `app/section-theme.ts`
-- Custom fonts: Cinzel (via next/font), Raleway (Google Fonts link), Minion Pro and Myriad Pro (local OTF files in `public/fonts/`)
-- Tailwind v4 with custom semantic tokens (e.g., `bg-bg-main`, `text-text-muted`, `font-copy`) defined in `globals.css`
+`pnpm install` runs `scripts/generate-env.js` to create `.env` if missing.
 
-### Key Payload Config
+### Common Commands
 
-`payload.config.ts` uses:
-- `postgresAdapter` with `DATABASE_URL` env var
-- `lexicalEditor` for rich text
-- Custom admin dashboard components in `components/Dashboard/`
-- Types output to `payload-types.ts` (import as `@/payload-types`)
+- `pnpm dev`
+- `pnpm build`
+- `pnpm start`
+- `pnpm lint`
+- `pnpm typecheck`
+- `pnpm test:smoke`
+- `pnpm test:search-limit`
+- `pnpm test:deploy-smoke` (manual smoke script; not used by deploy workflow)
+- `pnpm generate:types`
 
-### Path Aliases
+## CI (Current)
 
-- `@/*` maps to project root (e.g., `@/components/...`, `@/payload.config`)
-- `@payload-config` maps to `./payload.config.ts`
+Workflow: `.github/workflows/ci.yml`
 
-## Environment
+Runs on PRs + pushes to `main`:
+1. Postgres service (`postgres:16`)
+2. `pnpm install --frozen-lockfile`
+3. `pnpm exec payload migrate`
+4. `pnpm lint`
+5. `pnpm typecheck`
+6. `pnpm build`
 
-Requires a `.env` file with at minimum `DATABASE_URL` and `PAYLOAD_SECRET`. Run `pnpm install` to auto-generate the env template via `scripts/generate-env.js`.
+Playwright is not part of current CI runtime path.
+
+## Production Deployment (Arch Linux)
+
+Workflow: `.github/workflows/deploy.yml`  
+Trigger: successful `CI` workflow on push to `main` (`workflow_run`)
+
+### Server Paths
+
+- deploy root: `/var/www/polymer`
+- current symlink: `/var/www/polymer/current`
+- releases: `/var/www/polymer/releases/<sha>-<attempt>`
+- shared runtime env: `/var/www/polymer/shared/.env`
+- persistent media: `/var/www/polymer-media` (symlinked as `current/media`)
+
+### Arch Linux Host Setup (One-Time)
+
+Required host state:
+- GitHub Actions self-hosted runner installed and active as `actions-runner`
+- Node.js 20+, pnpm 10, `psql` client, and PM2 available to `actions-runner`
+- deployment directories created:
+  - `/var/www/polymer`
+  - `/var/www/polymer/releases`
+  - `/var/www/polymer/shared`
+  - `/var/www/polymer-media`
+- write access:
+  - `actions-runner` must be able to create/update release directories and `/var/www/polymer/shared/.env`
+  - runtime process must be able to read `/var/www/polymer/shared/.env` and read/write `/var/www/polymer-media` as needed
+- PM2 persistence configured for `actions-runner` (`pm2 startup` + `pm2 save`)
+
+Operator rule:
+- when managing production PM2 manually, run `sudo -u actions-runner pm2 ...`
+
+### Deploy Sequence
+
+1. Rsync source into fresh release directory
+2. Write shared `.env` from GitHub secrets
+3. `chmod 644 /var/www/polymer/shared/.env`
+4. Install deps in release (`pnpm install --frozen-lockfile`)
+5. Link shared `.env` and media symlink into release
+6. Run SQL migrations (`scripts/run_deploy_sql_migrations.sh`)
+7. Build app (`pnpm run build`)
+8. Record previous release target
+9. Atomically switch `current` symlink
+10. Restart PM2 app from ecosystem file
+11. Verify readiness with health endpoint (`curl` retries against `HEALTHCHECK_URL`)
+12. On failure, roll back `current` symlink and restart PM2
+13. Prune old releases (keep 5)
+
+### PM2 Ownership Rule (Critical)
+
+Use a single PM2 control plane: `actions-runner`.
+
+- Allowed: `sudo -u actions-runner pm2 ...`
+- Avoid: running app PM2 commands as `poly`
+
+Mixing PM2 users creates split daemons/process lists and inconsistent runtime ownership on port 3000.
+
+### Runtime Process Config
+
+`ecosystem.config.cjs`:
+- app name: `polymer`
+- cwd: `/var/www/polymer/current`
+- script: `node_modules/next/dist/bin/next`
+- args: `start`
+- mode: `cluster`, `instances: 1`
+- env: `NODE_ENV=production`, `PORT=3000`
+
+## Health & Verification
+
+- readiness endpoint: `GET /api/health`
+- implementation: `app/api/health/route.ts`
+- behavior:
+  - returns `200` with `{ status: "ok" }` when app + DB/Payload check succeeds
+  - returns `503` with `{ status: "error", checks.database: "error" }` on DB/Payload failure
+
+## Agent Operations
+
+- **Linting & Code Quality:** You must ensure that any code changes you make are lint-safe before completing your task. Either review your code rigorously for common ESLint and React purity warnings, or execute `pnpm lint` to automatically verify.
+
+## Incident Guardrails
+
+- If you see `missing secret key` / Payload init errors:
+  - verify `/var/www/polymer/shared/.env` readability for runtime user
+  - verify app was started by `actions-runner` PM2
+- If deploy says success but site looks wrong:
+  - check for competing PM2 daemons/users
+  - verify who owns port 3000 with `ss -ltnp '( sport = :3000 )'`

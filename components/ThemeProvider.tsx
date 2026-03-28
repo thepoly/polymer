@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 type ThemeContextType = {
   isDarkMode: boolean;
@@ -8,6 +8,19 @@ type ThemeContextType = {
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const KONAMI_CODE = [
+  "ArrowUp",
+  "ArrowUp",
+  "ArrowDown",
+  "ArrowDown",
+  "ArrowLeft",
+  "ArrowRight",
+  "ArrowLeft",
+  "ArrowRight",
+  "b",
+  "a",
+  "Enter",
+];
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
@@ -25,73 +38,106 @@ export default function ThemeProvider({
   initialDarkMode?: boolean;
 }) {
   const [isDarkMode, setIsDarkMode] = useState(initialDarkMode);
-  const [keySequence, setKeySequence] = useState<string[]>([]);
-
-  const konamiCode = [
-    "ArrowUp",
-    "ArrowUp",
-    "ArrowDown",
-    "ArrowDown",
-    "ArrowLeft",
-    "ArrowRight",
-    "ArrowLeft",
-    "ArrowRight",
-    "b",
-    "a",
-    "Enter",
-  ];
+  const [isStandalonePwa, setIsStandalonePwa] = useState(false);
+  const konamiIndexRef = useRef(0);
 
   useEffect(() => {
+    const standaloneQuery = window.matchMedia("(display-mode: standalone)");
+    const navigatorWithStandalone = window.navigator as Navigator & {
+      standalone?: boolean;
+    };
+
+    const updateStandaloneState = () => {
+      const standalone = standaloneQuery.matches || navigatorWithStandalone.standalone === true;
+      setIsStandalonePwa(standalone);
+      document.documentElement.classList.toggle("standalone-pwa", standalone);
+      document.body.classList.toggle("standalone-pwa", standalone);
+    };
+
+    updateStandaloneState();
+
+    standaloneQuery.addEventListener("change", updateStandaloneState);
+    window.addEventListener("pageshow", updateStandaloneState);
+
+    return () => {
+      standaloneQuery.removeEventListener("change", updateStandaloneState);
+      window.removeEventListener("pageshow", updateStandaloneState);
+    };
+  }, []);
+
+  useEffect(() => {
+    const normalizeKonamiKey = (key: string) => {
+      if (key.startsWith("Arrow")) return key;
+      if (key === "Enter") return key;
+      return key.length === 1 ? key.toLowerCase() : key;
+    };
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Detect "Up Up" followed by "Down" to prevent scrolling
-      const lastTwo = keySequence.slice(-2);
-      const lastThree = keySequence.slice(-3);
-      
-      if (event.key === "ArrowDown") {
-        const isFirstDownAfterUpUp = lastTwo.length === 2 && lastTwo[0] === "ArrowUp" && lastTwo[1] === "ArrowUp";
-        const isSecondDownAfterUpUp = lastThree.length === 3 && lastThree[0] === "ArrowUp" && lastThree[1] === "ArrowUp" && lastThree[2] === "ArrowDown";
-        
-        if (isFirstDownAfterUpUp || isSecondDownAfterUpUp) {
-          event.preventDefault();
-        }
+      const key = normalizeKonamiKey(event.key);
+      const currentIndex = konamiIndexRef.current;
+
+      // Prevent page scroll when entering the down/down part of the code.
+      if (key === "ArrowDown" && (currentIndex === 2 || currentIndex === 3)) {
+        event.preventDefault();
       }
 
-      setKeySequence((prev) => {
-        const newSequence = [...prev, event.key];
-        return newSequence.slice(-konamiCode.length);
-      });
+      let nextIndex = 0;
+      if (key === KONAMI_CODE[currentIndex]) {
+        nextIndex = currentIndex + 1;
+      } else if (key === KONAMI_CODE[0]) {
+        nextIndex = 1;
+      }
+
+      if (nextIndex === KONAMI_CODE.length) {
+        setIsDarkMode((prevMode) => !prevMode);
+        nextIndex = 0;
+      }
+
+      konamiIndexRef.current = nextIndex;
     };
 
     window.addEventListener("keydown", handleKeyDown, { passive: false });
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [keySequence]);
+  }, []);
 
   useEffect(() => {
-    if (keySequence.length === konamiCode.length && keySequence.every((key, index) => key === konamiCode[index])) {
-      setIsDarkMode((prev) => !prev);
-      setKeySequence([]); 
-    }
-  }, [keySequence]);
+    const themeColor = isDarkMode ? "#0a0a0a" : "#ffffff";
 
-  useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add("dark");
+      document.documentElement.style.colorScheme = "dark";
       document.cookie = "theme=dark; path=/; max-age=31536000"; // 1 year
     } else {
       document.documentElement.classList.remove("dark");
+      document.documentElement.style.colorScheme = "light";
       document.cookie = "theme=light; path=/; max-age=31536000";
     }
 
-    let meta = document.querySelector('meta[name="theme-color"]');
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.setAttribute("name", "theme-color");
-      document.head.appendChild(meta);
+    let themeMeta = document.querySelector('meta[name="theme-color"][data-runtime-theme-color="true"]');
+    if (!themeMeta) {
+      themeMeta = document.createElement("meta");
+      themeMeta.setAttribute("name", "theme-color");
+      themeMeta.setAttribute("data-runtime-theme-color", "true");
+      document.head.appendChild(themeMeta);
     }
-    meta.setAttribute("content", isDarkMode ? "#000000" : "#ffffff");
-  }, [isDarkMode]);
 
-  const toggleDarkMode = () => setIsDarkMode((prev) => !prev);
+    themeMeta.setAttribute("content", themeColor);
+
+    let statusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (!statusBarMeta) {
+      statusBarMeta = document.createElement("meta");
+      statusBarMeta.setAttribute("name", "apple-mobile-web-app-status-bar-style");
+      document.head.appendChild(statusBarMeta);
+    }
+    statusBarMeta.setAttribute(
+      "content",
+      isStandalonePwa ? "black-translucent" : isDarkMode ? "black" : "default",
+    );
+  }, [isDarkMode, isStandalonePwa]);
+
+  const toggleDarkMode = () => {
+    setIsDarkMode((prev) => !prev);
+  };
 
   return (
     <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode }}>

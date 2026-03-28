@@ -5,6 +5,7 @@ import { startTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useHeaderTransition } from "@/components/HeaderTransitionProvider";
+import { shouldAnimateHeaderTransition } from "@/components/headerAnimationRoutes";
 
 type TransitionLinkProps = Omit<ComponentProps<typeof Link>, "href"> & {
   href: string;
@@ -21,7 +22,7 @@ export default function TransitionLink({
 }: TransitionLinkProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { triggerTransition } = useHeaderTransition();
+  const { isAnimating, navigateImmediately, triggerTransition } = useHeaderTransition();
   const isInternalRoute = href.startsWith("/");
 
   const prefetchLink = () => {
@@ -50,11 +51,30 @@ export default function TransitionLink({
       return;
     }
 
+    const currentPath = pathname ?? window.location.pathname;
+
+    if (!shouldAnimateHeaderTransition(currentPath, href)) {
+      return;
+    }
+
+    if (isAnimating) {
+      event.preventDefault();
+      navigateImmediately({
+        href,
+        navigate: (nextHref) => {
+          startTransition(() => {
+            router.push(nextHref);
+          });
+        },
+      });
+      return;
+    }
+
     event.preventDefault();
 
     triggerTransition({
       href,
-      currentPath: pathname ?? window.location.pathname,
+      currentPath,
       navigate: (nextHref) => {
         startTransition(() => {
           router.push(nextHref);

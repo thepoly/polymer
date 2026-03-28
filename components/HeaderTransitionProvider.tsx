@@ -5,17 +5,29 @@ import {
   createContext,
   type MutableRefObject,
   type ReactNode,
+  useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
+import {
+  shouldAnimateHeaderTransition,
+  shouldRenderAnimatedHeader,
+} from "@/components/headerAnimationRoutes";
 
-const SUCK_DURATION_MS = 400;
-const SHOOT_DURATION_MS = 2000;
+const INITIAL_SUCK_DURATION_MS = 400;
+const INITIAL_SHOOT_DURATION_MS = 2000;
+const ACCELERATED_SUCK_DURATION_MS = 300;
+const ACCELERATED_SHOOT_DURATION_MS = 1200;
 const NAVIGATION_FALLBACK_MS = 5000;
 const INITIAL_ANIMATION_KEY = 1;
+const HEADER_ANIMATION_EVENT = "poly-header-animation-speed-change";
 type HeaderAnimationPhase = "idle" | "sucking" | "navigating" | "shooting";
+
+type HeaderAnimationSpeed = "initial" | "accelerated";
 
 type NavigationOptions = {
   href: string;
@@ -27,14 +39,19 @@ type NavigationOptions = {
 type HeaderTransitionContextValue = {
   animationKey: number;
   phase: HeaderAnimationPhase;
+  speed: HeaderAnimationSpeed;
+  suckDurationMs: number;
+  shootDurationMs: number;
   isSucking: boolean;
   isAnimating: boolean;
+  navigateImmediately: (options: Pick<NavigationOptions, "href" | "navigate">) => void;
   triggerTransition: (options: NavigationOptions) => void;
 };
 
 const HeaderTransitionContext = createContext<HeaderTransitionContextValue | null>(
   null,
 );
+let hasSeenHeaderAnimationInMemory = false;
 
 function clearTimer(timerRef: MutableRefObject<number | null>) {
   if (timerRef.current !== null) {
@@ -43,16 +60,42 @@ function clearTimer(timerRef: MutableRefObject<number | null>) {
   }
 }
 
+function getStoredHeaderAnimationSpeed(): HeaderAnimationSpeed {
+  return hasSeenHeaderAnimationInMemory ? "accelerated" : "initial";
+}
+
+function subscribeToHeaderAnimationSpeed(onStoreChange: () => void) {
+  if (typeof window === "undefined") {
+    return () => {};
+  }
+
+  const handleChange = () => onStoreChange();
+  window.addEventListener(HEADER_ANIMATION_EVENT, handleChange);
+
+  return () => {
+    window.removeEventListener(HEADER_ANIMATION_EVENT, handleChange);
+  };
+}
+
 export default function HeaderTransitionProvider({
   children,
 }: {
   children: ReactNode;
 }) {
+  const pathname = usePathname() ?? "";
   const [animationKey, setAnimationKey] = useState(INITIAL_ANIMATION_KEY);
-  const [phase, setPhase] = useState<HeaderAnimationPhase>("shooting");
-  const pathname = usePathname();
+  const [phase, setPhase] = useState<HeaderAnimationPhase>(() =>
+    shouldRenderAnimatedHeader(pathname) ? "shooting" : "idle",
+  );
+  const speed = useSyncExternalStore<HeaderAnimationSpeed>(
+    subscribeToHeaderAnimationSpeed,
+    getStoredHeaderAnimationSpeed,
+    () => "initial",
+  );
 
-  const phaseRef = useRef<HeaderAnimationPhase>("shooting");
+  const phaseRef = useRef<HeaderAnimationPhase>(
+    shouldRenderAnimatedHeader(pathname) ? "shooting" : "idle",
+  );
   const pendingNavigationRef = useRef(false);
   const pendingHrefRef = useRef<string | null>(null);
 
@@ -72,20 +115,47 @@ export default function HeaderTransitionProvider({
     clearTimer(fallbackTimerRef);
   };
 
-  const unlockAfterShoot = () => {
+  const suckDurationMs =
+    speed === "initial" ? INITIAL_SUCK_DURATION_MS : ACCELERATED_SUCK_DURATION_MS;
+  const shootDurationMs =
+    speed === "initial" ? INITIAL_SHOOT_DURATION_MS : ACCELERATED_SHOOT_DURATION_MS;
+
+  const markAnimationSeen = () => {
+    hasSeenHeaderAnimationInMemory = true;
+    window.dispatchEvent(new Event(HEADER_ANIMATION_EVENT));
+  };
+
+  const unlockAfterShoot = useCallback(() => {
     clearTimer(unlockTimerRef);
     unlockTimerRef.current = window.setTimeout(() => {
       phaseRef.current = "idle";
       setPhase("idle");
-    }, SHOOT_DURATION_MS);
-  };
+      markAnimationSeen();
+    }, shootDurationMs);
+  }, [shootDurationMs]);
 
-  const startShootPhase = () => {
+  const startShootPhase = useCallback(() => {
     phaseRef.current = "shooting";
     setPhase("shooting");
     setAnimationKey((prev) => prev + 1);
     unlockAfterShoot();
-  };
+  }, [unlockAfterShoot]);
+
+  const navigateImmediately = useCallback(({
+    href,
+    navigate,
+  }: Pick<NavigationOptions, "href" | "navigate">) => {
+    clearAllTimers();
+    pendingNavigationRef.current = false;
+    pendingHrefRef.current = null;
+    if (phaseRef.current !== "shooting") {
+      phaseRef.current = "shooting";
+      setPhase("shooting");
+      setAnimationKey((prev) => prev + 1);
+      unlockAfterShoot();
+    }
+    navigate(href);
+  }, [unlockAfterShoot]);
 
   const triggerTransition = ({
     href,
@@ -95,22 +165,12 @@ export default function HeaderTransitionProvider({
   }: NavigationOptions) => {
     if (phaseRef.current !== "idle") return;
 
-    const isCurrentPage =
-      currentPath === href || (href === "/" && currentPath === "/");
-
-    clearAllTimers();
-    phaseRef.current = "sucking";
-    setPhase("sucking");
-
-    if (isCurrentPage) {
-      pendingNavigationRef.current = false;
-      pendingHrefRef.current = null;
-      suckTimerRef.current = window.setTimeout(() => {
-        startShootPhase();
-      }, SUCK_DURATION_MS);
+    if (!shouldAnimateHeaderTransition(currentPath, href)) {
+      navigate(href);
       return;
     }
 
+    clearAllTimers();
     pendingNavigationRef.current = true;
     pendingHrefRef.current = href;
 
@@ -120,11 +180,13 @@ export default function HeaderTransitionProvider({
       // Prefetch failures should not block the transition.
     }
 
+    phaseRef.current = "sucking";
+    setPhase("sucking");
     navigationTimerRef.current = window.setTimeout(() => {
       phaseRef.current = "navigating";
       setPhase("navigating");
       navigate(href);
-    }, SUCK_DURATION_MS);
+    }, suckDurationMs);
 
     fallbackTimerRef.current = window.setTimeout(() => {
       pendingNavigationRef.current = false;
@@ -135,10 +197,11 @@ export default function HeaderTransitionProvider({
   };
 
   useEffect(() => {
+    if (phaseRef.current !== "shooting") return;
     unlockAfterShoot();
-  }, []);
+  }, [unlockAfterShoot]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!pendingNavigationRef.current) return;
     if (phaseRef.current !== "navigating") return;
     if (pathname !== pendingHrefRef.current) return;
@@ -147,8 +210,16 @@ export default function HeaderTransitionProvider({
     pendingHrefRef.current = null;
     clearTimer(fallbackTimerRef);
     clearTimer(navigationTimerRef);
-    startShootPhase();
-  }, [pathname]);
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      startShootPhase();
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, startShootPhase]);
 
   useEffect(
     () => () => {
@@ -165,8 +236,12 @@ export default function HeaderTransitionProvider({
       value={{
         animationKey,
         phase,
+        speed,
+        suckDurationMs,
+        shootDurationMs,
         isSucking: phase === "sucking",
         isAnimating: phase !== "idle",
+        navigateImmediately,
         triggerTransition,
       }}
     >

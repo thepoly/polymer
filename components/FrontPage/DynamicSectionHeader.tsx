@@ -5,20 +5,23 @@ import TransitionLink from "@/components/TransitionLink";
 
 const MIN_SIZE = 28;
 const HARD_MIN_SIZE = 20;
-const MAX_SIZE = 120;
+const MAX_SIZE = 90;
 const OVERLAP_MARGIN = 4;
-const FLOAT_BREAKPOINT = 1024;
+const FLOAT_BREAKPOINT = 768;
 const SECTION_BODY_SELECTOR = "[data-section-body]";
 const TOP_BLOCK_SELECTOR = "[data-frontpage-top]";
 const PRIMARY_SCOPE_SELECTOR = "[data-header-scope='primary']";
 const ANCHOR_SELECTOR = "[data-header-anchor]";
-const TEXT_TOP_GAP = 12;
-const TEXT_BOTTOM_GAP = 12;
+const TEXT_TOP_GAP = 16;
+const TEXT_BOTTOM_GAP = 18;
+const IMAGE_TOP_INSET = 18; // extra clearance above header when prev content is an image
+const IMAGE_BOT_INSET = 12; // clearance below header when next content is an image
 const HEADER_X_OFFSET = -1;
 const HEADER_Y_OFFSET_RATIO = 0.06;
 const HEADER_LINE_HEIGHT = 0.82;
 const LANE_TOLERANCE = 48;
 const WIDTH_PADDING = 12;
+const HEADER_BOTTOM_SPACE = 8;
 
 interface AnchorEdge {
   position: number;
@@ -169,7 +172,19 @@ function measureFontMetrics(text: string, fontSize: number): {
   };
 }
 
-export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title: string; href: string; mobileOffsetY?: number }) {
+export function DynamicSectionHeader({
+  title,
+  href,
+  mobileOffsetY = 0,
+  offsetX = 0,
+  offsetY = 0,
+}: {
+  title: string;
+  href: string;
+  mobileOffsetY?: number;
+  offsetX?: number;
+  offsetY?: number;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const mobileRef = useRef<HTMLDivElement>(null);
@@ -177,6 +192,7 @@ export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title
   const [mobileFontSize, setMobileFontSize] = useState(64);
   const [ty, setTy] = useState(0);
   const [isFloating, setIsFloating] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const check = () => setIsFloating(window.innerWidth >= FLOAT_BREAKPOINT);
@@ -197,6 +213,7 @@ export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title
         // Add back the bearing offset we subtract in rendering
         const adjusted = (availableWidth + size * 0.06) / testWidth * testSize;
         setMobileFontSize(Math.floor(adjusted));
+        setIsReady(true);
       }
     };
     fit();
@@ -222,6 +239,7 @@ export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title
     if (!prevSource || !nextSource) {
       setFontSize(MIN_SIZE);
       setTy(0);
+      setIsReady(true);
       return;
     }
 
@@ -237,27 +255,29 @@ export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title
       // No room to float — fall back to a small in-flow header
       setFontSize(HARD_MIN_SIZE);
       setTy(0);
+      setIsReady(true);
       return;
     }
 
     const metrics = measureFontMetrics(title, 100);
     const visualHeightRatio = metrics.visualHeightRatio;
+    const topInset = aboveEdge.isImage ? IMAGE_TOP_INSET : OVERLAP_MARGIN;
+    const botInset = belowEdge.isImage ? IMAGE_BOT_INSET : OVERLAP_MARGIN;
+    const paddedAvailableHeight = availableHeight - topInset - botInset;
     let newSize = Math.max(
       MIN_SIZE,
-      Math.min(MAX_SIZE, availableHeight / Math.max(visualHeightRatio, 0.01)),
+      Math.min(MAX_SIZE, paddedAvailableHeight / Math.max(visualHeightRatio, 0.01)),
     );
     const containerRect = el.getBoundingClientRect();
     const belowRect = belowEdge.element?.getBoundingClientRect();
     const estimatedHeight = newSize * HEADER_LINE_HEIGHT;
-    const minTop = above + topPadding;
-    const maxTop = below - bottomPadding - estimatedHeight;
+    const minTop = above + topPadding + topInset;
+    const maxTop = below - bottomPadding - estimatedHeight - botInset;
 
-    // Perch: if below is image, sit right above it. If above is image, sit right below it. Otherwise center.
+    // Perch: if below is image, sit right above it. Otherwise sit right after the content above.
     const estimatedTargetTop = belowEdge.isImage
       ? below - estimatedHeight
-      : aboveEdge.isImage
-        ? above
-        : above + topPadding + (availableHeight - estimatedHeight) / 2;
+      : above;
     const estimatedFinalTop = Math.min(
       maxTop,
       Math.max(minTop, estimatedTargetTop + newSize * HEADER_Y_OFFSET_RATIO),
@@ -296,27 +316,28 @@ export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title
 
       const headingRect = heading.getBoundingClientRect();
       const wrapperRect = wrapperEl.getBoundingClientRect();
-      const renderedMinTop = above + topPadding + OVERLAP_MARGIN;
-      const renderedMaxTop = below - bottomPadding - headingRect.height - OVERLAP_MARGIN;
+      const renderedTopInset = aboveEdge.isImage ? IMAGE_TOP_INSET : OVERLAP_MARGIN;
+      const renderedBotInset = belowEdge.isImage ? IMAGE_BOT_INSET : OVERLAP_MARGIN;
+      const renderedMinTop = above + topPadding + renderedTopInset;
+      const renderedMaxTop = below - bottomPadding - headingRect.height - renderedBotInset;
       const visualBias = newSize * HEADER_Y_OFFSET_RATIO;
 
-      // Perch on image below, sit on image above, or center
+      // Perch: if below is image, sit right above it. Otherwise sit right after the content above.
       const targetTop = belowEdge.isImage
         ? below - headingRect.height
-        : aboveEdge.isImage
-          ? above
-          : above + topPadding + (availableHeight - headingRect.height) / 2;
+        : above;
       // Clamp to prevent overlap with content above and below
       const finalTop = Math.min(renderedMaxTop, Math.max(renderedMinTop, targetTop + visualBias));
-      setTy(finalTop - wrapperRect.top);
+      setTy(finalTop - wrapperRect.top + offsetY);
+      setIsReady(true);
     });
-  }, [title, isFloating]);
+  }, [title, isFloating, offsetY]);
 
   useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
-    calculate();
+    requestAnimationFrame(calculate);
     const fontReady = typeof document !== "undefined" && "fonts" in document
       ? document.fonts.ready.then(() => requestAnimationFrame(calculate))
       : null;
@@ -342,13 +363,17 @@ export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title
     return (
       <div
         ref={mobileRef}
-        className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden"
-        style={{ marginBottom: `-${mobileFontSize * 0.05}px`, marginTop: mobileOffsetY ? `${mobileOffsetY}px` : undefined }}
+        className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden transition-opacity duration-300"
+        style={{
+          marginBottom: `${HEADER_BOTTOM_SPACE - mobileFontSize * 0.095}px`,
+          marginTop: mobileOffsetY || offsetY ? `${mobileOffsetY + offsetY}px` : undefined,
+          opacity: isReady ? 1 : 0,
+        }}
       >
-        <TransitionLink href={href} className="group block">
+        <TransitionLink href={href} className="group block text-center">
           <h2
-            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-accent/25 group-hover:text-accent/20 whitespace-nowrap"
-            style={{ fontSize: `${mobileFontSize}px`, marginLeft: `-${mobileFontSize * 0.06}px` }}
+            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#D6001C] dark:text-white group-hover:text-[#D6001C] dark:group-hover:text-white whitespace-nowrap"
+            style={{ fontSize: `${mobileFontSize}px`, marginLeft: `${-mobileFontSize * 0.06 + offsetX}px` }}
           >
             {title}
           </h2>
@@ -360,13 +385,22 @@ export function DynamicSectionHeader({ title, href, mobileOffsetY = 0 }: { title
   return (
     <div
       ref={containerRef}
-      style={{ height: 0, overflow: "visible", position: "relative" }}
+      className="transition-opacity duration-300"
+      style={{ height: HEADER_BOTTOM_SPACE, overflow: "visible", position: "relative", opacity: isReady ? 1 : 0 }}
     >
-      <div style={{ transform: `translate(${HEADER_X_OFFSET}px, ${ty}px)`, marginLeft: `-${fontSize * 0.06}px` }}>
+      <div
+        style={{
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+          transform: `translate(${HEADER_X_OFFSET + offsetX}px, ${ty}px)`,
+          marginLeft: `-${fontSize * 0.06}px`,
+        }}
+      >
         <TransitionLink href={href} className="group inline-block">
           <h2
             ref={headingRef}
-            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-accent/25 group-hover:text-accent/20"
+            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#D6001C] dark:text-white group-hover:text-[#D6001C] dark:group-hover:text-white"
             style={{ fontSize: `${fontSize}px` }}
           >
             {title}
