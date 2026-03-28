@@ -161,28 +161,6 @@ const Articles: CollectionConfig = {
       },
     },
     {
-      name: 'opinionType',
-      type: 'select',
-      options: [
-        { label: 'Opinion', value: 'opinion' },
-        { label: 'Column', value: 'column' },
-        { label: 'Staff Editorial', value: 'staff-editorial' },
-        { label: 'Editorial Notebook', value: 'editorial-notebook' },
-        { label: 'Endorsement', value: 'endorsement' },
-        { label: 'Top Hat', value: 'top-hat' },
-        { label: 'Candidate Profile', value: 'candidate-profile' },
-        { label: 'Letter to the Editor', value: 'letter-to-the-editor' },
-        { label: "The Poly's Recommendations", value: 'polys-recommendations' },
-        { label: "Editor's Notebook", value: 'editors-notebook' },
-        { label: 'Derby', value: 'derby' },
-        { label: 'Other', value: 'other' },
-      ],
-      admin: {
-        condition: (data) => data?.section === 'opinion' || data?.section === 'editorial',
-        description: 'Categorizes opinion articles. Only visible when section is Opinion.',
-      },
-    },
-    {
       name: 'authors',
       type: 'relationship',
       relationTo: 'users',
