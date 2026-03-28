@@ -3,8 +3,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
-import { deriveSlug } from '@/utils/deriveSlug';
 import { Article, Media } from '@/payload-types';
+import { getArticleUrl } from '@/utils/getArticleUrl';
 import { opinionTypeLabels } from './opinionTypeLabels';
 
 function pickRandom<T>(arr: T[], n: number): T[] {
@@ -47,12 +47,7 @@ export const OpinionArticleFooter: React.FC<Props> = async ({ currentArticleId }
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-5 gap-y-8">
         {picks.map((article) => {
-          const dateStr = article.publishedDate || article.createdAt;
-          const date = new Date(dateStr);
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const slug = article.slug || deriveSlug(article.title);
-          const url = `/opinion/${year}/${month}/${slug}`;
+          const url = getArticleUrl(article);
           const image = article.featuredImage as Media | null;
           const label = opinionTypeLabels[article.opinionType || 'opinion'] || 'Op-Ed';
 

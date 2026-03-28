@@ -25,7 +25,11 @@ VALUES
   ('20260322_220000_add_more_to_opinion_type_enum', 6, NOW(), NOW()),
   ('20260322_230000_add_write_in_photographer_to_media', 6, NOW(), NOW()),
   ('20260322_231000_add_user_retired', 6, NOW(), NOW()),
-  ('20260324_220000_add_user_seen_newsroom_notice', 7, NOW(), NOW())
+  ('20260324_220000_add_user_seen_newsroom_notice', 7, NOW(), NOW()),
+  ('20260328_000000_add_user_one_liner', 8, NOW(), NOW()),
+  ('20260328_100000_add_submissions', 8, NOW(), NOW()),
+  ('20260328_200000_add_event_submissions', 8, NOW(), NOW()),
+  ('20260328_300000_add_features_page_layout', 8, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -184,4 +188,93 @@ ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "latest_version" varchar DEFAULT '0
 -- 20260322: Add 'more' to opinion_type enums
 ALTER TYPE "public"."enum_articles_opinion_type" ADD VALUE IF NOT EXISTS 'more';
 ALTER TYPE "public"."enum__articles_v_version_opinion_type" ADD VALUE IF NOT EXISTS 'more';
+
+-- 20260328: Add one_liner text field to users
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "one_liner" varchar;
+
+-- 20260328: Add submissions table
+DO $$ BEGIN
+  CREATE TYPE "public"."enum_submissions_opinion_type" AS ENUM(
+    'opinion', 'column', 'staff-editorial', 'editorial-notebook',
+    'endorsement', 'top-hat', 'candidate-profile', 'letter-to-the-editor',
+    'polys-recommendations', 'editors-notebook', 'derby', 'other'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE TYPE "public"."enum_submissions_status" AS ENUM('new', 'reviewed', 'published', 'rejected');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE TABLE IF NOT EXISTS "submissions" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "title" varchar NOT NULL,
+  "opinion_type" "public"."enum_submissions_opinion_type" NOT NULL,
+  "author_name" varchar NOT NULL,
+  "contact" varchar NOT NULL,
+  "featured_image_id" integer,
+  "featured_image_caption" varchar,
+  "content" varchar NOT NULL,
+  "status" "public"."enum_submissions_status" DEFAULT 'new',
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+DO $$ BEGIN
+  ALTER TABLE "submissions" ADD CONSTRAINT "submissions_featured_image_id_media_id_fk"
+    FOREIGN KEY ("featured_image_id") REFERENCES "public"."media"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "submissions_created_at_idx" ON "submissions" USING btree ("created_at");
+ALTER TABLE "payload_locked_documents_rels" ADD COLUMN IF NOT EXISTS "submissions_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_submissions_fk"
+    FOREIGN KEY ("submissions_id") REFERENCES "public"."submissions"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_submissions_id_idx"
+  ON "payload_locked_documents_rels" ("submissions_id");
+
+-- 20260328: Add event_submissions table
+DO $$ BEGIN
+  CREATE TYPE "public"."enum_event_submissions_status" AS ENUM('new', 'reviewed', 'accepted', 'rejected');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE TABLE IF NOT EXISTS "event_submissions" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "event_name" varchar NOT NULL,
+  "date" timestamp(3) with time zone NOT NULL,
+  "time" varchar NOT NULL,
+  "description" varchar NOT NULL,
+  "contact_name" varchar,
+  "contact_info" varchar,
+  "status" "public"."enum_event_submissions_status" DEFAULT 'new',
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "event_submissions_created_at_idx" ON "event_submissions" USING btree ("created_at");
+ALTER TABLE "payload_locked_documents_rels" ADD COLUMN IF NOT EXISTS "event_submissions_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_event_submissions_fk"
+    FOREIGN KEY ("event_submissions_id") REFERENCES "public"."event_submissions"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_event_submissions_id_idx"
+  ON "payload_locked_documents_rels" ("event_submissions_id");
+
+-- 20260328: Add features_page_layout table
+CREATE TABLE IF NOT EXISTS "features_page_layout" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "name" varchar NOT NULL DEFAULT 'Features Layout',
+  "layout" jsonb,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "features_page_layout_created_at_idx" ON "features_page_layout" USING btree ("created_at");
+ALTER TABLE "payload_locked_documents_rels" ADD COLUMN IF NOT EXISTS "features_page_layout_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_features_page_layout_fk"
+    FOREIGN KEY ("features_page_layout_id") REFERENCES "public"."features_page_layout"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_features_page_layout_id_idx"
+  ON "payload_locked_documents_rels" ("features_page_layout_id");
 SQL
