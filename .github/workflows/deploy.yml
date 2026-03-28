@@ -163,10 +163,9 @@ jobs:
           # Validate that columns the app queries actually exist in the live DB.
           # LIMIT 0 touches no rows but will error if any column is missing,
           # causing this step to fail and triggering the rollback below.
-          psql "$DATABASE_URL" <<'SQL'
-            SELECT one_liner FROM users LIMIT 0;
-            SELECT opinion_type, image_caption FROM articles LIMIT 0;
-SQL
+          psql "$DATABASE_URL" \
+            -c "SELECT one_liner FROM users LIMIT 0;" \
+            -c "SELECT opinion_type, image_caption FROM articles LIMIT 0;"
 
       - name: Roll Back Release
         if: failure()
