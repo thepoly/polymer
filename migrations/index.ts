@@ -45,7 +45,7 @@ export const migrations = [
   {
     up: migration_20260316_145613_remove_editorial_section.up,
     down: migration_20260316_145613_remove_editorial_section.down,
-    name: '20260316_145613_remove_editorial_section'
+    name: '20260316_145613_remove_editorial_section',
   },
   {
     up: migration_20260317_200000_add_opinion_type_and_caption.up,

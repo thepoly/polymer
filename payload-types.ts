@@ -143,6 +143,10 @@ export interface User {
    */
   section?: ('news' | 'features' | 'opinion' | 'sports') | null;
   headshot?: (number | null) | Media;
+  /**
+   * A short one-line description (e.g. "is a senior studying computer science")
+   */
+  oneLiner?: string | null;
   bio?: {
     root: {
       type: string;
@@ -564,6 +568,7 @@ export interface UsersSelect<T extends boolean = true> {
   roles?: T;
   section?: T;
   headshot?: T;
+  oneLiner?: T;
   bio?: T;
   positions?:
     | T

@@ -182,8 +182,15 @@ export const Users: CollectionConfig = {
       relationTo: 'media',
     },
     {
+      name: 'oneLiner',
+      type: 'text',
+      admin: {
+        description: 'A short one-line description (e.g. "is a senior studying computer science")',
+      },
+    },
+    {
       name: 'bio',
-      type: 'richText', 
+      type: 'richText',
     },
     {
       name: 'positions',
