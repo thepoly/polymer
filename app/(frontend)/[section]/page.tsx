@@ -148,6 +148,9 @@ export default async function SectionPageRoute({ params }: Args) {
   let pinnedCol1: ComponentArticle[] = [];
   let pinnedCol2: ComponentArticle[] = [];
   let pinnedCol3: ComponentArticle[] = [];
+  let col1Images: boolean[] = [true, false, false, false, false];
+  let col2Images: boolean[] = [false, false, true, false];
+  let col3Images: boolean[] = [false, false, false, true];
   let editorsChoiceArticles: ComponentArticle[] = [];
   let editorsChoiceLabel = "Opinion\u2019s Choice";
   let pinnedSpotlightAuthors: SpotlightAuthor[] = [];
@@ -155,8 +158,11 @@ export default async function SectionPageRoute({ params }: Args) {
   if (isOpinion) {
     type LayoutShape = {
       column1?: (number | null)[];
+      column1Images?: boolean[];
       column2?: (number | null)[];
+      column2Images?: boolean[];
       column3?: (number | null)[];
+      column3Images?: boolean[];
       editorsChoice?: (number | null)[];
       editorsChoiceLabel?: string;
       spotlight?: Array<{ userId: number; articleTitle?: string | null; articleUrl?: string | null }>;
@@ -180,6 +186,9 @@ export default async function SectionPageRoute({ params }: Args) {
 
     if (layoutJson) {
       if (layoutJson.editorsChoiceLabel) editorsChoiceLabel = layoutJson.editorsChoiceLabel;
+      if (layoutJson.column1Images) col1Images = layoutJson.column1Images;
+      if (layoutJson.column2Images) col2Images = layoutJson.column2Images;
+      if (layoutJson.column3Images) col3Images = layoutJson.column3Images;
 
       // Collect all pinned IDs to fetch in one batch
       const allPinnedIds = new Set<number>();
@@ -485,6 +494,9 @@ export default async function SectionPageRoute({ params }: Args) {
           pinnedCol1={pinnedCol1}
           pinnedCol2={pinnedCol2}
           pinnedCol3={pinnedCol3}
+          col1Images={col1Images}
+          col2Images={col2Images}
+          col3Images={col3Images}
           editorsChoiceArticles={editorsChoiceArticles}
           editorsChoiceLabel={editorsChoiceLabel}
           groupedArticles={groupedArticles}
