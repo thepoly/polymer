@@ -51,7 +51,7 @@ function OpinionCard({ article, withImage = false, priority = false }: { article
         {article.title}
       </h3>
       {/* Byline — "BY" is muted, author name is accent */}
-      <Byline author={article.author} date={article.date} className="mt-2 text-[13px]" />
+      <Byline author={article.author} date={article.date} variant="features" className="mt-2 text-[13px]" />
       {/* Subdeck — readable but smaller than title, generous bottom margin for spacing */}
       {article.excerpt && (
         <p className="mt-0.5 font-meta text-[15px] font-medium leading-[1.5] text-text-main line-clamp-4">
@@ -71,6 +71,9 @@ export default function OpinionSectionPage({
   pinnedCol1,
   pinnedCol2,
   pinnedCol3,
+  col1Images = [true, false, false, false, false],
+  col2Images = [false, false, true, false],
+  col3Images = [false, false, false, true],
   editorsChoiceArticles,
   editorsChoiceLabel,
   groupedArticles,
@@ -82,6 +85,9 @@ export default function OpinionSectionPage({
   pinnedCol1: ComponentArticle[];
   pinnedCol2: ComponentArticle[];
   pinnedCol3: ComponentArticle[];
+  col1Images?: boolean[];
+  col2Images?: boolean[];
+  col3Images?: boolean[];
   editorsChoiceArticles: ComponentArticle[];
   editorsChoiceLabel: string;
   groupedArticles: Record<string, ComponentArticle[]>;
@@ -158,6 +164,7 @@ export default function OpinionSectionPage({
   );
 
   // Fill each column: pinned first, then auto-fill to reach slot count
+  // Slot count = max(default, pinned articles, image array length)
   const { col1, col2, col3 } = useMemo(() => {
     const fillColumn = (pinned: ComponentArticle[], slotCount: number, ref: { idx: number }): ComponentArticle[] => {
       const result: ComponentArticle[] = [...pinned];
@@ -167,31 +174,24 @@ export default function OpinionSectionPage({
       return result;
     };
     const ref = { idx: 0 };
+    const col1Slots = Math.max(5, pinnedCol1.length, col1Images.length);
+    const col2Slots = Math.max(4, pinnedCol2.length, col2Images.length);
+    const col3Slots = Math.max(4, pinnedCol3.length, col3Images.length);
     return {
-      col1: fillColumn(pinnedCol1, 5, ref),
-      col2: fillColumn(pinnedCol2, 4, ref),
-      col3: fillColumn(pinnedCol3, 4, ref),
+      col1: fillColumn(pinnedCol1, col1Slots, ref),
+      col2: fillColumn(pinnedCol2, col2Slots, ref),
+      col3: fillColumn(pinnedCol3, col3Slots, ref),
     };
-  }, [pinnedCol1, pinnedCol2, pinnedCol3, autoFillPool]);
+  }, [pinnedCol1, pinnedCol2, pinnedCol3, autoFillPool, col1Images.length, col2Images.length, col3Images.length]);
 
   const hasSpotlightAuthors =
     spotlightAuthors.length > 0 ||
     Boolean(pinnedSpotlightAuthors && pinnedSpotlightAuthors.length > 0);
 
   const mobileOrderedArticles = [
-    col1[0],
-    col1[1],
-    col1[2],
-    col1[3],
-    col1[4],
-    col2[0],
-    col2[1],
-    col2[2],
-    col2[3],
-    col3[0],
-    col3[1],
-    col3[2],
-    col3[3],
+    ...col1,
+    ...col2,
+    ...col3,
   ].filter((article): article is ComponentArticle => Boolean(article));
 
   return (
@@ -257,11 +257,11 @@ export default function OpinionSectionPage({
           columnGap: 24,
         }}
       >
-        {/* ── Col 1: image, text, text, CTA, text, text ── */}
+        {/* ── Col 1: first 3 slots, CTA, remaining slots ── */}
         <div className="lg:border-r lg:border-rule lg:pr-6">
-          {col1[0] && <OpinionCard article={col1[0]} withImage priority />}
-          {col1[1] && <OpinionCard article={col1[1]} />}
-          {col1[2] && <OpinionCard article={col1[2]} />}
+          {col1.slice(0, 3).map((article, i) => (
+            <OpinionCard key={`col1-${article.id}`} article={article} withImage={col1Images[i] ?? false} priority={i === 0 && (col1Images[0] ?? true)} />
+          ))}
 
           {/* Guest writer CTA */}
           <div className="py-3.5 border-y border-rule" style={{ marginBottom: 30 }}>
@@ -276,13 +276,14 @@ export default function OpinionSectionPage({
             </p>
           </div>
 
-          {col1[3] && <OpinionCard article={col1[3]} />}
-          {col1[4] && <OpinionCard article={col1[4]} />}
+          {col1.slice(3).map((article, i) => (
+            <OpinionCard key={`col1-after-${article.id}`} article={article} withImage={col1Images[i + 3] ?? false} />
+          ))}
         </div>
 
-        {/* ── Col 2: text, carousel, text, image, text ── */}
+        {/* ── Col 2: first slot, carousel, remaining slots ── */}
         <div className="lg:border-r lg:border-rule lg:pr-6">
-          {col2[0] && <OpinionCard article={col2[0]} />}
+          {col2[0] && <OpinionCard article={col2[0]} withImage={col2Images[0] ?? false} />}
 
           {hasSpotlightAuthors && (
             <div className="hidden lg:block">
@@ -290,12 +291,12 @@ export default function OpinionSectionPage({
             </div>
           )}
 
-          {col2[1] && <OpinionCard article={col2[1]} />}
-          {col2[2] && <OpinionCard article={col2[2]} withImage />}
-          {col2[3] && <OpinionCard article={col2[3]} />}
+          {col2.slice(1).map((article, i) => (
+            <OpinionCard key={`col2-${article.id}`} article={article} withImage={col2Images[i + 1] ?? false} />
+          ))}
         </div>
 
-        {/* ── Col 3: editors choice, text, text, text, image ── */}
+        {/* ── Col 3: editors choice, then all slots ── */}
         <div>
           {editorsChoiceArticles.length > 0 && (
             <div className="mb-3">
@@ -306,10 +307,9 @@ export default function OpinionSectionPage({
             </div>
           )}
 
-          {col3[0] && <OpinionCard article={col3[0]} />}
-          {col3[1] && <OpinionCard article={col3[1]} />}
-          {col3[2] && <OpinionCard article={col3[2]} />}
-          {col3[3] && <OpinionCard article={col3[3]} withImage />}
+          {col3.map((article, i) => (
+            <OpinionCard key={`col3-${article.id}`} article={article} withImage={col3Images[i] ?? false} />
+          ))}
         </div>
       </div>
 
@@ -366,7 +366,7 @@ export default function OpinionSectionPage({
                     <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors">
                       {article.title}
                     </h3>
-                    <Byline author={article.author} className="mt-2 text-[13px]" />
+                    <Byline author={article.author} variant="features" className="mt-2 text-[13px]" />
                   </TransitionLink>
                 );
               })}

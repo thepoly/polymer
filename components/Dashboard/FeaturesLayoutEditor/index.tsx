@@ -47,6 +47,9 @@ type SpotlightPhoto = {
   url: string;
   caption?: string;
   articleTitle?: string;
+  articleUrl?: string;
+  photographerName?: string;
+  photographerUrl?: string;
 };
 
 type FeaturesLayout = {
@@ -165,31 +168,73 @@ const collectUsedIds = (layout: FeaturesLayout): Set<number> => {
   return ids;
 };
 
+type ExtractedImage = { url: string; alt?: string; photographerName?: string; photographerUrl?: string };
+
+// Extract photographer info from a populated media record (depth=2)
+const extractPhotographer = (media: Record<string, unknown>): { name?: string; url?: string } => {
+  const p = media.photographer;
+  if (p && typeof p === 'object' && 'firstName' in (p as Record<string, unknown>)) {
+    const user = p as Record<string, string>;
+    const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
+    const url = user.slug ? `/staff/${user.slug}` : `/staff/${(p as { id: number }).id}`;
+    return { name: name || undefined, url };
+  }
+  const writeIn = media.writeInPhotographer;
+  if (typeof writeIn === 'string' && writeIn.trim()) return { name: writeIn.trim() };
+  return {};
+};
+
 // Extract all images from a fully-fetched article (depth=2)
-const extractImagesFromArticle = (articleData: Record<string, unknown>): { url: string; alt?: string }[] => {
-  const images: { url: string; alt?: string }[] = [];
+const extractImagesFromArticle = (articleData: Record<string, unknown>): ExtractedImage[] => {
+  const images: ExtractedImage[] = [];
   const seen = new Set<string>();
-  const add = (url: string | null | undefined, alt?: string) => {
-    if (url && !seen.has(url)) { seen.add(url); images.push({ url, alt: alt || '' }); }
+
+  // Fallback: use first populated author if no photographer on the media
+  let fallbackName: string | undefined;
+  let fallbackUrl: string | undefined;
+  const authors = articleData.authors as Array<Record<string, unknown>> | undefined;
+  if (Array.isArray(authors) && authors.length > 0) {
+    const first = authors[0];
+    if (first && typeof first === 'object' && 'firstName' in first) {
+      fallbackName = [first.firstName, first.lastName].filter(Boolean).join(' ') || undefined;
+      fallbackUrl = first.slug ? `/staff/${first.slug}` : `/staff/${first.id}`;
+    }
+  }
+
+  const add = (url: string | null | undefined, alt?: string, media?: Record<string, unknown>) => {
+    if (url && !seen.has(url)) {
+      seen.add(url);
+      const photog = media ? extractPhotographer(media) : {};
+      images.push({
+        url,
+        alt: alt || '',
+        photographerName: photog.name || fallbackName,
+        photographerUrl: photog.url || fallbackUrl,
+      });
+    }
   };
   // Featured image
   const fi = articleData.featuredImage;
   if (fi && typeof fi === 'object' && 'url' in (fi as Record<string, unknown>)) {
-    add((fi as Record<string, string>).url, (fi as Record<string, string>).alt);
+    const m = fi as Record<string, unknown>;
+    add(m.url as string | undefined, m.alt as string | undefined, m);
   }
   // Traverse Lexical content tree
   const traverse = (node: Record<string, unknown>) => {
     if (!node) return;
     if (node.type === 'upload' && node.value && typeof node.value === 'object') {
-      const v = node.value as Record<string, string>;
-      add(v.url, v.alt);
+      const v = node.value as Record<string, unknown>;
+      add(v.url as string | undefined, v.alt as string | undefined, v);
     }
     if (node.type === 'block' && node.fields && typeof node.fields === 'object') {
       const fields = node.fields as Record<string, unknown>;
       if ((fields.blockType === 'photo_gallery' || fields.blockType === 'carousel') && Array.isArray(fields.images)) {
         for (const img of fields.images as Array<Record<string, unknown>>) {
           const media = img.image;
-          if (media && typeof media === 'object') add((media as Record<string, string>).url, (media as Record<string, string>).alt);
+          if (media && typeof media === 'object') {
+            const m = media as Record<string, unknown>;
+            add(m.url as string | undefined, m.alt as string | undefined, m);
+          }
         }
       }
     }
@@ -439,7 +484,7 @@ function SpotlightBrowser({
   const [browserOpen, setBrowserOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<SpotlightArticleResult[]>([]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [imageCache, setImageCache] = useState<Map<number, { url: string; alt?: string }[]>>(new Map());
+  const [imageCache, setImageCache] = useState<Map<number, ExtractedImage[]>>(new Map());
   const [loadingImages, setLoadingImages] = useState<number | null>(null);
   const [spotSearch, setSpotSearch] = useState('');
   const [searching, setSearching] = useState(false);
@@ -585,7 +630,16 @@ function SpotlightBrowser({
                             <div
                               key={idx}
                               className={`fle-spotlight-image-pick ${isUsed ? 'fle-spotlight-image-used' : ''}`}
-                              onClick={() => { if (!isUsed) onAdd({ url: img.url, caption: img.alt, articleTitle: article.title }); }}
+                              onClick={() => {
+                                if (!isUsed) {
+                                  let articleUrl: string | undefined;
+                                  if (article.publishedDate && article.slug) {
+                                    const d = new Date(article.publishedDate);
+                                    articleUrl = `/${article.section}/${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${article.slug}`;
+                                  }
+                                  onAdd({ url: img.url, caption: img.alt, articleTitle: article.title, articleUrl, photographerName: img.photographerName, photographerUrl: img.photographerUrl });
+                                }
+                              }}
                             >
                               <img src={img.url} alt={img.alt || ''} />
                               {isUsed ? (

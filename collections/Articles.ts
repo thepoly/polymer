@@ -1,5 +1,4 @@
 import type { CollectionConfig } from 'payload'
-import { deriveSlug } from '../utils/deriveSlug'
 import { getPostHogClient } from '../lib/posthog-server'
 
 const Articles: CollectionConfig = {
@@ -64,11 +63,6 @@ const Articles: CollectionConfig = {
     ],
     beforeChange: [
       ({ data, originalDoc }) => {
-        // Auto-generate slug from title if not provided
-        if (!data.slug && data.title) {
-          data.slug = deriveSlug(data.title)
-        }
-
         // LOGIC: If transitioning to 'published' via Payload's internal _status, set the publishedDate
         const isNowPublished = data._status === 'published'
         const wasPublished = originalDoc?._status === 'published'
@@ -98,14 +92,16 @@ const Articles: CollectionConfig = {
           data.opinionType = matched || 'more'
         }
 
-        // Auto-generate slug from title if not set
-        if (!data.slug && data.title) {
-          data.slug = data.title
+        // Auto-generate slug from title if not set, or sanitize existing slug
+        const rawSlug = data.slug || data.title || ''
+        if (rawSlug) {
+          data.slug = rawSlug
             .toLowerCase()
             .replace(/[^a-z0-9\s-]/g, '')
             .trim()
             .replace(/\s+/g, '-')
             .replace(/-+/g, '-')
+            .replace(/(^-|-$)/g, '')
         }
 
         return data

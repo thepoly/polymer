@@ -5,11 +5,6 @@ import { getPayload } from 'payload';
 import config from '@/payload.config';
 import { getArticleLayout, ArticleLayouts } from '@/components/Article/Layouts';
 import { LexicalNode } from '@/components/Article/RichTextParser';
-import OpinionHeader from '@/components/Opinion/OpinionHeader';
-import { OpinionArticleHeader } from '@/components/Opinion/OpinionArticleHeader';
-import OpinionScrollBar from '@/components/Opinion/OpinionScrollBar';
-import { OpinionArticleFooter } from '@/components/Opinion/OpinionArticleFooter';
-import { ArticleContent } from '@/components/Article';
 import ArticleScrollBar from '@/components/ArticleScrollBar';
 import ArticleAnalytics from '@/components/analytics/ArticleAnalytics';
 import { InlineEditor } from '@/components/Article/InlineEditor';
@@ -212,6 +207,7 @@ export default async function ArticlePage({ params }: Args) {
     notFound();
   }
 
+  // Determine the layout
   const layoutType = getArticleLayout(article);
   const LayoutComponent = ArticleLayouts[layoutType];
 
@@ -225,36 +221,19 @@ export default async function ArticlePage({ params }: Args) {
   let cleanContent = article.content;
 
   if (layoutType === 'photofeature') {
-    const firstNode = article.content?.root?.children?.[0] as unknown as LexicalNode;
-    if (article.content && firstNode?.type === 'paragraph' && firstNode.children && firstNode.children.length > 0) {
-      const firstTextNode = firstNode.children[0];
-      if (firstTextNode.type === 'text' && firstTextNode.text?.trim() === '#photofeature#') {
-        cleanContent = {
-          ...article.content,
-          root: {
-            ...article.content.root,
-            children: (article.content.root.children as unknown as LexicalNode[]).slice(1),
-          },
-        };
+      const firstNode = article.content?.root?.children?.[0] as unknown as LexicalNode;
+      if (article.content && firstNode?.type === 'paragraph' && firstNode.children && firstNode.children.length > 0) {
+         const firstTextNode = firstNode.children[0];
+         if (firstTextNode.type === 'text' && firstTextNode.text?.trim() === '#photofeature#') {
+            cleanContent = {
+                ...article.content,
+                root: {
+                    ...article.content.root,
+                    children: (article.content.root.children as unknown as LexicalNode[]).slice(1)
+                }
+            };
+         }
       }
-    }
-  }
-
-  // Opinion articles get their own custom layout
-  if (section === 'opinion' && layoutType !== 'photofeature') {
-    return (
-      <main className="min-h-screen bg-white pb-20 pt-[58px] font-[family-name:var(--font-raleway)]">
-        <OpinionHeader />
-        <OpinionScrollBar title={article.title} />
-        <article className="container mx-auto px-4 md:px-6 mt-8 md:mt-12">
-          <OpinionArticleHeader article={article} />
-          <div className="max-w-[600px] mx-auto [--foreground-muted:#000000] [--color-text-muted:#000000]">
-            <ArticleContent content={article.content} />
-          </div>
-        </article>
-        <OpinionArticleFooter currentArticleId={article.id} />
-      </main>
-    );
   }
 
   const staffAuthorsForJsonLd = (article.authors || []).filter((author): author is User => typeof author !== 'number');
@@ -268,9 +247,23 @@ export default async function ArticlePage({ params }: Args) {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: '/' },
-      { '@type': 'ListItem', position: 2, name: sectionTitle, item: `/${article.section}` },
-      { '@type': 'ListItem', position: 3, name: article.title },
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: '/',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: sectionTitle,
+        item: `/${article.section}`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: article.title,
+      },
     ],
   };
 
@@ -279,7 +272,9 @@ export default async function ArticlePage({ params }: Args) {
     '@type': 'NewsArticle',
     headline: article.title,
     ...(article.subdeck && { description: article.subdeck }),
-    ...(image?.url && { image: [image.url] }),
+    ...(image?.url && {
+      image: [image.url],
+    }),
     datePublished: article.publishedDate || article.createdAt,
     dateModified: article.updatedAt,
     author: [
@@ -355,7 +350,7 @@ export async function generateStaticParams() {
       const date = new Date(dateStr);
       const year = date.getFullYear().toString();
       const month = String(date.getMonth() + 1).padStart(2, '0');
-
+      
       return {
         section: doc.section,
         year,

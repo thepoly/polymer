@@ -928,10 +928,10 @@ export function OpinionLayoutEditor() {
 // Utility
 // ---------------------------------------------------------------------------
 
-function padArray(arr: (number | null)[] | undefined, len: number): (number | null)[] {
+function padArray(arr: (number | null)[] | undefined, minLen: number): (number | null)[] {
   const result = [...(arr || [])];
-  while (result.length < len) result.push(null);
-  return result.slice(0, len);
+  while (result.length < minLen) result.push(null);
+  return result;
 }
 
 function trimTrailingNulls(arr: (number | null)[]): (number | null)[] {
@@ -940,8 +940,8 @@ function trimTrailingNulls(arr: (number | null)[]): (number | null)[] {
   return result;
 }
 
-function padBoolArray(arr: boolean[] | undefined, len: number): boolean[] {
+function padBoolArray(arr: boolean[] | undefined, minLen: number): boolean[] {
   const result = [...(arr || [])];
-  while (result.length < len) result.push(false);
-  return result.slice(0, len);
+  while (result.length < minLen) result.push(false);
+  return result;
 }

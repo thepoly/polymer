@@ -22,6 +22,9 @@ export type SpotlightPhoto = {
   url: string;
   caption?: string;
   articleTitle?: string;
+  articleUrl?: string;
+  photographerName?: string;
+  photographerUrl?: string;
 };
 
 const PAGE_SIDE_PADDING = "clamp(16px, 3vw, 30px)";
@@ -95,7 +98,14 @@ function FeaturesCard({
 /* ── Upcoming Events box ── */
 
 function UpcomingEvents({ events }: { events: FeaturesEvent[] }) {
-  if (events.length === 0) return null;
+  // Filter out events whose day has already ended
+  const upcomingEvents = useMemo(() => {
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    return events.filter((e) => e.date >= todayStr);
+  }, [events]);
+
+  if (upcomingEvents.length === 0) return null;
 
   const formatEventDate = (dateStr: string): string => {
     const d = new Date(dateStr + "T00:00:00");
@@ -127,7 +137,7 @@ function UpcomingEvents({ events }: { events: FeaturesEvent[] }) {
           Upcoming Events
         </p>
         <div className="flex flex-col">
-          {events.map((event, i) => {
+          {upcomingEvents.map((event, i) => {
             const hasUrl = event.url && event.url.trim().length > 0;
             const titleEl = (
               <h4
@@ -147,7 +157,7 @@ function UpcomingEvents({ events }: { events: FeaturesEvent[] }) {
                 style={{
                   padding: "5px 0",
                   borderBottom:
-                    i < events.length - 1
+                    i < upcomingEvents.length - 1
                       ? "1px solid var(--rule-color, #e0e0e0)"
                       : "none",
                 }}
@@ -215,14 +225,27 @@ function PhotoSpotlightCarousel({ photos }: { photos: SpotlightPhoto[] }) {
           />
         </div>
       </div>
-      {photos[current].articleTitle && (
+      {photos[current].photographerName && (
         <p className="mt-2 font-meta text-[15px] font-medium text-accent text-center">
-          {photos[current].articleTitle}
+          Shot by{' '}
+          {photos[current].photographerUrl ? (
+            <TransitionLink href={photos[current].photographerUrl!} className="hover:underline">
+              {photos[current].photographerName}
+            </TransitionLink>
+          ) : (
+            photos[current].photographerName
+          )}
         </p>
       )}
-      {photos[current].caption && (
-        <p className="mt-0.5 font-meta text-[13px] text-text-muted italic text-center">
-          {photos[current].caption}
+      {photos[current].articleTitle && (
+        <p className="mt-0.5 font-meta text-[13px] text-text-muted text-center">
+          {photos[current].articleUrl ? (
+            <TransitionLink href={photos[current].articleUrl!} className="hover:underline">
+              {photos[current].articleTitle}
+            </TransitionLink>
+          ) : (
+            photos[current].articleTitle
+          )}
         </p>
       )}
       {photos.length > 1 && (
@@ -625,6 +648,11 @@ export default function FeaturesSectionPage({
                   {wideArticle[0].title}
                 </h2>
                 <Byline author={wideArticle[0].author} date={wideArticle[0].date} variant="features" className="mt-2 text-[13px]" />
+                {wideArticle[0].excerpt && (
+                  <p className="mt-2 font-meta text-[15px] font-medium leading-[1.5] text-text-muted line-clamp-3">
+                    {wideArticle[0].excerpt}
+                  </p>
+                )}
               </div>
               {wideArticle[0].image && (
                 <div className="relative overflow-hidden" style={{ aspectRatio: "3/2" }}>

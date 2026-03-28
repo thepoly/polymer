@@ -26,9 +26,26 @@ export type LexicalNode = {
 
 let paragraphCount = 0;
 
-const ParagraphTracker = ({ children, isFirst, rootIndex }: { children: React.ReactNode; isFirst: boolean; rootIndex?: number }) => (
+// Lexical stores alignment on element nodes (paragraphs, headings, etc.) via format:
+// string: "center", "right", "justify", "left", "start", "end"
+// number: 1=left, 2=center, 3=right, 4=justify, 5=start, 6=end
+const getAlignStyle = (format: unknown): React.CSSProperties | undefined => {
+  if (typeof format === 'string' && format) {
+    return { textAlign: format as React.CSSProperties['textAlign'] };
+  }
+  const numMap: Record<number, React.CSSProperties['textAlign']> = {
+    1: 'left', 2: 'center', 3: 'right', 4: 'justify', 5: 'start', 6: 'end',
+  };
+  if (typeof format === 'number' && numMap[format]) {
+    return { textAlign: numMap[format] };
+  }
+  return undefined;
+};
+
+const ParagraphTracker = ({ children, isFirst, rootIndex, style }: { children: React.ReactNode; isFirst: boolean; rootIndex?: number; style?: React.CSSProperties }) => (
   <p
     className={`font-copy text-xl leading-relaxed text-text-main dark:text-[#CCCCCC] mb-6 transition-colors ${isFirst ? 'drop-cap' : ''}`}
+    style={style}
     {...(rootIndex !== undefined ? { 'data-ie-field': 'paragraph', 'data-ie-index': rootIndex } : {})}
   >
     {children}
@@ -78,6 +95,7 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
               <Tag
                 key={index}
                 className={`font-copy font-bold text-text-main leading-tight transition-colors ${classes}`}
+                style={getAlignStyle(node.format)}
               >
                 {serializedChildren}
               </Tag>
@@ -88,7 +106,7 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
             const isFirst = paragraphCount === 0;
             paragraphCount++;
             return (
-              <ParagraphTracker key={index} isFirst={isFirst} rootIndex={isRoot ? index : undefined}>
+              <ParagraphTracker key={index} isFirst={isFirst} rootIndex={isRoot ? index : undefined} style={getAlignStyle(node.format)}>
                 {serializedChildren}
               </ParagraphTracker>
             );
@@ -124,16 +142,17 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
               <div
                 key={index}
                 id={`media-${media.id}`}
-                className="my-10 flex flex-col gap-1 scroll-mt-20 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen md:left-auto md:right-auto md:ml-0 md:mr-0 md:w-full md:max-w-[680px]"
+                className="my-10 flex flex-col gap-1 scroll-mt-20"
               >
-                <div className="relative aspect-[3/2] w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden transition-colors">
+                <div className="w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden transition-colors">
                   <Image
-                    src={(media as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || media.url}
+                    src={media.url}
                     alt={media.alt || ''}
-                    fill
+                    width={media.width || 1200}
+                    height={media.height || 800}
                     sizes="(max-width: 768px) 100vw, 680px"
                     loading="lazy"
-                    className="object-cover"
+                    className="w-full h-auto"
                   />
                 </div>
                 {(caption || creditUser || media.alt) && (
@@ -176,7 +195,7 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
 
           case 'quote':
             return (
-              <blockquote key={index} className="border-l-4 border-accent pl-4 italic text-xl text-text-main dark:text-[#CCCCCC] my-6 transition-colors">
+              <blockquote key={index} className="border-l-4 border-accent pl-4 italic text-xl text-text-main dark:text-[#CCCCCC] my-6 transition-colors" style={getAlignStyle(node.format)}>
                 {serializedChildren}
               </blockquote>
             );
