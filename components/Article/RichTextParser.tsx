@@ -142,16 +142,17 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
               <div
                 key={index}
                 id={`media-${media.id}`}
-                className="my-10 flex flex-col gap-1 scroll-mt-20 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen md:left-auto md:right-auto md:ml-0 md:mr-0 md:w-full md:max-w-[680px]"
+                className="my-10 flex flex-col gap-1 scroll-mt-20"
               >
-                <div className="relative aspect-[3/2] w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden transition-colors">
+                <div className="w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden transition-colors">
                   <Image
-                    src={(media as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || media.url}
+                    src={media.url}
                     alt={media.alt || ''}
-                    fill
+                    width={media.width || 1200}
+                    height={media.height || 800}
                     sizes="(max-width: 768px) 100vw, 680px"
                     loading="lazy"
-                    className="object-cover"
+                    className="w-full h-auto"
                   />
                 </div>
                 {(caption || creditUser || media.alt) && (

@@ -92,14 +92,16 @@ const Articles: CollectionConfig = {
           data.opinionType = matched || 'more'
         }
 
-        // Auto-generate slug from title if not set
-        if (!data.slug && data.title) {
-          data.slug = data.title
+        // Auto-generate slug from title if not set, or sanitize existing slug
+        const rawSlug = data.slug || data.title || ''
+        if (rawSlug) {
+          data.slug = rawSlug
             .toLowerCase()
             .replace(/[^a-z0-9\s-]/g, '')
             .trim()
             .replace(/\s+/g, '-')
             .replace(/-+/g, '-')
+            .replace(/(^-|-$)/g, '')
         }
 
         return data
