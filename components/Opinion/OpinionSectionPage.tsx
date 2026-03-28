@@ -51,7 +51,7 @@ function OpinionCard({ article, withImage = false, priority = false }: { article
         {article.title}
       </h3>
       {/* Byline — "BY" is muted, author name is accent */}
-      <Byline author={article.author} date={article.date} className="mt-2 text-[13px]" />
+      <Byline author={article.author} date={article.date} variant="features" className="mt-2 text-[13px]" />
       {/* Subdeck — readable but smaller than title, generous bottom margin for spacing */}
       {article.excerpt && (
         <p className="mt-0.5 font-meta text-[15px] font-medium leading-[1.5] text-text-main line-clamp-4">
@@ -366,7 +366,7 @@ export default function OpinionSectionPage({
                     <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors">
                       {article.title}
                     </h3>
-                    <Byline author={article.author} className="mt-2 text-[13px]" />
+                    <Byline author={article.author} variant="features" className="mt-2 text-[13px]" />
                   </TransitionLink>
                 );
               })}
