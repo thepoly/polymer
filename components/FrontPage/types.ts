@@ -6,6 +6,7 @@ export interface Article {
   author: string | null;
   date: string | null;
   image: string | null;
+  imageFull: string | null;
   section: string;
   kicker: string | null;
   opinionType?: string | null;

@@ -88,6 +88,7 @@ export const formatArticle = (
     author: authors ? authors.toUpperCase() : 'THE POLY',
     date: dateString,
     image: (article.featuredImage as Media)?.sizes?.card?.url || (article.featuredImage as Media)?.url || null,
+    imageFull: (article.featuredImage as Media)?.url || null,
     section: article.section,
     kicker: article.kicker || null,
     opinionType: article.opinionType || null,

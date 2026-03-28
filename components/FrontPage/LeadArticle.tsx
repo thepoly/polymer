@@ -56,7 +56,7 @@ export const LeadArticle = ({
                 </p>
             )}
         </div>
-        {article.image && (
+        {(article.imageFull || article.image) && (
             <div
                 data-header-anchor="image"
                 data-marauders-obstacle="image"
@@ -70,11 +70,12 @@ export const LeadArticle = ({
                     }`}
                 >
                     <Image
-                        src={article.image}
+                        src={article.imageFull || article.image!}
                         alt={article.title}
                         fill
                         className="object-cover"
                         priority
+                        quality={100}
                         sizes="(max-width: 1280px) 100vw, 720px"
                     />
                 </div>
