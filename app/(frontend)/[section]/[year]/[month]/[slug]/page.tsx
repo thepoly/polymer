@@ -9,7 +9,7 @@ import OpinionHeader from '@/components/Opinion/OpinionHeader';
 import { OpinionArticleHeader } from '@/components/Opinion/OpinionArticleHeader';
 import OpinionScrollBar from '@/components/Opinion/OpinionScrollBar';
 import { OpinionArticleFooter } from '@/components/Opinion/OpinionArticleFooter';
-import { ArticleContent, ArticleFooter } from '@/components/Article';
+import { ArticleContent } from '@/components/Article';
 import ArticleScrollBar from '@/components/ArticleScrollBar';
 import ArticleAnalytics from '@/components/analytics/ArticleAnalytics';
 import { InlineEditor } from '@/components/Article/InlineEditor';
@@ -250,7 +250,6 @@ export default async function ArticlePage({ params }: Args) {
           <OpinionArticleHeader article={article} />
           <div className="max-w-[600px] mx-auto [--foreground-muted:#000000] [--color-text-muted:#000000]">
             <ArticleContent content={article.content} />
-            <ArticleFooter />
           </div>
         </article>
         <OpinionArticleFooter currentArticleId={article.id} />
