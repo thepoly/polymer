@@ -165,7 +165,10 @@ jobs:
           # causing this step to fail and triggering the rollback below.
           psql "$DATABASE_URL" \
             -c "SELECT one_liner FROM users LIMIT 0;" \
-            -c "SELECT opinion_type, image_caption FROM articles LIMIT 0;"
+            -c "SELECT opinion_type, image_caption FROM articles LIMIT 0;" \
+            -c "SELECT id FROM submissions LIMIT 0;" \
+            -c "SELECT id FROM event_submissions LIMIT 0;" \
+            -c "SELECT id FROM features_page_layout LIMIT 0;"
 
       - name: Roll Back Release
         if: failure()
