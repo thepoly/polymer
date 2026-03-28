@@ -16,6 +16,9 @@ import * as migration_20260322_230000_add_write_in_photographer_to_media from '.
 import * as migration_20260322_231000_add_user_retired from './20260322_231000_add_user_retired';
 import * as migration_20260324_220000_add_user_seen_newsroom_notice from './20260324_220000_add_user_seen_newsroom_notice';
 import * as migration_20260328_000000_add_user_one_liner from './20260328_000000_add_user_one_liner';
+import * as migration_20260328_100000_add_submissions from './20260328_100000_add_submissions';
+import * as migration_20260328_200000_add_event_submissions from './20260328_200000_add_event_submissions';
+import * as migration_20260328_300000_add_features_page_layout from './20260328_300000_add_features_page_layout';
 
 export const migrations = [
   {
@@ -107,5 +110,20 @@ export const migrations = [
     up: migration_20260328_000000_add_user_one_liner.up,
     down: migration_20260328_000000_add_user_one_liner.down,
     name: '20260328_000000_add_user_one_liner',
+  },
+  {
+    up: migration_20260328_100000_add_submissions.up,
+    down: migration_20260328_100000_add_submissions.down,
+    name: '20260328_100000_add_submissions',
+  },
+  {
+    up: migration_20260328_200000_add_event_submissions.up,
+    down: migration_20260328_200000_add_event_submissions.down,
+    name: '20260328_200000_add_event_submissions',
+  },
+  {
+    up: migration_20260328_300000_add_features_page_layout.up,
+    down: migration_20260328_300000_add_features_page_layout.down,
+    name: '20260328_300000_add_features_page_layout',
   },
 ];
