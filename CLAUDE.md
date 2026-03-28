@@ -175,7 +175,12 @@ Mixing PM2 users creates split daemons/process lists and inconsistent runtime ow
 
 ## Agent Operations
 
+- **Pre-commit checks:** Always run `pnpm lint` and `pnpm typecheck` before committing. Do not commit code that fails either check.
 - **Linting & Code Quality:** You must ensure that any code changes you make are lint-safe before completing your task. Either review your code rigorously for common ESLint and React purity warnings, or execute `pnpm lint` to automatically verify.
+- **Database Migrations:** When adding or modifying Payload collection fields that change the DB schema (new fields, new collections, enum changes), you MUST create corresponding migrations in BOTH paths:
+  1. A TypeScript migration file in `migrations/` and register it in `migrations/index.ts` (used by CI via `pnpm exec payload migrate`)
+  2. The equivalent SQL in `scripts/run_deploy_sql_migrations.sh` with a tracking INSERT entry (used by production deploy)
+  Failing to do this will break production — the site will crash on startup if Payload tries to query columns/tables that don't exist.
 
 ## Incident Guardrails
 
