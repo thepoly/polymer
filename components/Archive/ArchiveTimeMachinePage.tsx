@@ -796,10 +796,10 @@ export default function ArchiveTimeMachinePage({
   );
 
   return (
-    <section className="mx-auto max-w-[1380px] px-4 pb-16 pt-6 md:px-6 lg:px-8">
+    <section className="mx-auto max-w-[1280px] px-4 pb-16 pt-6 md:px-6 xl:px-[30px]">
       <div className="mb-10 pb-6">
-        <div className="grid gap-4 xl:grid-cols-[auto_minmax(0,1fr)_auto] xl:items-end">
-          <div className="xl:pb-5">
+        <div className="flex flex-col gap-4">
+          <div>
             <h1 className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[36px] sm:text-[48px] md:text-[56px] lg:text-[65px] transition-colors">
               <span className="text-[#D6001C] dark:text-[#ff5f74]">Archives</span>{" "}
               <span className="text-[#b7d7f5] dark:text-[#b7d7f5]">[Beta]</span>{" "}
@@ -812,7 +812,7 @@ export default function ArchiveTimeMachinePage({
         </div>
       </div>
 
-      <div className="-mt-4 px-4 md:-mt-6 md:px-6">
+      <div>
         <div className="mb-8">
           <p className="font-meta text-[15px] leading-[1.55] text-text-main">
             Click a dot in the timeline, drag the timeline, or use the nav buttons above to browse the archives. If you are looking for a particular article and know the title or author, use our search bar <span className="text-[#1f4fbf] dark:text-[#7fb2ff]">above</span>. Or, if you have a specific date in mind, type it <span className="text-[#0f6bdc] dark:text-[#8ac7ff]">below</span> in any format.
