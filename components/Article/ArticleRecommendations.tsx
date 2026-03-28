@@ -101,20 +101,21 @@ const getArticleLabel = (article: RecommendationArticle) => {
 const getHeadlineClasses = (article: RecommendationArticle, variant: 'lead' | 'list') => {
   const base =
     variant === 'lead'
-      ? 'font-display text-[31px] font-bold leading-[1.02] tracking-[-0.02em] md:text-[37px]'
-      : 'font-display text-[23px] font-bold leading-[1.08] tracking-[-0.015em] md:text-[25px]';
+      ? 'font-copy font-bold leading-[1.12] tracking-[-0.01em] text-[28px] md:text-[32px]'
+      : 'font-copy font-bold leading-[1.12] tracking-[-0.01em] text-[22px] md:text-[24px]';
 
   const sectionStyles = [
     article.section === 'features'
       ? variant === 'lead'
-        ? 'text-[33px] font-normal italic md:text-[39px]'
-        : 'text-[24px] font-normal italic md:text-[26px]'
+        ? 'font-light text-[30px] md:text-[34px]'
+        : 'font-light text-[23px] md:text-[25px]'
       : '',
-    article.section === 'sports' ? 'italic tracking-[0.015em]' : '',
-    article.section === 'opinion'
+    article.section === 'sports' ? 'font-normal tracking-[0.015em]' : '',
+    article.section === 'opinion' ? 'font-light' : '',
+    article.section === 'news'
       ? variant === 'lead'
-        ? 'font-copy font-medium leading-[1.12] text-[28px] md:text-[28px]'
-        : 'font-copy font-medium leading-[1.12] text-[28px] md:text-[28px]'
+        ? 'text-[30px] md:text-[34px]'
+        : 'text-[23px] md:text-[25px]'
       : '',
   ]
     .filter(Boolean)
@@ -225,8 +226,8 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
               className="group inline-block"
             >
               <h2
-                className={`mt-2 font-display leading-[0.98] tracking-[-0.03em] text-text-main transition-colors group-hover:text-accent ${currentArticle.section === 'opinion' ? 'font-medium' : 'font-bold text-[33px] md:text-[41px]'}`}
-                style={currentArticle.section === 'opinion' ? { fontSize: 56 } : undefined}
+                className="mt-2 font-meta uppercase tracking-[0.04em] text-text-main transition-colors group-hover:text-accent text-[33px] md:text-[41px]"
+                style={{ fontWeight: 400, lineHeight: 1 }}
               >
                 {sectionLabel}
               </h2>
