@@ -28,7 +28,7 @@ const formatOpinionArticle = (article: PayloadArticle): OpinionArticle | null =>
     authorId: null,
     authorHeadshot: null,
     date: null,
-    publishedDate: article.publishedDate,
+    publishedDate: article.publishedDate ?? null,
     createdAt: article.createdAt,
     image: (article.featuredImage as Media)?.url || null,
     section: article.section,
