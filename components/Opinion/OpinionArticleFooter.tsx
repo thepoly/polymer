@@ -7,6 +7,15 @@ import { deriveSlug } from '@/utils/deriveSlug';
 import { Article, Media } from '@/payload-types';
 import { opinionTypeLabels } from './opinionTypeLabels';
 
+function pickRandom<T>(arr: T[], n: number): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.slice(0, n);
+}
+
 type Props = {
   currentArticleId: number;
 };
@@ -28,9 +37,7 @@ export const OpinionArticleFooter: React.FC<Props> = async ({ currentArticleId }
 
   const pool = result.docs as Article[];
 
-  // Randomly pick 6 from the pool
-  const shuffled = pool.sort(() => Math.random() - 0.5);
-  const picks = shuffled.slice(0, 6);
+  const picks = pickRandom(pool, 6);
 
   if (picks.length === 0) return null;
 
