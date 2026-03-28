@@ -75,6 +75,7 @@ export const LeadArticle = ({
                         fill
                         className="object-cover"
                         priority
+                        quality={100}
                         sizes="(max-width: 1280px) 100vw, 720px"
                     />
                 </div>
