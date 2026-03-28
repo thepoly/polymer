@@ -22,6 +22,9 @@ export type SpotlightPhoto = {
   url: string;
   caption?: string;
   articleTitle?: string;
+  articleUrl?: string;
+  photographerName?: string;
+  photographerUrl?: string;
 };
 
 const PAGE_SIDE_PADDING = "clamp(16px, 3vw, 30px)";
@@ -215,14 +218,27 @@ function PhotoSpotlightCarousel({ photos }: { photos: SpotlightPhoto[] }) {
           />
         </div>
       </div>
-      {photos[current].articleTitle && (
+      {photos[current].photographerName && (
         <p className="mt-2 font-meta text-[15px] font-medium text-accent text-center">
-          {photos[current].articleTitle}
+          Shot by{' '}
+          {photos[current].photographerUrl ? (
+            <TransitionLink href={photos[current].photographerUrl!} className="hover:underline">
+              {photos[current].photographerName}
+            </TransitionLink>
+          ) : (
+            photos[current].photographerName
+          )}
         </p>
       )}
-      {photos[current].caption && (
-        <p className="mt-0.5 font-meta text-[13px] text-text-muted italic text-center">
-          {photos[current].caption}
+      {photos[current].articleTitle && (
+        <p className="mt-0.5 font-meta text-[13px] text-text-muted text-center">
+          {photos[current].articleUrl ? (
+            <TransitionLink href={photos[current].articleUrl!} className="hover:underline">
+              {photos[current].articleTitle}
+            </TransitionLink>
+          ) : (
+            photos[current].articleTitle
+          )}
         </p>
       )}
       {photos.length > 1 && (
