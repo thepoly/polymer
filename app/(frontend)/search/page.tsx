@@ -22,7 +22,7 @@ export default async function SearchPage({ searchParams }: Args) {
   return (
     <main className="min-h-screen bg-bg-main transition-colors duration-300">
       <Header compact />
-      <div className="mx-auto max-w-[1280px] px-4 md:px-6 pt-3 pb-16">
+      <div className="mx-auto max-w-[1280px] px-4 md:px-6 pt-20 pb-16">
         <SearchInput defaultValue={query} />
       </div>
     </main>
