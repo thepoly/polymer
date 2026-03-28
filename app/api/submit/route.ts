@@ -5,10 +5,10 @@ import { checkRateLimit } from '@/utils/rateLimit'
 
 const SUBMIT_RATE_LIMIT = 5
 const SUBMIT_RATE_WINDOW_MS = 60_000
-const MAX_IMAGE_SIZE = 10 * 1024 * 1024 // 10 MB
 const ALLOWED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif'])
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
@@ -38,9 +38,6 @@ export async function POST(req: NextRequest) {
 
     let featuredImageId: number | undefined
     if (imageFile && imageFile.size > 0) {
-      if (imageFile.size > MAX_IMAGE_SIZE) {
-        return NextResponse.json({ error: 'Image must be under 10 MB.' }, { status: 400 })
-      }
       if (!ALLOWED_IMAGE_TYPES.has(imageFile.type)) {
         return NextResponse.json({ error: 'Image must be JPEG, PNG, GIF, WebP, or AVIF.' }, { status: 400 })
       }

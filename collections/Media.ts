@@ -64,6 +64,7 @@ export const Media: CollectionConfig = {
       type: 'text',
       admin: {
         position: 'sidebar',
+        condition: (data) => !data?.photographer,
       },
     },
     {
