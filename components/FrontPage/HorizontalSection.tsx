@@ -44,7 +44,7 @@ export const LeadStory = ({
   article: Article;
   titleClassName: string;
 }) => (
-  <Link href={getArticleUrl(article)} className="group block">
+  <Link href={getArticleUrl(article)} className={`group block${article.isFollytechnic ? ' follytechnic' : ''}`}>
     {article.image ? (
       <div className="relative mb-4 overflow-hidden">
         <div className="relative aspect-[16/10]">
@@ -83,7 +83,7 @@ export const TextStory = ({
   titleClassName: string;
   showExcerpt?: boolean;
 }) => (
-  <Link href={getArticleUrl(article)} className="group block">
+  <Link href={getArticleUrl(article)} className={`group block${article.isFollytechnic ? ' follytechnic' : ''}`}>
     <StoryKicker section={article.section} />
     <h3
       className={`font-copy font-bold leading-[1.04] tracking-[-0.015em] text-text-main transition-colors ${titleClassName} ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[22px] md:text-[24px]" : ""}`}
@@ -112,7 +112,7 @@ export const ThumbStory = ({
 }) => (
   <Link
     href={getArticleUrl(article)}
-    className={`group grid gap-4 ${article.image ? `sm:grid-cols-[minmax(0,1fr)_${thumbWidth}px]` : ""}`}
+    className={`group grid gap-4${article.isFollytechnic ? ' follytechnic' : ''} ${article.image ? `sm:grid-cols-[minmax(0,1fr)_${thumbWidth}px]` : ""}`}
   >
     <div>
       <StoryKicker section={article.section} />
@@ -176,7 +176,7 @@ const SparseSection = ({
     <>
       <Link
         href={getArticleUrl(lead)}
-        className={`group block ${lead.image ? "lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(300px,0.95fr)] lg:items-start lg:gap-7" : ""}`}
+        className={`group block${lead.isFollytechnic ? ' follytechnic' : ''} ${lead.image ? "lg:grid lg:grid-cols-[minmax(0,1.05fr)_minmax(300px,0.95fr)] lg:items-start lg:gap-7" : ""}`}
       >
         {lead.image && reverseImage ? (
           <div className="relative mb-4 overflow-hidden lg:mb-0">
@@ -331,7 +331,7 @@ const SportsSection = ({ articles }: { articles: Article[] }) => {
         <div className="xl:col-span-8">
           <Link
             href={getArticleUrl(lead)}
-            className={`group block ${lead.image ? "lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start lg:gap-6" : ""}`}
+            className={`group block${lead.isFollytechnic ? ' follytechnic' : ''} ${lead.image ? "lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start lg:gap-6" : ""}`}
           >
             <div>
               <StoryKicker section={lead.section} />

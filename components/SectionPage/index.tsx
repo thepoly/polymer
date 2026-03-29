@@ -62,7 +62,7 @@ function ColumnCard({
   size?: string;
 }) {
   return (
-    <TransitionLink href={getArticleUrl(article)} className="group block">
+    <TransitionLink href={getArticleUrl(article)} className={`group block${article.isFollytechnic ? ' follytechnic' : ''}`}>
       <h3 className={tc(article, size)}>{article.title}</h3>
       <Byline author={article.author} date={article.date} />
       {article.excerpt && (

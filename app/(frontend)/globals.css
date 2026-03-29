@@ -303,6 +303,14 @@ h6.font-display.italic {
   color: var(--foreground);
 }
 
+.follytechnic .drop-cap::first-letter {
+  float: none;
+  font-size: inherit;
+  line-height: inherit;
+  margin-right: 0;
+  padding-top: 0;
+}
+
 @keyframes search-icon-slide {
   from { transform: translateX(52px); }
   to   { transform: translateX(0); }
