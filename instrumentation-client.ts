@@ -13,7 +13,7 @@ if (POSTHOG_KEY) {
     capture_pageview: "history_change",
     debug: process.env.NODE_ENV === "development",
     defaults: "2026-01-30",
-    persistence: "localStorage",
+    persistence: "sessionStorage",
     before_send: (event) => {
       if (typeof window !== "undefined" && !shouldTrackPath(window.location.pathname)) {
         return null;
@@ -22,6 +22,15 @@ if (POSTHOG_KEY) {
       if (!event) {
         return event;
       }
+
+      delete event.properties["$ip"];
+      delete event.properties["$browser_language"];
+      delete event.properties["$timezone"];
+      delete event.properties["$raw_user_agent"];
+      delete event.properties["$screen_height"];
+      delete event.properties["$screen_width"];
+      delete event.properties["$viewport_height"];
+      delete event.properties["$viewport_width"];
 
       if (typeof window !== "undefined" && event.event === "$pageview") {
         event.properties = {
