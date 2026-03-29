@@ -15,6 +15,11 @@ import * as migration_20260322_220000_add_more_to_opinion_type_enum from './2026
 import * as migration_20260322_230000_add_write_in_photographer_to_media from './20260322_230000_add_write_in_photographer_to_media';
 import * as migration_20260322_231000_add_user_retired from './20260322_231000_add_user_retired';
 import * as migration_20260324_220000_add_user_seen_newsroom_notice from './20260324_220000_add_user_seen_newsroom_notice';
+import * as migration_20260328_000000_add_user_one_liner from './20260328_000000_add_user_one_liner';
+import * as migration_20260328_100000_add_submissions from './20260328_100000_add_submissions';
+import * as migration_20260328_200000_add_event_submissions from './20260328_200000_add_event_submissions';
+import * as migration_20260328_300000_add_features_page_layout from './20260328_300000_add_features_page_layout';
+import * as migration_20260329_100000_add_follytechnic from './20260329_100000_add_follytechnic';
 
 export const migrations = [
   {
@@ -45,7 +50,7 @@ export const migrations = [
   {
     up: migration_20260316_145613_remove_editorial_section.up,
     down: migration_20260316_145613_remove_editorial_section.down,
-    name: '20260316_145613_remove_editorial_section'
+    name: '20260316_145613_remove_editorial_section',
   },
   {
     up: migration_20260317_200000_add_opinion_type_and_caption.up,
@@ -101,5 +106,30 @@ export const migrations = [
     up: migration_20260324_220000_add_user_seen_newsroom_notice.up,
     down: migration_20260324_220000_add_user_seen_newsroom_notice.down,
     name: '20260324_220000_add_user_seen_newsroom_notice',
+  },
+  {
+    up: migration_20260328_000000_add_user_one_liner.up,
+    down: migration_20260328_000000_add_user_one_liner.down,
+    name: '20260328_000000_add_user_one_liner',
+  },
+  {
+    up: migration_20260328_100000_add_submissions.up,
+    down: migration_20260328_100000_add_submissions.down,
+    name: '20260328_100000_add_submissions',
+  },
+  {
+    up: migration_20260328_200000_add_event_submissions.up,
+    down: migration_20260328_200000_add_event_submissions.down,
+    name: '20260328_200000_add_event_submissions',
+  },
+  {
+    up: migration_20260328_300000_add_features_page_layout.up,
+    down: migration_20260328_300000_add_features_page_layout.down,
+    name: '20260328_300000_add_features_page_layout',
+  },
+  {
+    up: migration_20260329_100000_add_follytechnic.up,
+    down: migration_20260329_100000_add_follytechnic.down,
+    name: '20260329_100000_add_follytechnic',
   },
 ];

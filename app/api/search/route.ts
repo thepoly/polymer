@@ -55,6 +55,7 @@ async function searchPayload(queryFormsLower: string[], page: number, pageSize: 
     createdAt: true,
     authors: true,
     writeInAuthors: true,
+    isFollytechnic: true,
   } as const;
 
   // Build OR conditions: match any query form in title, subdeck, or kicker

@@ -26,7 +26,7 @@ export const LeadArticle = ({
     /** When true, headline is bolder and uppercase */
     important?: boolean;
 }) => (
-    <TransitionLink href={getArticleUrl(article)} className="flex h-full flex-col group cursor-pointer min-w-0">
+    <TransitionLink href={getArticleUrl(article)} className={`flex h-full flex-col group cursor-pointer min-w-0${article.isFollytechnic ? ' follytechnic' : ''}`}>
         <div
             data-header-anchor="text"
             className={imageFirstOnMobile && article.image ? "order-2 mt-4 md:order-1 md:mt-0" : ""}
@@ -56,7 +56,7 @@ export const LeadArticle = ({
                 </p>
             )}
         </div>
-        {article.image && (
+        {(article.imageFull || article.image) && (
             <div
                 data-header-anchor="image"
                 data-marauders-obstacle="image"
@@ -70,11 +70,12 @@ export const LeadArticle = ({
                     }`}
                 >
                     <Image
-                        src={article.image}
+                        src={article.imageFull || article.image!}
                         alt={article.title}
                         fill
                         className="object-cover"
                         priority
+                        quality={100}
                         sizes="(max-width: 1280px) 100vw, 720px"
                     />
                 </div>

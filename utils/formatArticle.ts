@@ -33,6 +33,7 @@ type FormatArticleInput = {
   authors?: Array<number | PublicAuthorLike> | null;
   writeInAuthors?: WriteInAuthor[] | null;
   _status?: string | null;
+  isFollytechnic?: boolean | null;
 };
 
 export const formatArticle = (
@@ -88,10 +89,12 @@ export const formatArticle = (
     author: authors ? authors.toUpperCase() : 'THE POLY',
     date: dateString,
     image: (article.featuredImage as Media)?.sizes?.card?.url || (article.featuredImage as Media)?.url || null,
+    imageFull: (article.featuredImage as Media)?.url || null,
     section: article.section,
     kicker: article.kicker || null,
     opinionType: article.opinionType || null,
     publishedDate: article.publishedDate,
     createdAt: article.createdAt,
+    isFollytechnic: article.isFollytechnic || false,
   };
 };

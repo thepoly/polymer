@@ -6,7 +6,7 @@ import { Byline } from './Byline';
 import { getArticleUrl } from '@/utils/getArticleUrl';
 
 export const SenateCard = ({ article }: { article: Article }) => (
-    <Link href={getArticleUrl(article)} className="flex flex-col md:flex-row gap-6 cursor-pointer group transition-colors">
+    <Link href={getArticleUrl(article)} className={`flex flex-col md:flex-row gap-6 cursor-pointer group transition-colors${article.isFollytechnic ? ' follytechnic' : ''}`}>
         <div className="flex-1 flex flex-col justify-center">
              <div className="mb-2">
                 <span className="font-meta text-accent dark:text-[#d96b76] font-[440] italic capitalize text-[11px] md:text-[12px] tracking-[0.04em] transition-colors">Student Senate</span>

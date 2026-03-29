@@ -54,6 +54,7 @@ const ARTICLE_CARD_SELECT = {
   createdAt: true,
   authors: true,
   writeInAuthors: true,
+  isFollytechnic: true,
 } as const;
 
 type LayoutArticleRelation = number | { id: number } | null | undefined;

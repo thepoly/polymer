@@ -105,7 +105,7 @@ function GridArticleCard({
 
   if (isHorizontal) {
     return (
-      <TransitionLink href={getArticleUrl(article)} className="group block min-w-0">
+      <TransitionLink href={getArticleUrl(article)} className={`group block min-w-0${article.isFollytechnic ? ' follytechnic' : ''}`}>
         <div className={`flex gap-4 ${direction === "right" ? "flex-row-reverse" : "flex-row"}`}>
           {imageContent}
           {textContent}

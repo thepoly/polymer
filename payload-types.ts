@@ -104,6 +104,9 @@ export interface Config {
   globals: {};
   globalsSelect: {};
   locale: null;
+  widgets: {
+    collections: CollectionsWidget;
+  };
   user: User;
   jobs: {
     tasks: unknown;
@@ -143,6 +146,10 @@ export interface User {
    */
   section?: ('news' | 'features' | 'opinion' | 'sports') | null;
   headshot?: (number | null) | Media;
+  /**
+   * A short one-line description (e.g. "is a senior studying computer science")
+   */
+  oneLiner?: string | null;
   bio?: {
     root: {
       type: string;
@@ -306,6 +313,10 @@ export interface Article {
    * Summary shown in search engine results (150–160 characters recommended).
    */
   searchDescription?: string | null;
+  /**
+   * Render this article in Comic Sans everywhere it appears.
+   */
+  isFollytechnic?: boolean | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -564,6 +575,7 @@ export interface UsersSelect<T extends boolean = true> {
   roles?: T;
   section?: T;
   headshot?: T;
+  oneLiner?: T;
   bio?: T;
   positions?:
     | T
@@ -663,6 +675,7 @@ export interface ArticlesSelect<T extends boolean = true> {
   slug?: T;
   seoTitle?: T;
   searchDescription?: T;
+  isFollytechnic?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -801,6 +814,16 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "collections_widget".
+ */
+export interface CollectionsWidget {
+  data?: {
+    [k: string]: unknown;
+  };
+  width: 'full';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
