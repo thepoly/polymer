@@ -31,7 +31,7 @@ export const ArticleCard = ({
   /** When true, image appears to the right of the text instead of above */
   imageRight?: boolean;
 }) => (
-  <TransitionLink href={getArticleUrl(article)} className={`group block min-w-0 ${imageRight && showImage && article.image ? "md:grid md:grid-cols-[minmax(0,1fr)_220px] md:gap-5 md:items-start" : ""}`}>
+  <TransitionLink href={getArticleUrl(article)} className={`group block min-w-0${article.isFollytechnic ? ' follytechnic' : ''} ${imageRight && showImage && article.image ? "md:grid md:grid-cols-[minmax(0,1fr)_220px] md:gap-5 md:items-start" : ""}`}>
     {showImage && article.image && !imageRight && (
       <figure
         data-header-anchor="image"

@@ -6,7 +6,7 @@ import { Byline } from './Byline';
 import { getArticleUrl } from '@/utils/getArticleUrl';
 
 export const OpinionCard = ({ article, hasImage }: { article: Article, hasImage?: boolean }) => (
-    <Link href={getArticleUrl(article)} className="flex flex-col cursor-pointer group">
+    <Link href={getArticleUrl(article)} className={`flex flex-col cursor-pointer group${article.isFollytechnic ? ' follytechnic' : ''}`}>
         {hasImage && article.image && (
              <div className="relative mb-3 aspect-[16/10] w-full overflow-hidden">
                 <Image

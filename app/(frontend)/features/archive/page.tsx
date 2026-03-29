@@ -41,6 +41,7 @@ export default async function FeaturesArchivePage() {
       createdAt: true,
       authors: true,
       writeInAuthors: true,
+      isFollytechnic: true,
     },
   });
 

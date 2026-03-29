@@ -239,6 +239,16 @@ const Articles: CollectionConfig = {
         description: 'Summary shown in search engine results (150–160 characters recommended).',
       },
     },
+    {
+      name: 'isFollytechnic',
+      type: 'checkbox',
+      label: 'The Follytechnic',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description: 'Render this article in Comic Sans everywhere it appears.',
+      },
+    },
   ],
 }
 

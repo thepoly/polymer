@@ -8,7 +8,7 @@ import { getArticleUrl } from "@/utils/getArticleUrl";
 export const FeatureBand = ({ article }: { article: Article }) => (
   <Link
     href={getArticleUrl(article)}
-    className="group grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)] lg:items-start"
+    className={`group grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)] lg:items-start${article.isFollytechnic ? ' follytechnic' : ''}`}
   >
     <div>
       <p className="font-meta mb-2 text-[11px] md:text-[12px] font-[440] italic capitalize tracking-[0.04em] text-accent dark:text-[#d96b76]">

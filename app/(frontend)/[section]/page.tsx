@@ -114,6 +114,7 @@ export default async function SectionPageRoute({ params }: Args) {
       authors: true,
       ...(isOpinion && { opinionType: true }),
       writeInAuthors: true,
+      isFollytechnic: true,
     },
   });
 
@@ -210,7 +211,7 @@ export default async function SectionPageRoute({ params }: Args) {
           select: {
             title: true, slug: true, subdeck: true, featuredImage: true,
             section: true, kicker: true, publishedDate: true, createdAt: true,
-            authors: true, opinionType: true, writeInAuthors: true,
+            authors: true, opinionType: true, writeInAuthors: true, isFollytechnic: true,
           },
         });
         const pinnedMap = new Map(
@@ -455,7 +456,7 @@ export default async function SectionPageRoute({ params }: Args) {
             select: {
               title: true, slug: true, subdeck: true, featuredImage: true,
               section: true, kicker: true, publishedDate: true, createdAt: true,
-              authors: true, writeInAuthors: true,
+              authors: true, writeInAuthors: true, isFollytechnic: true,
             },
           });
           const pinnedMap = new Map(

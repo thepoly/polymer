@@ -29,7 +29,8 @@ VALUES
   ('20260328_000000_add_user_one_liner', 8, NOW(), NOW()),
   ('20260328_100000_add_submissions', 8, NOW(), NOW()),
   ('20260328_200000_add_event_submissions', 8, NOW(), NOW()),
-  ('20260328_300000_add_features_page_layout', 8, NOW(), NOW())
+  ('20260328_300000_add_features_page_layout', 8, NOW(), NOW()),
+  ('20260329_100000_add_follytechnic', 9, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -259,6 +260,10 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_event_submissions_id_idx"
   ON "payload_locked_documents_rels" ("event_submissions_id");
+
+-- 20260329: Add is_follytechnic to articles
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "is_follytechnic" boolean DEFAULT false;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_is_follytechnic" boolean DEFAULT false;
 
 -- 20260328: Add features_page_layout table
 CREATE TABLE IF NOT EXISTS "features_page_layout" (
