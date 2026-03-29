@@ -329,34 +329,38 @@ export default async function ArticlePage({ params }: Args) {
 }
 
 export async function generateStaticParams() {
-  const payload = await getPayload({ config });
-  const articles = await payload.find({
-    collection: 'articles',
-    where: {
-      _status: { equals: 'published' },
-    },
-    limit: 1000,
-    select: {
-      slug: true,
-      section: true,
-      publishedDate: true,
-      createdAt: true,
-    },
-  });
-
-  return articles.docs
-    .filter((doc) => doc.slug && doc.section)
-    .map((doc) => {
-      const dateStr = doc.publishedDate || doc.createdAt;
-      const date = new Date(dateStr);
-      const year = date.getFullYear().toString();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      
-      return {
-        section: doc.section,
-        year,
-        month,
-        slug: doc.slug as string,
-      };
+  try {
+    const payload = await getPayload({ config });
+    const articles = await payload.find({
+      collection: 'articles',
+      where: {
+        _status: { equals: 'published' },
+      },
+      limit: 1000,
+      select: {
+        slug: true,
+        section: true,
+        publishedDate: true,
+        createdAt: true,
+      },
     });
+
+    return articles.docs
+      .filter((doc) => doc.slug && doc.section)
+      .map((doc) => {
+        const dateStr = doc.publishedDate || doc.createdAt;
+        const date = new Date(dateStr);
+        const year = date.getFullYear().toString();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+
+        return {
+          section: doc.section,
+          year,
+          month,
+          slug: doc.slug as string,
+        };
+      });
+  } catch {
+    return [];
+  }
 }
