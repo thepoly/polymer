@@ -313,6 +313,10 @@ export interface Article {
    * Summary shown in search engine results (150–160 characters recommended).
    */
   searchDescription?: string | null;
+  /**
+   * Render this article in Comic Sans everywhere it appears.
+   */
+  isFollytechnic?: boolean | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -671,6 +675,7 @@ export interface ArticlesSelect<T extends boolean = true> {
   slug?: T;
   seoTitle?: T;
   searchDescription?: T;
+  isFollytechnic?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

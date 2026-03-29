@@ -33,6 +33,7 @@ type FormatArticleInput = {
   authors?: Array<number | PublicAuthorLike> | null;
   writeInAuthors?: WriteInAuthor[] | null;
   _status?: string | null;
+  isFollytechnic?: boolean | null;
 };
 
 export const formatArticle = (
@@ -94,5 +95,6 @@ export const formatArticle = (
     opinionType: article.opinionType || null,
     publishedDate: article.publishedDate,
     createdAt: article.createdAt,
+    isFollytechnic: article.isFollytechnic || false,
   };
 };

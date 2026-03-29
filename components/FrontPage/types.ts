@@ -14,4 +14,5 @@ export interface Article {
   createdAt?: string;
   /** Absolute URL for legacy articles that live on an external domain */
   externalUrl?: string;
+  isFollytechnic?: boolean | null;
 }

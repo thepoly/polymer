@@ -132,6 +132,7 @@ const getArticle = cache(async (slug: string, section?: string): Promise<Article
       slug: true,
       updatedAt: true,
       createdAt: true,
+      isFollytechnic: true,
     },
   });
   const article = result.docs[0] as Article | undefined;
