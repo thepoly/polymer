@@ -4,6 +4,12 @@ import type { NextConfig } from "next";
 const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://t.poly.rpi.edu";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: [],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '100mb',
+    },
+  },
   skipTrailingSlashRedirect: true,
   async redirects() {
     return [
