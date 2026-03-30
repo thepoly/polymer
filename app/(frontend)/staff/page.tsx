@@ -10,7 +10,7 @@ export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'Staff',
-  description: 'Meet the editorial staff of The Polytechnic, RPI\'s independent student newspaper.',
+  description: 'Meet the editorial staff of The Polytechnic, RPI\'s student run newspaper.',
   alternates: { canonical: '/staff' },
   openGraph: {
     title: 'Staff — The Polytechnic',

@@ -11,10 +11,11 @@ import { Article as ComponentArticle } from "@/components/FrontPage/types";
 import { formatArticle } from "@/utils/formatArticle";
 
 export const metadata: Metadata = {
+  description: "The Polytechnic is Rensselaer Polytechnic Institute's student run newspaper, serving the RPI community since 1885.",
   alternates: { canonical: '/' },
   openGraph: {
     title: 'The Polytechnic',
-    description: "The Polytechnic is Rensselaer Polytechnic Institute's independent student newspaper, serving the RPI community since 1885.",
+    description: "The Polytechnic is Rensselaer Polytechnic Institute's student run newspaper, serving the RPI community since 1885.",
     type: 'website',
     url: '/',
   },
@@ -316,12 +317,21 @@ export default async function Home() {
   const sportsArticles = buildSectionArticles('sports', sportsArticlesRaw);
   const opinionArticles = buildSectionArticles('opinion', opinionArticlesRaw);
 
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://poly.rpi.edu';
+
+  const websiteJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'The Polytechnic',
+    url: siteUrl,
+  };
+
   const organizationJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: 'The Polytechnic',
-    url: '/',
-    description: "Rensselaer Polytechnic Institute's independent student newspaper, serving the RPI community since 1885.",
+    url: siteUrl,
+    description: "Rensselaer Polytechnic Institute's student run newspaper, serving the RPI community since 1885.",
     foundingDate: '1885',
   };
 
@@ -364,10 +374,8 @@ export default async function Home() {
 
     return (
       <main className="min-h-screen bg-bg-main transition-colors duration-300">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }}
-        />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }} />
         <Header />
         <div className="w-full bg-bg-main text-text-main transition-colors duration-300">
           <div className="mx-auto max-w-[1280px] px-4 pb-14 md:px-6 xl:px-[30px]">
@@ -472,10 +480,8 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-bg-main transition-colors duration-300">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }} />
       <Header />
       <FrontPage
         topStories={topStories}
