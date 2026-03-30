@@ -8,7 +8,7 @@ export async function GET() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://poly.rpi.edu';
   const payload = await getPayload({ config });
 
-  const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+  const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const articles = await payload.find({
     collection: 'articles',
