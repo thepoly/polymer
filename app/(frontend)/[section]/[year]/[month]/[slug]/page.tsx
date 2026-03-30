@@ -147,12 +147,17 @@ function matchesRequestedDate(article: Article, year: string, month: string): bo
   return date.getFullYear().toString() === year && String(date.getMonth() + 1).padStart(2, '0') === month;
 }
 
+const validSections = new Set(['news', 'sports', 'features', 'opinion']);
+
 function safeJsonLd(data: Record<string, unknown>): string {
   return JSON.stringify(data).replace(/</g, '\\u003c');
 }
 
 export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const { slug, section, year, month } = await params;
+
+  if (!validSections.has(section)) return {};
+
   const article = await getArticle(slug, section);
 
   if (!article || !matchesRequestedDate(article, year, month)) return {};
@@ -202,6 +207,9 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
 
 export default async function ArticlePage({ params }: Args) {
   const { slug, section, year, month } = await params;
+
+  if (!validSections.has(section)) notFound();
+
   const article = await getArticle(slug, section);
 
   if (!article || !matchesRequestedDate(article, year, month)) {
