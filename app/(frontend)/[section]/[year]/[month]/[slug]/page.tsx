@@ -144,7 +144,7 @@ function matchesRequestedDate(article: Article, year: string, month: string): bo
   if (!dateValue) return false;
   const date = new Date(dateValue);
 
-  return date.getFullYear().toString() === year && String(date.getMonth() + 1).padStart(2, '0') === month;
+  return date.getUTCFullYear().toString() === year && String(date.getUTCMonth() + 1).padStart(2, '0') === month;
 }
 
 const validSections = new Set(['news', 'sports', 'features', 'opinion']);
@@ -357,8 +357,8 @@ export async function generateStaticParams() {
     .map((doc) => {
       const dateStr = doc.publishedDate || doc.createdAt;
       const date = new Date(dateStr);
-      const year = date.getFullYear().toString();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getUTCFullYear().toString();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
       
       return {
         section: doc.section,
