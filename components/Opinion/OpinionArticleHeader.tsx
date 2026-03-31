@@ -70,23 +70,17 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
               />
             </div>
             {(imageCaption || photographer || writeInPhotographer) && (
-              <div className="flex justify-between items-baseline gap-4 mt-1">
-                {imageCaption && (
-                  <span data-ie-field="imageCaption" className="font-meta text-xs text-text-muted italic transition-colors">
-                    {imageCaption}
+              <p data-ie-field="imageCaption" className="mt-1 font-meta text-[12px] italic text-text-muted transition-colors">
+                {imageCaption}
+                {(photographer || writeInPhotographer) && (
+                  <span className="opacity-60">
+                    {imageCaption ? ' ' : ''}
+                    {photographer
+                      ? <Link href={`/staff/${photographer.slug || photographer.id}`} className="hover:opacity-80 transition-opacity">{photographer.firstName} {photographer.lastName}/The Polytechnic</Link>
+                      : writeInPhotographer}
                   </span>
                 )}
-                {photographer && (
-                  <span className="font-meta text-[11px] text-text-muted transition-colors shrink-0">
-                    Photo Credit: <Link href={`/staff/${photographer.slug || photographer.id}`} className="hover:text-accent transition-colors">{photographer.firstName} {photographer.lastName}</Link>
-                  </span>
-                )}
-                {!photographer && writeInPhotographer && (
-                  <span className="font-meta text-[11px] text-text-muted transition-colors shrink-0">
-                    Photo Credit: {writeInPhotographer}
-                  </span>
-                )}
-              </div>
+              </p>
             )}
           </div>
         );

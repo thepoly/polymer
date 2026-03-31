@@ -156,24 +156,20 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
                   />
                 </div>
                 {(caption || creditUser || media.alt) && (
-                  <div className="flex justify-between items-baseline gap-4 mt-1">
-                    <span
-                      className="font-meta text-[12px] text-text-muted italic transition-colors"
-                      {...(isRoot ? { 'data-ie-field': 'upload-caption', 'data-ie-index': index } : {})}
-                    >
-                      {caption || media.alt}
-                    </span>
-                    {creditUser && typeof creditUser === 'object' && (
-                      <span className="font-meta text-[11px] text-text-muted transition-colors shrink-0">
-                        Photo Credit: <Link href={`/staff/${creditUser.slug || creditUser.id}`} className="hover:text-accent transition-colors">{creditUser.firstName} {creditUser.lastName}</Link>
+                  <p
+                    className="font-meta text-[12px] italic text-text-muted transition-colors"
+                    {...(isRoot ? { 'data-ie-field': 'upload-caption', 'data-ie-index': index } : {})}
+                  >
+                    {caption || media.alt}
+                    {(creditUser || writeInPhotographer) && (
+                      <span className="opacity-60">
+                        {(caption || media.alt) ? ' ' : ''}
+                        {creditUser && typeof creditUser === 'object'
+                          ? <Link href={`/staff/${creditUser.slug || creditUser.id}`} className="hover:opacity-80 transition-opacity">{creditUser.firstName} {creditUser.lastName}/The Polytechnic</Link>
+                          : writeInPhotographer}
                       </span>
                     )}
-                    {!creditUser && writeInPhotographer && (
-                      <span className="font-meta text-[11px] text-text-muted transition-colors shrink-0">
-                        Photo Credit: {writeInPhotographer}
-                      </span>
-                    )}
-                  </div>
+                  </p>
                 )}
               </div>
             );
