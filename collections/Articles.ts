@@ -249,6 +249,28 @@ const Articles: CollectionConfig = {
         description: 'Render this article in Comic Sans everywhere it appears.',
       },
     },
+    {
+      name: 'isPhotofeature',
+      type: 'checkbox',
+      label: 'Photo Feature',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description: 'Use the full-screen photo feature layout.',
+      },
+    },
+    {
+      name: 'gradientOpacity',
+      type: 'number',
+      label: 'Image Fade Darkness',
+      min: 0,
+      max: 100,
+      admin: {
+        position: 'sidebar',
+        description: 'Darkness of the bottom image fade (0–100). Default is 90.',
+        condition: (data: Record<string, unknown>) => Boolean(data?.isPhotofeature),
+      },
+    },
   ],
 }
 
