@@ -91,7 +91,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
         );
       })()}
 
-      <div className={`w-full max-w-[680px] mx-auto px-4 ${hasFeaturedImage ? '' : '-mt-1'}`}>
+      <div className={`w-full max-w-[680px] mx-auto ${hasFeaturedImage ? '' : '-mt-1'}`}>
         <ArticleByline article={article} showDate={false} />
       </div>
     </div>
