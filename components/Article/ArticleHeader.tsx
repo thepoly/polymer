@@ -13,9 +13,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
   const writeInPhotographer = featuredImage
     ? ((featuredImage as unknown as Record<string, unknown>).writeInPhotographer as string | null | undefined)
     : null;
-  const featuredImageWrapperClassName = article.section === 'news'
-    ? 'relative aspect-[3/2] w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden scroll-mt-20'
-    : 'relative aspect-[3/2] w-screen max-w-none bg-gray-100 dark:bg-zinc-800 overflow-hidden scroll-mt-20 left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] md:left-auto md:right-auto md:ml-0 md:mr-0 md:w-full';
+  const featuredImageWrapperClassName = 'relative aspect-[3/2] w-screen max-w-none bg-gray-100 dark:bg-zinc-800 overflow-hidden scroll-mt-20 left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] md:left-auto md:right-auto md:ml-0 md:mr-0 md:w-full';
 
   return (
     <div className="flex flex-col gap-10 mb-8" style={{ paddingTop: '40px' }}>

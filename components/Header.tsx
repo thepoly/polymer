@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, Moon, Search, Sun, X } from "lucide-react";
 import SearchOverlay, { SearchOverlayTrigger } from "@/components/SearchOverlay";
+import { MobileMenuDrawer, primaryNavItems, secondaryNavItems, isExternalHref } from "@/components/MobileMenuDrawer";
 import { useHeaderTransition } from "@/components/HeaderTransitionProvider";
 import {
   shouldAnimateHeaderTransition,
@@ -13,26 +14,6 @@ import {
 } from "@/components/headerAnimationRoutes";
 // import MaraudersFootsteps from "@/components/MaraudersFootsteps";
 import { useTheme } from "@/components/ThemeProvider";
-
-const primaryNavItems = [
-  { label: "News", href: "/news" },
-  { label: "Features", href: "/features" },
-  { label: "Opinion", href: "/opinion" },
-  { label: "Sports", href: "/sports" },
-];
-
-const secondaryNavItems = [
-  { label: "About", href: "/about" },
-  { label: "Archives", href: "/archive" },
-  { label: "Staff", href: "/staff" },
-  { label: "Contact", href: "/contact" },
-  { label: "Submit", href: "mailto:edop@poly.rpi.edu?subject=Submitting%20Edop%3A%20%22%5BARTICLE%20TITLE%20HERE%5D%22&body=Thank%20you%20for%20submitting%20an%20Editorial%2FOpinion%20article%20to%20%F0%9D%98%9B%F0%9D%98%A9%F0%9D%98%A6%20%F0%9D%98%97%F0%9D%98%B0%F0%9D%98%AD%F0%9D%98%BA%F0%9D%98%B5%F0%9D%98%A6%F0%9D%98%A4%F0%9D%98%A9%F0%9D%98%AF%F0%9D%98%AA%F0%9D%98%A4%21%20Please%20replace%20%5BARTICLE%20TITLE%20HERE%5D%20in%20the%20subject%20line%20with%20the%20title%20of%20your%20article%2C%20and%20sign%20this%20email%20with%20your%20name.%20Attach%20your%20article%20as%20a%20PDF.%20Thanks%21%0A%0A%F0%9D%98%9B%F0%9D%98%A9%F0%9D%98%A6%20%F0%9D%98%97%F0%9D%98%B0%F0%9D%98%AD%F0%9D%98%BA%F0%9D%98%B5%F0%9D%98%A6%F0%9D%98%A4%F0%9D%98%A9%F0%9D%98%AF%F0%9D%98%AA%F0%9D%98%A4" },
-];
-
-const DRAWER_WIDTH = 0.78; // fraction of viewport
-const DRAWER_TRANSITION_MS = 220;
-const SWIPE_THRESHOLD = 36;
-const DRAG_START_THRESHOLD = 6;
 const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
 
 // Header wave fleet: waves fan out from a single start point, converge back at the end.
@@ -106,10 +87,6 @@ function formatCurrentDate() {
   });
 }
 
-function isExternalHref(href: string) {
-  return /^(?:[a-z]+:)?\/\//i.test(href);
-}
-
 function subscribeToHydration(callback: () => void) {
   if (typeof window === "undefined") {
     return () => {};
@@ -164,6 +141,7 @@ function MobileMenuDrawer({
   onSearchOpen: () => void;
 }) {
   const [dragX, setDragX] = useState<number | null>(null);
+  const [drawerWidthPx, setDrawerWidthPx] = useState(300);
   const dragXRef = useRef<number | null>(null);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const activeTouchIdRef = useRef<number | null>(null);
@@ -171,10 +149,11 @@ function MobileMenuDrawer({
   const isDraggingRef = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const getDrawerPx = useCallback(() => {
-    if (typeof window === "undefined") return 300;
-    return window.innerWidth * DRAWER_WIDTH;
+  useEffect(() => {
+    if (panelRef.current) setDrawerWidthPx(panelRef.current.offsetWidth);
   }, []);
+
+  const getDrawerPx = useCallback(() => drawerWidthPx, [drawerWidthPx]);
 
   const resetGesture = useCallback(() => {
     setDragX(null);
@@ -313,9 +292,8 @@ function MobileMenuDrawer({
 
       <div
         ref={panelRef}
-        className={`absolute top-0 left-0 bottom-0 bg-bg-main will-change-transform ${showDrawer ? "shadow-2xl" : "shadow-none"}`}
+        className={`absolute top-0 left-0 bottom-0 w-max max-w-[420px] bg-bg-main will-change-transform ${showDrawer ? "shadow-2xl" : "shadow-none"}`}
         style={{
-          width: `${DRAWER_WIDTH * 100}vw`,
           transform: `translate3d(${translateX}, 0, 0)`,
           transition: dragX !== null ? "none" : `transform ${DRAWER_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
         }}
@@ -534,8 +512,6 @@ export default function Header({ compact = false, mobileTight = false }: { compa
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         onOpen={() => setIsMobileMenuOpen(true)}
-        primaryNavItems={primaryNavItems}
-        secondaryNavItems={secondaryNavItems}
         handleLinkClick={handleLinkClick}
         isDarkMode={isDarkMode}
         onThemeToggle={() => {
