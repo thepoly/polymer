@@ -58,14 +58,13 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
         const photographer = featuredImage.photographer && typeof featuredImage.photographer === 'object' ? featuredImage.photographer as User : null;
         return (
           <div className="flex flex-col gap-1 max-w-[680px] w-full mx-auto">
-            <div className="relative w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden">
+            <div className="relative aspect-[3/2] w-screen max-w-none bg-gray-100 dark:bg-zinc-800 overflow-hidden left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] md:left-auto md:right-auto md:ml-0 md:mr-0 md:w-full">
               <Image
                 src={(featuredImage as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || featuredImage.url}
                 alt={featuredImage.alt || article.title}
-                width={featuredImage.width || 1200}
-                height={featuredImage.height || 800}
-                className="w-full h-auto"
-                sizes="(max-width: 768px) calc(100vw - 2rem), 680px"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 680px"
                 priority
               />
             </div>
@@ -92,7 +91,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
         );
       })()}
 
-      <div className={`w-full max-w-[680px] mx-auto px-4 ${hasFeaturedImage ? '' : '-mt-1'}`}>
+      <div className={`w-full max-w-[680px] mx-auto ${hasFeaturedImage ? '' : '-mt-1'}`}>
         <ArticleByline article={article} showDate={false} />
       </div>
     </div>

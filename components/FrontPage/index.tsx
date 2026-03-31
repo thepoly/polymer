@@ -280,7 +280,7 @@ export default function FrontPage({
       <div className="mx-auto max-w-[1280px] px-4 pb-14 md:px-6 xl:px-[30px]">
         {/* Mobile: lead first, then a text article, then the rest */}
         <div className="pt-2 flex flex-col md:hidden" data-frontpage-top>
-          <LeadArticle article={topStories.lead} compact={false} hideKicker />
+          <LeadArticle article={topStories.lead} compact={false} hideKicker important={topStories.leadImportant} />
           {(() => {
             const heroArticles = [...heroStories.left, ...heroStories.right];
             const bottomArticles = topStories.bottomRow || [];
