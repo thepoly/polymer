@@ -164,6 +164,7 @@ function MobileMenuDrawer({
   onSearchOpen: () => void;
 }) {
   const [dragX, setDragX] = useState<number | null>(null);
+  const [drawerWidthPx, setDrawerWidthPx] = useState(300);
   const dragXRef = useRef<number | null>(null);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const activeTouchIdRef = useRef<number | null>(null);
@@ -171,10 +172,11 @@ function MobileMenuDrawer({
   const isDraggingRef = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const getDrawerPx = useCallback(() => {
-    if (typeof window === "undefined") return 300;
-    return window.innerWidth * DRAWER_WIDTH;
+  useEffect(() => {
+    if (panelRef.current) setDrawerWidthPx(panelRef.current.offsetWidth);
   }, []);
+
+  const getDrawerPx = useCallback(() => drawerWidthPx, [drawerWidthPx]);
 
   const resetGesture = useCallback(() => {
     setDragX(null);
@@ -313,9 +315,8 @@ function MobileMenuDrawer({
 
       <div
         ref={panelRef}
-        className={`absolute top-0 left-0 bottom-0 bg-bg-main will-change-transform ${showDrawer ? "shadow-2xl" : "shadow-none"}`}
+        className={`absolute top-0 left-0 bottom-0 w-max max-w-[420px] bg-bg-main will-change-transform ${showDrawer ? "shadow-2xl" : "shadow-none"}`}
         style={{
-          width: `${DRAWER_WIDTH * 100}vw`,
           transform: `translate3d(${translateX}, 0, 0)`,
           transition: dragX !== null ? "none" : `transform ${DRAWER_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
         }}
