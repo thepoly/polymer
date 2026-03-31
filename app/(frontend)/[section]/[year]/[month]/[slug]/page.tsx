@@ -133,6 +133,8 @@ const getArticle = cache(async (slug: string, section?: string): Promise<Article
       updatedAt: true,
       createdAt: true,
       isFollytechnic: true,
+      isPhotofeature: true,
+      gradientOpacity: true,
     },
   });
   const article = result.docs[0] as Article | undefined;
@@ -226,24 +228,7 @@ export default async function ArticlePage({ params }: Args) {
   const isStaff = !!authUser;
   const canEdit = authUser && Array.isArray(authUser.roles) && authUser.roles.some(role => ['admin', 'eic'].includes(role));
 
-  // Prepare content (clean up flags if necessary)
-  let cleanContent = article.content;
-
-  if (layoutType === 'photofeature') {
-      const firstNode = article.content?.root?.children?.[0] as unknown as LexicalNode;
-      if (article.content && firstNode?.type === 'paragraph' && firstNode.children && firstNode.children.length > 0) {
-         const firstTextNode = firstNode.children[0];
-         if (firstTextNode.type === 'text' && firstTextNode.text?.trim() === '#photofeature#') {
-            cleanContent = {
-                ...article.content,
-                root: {
-                    ...article.content.root,
-                    children: (article.content.root.children as unknown as LexicalNode[]).slice(1)
-                }
-            };
-         }
-      }
-  }
+  const cleanContent = article.content;
 
   const staffAuthorsForJsonLd = (article.authors || []).filter((author): author is User => typeof author !== 'number');
   const writeInAuthorsForJsonLd = ((article as unknown as Record<string, unknown>).writeInAuthors || []) as Array<{ name: string }>;

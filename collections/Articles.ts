@@ -249,6 +249,35 @@ const Articles: CollectionConfig = {
         description: 'Render this article in Comic Sans everywhere it appears.',
       },
     },
+    {
+      name: 'isPhotofeature',
+      type: 'checkbox',
+      label: 'Photo Feature',
+      defaultValue: false,
+      validate: (value: boolean | null | undefined, { data }: { data: Record<string, unknown> }) => {
+        const authors = data?.authors as unknown[];
+        if (value && Array.isArray(authors) && authors.length > 1) {
+          return 'Photo Feature layout only supports a single author.';
+        }
+        return true;
+      },
+      admin: {
+        position: 'sidebar',
+        description: 'Use the full-screen photo feature layout. Only available for single-author articles.',
+      },
+    },
+    {
+      name: 'gradientOpacity',
+      type: 'number',
+      label: 'Image Fade Darkness',
+      min: 0,
+      max: 200,
+      admin: {
+        position: 'sidebar',
+        description: 'Darkness of the bottom image fade (0–100). Default is 90.',
+        condition: (data: Record<string, unknown>) => Boolean(data?.isPhotofeature),
+      },
+    },
   ],
 }
 

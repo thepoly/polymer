@@ -282,4 +282,10 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_features_page_layout_id_idx"
   ON "payload_locked_documents_rels" ("features_page_layout_id");
+
+-- 20260331: Add is_photofeature and gradient_opacity to articles
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "is_photofeature" boolean DEFAULT false;
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "gradient_opacity" numeric;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_is_photofeature" boolean DEFAULT false;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_gradient_opacity" numeric;
 SQL

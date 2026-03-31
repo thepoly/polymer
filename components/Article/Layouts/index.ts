@@ -2,7 +2,6 @@ import { StandardLayout } from './Standard';
 import { PhotofeatureLayout } from './Photofeature';
 import { OpinionLayout } from './Opinion';
 import { Article } from '@/payload-types';
-import { LexicalNode } from '@/components/Article/RichTextParser';
 
 // Registry of available layouts
 export const ArticleLayouts = {
@@ -18,14 +17,10 @@ export type ArticleLayoutType = keyof typeof ArticleLayouts;
 
 export const getArticleLayout = (article: Article): ArticleLayoutType => {
   // Logic to determine which layout to use
-  
-  // 1. Check for Photofeature flag in content
-  const firstNode = article.content?.root?.children?.[0] as unknown as LexicalNode;
-  if (article.content && firstNode?.type === 'paragraph' && firstNode.children && firstNode.children.length > 0) {
-     const firstTextNode = firstNode.children[0];
-     if (firstTextNode.type === 'text' && firstTextNode.text?.trim() === '#photofeature#') {
-        return 'photofeature';
-     }
+
+  // 1. Check for Photofeature toggle
+  if ((article as unknown as Record<string, unknown>).isPhotofeature) {
+    return 'photofeature';
   }
 
   // 2. Check for Section-specific layouts

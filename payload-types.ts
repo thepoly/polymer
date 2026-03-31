@@ -317,6 +317,14 @@ export interface Article {
    * Render this article in Comic Sans everywhere it appears.
    */
   isFollytechnic?: boolean | null;
+  /**
+   * Use the full-screen photo feature layout. Only available for single-author articles.
+   */
+  isPhotofeature?: boolean | null;
+  /**
+   * Darkness of the bottom image fade (0–100). Default is 90.
+   */
+  gradientOpacity?: number | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -676,6 +684,8 @@ export interface ArticlesSelect<T extends boolean = true> {
   seoTitle?: T;
   searchDescription?: T;
   isFollytechnic?: T;
+  isPhotofeature?: T;
+  gradientOpacity?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

@@ -212,7 +212,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
 
   return (
     <section
-      className="mx-auto mt-5 max-w-[1200px] px-4 md:px-6"
+      className="mx-auto mt-14 md:mt-20 max-w-[1200px] px-4 md:px-6 pb-14 md:pb-20"
       data-article-recommendations
     >
       <div className="pt-2 md:pt-3">
