@@ -144,8 +144,10 @@ function matchesRequestedDate(article: Article, year: string, month: string): bo
   if (!dateValue) return false;
   const date = new Date(dateValue);
 
-  return date.getFullYear().toString() === year && String(date.getMonth() + 1).padStart(2, '0') === month;
+  return date.getUTCFullYear().toString() === year && String(date.getUTCMonth() + 1).padStart(2, '0') === month;
 }
+
+const validSections = new Set(['news', 'sports', 'features', 'opinion']);
 
 function safeJsonLd(data: Record<string, unknown>): string {
   return JSON.stringify(data).replace(/</g, '\\u003c');
@@ -153,6 +155,9 @@ function safeJsonLd(data: Record<string, unknown>): string {
 
 export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const { slug, section, year, month } = await params;
+
+  if (!validSections.has(section)) return {};
+
   const article = await getArticle(slug, section);
 
   if (!article || !matchesRequestedDate(article, year, month)) return {};
@@ -202,6 +207,9 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
 
 export default async function ArticlePage({ params }: Args) {
   const { slug, section, year, month } = await params;
+
+  if (!validSections.has(section)) notFound();
+
   const article = await getArticle(slug, section);
 
   if (!article || !matchesRequestedDate(article, year, month)) {
@@ -350,8 +358,8 @@ export async function generateStaticParams() {
       .map((doc) => {
         const dateStr = doc.publishedDate || doc.createdAt;
         const date = new Date(dateStr);
-        const year = date.getFullYear().toString();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getUTCFullYear().toString();
+        const month = String(date.getUTCMonth() + 1).padStart(2, '0');
 
         return {
           section: doc.section,
