@@ -26,8 +26,6 @@ export const ArticleByline: React.FC<Props> = ({
 
   // Desktop sentence format for 4+ authors
   const useDesktopSentence = totalAuthors >= 4;
-  // Mobile stack (beneath photo block, no dividers) for 2+ authors
-  const useMobileStack = totalAuthors >= 2;
 
   const staffPhotos = staffAuthors.filter((user) => {
     const headshot = user.headshot as Media | null;
@@ -97,12 +95,11 @@ export const ArticleByline: React.FC<Props> = ({
         By <em>The Polytechnic</em> Editorial Board
       </div>
     );
-  } else if (useDesktopSentence) {
-    // Desktop 4+: sentence inline — "By Name, Name, and Name"
-    // Mobile 4+ (also >= 2): stacked list
+  } else {
+    // Build sentence format for all cases
     const allAuthors: React.ReactNode[] = [
       ...enrichedStaff.map(({ user }) => (
-        <Link key={user.id} href={`/staff/${user.slug || user.id}`} className="hover:text-accent/70 dark:hover:text-white/75 transition-colors">
+        <Link key={user.id} href={`/staff/${user.slug || user.id}`} className="underline hover:text-accent/70 dark:hover:text-white/75 transition-colors">
           {user.firstName} {user.lastName}
         </Link>
       )),
@@ -111,145 +108,104 @@ export const ArticleByline: React.FC<Props> = ({
       )),
     ];
 
-    // Mobile: stacked (no dividers, with titles)
-    const mobileStack = (
-      <div className="flex flex-col gap-1.5">
-        {enrichedStaff.map(({ user, title }) => (
-          <div key={user.id}>
-            <div className={nameStyle}>
-              <Link href={`/staff/${user.slug || user.id}`} className="hover:text-accent/70 dark:hover:text-white/75 transition-colors">
-                {user.firstName} {user.lastName}
-              </Link>
-            </div>
-            {title && <p className={titleStyle}>{title}</p>}
-          </div>
-        ))}
-        {writeInAuthors.map((writeIn, i) => (
-          <div key={`wi-${i}`}>
-            <div className={nameStyle}>{writeIn.name}</div>
-          </div>
-        ))}
-      </div>
-    );
-
-    // Desktop: sentence
-    const desktopSentence = (
+    const sentenceEl = (
       <div className={nameStyle}>
         By{' '}
         {allAuthors.map((node, i) => (
           <React.Fragment key={i}>
-            {i > 0 && i === allAuthors.length - 1 ? ', and ' : i > 0 ? ', ' : ''}
+            {i > 0 && (
+              allAuthors.length === 2
+                ? ' and '
+                : i === allAuthors.length - 1
+                  ? ', and '
+                  : ', '
+            )}
             {node}
           </React.Fragment>
         ))}
       </div>
     );
 
-    namesEl = (
-      <>
-        <div className="md:hidden">{mobileStack}</div>
-        <div className="hidden md:block">{desktopSentence}</div>
-      </>
-    );
-  } else {
-    // 1–3 authors: use divider layout on desktop, stack on mobile if 2–3
-    const hasTitles = enrichedStaff.some((a) => a.title);
+    // For desktop with 1-3 authors: use divider layout
+    if (!useDesktopSentence) {
+      const hasTitles = enrichedStaff.some((a) => a.title);
 
-    if (hasTitles) {
-      // Desktop: divider row; Mobile 2–3: stacked no dividers; Mobile 1: same as desktop
-      const dividerRow = (
-        <div className="flex flex-row flex-wrap items-stretch gap-y-1">
-          {enrichedStaff.map(({ user, title }, index) => (
-            <React.Fragment key={user.id}>
-              {index > 0 && (
-                <div className="w-px bg-rule-strong mx-4 self-stretch" />
-              )}
-              <div>
-                <div className={nameStyle}>
-                  <Link href={`/staff/${user.slug || user.id}`} className="hover:text-accent/70 dark:hover:text-white/75 transition-colors">
-                    {user.firstName} {user.lastName}
-                  </Link>
+      if (hasTitles) {
+        const dividerRow = (
+          <div className="flex flex-row flex-wrap items-stretch gap-y-1">
+            {enrichedStaff.map(({ user, title }, index) => (
+              <React.Fragment key={user.id}>
+                {index > 0 && (
+                  <div className="w-px bg-rule-strong mx-4 self-stretch" />
+                )}
+                <div>
+                  <div className={nameStyle}>
+                    <Link href={`/staff/${user.slug || user.id}`} className="hover:text-accent/70 dark:hover:text-white/75 transition-colors">
+                      {user.firstName} {user.lastName}
+                    </Link>
+                  </div>
+                  {title && <p className={titleStyle}>{title}</p>}
                 </div>
-                {title && <p className={titleStyle}>{title}</p>}
-              </div>
-            </React.Fragment>
-          ))}
-          {writeInAuthors.map((writeIn, i) => (
-            <React.Fragment key={`write-in-${i}`}>
-              <div className="w-px bg-rule-strong mx-4 self-stretch" />
-              <div>
-                <div className={nameStyle}>{writeIn.name}</div>
-              </div>
-            </React.Fragment>
-          ))}
-        </div>
-      );
-
-      if (useMobileStack) {
-        const mobileStack = (
-          <div className="flex flex-col gap-1.5">
-            {enrichedStaff.map(({ user, title }) => (
-              <div key={user.id}>
-                <div className={nameStyle}>
-                  <Link href={`/staff/${user.slug || user.id}`} className="hover:text-accent/70 dark:hover:text-white/75 transition-colors">
-                    {user.firstName} {user.lastName}
-                  </Link>
-                </div>
-                {title && <p className={titleStyle}>{title}</p>}
-              </div>
+              </React.Fragment>
             ))}
             {writeInAuthors.map((writeIn, i) => (
-              <div key={`wi-${i}`}>
-                <div className={nameStyle}>{writeIn.name}</div>
-              </div>
+              <React.Fragment key={`write-in-${i}`}>
+                <div className="w-px bg-rule-strong mx-4 self-stretch" />
+                <div>
+                  <div className={nameStyle}>{writeIn.name}</div>
+                </div>
+              </React.Fragment>
             ))}
           </div>
         );
+
+        // Mobile: sentence, Desktop: dividers
         namesEl = (
           <>
-            <div className="md:hidden">{mobileStack}</div>
+            <div className="md:hidden">{sentenceEl}</div>
             <div className="hidden md:block">{dividerRow}</div>
           </>
         );
       } else {
-        namesEl = dividerRow;
+        // No titles: comma-separated inline (both mobile and desktop)
+        const allNames: React.ReactNode[] = [];
+        enrichedStaff.forEach(({ user }) => {
+          allNames.push(
+            <React.Fragment key={user.id}>
+              <Link href={`/staff/${user.slug || user.id}`} className="hover:text-accent/70 transition-colors">
+                {user.firstName} {user.lastName}
+              </Link>
+            </React.Fragment>
+          );
+        });
+        writeInAuthors.forEach((writeIn, i) => {
+          allNames.push(
+            <React.Fragment key={`write-in-${i}`}>
+              <span>{writeIn.name}</span>
+            </React.Fragment>
+          );
+        });
+
+        namesEl = (
+          <div className={nameStyle}>
+            {allNames.map((node, index) => (
+              <React.Fragment key={index}>
+                {index > 0 && index === allNames.length - 1 ? ' & ' : index > 0 ? ', ' : ''}
+                {node}
+              </React.Fragment>
+            ))}
+          </div>
+        );
       }
     } else {
-      // No titles: comma-separated inline names (both mobile and desktop)
-      const allNames: React.ReactNode[] = [];
-      enrichedStaff.forEach(({ user }) => {
-        allNames.push(
-          <React.Fragment key={user.id}>
-            <Link href={`/staff/${user.slug || user.id}`} className="hover:text-accent/70 transition-colors">
-              {user.firstName} {user.lastName}
-            </Link>
-          </React.Fragment>
-        );
-      });
-      writeInAuthors.forEach((writeIn, i) => {
-        allNames.push(
-          <React.Fragment key={`write-in-${i}`}>
-            <span>{writeIn.name}</span>
-          </React.Fragment>
-        );
-      });
-
-      namesEl = (
-        <div className={nameStyle}>
-          {allNames.map((node, index) => (
-            <React.Fragment key={index}>
-              {index > 0 && index === allNames.length - 1 ? ' & ' : index > 0 ? ', ' : ''}
-              {node}
-            </React.Fragment>
-          ))}
-        </div>
-      );
+      // 4+ authors: sentence on both mobile and desktop
+      namesEl = sentenceEl;
     }
   }
 
   return (
     <div className={`flex flex-col gap-3 py-4 border-b border-rule-strong ${maxWidthClassName} w-full mx-auto transition-colors`}>
-      <div className={`${useMobileStack ? 'flex flex-col gap-3 md:flex-row md:items-center md:gap-3' : 'flex items-center gap-3'}`}>
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
         {headshotsEl}
         {namesEl}
       </div>
