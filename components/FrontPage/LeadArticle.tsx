@@ -38,7 +38,7 @@ export const LeadArticle = ({
             )}
             <h3
                 data-marauders-title
-                className={`relative z-[30] font-copy mb-0.5 md:mb-1 font-bold leading-[1.04] tracking-[-0.018em] text-text-main transition-colors [overflow-wrap:anywhere] break-words ${article.section === "news" && important ? "font-extrabold uppercase" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""} ${article.section === "opinion" ? "font-light" : ""} ${
+                className={`relative z-[30] font-copy mb-0.5 md:mb-1 font-bold ${article.section === "news" && important ? "leading-[1.10]" : "leading-[1.04]"} tracking-[-0.018em] text-text-main transition-colors [overflow-wrap:anywhere] break-words ${article.section === "news" && important ? "uppercase md:font-extrabold" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""} ${article.section === "opinion" ? "font-light" : ""} ${
                     compact ? "text-[29px] md:text-[29px] xl:text-[31px]" : "text-[32px] md:text-[33px] xl:text-[36px]"
                 } ${article.section === "features" ? (compact ? "text-[30px] md:text-[30px] xl:text-[32px]" : "text-[33px] md:text-[34px] xl:text-[37px]") : ""} ${article.section === "news" ? (compact ? "text-[31px] md:text-[31px] xl:text-[33px]" : "text-[34px] md:text-[35px] xl:text-[39px]") : ""}`}
             >
