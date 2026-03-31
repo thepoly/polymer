@@ -315,7 +315,7 @@ function MobileMenuDrawer({
 
       <div
         ref={panelRef}
-        className={`absolute top-0 left-0 bottom-0 w-max bg-bg-main will-change-transform ${showDrawer ? "shadow-2xl" : "shadow-none"}`}
+        className={`absolute top-0 left-0 bottom-0 w-max max-w-[420px] bg-bg-main will-change-transform ${showDrawer ? "shadow-2xl" : "shadow-none"}`}
         style={{
           transform: `translate3d(${translateX}, 0, 0)`,
           transition: dragX !== null ? "none" : `transform ${DRAWER_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
