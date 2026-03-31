@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
@@ -174,9 +174,10 @@ async function fetchSearchResults(
   return res.json() as Promise<SearchResponse>;
 }
 
-export default function SearchOverlay({ onClose }: { onClose: () => void }) {
+export default function SearchOverlay({ onClose, forceDark = false }: { onClose: () => void; forceDark?: boolean }) {
   const router = useRouter();
-  const { isDarkMode } = useTheme();
+  const { isDarkMode: themeDarkMode } = useTheme();
+  const isDarkMode = forceDark || themeDarkMode;
   const logoSrc = isDarkMode ? "/logo-dark-mobile.svg" : "/logo-light-mobile.svg";
   const [query, setQuery] = useState("");
   const [articles, setArticles] = useState<Article[]>([]);
@@ -540,12 +541,19 @@ export default function SearchOverlay({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] overflow-y-auto bg-bg-main/88 backdrop-blur-sm transition-opacity ease-out"
+      className={`fixed inset-0 z-[100] overflow-y-auto bg-bg-main/88 backdrop-blur-sm transition-opacity ease-out${forceDark ? ' dark' : ''}`}
       onClick={(e) => {
         const target = e.target as HTMLElement;
         if (!target.closest("input, a, button, [data-search-area]")) handleClose();
       }}
       style={{
+        ...(forceDark ? {
+          '--background': '#0a0a0a',
+          '--foreground': '#e8e8e8',
+          '--foreground-muted': '#c8ced6',
+          '--rule-color': 'rgba(255, 255, 255, 0.18)',
+          '--border-color': '#3a3a3a',
+        } as React.CSSProperties : {}),
         opacity: isVisible ? 1 : 0,
         transitionDuration: `${OVERLAY_TRANSITION_MS}ms`,
       }}

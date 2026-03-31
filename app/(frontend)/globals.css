@@ -413,12 +413,13 @@ h6.font-display.italic {
     padding-right: calc(1rem + var(--safe-area-right));
   }
 
-  .safe-area-mobile-drawer {
-    padding-top: calc(0.875rem + var(--safe-area-top));
-    padding-right: calc(1.125rem + var(--safe-area-right));
-    padding-bottom: calc(1.25rem + var(--safe-area-bottom));
-    padding-left: calc(1.125rem + var(--safe-area-left));
-  }
+}
+
+.safe-area-mobile-drawer {
+  padding-top: calc(0.875rem + var(--safe-area-top));
+  padding-right: calc(1.125rem + var(--safe-area-right));
+  padding-bottom: calc(1.25rem + var(--safe-area-bottom));
+  padding-left: calc(1.125rem + var(--safe-area-left));
 }
 
 html.standalone-pwa .mobile-chrome-header-inner {

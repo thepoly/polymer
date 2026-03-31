@@ -217,7 +217,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         className=""
       />
 
-      {isSearchOpen && <SearchOverlay onClose={() => setIsSearchOpen(false)} />}
+      {isSearchOpen && <SearchOverlay onClose={() => setIsSearchOpen(false)} forceDark />}
     </>
   );
 };

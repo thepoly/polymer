@@ -58,7 +58,7 @@ export function MobileMenuDrawer({
 
   const getDrawerPx = useCallback(() => {
     if (typeof window === 'undefined') return 300;
-    return window.innerWidth * DRAWER_WIDTH;
+    return Math.min(window.innerWidth * DRAWER_WIDTH, 320);
   }, []);
 
   const resetGesture = useCallback(() => {
@@ -201,6 +201,7 @@ export function MobileMenuDrawer({
         className={`absolute top-0 left-0 bottom-0 bg-bg-main will-change-transform ${showDrawer ? 'shadow-2xl' : 'shadow-none'}`}
         style={{
           width: `${DRAWER_WIDTH * 100}vw`,
+          maxWidth: '320px',
           transform: `translate3d(${translateX}, 0, 0)`,
           transition: dragX !== null ? 'none' : `transform ${DRAWER_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
         }}
