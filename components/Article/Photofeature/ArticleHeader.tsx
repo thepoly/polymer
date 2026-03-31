@@ -18,6 +18,8 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { isDarkMode, toggleDarkMode } = useTheme();
   const featuredImage = article.featuredImage as Media | null;
+  const photographer = featuredImage?.photographer && typeof featuredImage.photographer === 'object' ? featuredImage.photographer as User : null;
+  const writeInPhotographer = featuredImage ? ((featuredImage as unknown as Record<string, unknown>).writeInPhotographer as string | null | undefined) : null;
   const gradientOpacity = (article as unknown as Record<string, unknown>).gradientOpacity as number | null | undefined;
   const gradientStyle = gradientOpacity != null
     ? {
@@ -186,6 +188,18 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
             )}
           </div>
         </div>
+
+        {/* Photo Credit (z-20, bottom-right) */}
+        {(photographer || writeInPhotographer) && (
+          <div className="absolute bottom-3 right-4 z-20 pointer-events-none">
+            <p className="font-meta text-[11px] italic text-white/50">
+              {photographer
+                ? `${photographer.firstName} ${photographer.lastName}/The Polytechnic`
+                : writeInPhotographer}
+            </p>
+          </div>
+        )}
+
 
       </div>
 

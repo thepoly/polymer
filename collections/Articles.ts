@@ -205,6 +205,9 @@ const Articles: CollectionConfig = {
       name: 'imageCaption',
       type: 'text',
       label: 'Featured Image Caption',
+      admin: {
+        condition: (data: Record<string, unknown>) => !data?.isPhotofeature,
+      },
     },
     {
       name: 'content',
