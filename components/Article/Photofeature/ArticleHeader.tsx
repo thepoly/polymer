@@ -207,7 +207,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
         onOpen={() => setIsMenuOpen(true)}
-        handleLinkClick={(e, href) => {
+        handleLinkClick={(e, _href) => {
           if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) return;
           setIsMenuOpen(false);
         }}
