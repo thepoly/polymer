@@ -3,8 +3,11 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Search, ChevronRight } from 'lucide-react';
+import { Menu, Search } from 'lucide-react';
 import { Article, Media, User } from '@/payload-types';
+import { MobileMenuDrawer } from '@/components/MobileMenuDrawer';
+import SearchOverlay from '@/components/SearchOverlay';
+import { useTheme } from '@/components/ThemeProvider';
 
 type Props = {
   article: Article;
@@ -12,10 +15,16 @@ type Props = {
 
 export const ArticleHeader: React.FC<Props> = ({ article }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const { isDarkMode, toggleDarkMode } = useTheme();
   const featuredImage = article.featuredImage as Media | null;
   const gradientOpacity = (article as unknown as Record<string, unknown>).gradientOpacity as number | null | undefined;
   const gradientStyle = gradientOpacity != null
-    ? { background: `linear-gradient(to bottom, rgba(0,0,0,0.2), transparent 50%, rgba(0,0,0,${gradientOpacity / 100}))` }
+    ? {
+        background: gradientOpacity <= 100
+          ? `linear-gradient(to bottom, rgba(0,0,0,0.2), transparent 50%, rgba(0,0,0,${gradientOpacity / 100}))`
+          : `linear-gradient(to bottom, rgba(0,0,0,0.2), transparent ${(200 - gradientOpacity) / 2}%, rgba(0,0,0,1))`,
+      }
     : undefined;
 
   React.useEffect(() => {
@@ -29,13 +38,6 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
       document.documentElement.style.backgroundColor = '';
     };
   }, []);
-
-  const menuItems = [
-    { label: 'News', href: '/news' },
-    { label: 'Features', href: '/features' },
-    { label: 'Opinion', href: '/opinion' },
-    { label: 'Sports', href: '/sports' },
-  ];
 
   return (
     <>
@@ -61,49 +63,40 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
 
         {/* Top Navigation Bar (z-50) */}
         <div className="absolute top-0 left-0 right-0 z-50 px-3 py-3 md:px-5 md:py-4 grid grid-cols-3 items-center">
-          
-          {/* Left: Animated Hamburger & Search */}
-          <div className="flex items-center justify-start gap-3 md:gap-5">
-            
-            {/* Custom Animated Menu Button */}
-            <button 
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="group relative w-5 h-4 flex flex-col justify-between items-center focus:outline-none z-50"
-              aria-label="Toggle Menu"
-            >
-              <span 
-                className={`block w-full h-0.5 bg-white rounded-full transition-all duration-300 ease-in-out origin-center
-                  ${isMenuOpen ? 'rotate-45 translate-y-[7px]' : ''}`} 
-              />
-              <span 
-                className={`block w-full h-0.5 bg-white rounded-full transition-all duration-300 ease-in-out
-                  ${isMenuOpen ? 'opacity-0 translate-x-2' : 'opacity-100'}`} 
-              />
-              <span 
-                className={`block w-full h-0.5 bg-white rounded-full transition-all duration-300 ease-in-out origin-center
-                  ${isMenuOpen ? '-rotate-45 -translate-y-[7px]' : ''}`} 
-              />
-            </button>
 
-            <button className={`hover:opacity-80 transition-opacity duration-300 ${isMenuOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-              <Search className="w-4 h-4 md:w-5 md:h-5" />
+          {/* Left: Menu */}
+          <div className="flex items-center justify-start">
+            <button
+              onClick={() => setIsMenuOpen(true)}
+              className="flex h-9 w-9 items-center justify-center text-white hover:opacity-80 transition-opacity"
+              aria-label="Open menu"
+            >
+              <Menu className="w-5 h-5" />
             </button>
           </div>
 
           {/* Center: Logo */}
           <div className="flex justify-center">
             <Link href="/" className="relative w-[6.5rem] md:w-[9.5rem] h-7 hover:opacity-90 transition-opacity">
-              <Image 
-                src="/logo.svg" 
-                alt="The Polytechnic" 
-                fill 
-                className="object-contain brightness-0 invert" 
+              <Image
+                src="/logo.svg"
+                alt="The Polytechnic"
+                fill
+                className="object-contain brightness-0 invert"
               />
             </Link>
           </div>
 
-          {/* Right: Empty div for grid balance */}
-          <div />
+          {/* Right: Search */}
+          <div className="flex items-center justify-end">
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="flex h-9 w-9 items-center justify-center text-white hover:opacity-80 transition-opacity"
+              aria-label="Search"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Bottom Content Area (z-10) */}
@@ -194,32 +187,23 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
           </div>
         </div>
 
-        {/* Menu Overlay (z-40) */}
-        <div 
-          className={`fixed inset-0 z-40 bg-black flex flex-col pt-20 px-5 md:px-10 transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]
-            ${isMenuOpen ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}
-        >
-          <nav className="flex flex-col w-full max-w-xl mx-auto mt-3">
-            {menuItems.map((item, index) => (
-              <Link 
-                key={index} 
-                href={item.href}
-                onClick={() => setIsMenuOpen(false)}
-                style={{ transitionDelay: isMenuOpen ? `${150 + (index * 75)}ms` : '0ms' }}
-                className={`
-                  group flex items-center justify-between py-4 border-b border-white/20 hover:border-white 
-                  transition-all duration-500 ease-out transform
-                  ${isMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'}
-                `}
-              >
-                <span className="font-serif text-xl md:text-2xl font-light text-white">{item.label}</span>
-                <ChevronRight className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all duration-300" />
-              </Link>
-            ))}
-          </nav>
-        </div>
-        
       </div>
+
+      <MobileMenuDrawer
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        onOpen={() => setIsMenuOpen(true)}
+        handleLinkClick={(e, href) => {
+          if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) return;
+          setIsMenuOpen(false);
+        }}
+        isDarkMode={isDarkMode}
+        onThemeToggle={toggleDarkMode}
+        onSearchOpen={() => { setIsMenuOpen(false); setIsSearchOpen(true); }}
+        className=""
+      />
+
+      {isSearchOpen && <SearchOverlay onClose={() => setIsSearchOpen(false)} />}
     </>
   );
 };

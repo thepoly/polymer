@@ -254,9 +254,16 @@ const Articles: CollectionConfig = {
       type: 'checkbox',
       label: 'Photo Feature',
       defaultValue: false,
+      validate: (value: boolean | null | undefined, { data }: { data: Record<string, unknown> }) => {
+        const authors = data?.authors as unknown[];
+        if (value && Array.isArray(authors) && authors.length > 1) {
+          return 'Photo Feature layout only supports a single author.';
+        }
+        return true;
+      },
       admin: {
         position: 'sidebar',
-        description: 'Use the full-screen photo feature layout.',
+        description: 'Use the full-screen photo feature layout. Only available for single-author articles.',
       },
     },
     {
@@ -264,7 +271,7 @@ const Articles: CollectionConfig = {
       type: 'number',
       label: 'Image Fade Darkness',
       min: 0,
-      max: 100,
+      max: 200,
       admin: {
         position: 'sidebar',
         description: 'Darkness of the bottom image fade (0–100). Default is 90.',

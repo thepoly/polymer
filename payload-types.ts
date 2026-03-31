@@ -318,7 +318,7 @@ export interface Article {
    */
   isFollytechnic?: boolean | null;
   /**
-   * Use the full-screen photo feature layout.
+   * Use the full-screen photo feature layout. Only available for single-author articles.
    */
   isPhotofeature?: boolean | null;
   /**
