@@ -8,11 +8,31 @@ const isAdminOrEIC: Access = ({ req: { user } }) => {
   return Boolean(u?.roles?.some((role) => ['admin', 'eic'].includes(role)))
 }
 
-const color = (name: string, label: string) => ({
+const color = (name: string, label: string, description: string) => ({
   name,
   type: 'text' as const,
   label,
+  admin: {
+    components: {
+      Field: '@/components/admin/ThemeColorField#ThemeColorField',
+    },
+    description,
+    width: '33%',
+  },
 })
+
+const colorRows = (items: Array<{ name: string; label: string; description: string }>) => {
+  const rows = []
+
+  for (let index = 0; index < items.length; index += 3) {
+    rows.push({
+      type: 'row' as const,
+      fields: items.slice(index, index + 3).map((item) => color(item.name, item.label, item.description)),
+    })
+  }
+
+  return rows
+}
 
 export const Theme: GlobalConfig = {
   slug: 'theme',
@@ -37,30 +57,59 @@ export const Theme: GlobalConfig = {
       name: 'logos',
       type: 'group',
       label: 'Logos',
+      admin: {
+        description: 'Upload or choose replacement logos for each theme and breakpoint combination. Leave blank to fall back to the static public assets.',
+      },
       fields: [
         {
-          name: 'desktopLight',
-          type: 'relationship',
-          relationTo: 'logos',
-          label: 'Desktop — Light Mode',
+          type: 'row',
+          fields: [
+            {
+              name: 'desktopLight',
+              type: 'relationship',
+              relationTo: 'logos',
+              label: 'Desktop — Light Mode',
+              admin: {
+                width: '50%',
+                description: 'Primary desktop logo shown in light mode.',
+              },
+            },
+            {
+              name: 'desktopDark',
+              type: 'relationship',
+              relationTo: 'logos',
+              label: 'Desktop — Dark Mode',
+              admin: {
+                width: '50%',
+                description: 'Primary desktop logo shown in dark mode.',
+              },
+            },
+          ],
         },
         {
-          name: 'desktopDark',
-          type: 'relationship',
-          relationTo: 'logos',
-          label: 'Desktop — Dark Mode',
-        },
-        {
-          name: 'mobileLight',
-          type: 'relationship',
-          relationTo: 'logos',
-          label: 'Mobile — Light Mode',
-        },
-        {
-          name: 'mobileDark',
-          type: 'relationship',
-          relationTo: 'logos',
-          label: 'Mobile — Dark Mode',
+          type: 'row',
+          fields: [
+            {
+              name: 'mobileLight',
+              type: 'relationship',
+              relationTo: 'logos',
+              label: 'Mobile — Light Mode',
+              admin: {
+                width: '50%',
+                description: 'Compact logo used in mobile headers and overlays in light mode.',
+              },
+            },
+            {
+              name: 'mobileDark',
+              type: 'relationship',
+              relationTo: 'logos',
+              label: 'Mobile — Dark Mode',
+              admin: {
+                width: '50%',
+                description: 'Compact logo used in mobile headers and overlays in dark mode.',
+              },
+            },
+          ],
         },
       ],
     },
@@ -68,39 +117,45 @@ export const Theme: GlobalConfig = {
       name: 'lightMode',
       type: 'group',
       label: 'Colors — Light Mode',
-      fields: [
-        color('background', 'Background'),
-        color('foreground', 'Foreground (Body Text)'),
-        color('foregroundMuted', 'Foreground Muted (Secondary Text)'),
-        color('accent', 'Accent (Brand Color)'),
-        color('borderColor', 'Border Color'),
-        color('ruleColor', 'Rule Color (Thin Dividers)'),
-        color('ruleStrongColor', 'Rule Strong Color (Heavy Dividers)'),
-        color('headerTopBg', 'Header Top Bar Background'),
-        color('headerTopText', 'Header Top Bar Text'),
-        color('headerNavBg', 'Header Nav Background'),
-        color('headerNavText', 'Header Nav Text'),
-        color('headerBorder', 'Header Border'),
-      ],
+      admin: {
+        description: 'Live light-mode color tokens used across the frontend. Hex values work best with the picker; rgba values can still be typed manually.',
+      },
+      fields: colorRows([
+        { name: 'background', label: 'Background', description: 'Main page background color.' },
+        { name: 'foreground', label: 'Foreground (Body Text)', description: 'Primary text color for article and UI copy.' },
+        { name: 'foregroundMuted', label: 'Foreground Muted', description: 'Secondary text color for metadata and subdued labels.' },
+        { name: 'accent', label: 'Accent (Brand Color)', description: 'Brand accent used for highlights, links, and emphasis.' },
+        { name: 'borderColor', label: 'Border Color', description: 'Standard border color for cards, chrome, and form edges.' },
+        { name: 'ruleColor', label: 'Rule Color', description: 'Thin divider color. rgba values are supported.' },
+        { name: 'ruleStrongColor', label: 'Rule Strong Color', description: 'Heavy divider color. rgba values are supported.' },
+        { name: 'headerTopBg', label: 'Header Top Bar Background', description: 'Background for the top metadata/date strip.' },
+        { name: 'headerTopText', label: 'Header Top Bar Text', description: 'Text color for the top metadata/date strip.' },
+        { name: 'headerNavBg', label: 'Header Nav Background', description: 'Main navigation bar background color.' },
+        { name: 'headerNavText', label: 'Header Nav Text', description: 'Main navigation bar text color.' },
+        { name: 'headerBorder', label: 'Header Border', description: 'Border and rule color used around the header chrome.' },
+      ]),
     },
     {
       name: 'darkMode',
       type: 'group',
       label: 'Colors — Dark Mode',
-      fields: [
-        color('background', 'Background'),
-        color('foreground', 'Foreground (Body Text)'),
-        color('foregroundMuted', 'Foreground Muted (Secondary Text)'),
-        color('accent', 'Accent (Brand Color)'),
-        color('borderColor', 'Border Color'),
-        color('ruleColor', 'Rule Color (Thin Dividers)'),
-        color('ruleStrongColor', 'Rule Strong Color (Heavy Dividers)'),
-        color('headerTopBg', 'Header Top Bar Background'),
-        color('headerTopText', 'Header Top Bar Text'),
-        color('headerNavBg', 'Header Nav Background'),
-        color('headerNavText', 'Header Nav Text'),
-        color('headerBorder', 'Header Border'),
-      ],
+      admin: {
+        description: 'Dark-mode equivalents for the same frontend tokens. These are applied under `html.dark`.',
+      },
+      fields: colorRows([
+        { name: 'background', label: 'Background', description: 'Main page background color in dark mode.' },
+        { name: 'foreground', label: 'Foreground (Body Text)', description: 'Primary text color in dark mode.' },
+        { name: 'foregroundMuted', label: 'Foreground Muted', description: 'Secondary text color in dark mode.' },
+        { name: 'accent', label: 'Accent (Brand Color)', description: 'Brand accent used for highlights, links, and emphasis in dark mode.' },
+        { name: 'borderColor', label: 'Border Color', description: 'Standard border color for dark-mode cards and chrome.' },
+        { name: 'ruleColor', label: 'Rule Color', description: 'Thin divider color in dark mode. rgba values are supported.' },
+        { name: 'ruleStrongColor', label: 'Rule Strong Color', description: 'Heavy divider color in dark mode. rgba values are supported.' },
+        { name: 'headerTopBg', label: 'Header Top Bar Background', description: 'Background for the top metadata/date strip in dark mode.' },
+        { name: 'headerTopText', label: 'Header Top Bar Text', description: 'Text color for the top metadata/date strip in dark mode.' },
+        { name: 'headerNavBg', label: 'Header Nav Background', description: 'Main navigation bar background in dark mode.' },
+        { name: 'headerNavText', label: 'Header Nav Text', description: 'Main navigation bar text color in dark mode.' },
+        { name: 'headerBorder', label: 'Header Border', description: 'Border and rule color used around dark-mode header chrome.' },
+      ]),
     },
   ],
 }
