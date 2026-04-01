@@ -170,6 +170,15 @@ const extractDocId = (): string | null => {
   return null;
 };
 
+const isCreateRoute = (): boolean => window.location.pathname.split('/').includes('create');
+
+const incrementVolumeEdition = (currentVolume: number, currentEdition: number): { volume: number; edition: number } => {
+  if (currentEdition >= 52) {
+    return { volume: currentVolume + 1, edition: 1 };
+  }
+  return { volume: currentVolume, edition: currentEdition + 1 };
+};
+
 const makeRow = (spans: number[]): GridRow => ({
   id: newId(),
   cells: spans.map((span) => ({ id: newId(), span, articleId: null, direction: 'top' as ImageDirection })),
@@ -1349,6 +1358,7 @@ export function LayoutEditor() {
   useEffect(() => {
     (async () => {
       try {
+        const creatingNewLayout = isCreateRoute();
         const artRes = await fetch(
           '/api/articles?where[_status][equals]=published&sort=-publishedDate&limit=100&depth=1' +
           '&select[title]=true&select[slug]=true&select[section]=true&select[publishedDate]=true' +
@@ -1366,14 +1376,16 @@ export function LayoutEditor() {
           if (layoutRes.ok) { layoutData = await layoutRes.json(); } else { id = null; }
         }
         if (!id) {
-          const listRes = await fetch('/api/layout?limit=1&depth=1');
+          const listRes = await fetch('/api/layout?limit=1&depth=1&sort=-volume,-edition');
           const listData = await listRes.json();
           if (listData.docs?.length > 0) {
             layoutData = listData.docs[0];
-            id = String((layoutData as Record<string, unknown>).id);
+            if (!creatingNewLayout) {
+              id = String((layoutData as Record<string, unknown>).id);
+            }
           }
         }
-        if (!id) {
+        if (!id && !creatingNewLayout) {
           const createRes = await fetch('/api/layout', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name: 'Skeletons & Layouts' }),
@@ -1454,8 +1466,17 @@ export function LayoutEditor() {
           // Load volume & edition (fall back to auto-calculated)
           const savedVolume = (layoutData as Record<string, unknown>).volume;
           const savedEdition = (layoutData as Record<string, unknown>).edition;
-          if (typeof savedVolume === 'number' && savedVolume > 0) setVolume(savedVolume);
-          if (typeof savedEdition === 'number' && savedEdition > 0) setEdition(savedEdition);
+          if (creatingNewLayout) {
+            const baseVolume = typeof savedVolume === 'number' && savedVolume > 0 ? savedVolume : calculateVolumeEdition().volume;
+            const baseEdition = typeof savedEdition === 'number' && savedEdition > 0 ? savedEdition : calculateVolumeEdition().edition;
+            const nextVersion = incrementVolumeEdition(baseVolume, baseEdition);
+            setVolume(nextVersion.volume);
+            setEdition(nextVersion.edition);
+            setSaved(false);
+          } else {
+            if (typeof savedVolume === 'number' && savedVolume > 0) setVolume(savedVolume);
+            if (typeof savedEdition === 'number' && savedEdition > 0) setEdition(savedEdition);
+          }
 
           // Load section layouts
           const sectionLayoutsData = (layoutData as Record<string, unknown>).sectionLayouts;
@@ -1472,6 +1493,11 @@ export function LayoutEditor() {
             }
             setSectionLayouts(loaded);
           }
+        } else if (creatingNewLayout) {
+          const auto = calculateVolumeEdition();
+          setVolume(auto.volume);
+          setEdition(auto.edition);
+          setSaved(false);
         }
       } catch (err) { setError('Failed to load data'); console.error(err); } finally { setLoading(false); }
     })();
