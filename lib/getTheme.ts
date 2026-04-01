@@ -1,4 +1,5 @@
 import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 import configPromise from '@/payload.config'
 import type { Logo } from '@/payload-types'
@@ -72,40 +73,49 @@ function resolveColors(
   return result
 }
 
-export const getTheme = cache(async (): Promise<ResolvedTheme> => {
-  try {
-    const payload = await getPayload({ config: configPromise })
-    const theme = await payload.findGlobal({ slug: 'theme', depth: 1 })
+const FALLBACK: ResolvedTheme = {
+  lightMode: { ...LIGHT_FALLBACKS },
+  darkMode: { ...DARK_FALLBACKS },
+  logoSrcs: {
+    desktopLight: '/logo-light.svg',
+    desktopDark: '/logo-dark.svg',
+    mobileLight: '/logo-light-mobile.svg',
+    mobileDark: '/logo-dark-mobile.svg',
+  },
+}
 
-    const logos = theme?.logos as {
-      desktopLight?: Logo | number | null
-      desktopDark?: Logo | number | null
-      mobileLight?: Logo | number | null
-      mobileDark?: Logo | number | null
-    } | null | undefined
+// unstable_cache persists across requests; invalidated when an admin saves Theme.
+// cache() deduplicates within a single render (layout + Header both call getTheme).
+const fetchTheme = unstable_cache(
+  async (): Promise<ResolvedTheme> => {
+    try {
+      const payload = await getPayload({ config: configPromise })
+      const theme = await payload.findGlobal({ slug: 'theme', depth: 1 })
 
-    return {
-      lightMode: resolveColors(theme?.lightMode as Record<string, string | null | undefined>, LIGHT_FALLBACKS),
-      darkMode: resolveColors(theme?.darkMode as Record<string, string | null | undefined>, DARK_FALLBACKS),
-      logoSrcs: {
-        desktopLight: resolveLogoUrl(logos?.desktopLight as Logo | number | null | undefined, '/logo-light.svg'),
-        desktopDark: resolveLogoUrl(logos?.desktopDark as Logo | number | null | undefined, '/logo-dark.svg'),
-        mobileLight: resolveLogoUrl(logos?.mobileLight as Logo | number | null | undefined, '/logo-light-mobile.svg'),
-        mobileDark: resolveLogoUrl(logos?.mobileDark as Logo | number | null | undefined, '/logo-dark-mobile.svg'),
-      },
+      const logos = theme?.logos as {
+        desktopLight?: Logo | number | null
+        desktopDark?: Logo | number | null
+        mobileLight?: Logo | number | null
+        mobileDark?: Logo | number | null
+      } | null | undefined
+
+      return {
+        lightMode: resolveColors(theme?.lightMode as Record<string, string | null | undefined>, LIGHT_FALLBACKS),
+        darkMode: resolveColors(theme?.darkMode as Record<string, string | null | undefined>, DARK_FALLBACKS),
+        logoSrcs: {
+          desktopLight: resolveLogoUrl(logos?.desktopLight as Logo | number | null | undefined, '/logo-light.svg'),
+          desktopDark: resolveLogoUrl(logos?.desktopDark as Logo | number | null | undefined, '/logo-dark.svg'),
+          mobileLight: resolveLogoUrl(logos?.mobileLight as Logo | number | null | undefined, '/logo-light-mobile.svg'),
+          mobileDark: resolveLogoUrl(logos?.mobileDark as Logo | number | null | undefined, '/logo-dark-mobile.svg'),
+        },
+      }
+    } catch {
+      // Theme table doesn't exist yet (before first migration) or DB unreachable.
+      return FALLBACK
     }
-  } catch {
-    // If the Theme global doesn't exist yet (e.g. before first migration),
-    // return pure fallback values so the site keeps working.
-    return {
-      lightMode: { ...LIGHT_FALLBACKS },
-      darkMode: { ...DARK_FALLBACKS },
-      logoSrcs: {
-        desktopLight: '/logo-light.svg',
-        desktopDark: '/logo-dark.svg',
-        mobileLight: '/logo-light-mobile.svg',
-        mobileDark: '/logo-dark-mobile.svg',
-      },
-    }
-  }
-})
+  },
+  ['polymer-theme'],
+  { tags: ['polymer-theme'] },
+)
+
+export const getTheme = cache(fetchTheme)

@@ -43,7 +43,9 @@ function colorVars(colors: ThemeColors): string {
 }
 
 export default function ThemeStyle({ lightMode, darkMode }: Props) {
-  const css = `:root {\n${colorVars(lightMode)}\n}\nhtml.dark {\n${colorVars(darkMode)}\n}`
+  // Use html:root (higher specificity than :root alone) so this always wins
+  // over the bare :root block in globals.css regardless of stylesheet load order.
+  const css = `html:root {\n${colorVars(lightMode)}\n}\nhtml.dark:root {\n${colorVars(darkMode)}\n}`
   // Values are sanitized above — only valid CSS color syntax passes through.
   // eslint-disable-next-line react/no-danger
   return <style dangerouslySetInnerHTML={{ __html: css }} />

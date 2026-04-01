@@ -1,4 +1,5 @@
 import type { GlobalConfig, Access } from 'payload'
+import { revalidatePath } from 'next/cache'
 
 type UserWithRoles = { id: string | number; roles?: string[] }
 
@@ -20,6 +21,13 @@ export const Theme: GlobalConfig = {
     group: 'Theme',
   },
   versions: true,
+  hooks: {
+    afterChange: [
+      () => {
+        revalidatePath('/', 'layout')
+      },
+    ],
+  },
   access: {
     read: isAdminOrEIC,
     update: isAdminOrEIC,
