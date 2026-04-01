@@ -52,7 +52,10 @@ export const Logos: CollectionConfig = {
       },
     },
   ],
-  upload: {},
+  upload: {
+    staticDir: mediaDir,
+    staticURL: '/api/logos/file',
+  },
 }
 
 export default Logos
