@@ -239,7 +239,7 @@ body {
   background: var(--background);
   font-family: var(--font-copy);
   font-size: 17px;
-  line-height: 1.6;
+  line-height: 1.4;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   transition: color 0.3s ease, background-color 0.3s ease;

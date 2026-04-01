@@ -205,7 +205,7 @@ export const ArticleByline: React.FC<Props> = ({
 
   return (
     <div className={`flex flex-col gap-3 py-4 border-b border-rule-strong ${maxWidthClassName} w-full mx-auto transition-colors`}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-3">
+      <div className="flex flex-row flex-wrap items-center gap-3">
         {headshotsEl}
         {namesEl}
       </div>

@@ -37,7 +37,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         const photographer = featuredImage.photographer && typeof featuredImage.photographer === 'object' ? featuredImage.photographer as User : null;
         const imageCaption = (article as unknown as Record<string, unknown>).imageCaption as string | undefined;
         return (
-          <div className="flex flex-col gap-1 max-w-[680px] w-full mx-auto">
+          <div className="flex flex-col max-w-[680px] w-full mx-auto">
             <div
               id={`media-${featuredImage.id}`}
               className={featuredImageWrapperClassName}
@@ -52,7 +52,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
               />
             </div>
             {(imageCaption || photographer || writeInPhotographer) && (
-              <p data-ie-field="imageCaption" className="mt-1 font-meta text-[12px] italic text-text-muted transition-colors">
+              <p data-ie-field="imageCaption" className="font-meta text-[12px] italic text-text-muted transition-colors">
                 {imageCaption}
                 {(photographer || writeInPhotographer) && (
                   <span className="opacity-60">
@@ -68,7 +68,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         );
       })()}
 
-      <div className="max-w-[680px] w-full mx-auto">
+      <div className="max-w-[680px] w-full mx-auto -mt-6">
         <ArticleByline article={article} />
       </div>
 
