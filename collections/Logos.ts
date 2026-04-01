@@ -54,7 +54,6 @@ export const Logos: CollectionConfig = {
   ],
   upload: {
     staticDir: mediaDir,
-    staticURL: '/api/logos/file',
   },
 }
 
