@@ -3,13 +3,18 @@ import type { Metadata } from 'next';
 import Header from '@/components/Header';
 import SearchInput from '@/components/SearchInput';
 import { sanitizeSearchQuery } from '@/utils/search';
+import { getSeo } from '@/lib/getSeo';
 
-export const metadata: Metadata = {
-  title: 'Search',
-  description: 'Search articles from The Polytechnic, RPI\'s student newspaper.',
-  robots: { index: false },
-  alternates: { canonical: '/search' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getSeo()
+
+  return {
+    title: seo.pages.searchTitle,
+    description: seo.pages.searchDescription,
+    robots: { index: false },
+    alternates: { canonical: '/search' },
+  }
+}
 
 type Args = {
   searchParams: Promise<{ q?: string }>;

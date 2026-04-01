@@ -50,6 +50,7 @@ import FeaturesPageLayout from './collections/FeaturesPageLayout.ts'
 import Submissions from './collections/Submissions.ts'
 import EventSubmissions from './collections/EventSubmissions.ts'
 import Logos from './collections/Logos.ts'
+import Seo from './collections/Seo.ts'
 import Theme from './collections/Theme.ts'
 
 const filename = fileURLToPath(import.meta.url)
@@ -84,7 +85,7 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, Logos, Articles, JobTitles, Layout, OpinionPageLayout, FeaturesPageLayout, Submissions, EventSubmissions],
-  globals: [Theme],
+  globals: [Theme, Seo],
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [
       ...defaultFeatures,

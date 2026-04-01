@@ -248,8 +248,8 @@ export default function ArchiveTimeMachinePage({
   initialQuerySource?: string;
   initialQueryStatus?: "ok" | "invalid" | "no-match" | "pre-archive" | null;
 }) {
-  const { isDarkMode } = useTheme();
-  const logoSrc = isDarkMode ? "/logo-dark-mobile.svg" : "/logo-light-mobile.svg";
+  const { isDarkMode, logoSrcs } = useTheme();
+  const logoSrc = isDarkMode ? logoSrcs.mobileDark : logoSrcs.mobileLight;
   const timelineMonthColors = isDarkMode ? DARK_MODE_RAINBOW_PASTELS : RAINBOW_PASTELS;
   const timelineAreaStops = isDarkMode
     ? [

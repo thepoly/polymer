@@ -16,7 +16,7 @@ type Props = {
 export const ArticleHeader: React.FC<Props> = ({ article }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const { isDarkMode, toggleDarkMode } = useTheme();
+  const { isDarkMode, toggleDarkMode, logoSrcs } = useTheme();
   const featuredImage = article.featuredImage as Media | null;
   const photographer = featuredImage?.photographer && typeof featuredImage.photographer === 'object' ? featuredImage.photographer as User : null;
   const writeInPhotographer = featuredImage ? ((featuredImage as unknown as Record<string, unknown>).writeInPhotographer as string | null | undefined) : null;
@@ -81,10 +81,10 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
           <div className="flex justify-center">
             <Link href="/" className="relative w-[6.5rem] md:w-[9.5rem] h-7 hover:opacity-90 transition-opacity">
               <Image
-                src="/logo.svg"
+                src={logoSrcs.mobileDark}
                 alt="The Polytechnic"
                 fill
-                className="object-contain brightness-0 invert"
+                className="object-contain"
               />
             </Link>
           </div>

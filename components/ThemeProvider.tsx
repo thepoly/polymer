@@ -1,13 +1,21 @@
 "use client";
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
+import type { ThemeLogoSrcs } from "@/lib/getTheme";
 
 type ThemeContextType = {
   isDarkMode: boolean;
   toggleDarkMode: () => void;
+  logoSrcs: ThemeLogoSrcs;
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const FALLBACK_LOGO_SRCS: ThemeLogoSrcs = {
+  desktopLight: "/logo-light.svg",
+  desktopDark: "/logo-dark.svg",
+  mobileLight: "/logo-light-mobile.svg",
+  mobileDark: "/logo-dark-mobile.svg",
+};
 const KONAMI_CODE = [
   "ArrowUp",
   "ArrowUp",
@@ -33,9 +41,11 @@ export const useTheme = () => {
 export default function ThemeProvider({
   children,
   initialDarkMode = false,
+  logoSrcs = FALLBACK_LOGO_SRCS,
 }: {
   children: React.ReactNode;
   initialDarkMode?: boolean;
+  logoSrcs?: ThemeLogoSrcs;
 }) {
   const [isDarkMode, setIsDarkMode] = useState(initialDarkMode);
   const [isStandalonePwa, setIsStandalonePwa] = useState(false);
@@ -140,7 +150,7 @@ export default function ThemeProvider({
   };
 
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode }}>
+    <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode, logoSrcs }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -7,14 +7,19 @@ import FeaturesListPage from '@/components/Features/FeaturesListPage';
 import { formatArticle } from '@/utils/formatArticle';
 import type { Article as ComponentArticle } from '@/components/FrontPage/types';
 import type { Metadata } from 'next';
+import { getSeo } from '@/lib/getSeo';
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: 'More in Features',
-  description: 'All features articles from The Polytechnic.',
-  alternates: { canonical: '/features/archive' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getSeo()
+
+  return {
+    title: seo.pages.featuresArchiveTitle,
+    description: seo.pages.featuresArchiveDescription,
+    alternates: { canonical: '/features/archive' },
+  }
+}
 
 export default async function FeaturesArchivePage() {
   const payload = await getPayload({ config });

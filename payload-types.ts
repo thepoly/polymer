@@ -105,9 +105,11 @@ export interface Config {
   fallbackLocale: null;
   globals: {
     theme: Theme;
+    seo: Seo;
   };
   globalsSelect: {
     theme: ThemeSelect<false> | ThemeSelect<true>;
+    seo: SeoSelect<false> | SeoSelect<true>;
   };
   locale: null;
   widgets: {
@@ -920,6 +922,167 @@ export interface Theme {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "seo".
+ */
+export interface Seo {
+  id: number;
+  /**
+   * Global brand strings used in page titles, browser metadata, install prompts, and homepage structured data.
+   */
+  siteIdentity?: {
+    /**
+     * Primary publication name used for the site title, Open Graph site name, web manifest name, and homepage structured data.
+     */
+    siteName?: string | null;
+    /**
+     * Compact app-style name used for the web manifest short name and similar install surfaces.
+     */
+    siteShortName?: string | null;
+    /**
+     * Fallback page title used when a route does not provide a more specific title.
+     */
+    defaultTitle?: string | null;
+    /**
+     * Suffix appended in the global title template, for example "%s | Title Suffix".
+     */
+    titleSuffix?: string | null;
+    /**
+     * Used for the root layout metadata description and homepage metadata description.
+     */
+    defaultDescription?: string | null;
+    /**
+     * Shown when the site is saved to an iPhone or iPad home screen.
+     */
+    appleWebAppTitle?: string | null;
+    /**
+     * Used in the PWA/web app manifest when the site is installed.
+     */
+    manifestDescription?: string | null;
+    /**
+     * Used in homepage Organization JSON-LD output.
+     */
+    organizationDescription?: string | null;
+  };
+  /**
+   * SEO titles and descriptions for the fixed frontend routes.
+   */
+  pages?: {
+    /**
+     * Used for the /archive and /archives page title.
+     */
+    archiveTitle?: string | null;
+    /**
+     * Used for the /archive and /archives description and Open Graph description.
+     */
+    archiveDescription?: string | null;
+    /**
+     * Used for the /search page title.
+     */
+    searchTitle?: string | null;
+    /**
+     * Used for the /search page description.
+     */
+    searchDescription?: string | null;
+    /**
+     * Used for the /submit page title.
+     */
+    submitTitle?: string | null;
+    /**
+     * Used for the /submit page description.
+     */
+    submitDescription?: string | null;
+    /**
+     * Used for the /staff page title.
+     */
+    staffTitle?: string | null;
+    /**
+     * Used for the /staff page description and Open Graph description.
+     */
+    staffDescription?: string | null;
+    /**
+     * Used for the /features/archive page title.
+     */
+    featuresArchiveTitle?: string | null;
+    /**
+     * Used for the /features/archive page description.
+     */
+    featuresArchiveDescription?: string | null;
+    /**
+     * Used for the /features/submit-event page title.
+     */
+    featuresSubmitEventTitle?: string | null;
+    /**
+     * Used for the /features/submit-event page description.
+     */
+    featuresSubmitEventDescription?: string | null;
+    /**
+     * Used for the /opinion/other page title.
+     */
+    opinionOtherTitle?: string | null;
+    /**
+     * Used for the /opinion/other page description.
+     */
+    opinionOtherDescription?: string | null;
+    /**
+     * Used for the /opinion/editorials page title.
+     */
+    opinionEditorialsTitle?: string | null;
+    /**
+     * Used for the /opinion/editorials page description.
+     */
+    opinionEditorialsDescription?: string | null;
+    /**
+     * Used for the /opinion/more-in-opinion page title.
+     */
+    opinionMoreTitle?: string | null;
+    /**
+     * Used for the /opinion/more-in-opinion page description.
+     */
+    opinionMoreDescription?: string | null;
+  };
+  /**
+   * Descriptions used by the top-level section pages like /news, /sports, /features, and /opinion.
+   */
+  sections?: {
+    /**
+     * Used for the /news page description and Open Graph description.
+     */
+    newsDescription?: string | null;
+    /**
+     * Used for the /sports page description and Open Graph description.
+     */
+    sportsDescription?: string | null;
+    /**
+     * Used for the /features page description and Open Graph description.
+     */
+    featuresDescription?: string | null;
+    /**
+     * Used for the /opinion page description and Open Graph description.
+     */
+    opinionDescription?: string | null;
+  };
+  /**
+   * Used when SEO text needs to be generated from page data instead of entered directly.
+   */
+  templates?: {
+    /**
+     * Used if a top-level section is missing its dedicated description. Tokens: {section}, {sectionTitle}, {siteName}.
+     */
+    sectionFallbackDescription?: string | null;
+    /**
+     * Used when an article has no subdeck. Tokens: {title}, {section}, {sectionTitle}, {siteName}.
+     */
+    articleFallbackDescription?: string | null;
+    /**
+     * Used for /staff/[slug] profile descriptions. Tokens: {name}, {siteName}.
+     */
+    staffProfileDescription?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "theme_select".
  */
 export interface ThemeSelect<T extends boolean = true> {
@@ -962,6 +1125,64 @@ export interface ThemeSelect<T extends boolean = true> {
         headerNavBg?: T;
         headerNavText?: T;
         headerBorder?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "seo_select".
+ */
+export interface SeoSelect<T extends boolean = true> {
+  siteIdentity?:
+    | T
+    | {
+        siteName?: T;
+        siteShortName?: T;
+        defaultTitle?: T;
+        titleSuffix?: T;
+        defaultDescription?: T;
+        appleWebAppTitle?: T;
+        manifestDescription?: T;
+        organizationDescription?: T;
+      };
+  pages?:
+    | T
+    | {
+        archiveTitle?: T;
+        archiveDescription?: T;
+        searchTitle?: T;
+        searchDescription?: T;
+        submitTitle?: T;
+        submitDescription?: T;
+        staffTitle?: T;
+        staffDescription?: T;
+        featuresArchiveTitle?: T;
+        featuresArchiveDescription?: T;
+        featuresSubmitEventTitle?: T;
+        featuresSubmitEventDescription?: T;
+        opinionOtherTitle?: T;
+        opinionOtherDescription?: T;
+        opinionEditorialsTitle?: T;
+        opinionEditorialsDescription?: T;
+        opinionMoreTitle?: T;
+        opinionMoreDescription?: T;
+      };
+  sections?:
+    | T
+    | {
+        newsDescription?: T;
+        sportsDescription?: T;
+        featuresDescription?: T;
+        opinionDescription?: T;
+      };
+  templates?:
+    | T
+    | {
+        sectionFallbackDescription?: T;
+        articleFallbackDescription?: T;
+        staffProfileDescription?: T;
       };
   updatedAt?: T;
   createdAt?: T;

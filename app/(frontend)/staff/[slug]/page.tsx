@@ -16,6 +16,7 @@ import {
   getStaffUserBySlug,
   StaffPortfolioPhoto,
 } from '@/lib/staffProfile';
+import { fillSeoTemplate, getSeo } from '@/lib/getSeo';
 
 export const revalidate = 60;
 
@@ -79,15 +80,21 @@ export async function generateMetadata({ params }: StaffArgs): Promise<Metadata>
   const user = await getUser(slug);
   if (!user) return {};
 
+  const seo = await getSeo();
   const name = `${user.firstName} ${user.lastName}`;
   const headshot = user.headshot as Media | null;
+  const description = fillSeoTemplate(seo.templates.staffProfileDescription, {
+    name,
+    siteName: seo.siteIdentity.siteName,
+  });
 
   return {
     title: name,
-    description: `${name} — staff member at The Polytechnic, RPI's student newspaper.`,
+    description,
     alternates: { canonical: `/staff/${user.slug || user.id}` },
     openGraph: {
-      title: `${name} — The Polytechnic`,
+      title: `${name} — ${seo.siteIdentity.siteName}`,
+      description,
       type: 'profile',
       url: `/staff/${user.slug || user.id}`,
       ...(headshot?.url && {

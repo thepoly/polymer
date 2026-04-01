@@ -97,9 +97,9 @@ export default function ArticleScrollBar({ title, section }: Props) {
   const [shareOpen, setShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { isDarkMode, toggleDarkMode } = useTheme();
+  const { isDarkMode, toggleDarkMode, logoSrcs } = useTheme();
 
-  const logoSrc = isDarkMode ? '/logo-dark-mobile.svg' : '/logo-light-mobile.svg';
+  const logoSrc = isDarkMode ? logoSrcs.mobileDark : logoSrcs.mobileLight;
   const sectionLabel = section.charAt(0).toUpperCase() + section.slice(1);
   const sectionHref = `/${section.toLowerCase()}`;
 

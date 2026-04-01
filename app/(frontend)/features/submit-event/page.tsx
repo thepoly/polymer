@@ -3,12 +3,17 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import EventSubmitForm from '@/components/Features/EventSubmitForm';
 import type { Metadata } from 'next';
+import { getSeo } from '@/lib/getSeo';
 
-export const metadata: Metadata = {
-  title: 'Submit an Event',
-  description: 'Submit an event to be featured by The Polytechnic.',
-  alternates: { canonical: '/features/submit-event' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getSeo()
+
+  return {
+    title: seo.pages.featuresSubmitEventTitle,
+    description: seo.pages.featuresSubmitEventDescription,
+    alternates: { canonical: '/features/submit-event' },
+  }
+}
 
 export default function SubmitEventPage() {
   return (

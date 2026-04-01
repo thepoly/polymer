@@ -12,6 +12,7 @@ import configPromise from "@/payload.config";
 import { User } from "@/payload-types";
 import ThemeStyle from "@/components/ThemeStyle";
 import { getTheme } from "@/lib/getTheme";
+import { getSeo } from "@/lib/getSeo";
 
 const cinzel = Cinzel({
   variable: "--font-cinzel",
@@ -43,45 +44,49 @@ const bebasNeuePro = localFont({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://poly.rpi.edu'),
-  applicationName: "The Polytechnic",
-  title: {
-    default: "The Polytechnic",
-    template: "%s | The Polytechnic",
-  },
-  description: "The Polytechnic is Rensselaer Polytechnic Institute's student run newspaper, serving the RPI community since 1885.",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "The Poly",
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  openGraph: {
-    type: 'website',
-    siteName: 'The Polytechnic',
-    locale: 'en_US',
-  },
-  twitter: {
-    card: 'summary_large_image',
-  },
-  icons: {
-    icon: [
-      {
-        url: '/dynamicPfavicon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: [
-      {
-        url: '/static-app-icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getSeo()
+
+  return {
+    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://poly.rpi.edu'),
+    applicationName: seo.siteIdentity.siteName,
+    title: {
+      default: seo.siteIdentity.defaultTitle,
+      template: `%s | ${seo.siteIdentity.titleSuffix}`,
+    },
+    description: seo.siteIdentity.defaultDescription,
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: seo.siteIdentity.appleWebAppTitle,
+    },
+    formatDetection: {
+      telephone: false,
+    },
+    openGraph: {
+      type: 'website',
+      siteName: seo.siteIdentity.siteName,
+      locale: 'en_US',
+    },
+    twitter: {
+      card: 'summary_large_image',
+    },
+    icons: {
+      icon: [
+        {
+          url: '/dynamicPfavicon.svg',
+          type: 'image/svg+xml',
+        },
+      ],
+      apple: [
+        {
+          url: '/static-app-icon.svg',
+          type: 'image/svg+xml',
+        },
+      ],
+    },
+  }
+}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -163,7 +168,7 @@ export default async function RootLayout({
       <body
         className={`${cinzel.variable} ${barlowCondensed.variable} ${bebasNeuePro.variable} antialiased`}
       >
-        <ThemeProvider initialDarkMode={isDarkMode}>
+        <ThemeProvider initialDarkMode={isDarkMode} logoSrcs={siteTheme.logoSrcs}>
           <SiteAnalytics user={analyticsUser} />
           <WebVitals />
 <HeaderTransitionProvider>{children}</HeaderTransitionProvider>

@@ -4,20 +4,25 @@ import Footer from '@/components/Footer';
 import ArchiveTimeMachinePage from '@/components/Archive/ArchiveTimeMachinePage';
 import { getArchiveArticlesForDate, getArchivePublicationCounts, getArchivePublicationDates, getTodayArchiveDateKey } from '@/lib/archive';
 import { resolveArchiveDateQuery } from '@/lib/archiveDateQuery';
+import { getSeo } from '@/lib/getSeo';
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: 'Archive',
-  description: 'Browse The Polytechnic by publication date with the archive time machine.',
-  alternates: { canonical: '/archive' },
-  openGraph: {
-    title: 'Archive — The Polytechnic',
-    description: 'Browse The Polytechnic by publication date with the archive time machine.',
-    type: 'website',
-    url: '/archive',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getSeo()
+
+  return {
+    title: seo.pages.archiveTitle,
+    description: seo.pages.archiveDescription,
+    alternates: { canonical: '/archive' },
+    openGraph: {
+      title: `${seo.pages.archiveTitle} — ${seo.siteIdentity.siteName}`,
+      description: seo.pages.archiveDescription,
+      type: 'website',
+      url: '/archive',
+    },
+  }
+}
 
 export default async function ArchivePage({
   searchParams,

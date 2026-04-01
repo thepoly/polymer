@@ -1,10 +1,13 @@
 import type { MetadataRoute } from 'next'
+import { getSeo } from '@/lib/getSeo'
  
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const seo = await getSeo()
+
   return {
-    name: 'The Polytechnic',
-    short_name: 'The Poly',
-    description: 'Serving the Rensselaer Community Since 1885',
+    name: seo.siteIdentity.siteName,
+    short_name: seo.siteIdentity.siteShortName,
+    description: seo.siteIdentity.manifestDescription,
     start_url: '/',
     scope: '/',
     display: 'standalone',

@@ -5,20 +5,25 @@ import config from '@/payload.config';
 import Image from 'next/image';
 import Link from 'next/link';
 import { User } from '@/payload-types';
+import { getSeo } from '@/lib/getSeo';
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: 'Staff',
-  description: 'Meet the editorial staff of The Polytechnic, RPI\'s student run newspaper.',
-  alternates: { canonical: '/staff' },
-  openGraph: {
-    title: 'Staff — The Polytechnic',
-    description: 'Meet the editorial staff of The Polytechnic.',
-    type: 'website',
-    url: '/staff',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getSeo()
+
+  return {
+    title: seo.pages.staffTitle,
+    description: seo.pages.staffDescription,
+    alternates: { canonical: '/staff' },
+    openGraph: {
+      title: `${seo.pages.staffTitle} — ${seo.siteIdentity.siteName}`,
+      description: seo.pages.staffDescription,
+      type: 'website',
+      url: '/staff',
+    },
+  }
+}
 
 type PublicStaffCard = {
   id: number;

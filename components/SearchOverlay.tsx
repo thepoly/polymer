@@ -65,8 +65,8 @@ export function SearchBarTrigger({
   className?: string;
   compact?: boolean;
 }) {
-  const { isDarkMode } = useTheme();
-  const logoSrc = isDarkMode ? "/logo-dark-mobile.svg" : "/logo-light-mobile.svg";
+  const { isDarkMode, logoSrcs } = useTheme();
+  const logoSrc = isDarkMode ? logoSrcs.mobileDark : logoSrcs.mobileLight;
 
   return (
     <button
@@ -176,9 +176,9 @@ async function fetchSearchResults(
 
 export default function SearchOverlay({ onClose, forceDark = false }: { onClose: () => void; forceDark?: boolean }) {
   const router = useRouter();
-  const { isDarkMode: themeDarkMode } = useTheme();
+  const { isDarkMode: themeDarkMode, logoSrcs } = useTheme();
   const isDarkMode = forceDark || themeDarkMode;
-  const logoSrc = isDarkMode ? "/logo-dark-mobile.svg" : "/logo-light-mobile.svg";
+  const logoSrc = isDarkMode ? logoSrcs.mobileDark : logoSrcs.mobileLight;
   const [query, setQuery] = useState("");
   const [articles, setArticles] = useState<Article[]>([]);
   const [displayCount, setDisplayCount] = useState(0);

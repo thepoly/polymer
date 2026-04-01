@@ -8,14 +8,19 @@ import { opinionGroups } from '@/components/Opinion/opinionGroups';
 import { formatArticle } from '@/utils/formatArticle';
 import type { Article as ComponentArticle } from '@/components/FrontPage/types';
 import type { Metadata } from 'next';
+import { getSeo } from '@/lib/getSeo';
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: 'Other',
-  description: 'Columns, reviews, and other opinion formats from The Polytechnic.',
-  alternates: { canonical: '/opinion/other' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getSeo()
+
+  return {
+    title: seo.pages.opinionOtherTitle,
+    description: seo.pages.opinionOtherDescription,
+    alternates: { canonical: '/opinion/other' },
+  }
+}
 
 export default async function OtherPage() {
   const payload = await getPayload({ config });

@@ -1,5 +1,6 @@
 import { getPayload } from 'payload';
 import config from '@/payload.config';
+import { getSeo } from '@/lib/getSeo';
 import { getArticleUrl } from '@/utils/getArticleUrl';
 
 export const revalidate = 300; // 5 minutes
@@ -7,6 +8,7 @@ export const revalidate = 300; // 5 minutes
 export async function GET() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://poly.rpi.edu';
   const payload = await getPayload({ config });
+  const seo = await getSeo();
 
   const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -39,7 +41,7 @@ export async function GET() {
     <loc>${url}</loc>
     <news:news>
       <news:publication>
-        <news:name>The Polytechnic</news:name>
+        <news:name>${seo.siteIdentity.siteName}</news:name>
         <news:language>en</news:language>
       </news:publication>
       <news:publication_date>${pubDate}</news:publication_date>

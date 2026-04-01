@@ -14,6 +14,7 @@ import { formatArticle } from '@/utils/formatArticle';
 import { opinionGroups } from '@/components/Opinion/opinionGroups';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import { getSectionSeoDescription, getSeo } from '@/lib/getSeo';
 
 export const revalidate = 60;
 
@@ -23,24 +24,18 @@ type Args = {
   }>;
 };
 
-const sectionDescriptions: Record<string, string> = {
-  news: 'The latest news from Rensselaer Polytechnic Institute and the Troy community.',
-  sports: 'Coverage of RPI varsity athletics, club sports, and intramurals.',
-  features: 'In-depth features, profiles, and longform journalism from the RPI community.',
-  opinion: 'Editorials, columns, and letters to the editor from The Polytechnic.',
-};
-
 export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const { section } = await params;
+  const seo = await getSeo();
   const title = section.charAt(0).toUpperCase() + section.slice(1);
-  const description = sectionDescriptions[section] || `${title} articles from The Polytechnic.`;
+  const description = getSectionSeoDescription(seo, section);
 
   return {
     title,
     description,
     alternates: { canonical: `/${section}` },
     openGraph: {
-      title: `${title} — The Polytechnic`,
+      title: `${title} — ${seo.siteIdentity.siteName}`,
       description,
       type: 'website',
       url: `/${section}`,

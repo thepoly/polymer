@@ -14,6 +14,7 @@ import {
 } from "@/components/headerAnimationRoutes";
 // import MaraudersFootsteps from "@/components/MaraudersFootsteps";
 import { useTheme } from "@/components/ThemeProvider";
+import type { ThemeLogoSrcs } from "@/lib/getTheme";
 const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
 
 // Header wave fleet: waves fan out from a single start point, converge back at the end.
@@ -119,12 +120,7 @@ function triggerThemeTransition(x: number, y: number, apply: () => void) {
   }
 }
 
-export type HeaderLogoSrcs = {
-  desktopLight: string
-  desktopDark: string
-  mobileLight: string
-  mobileDark: string
-}
+export type HeaderLogoSrcs = ThemeLogoSrcs
 
 export default function Header({ compact = false, mobileTight = false, logoSrcs }: { compact?: boolean; mobileTight?: boolean; logoSrcs?: HeaderLogoSrcs }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

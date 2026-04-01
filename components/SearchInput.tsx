@@ -106,8 +106,8 @@ export default function SearchInput({
   forceRainbow?: boolean,
 }) {
   const router = useRouter();
-  const { isDarkMode } = useTheme();
-  const logoSrc = isDarkMode ? "/logo-dark-mobile.svg" : "/logo-light-mobile.svg";
+  const { isDarkMode, logoSrcs } = useTheme();
+  const logoSrc = isDarkMode ? logoSrcs.mobileDark : logoSrcs.mobileLight;
   const [query, setQuery] = useState(defaultValue || "");
   const [articles, setArticles] = useState<Article[]>([]);
   const [displayCount, setDisplayCount] = useState(0);

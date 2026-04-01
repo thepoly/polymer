@@ -3,12 +3,17 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SubmitForm from '@/components/SubmitForm';
 import type { Metadata } from 'next';
+import { getSeo } from '@/lib/getSeo';
 
-export const metadata: Metadata = {
-  title: 'Submit',
-  description: 'Submit an article, letter to the editor, or opinion piece to The Polytechnic.',
-  alternates: { canonical: '/submit' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getSeo()
+
+  return {
+    title: seo.pages.submitTitle,
+    description: seo.pages.submitDescription,
+    alternates: { canonical: '/submit' },
+  }
+}
 
 export default function SubmitPage() {
   return (

@@ -27,10 +27,10 @@ function triggerThemeTransition(x: number, y: number, apply: () => void) {
 }
 
 export default function ArticleStaticHeader() {
-  const { isDarkMode, toggleDarkMode } = useTheme();
+  const { isDarkMode, toggleDarkMode, logoSrcs } = useTheme();
   const [searchOpen, setSearchOpen] = useState(false);
 
-  const logoSrc = isDarkMode ? '/logo-dark-mobile.svg' : '/logo-light-mobile.svg';
+  const logoSrc = isDarkMode ? logoSrcs.mobileDark : logoSrcs.mobileLight;
 
   return (
     <>

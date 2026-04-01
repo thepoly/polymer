@@ -10,6 +10,7 @@ import ArticleAnalytics from '@/components/analytics/ArticleAnalytics';
 import { InlineEditor } from '@/components/Article/InlineEditor';
 import { calculateWordCount } from '@/utils/wordCount';
 import { getArticleUrl } from '@/utils/getArticleUrl';
+import { fillSeoTemplate, getSeo } from '@/lib/getSeo';
 import type { Metadata } from 'next';
 import type { Article, Media, User } from '@/payload-types';
 
@@ -177,17 +178,24 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const canonicalPath = `/${section}/${year}/${month}/${slug}`;
 
   const sectionName = section.charAt(0).toUpperCase() + section.slice(1);
+  const seo = await getSeo();
+  const description = article.subdeck || fillSeoTemplate(seo.templates.articleFallbackDescription, {
+    title: article.title,
+    section,
+    sectionTitle: sectionName,
+    siteName: seo.siteIdentity.siteName,
+  });
 
   return {
     title: `${sectionName} | ${article.title}`,
-    description: article.subdeck || `Read "${article.title}" in The Polytechnic's ${section} section.`,
+    description,
     authors: authors.map((name) => ({ name })),
     alternates: {
       canonical: canonicalPath,
     },
     openGraph: {
       title: article.title,
-      description: article.subdeck || undefined,
+      description,
       type: 'article',
       url: canonicalPath,
       publishedTime: article.publishedDate || undefined,
@@ -201,7 +209,7 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
     twitter: {
       card: imageUrl ? 'summary_large_image' : 'summary',
       title: article.title,
-      description: article.subdeck || undefined,
+      description,
       ...(imageUrl && { images: [imageUrl] }),
     },
   };
@@ -234,6 +242,7 @@ export default async function ArticlePage({ params }: Args) {
   const writeInAuthorsForJsonLd = ((article as unknown as Record<string, unknown>).writeInAuthors || []) as Array<{ name: string }>;
   const image = article.featuredImage as Media | null;
   const articleUrl = getArticleUrl(article);
+  const seo = await getSeo();
 
   const sectionTitle = article.section.charAt(0).toUpperCase() + article.section.slice(1);
 
@@ -284,7 +293,7 @@ export default async function ArticlePage({ params }: Args) {
     ],
     publisher: {
       '@type': 'Organization',
-      name: 'The Polytechnic',
+      name: seo.siteIdentity.siteName,
       url: '/',
     },
     mainEntityOfPage: {

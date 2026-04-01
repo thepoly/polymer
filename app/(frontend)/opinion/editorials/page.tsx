@@ -8,14 +8,19 @@ import { opinionGroups } from '@/components/Opinion/opinionGroups';
 import { formatArticle } from '@/utils/formatArticle';
 import type { Article as ComponentArticle } from '@/components/FrontPage/types';
 import type { Metadata } from 'next';
+import { getSeo } from '@/lib/getSeo';
 
 export const revalidate = 60;
 
-export const metadata: Metadata = {
-  title: 'Editorials',
-  description: 'Staff editorials, editorial notebooks, and endorsements from The Polytechnic.',
-  alternates: { canonical: '/opinion/editorials' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getSeo()
+
+  return {
+    title: seo.pages.opinionEditorialsTitle,
+    description: seo.pages.opinionEditorialsDescription,
+    alternates: { canonical: '/opinion/editorials' },
+  }
+}
 
 export default async function EditorialsPage() {
   const payload = await getPayload({ config });

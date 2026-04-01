@@ -22,6 +22,7 @@ import * as migration_20260328_300000_add_features_page_layout from './20260328_
 import * as migration_20260329_100000_add_follytechnic from './20260329_100000_add_follytechnic';
 import * as migration_20260331_100000_add_photofeature from './20260331_100000_add_photofeature';
 import * as migration_20260401_000000_add_theme_and_logos from './20260401_000000_add_theme_and_logos';
+import * as migration_20260401_010000_add_seo_global from './20260401_010000_add_seo_global';
 
 export const migrations = [
   {
@@ -143,5 +144,10 @@ export const migrations = [
     up: migration_20260401_000000_add_theme_and_logos.up,
     down: migration_20260401_000000_add_theme_and_logos.down,
     name: '20260401_000000_add_theme_and_logos',
+  },
+  {
+    up: migration_20260401_010000_add_seo_global.up,
+    down: migration_20260401_010000_add_seo_global.down,
+    name: '20260401_010000_add_seo_global',
   },
 ];

@@ -6,8 +6,8 @@ import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
 
 export default function Footer() {
-  const { isDarkMode } = useTheme();
-  const logoSrc = isDarkMode ? "/logo-dark.svg" : "/logo-light.svg";
+  const { isDarkMode, logoSrcs } = useTheme();
+  const logoSrc = isDarkMode ? logoSrcs.desktopDark : logoSrcs.desktopLight;
   const [lineVisible, setLineVisible] = useState(false);
 
   useEffect(() => {

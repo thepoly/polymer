@@ -9,17 +9,22 @@ import { getPayload } from "payload";
 import config from "@/payload.config";
 import { Article as ComponentArticle } from "@/components/FrontPage/types";
 import { formatArticle } from "@/utils/formatArticle";
+import { getSeo } from "@/lib/getSeo";
 
-export const metadata: Metadata = {
-  description: "The Polytechnic is Rensselaer Polytechnic Institute's student run newspaper, serving the RPI community since 1885.",
-  alternates: { canonical: '/' },
-  openGraph: {
-    title: 'The Polytechnic',
-    description: "The Polytechnic is Rensselaer Polytechnic Institute's student run newspaper, serving the RPI community since 1885.",
-    type: 'website',
-    url: '/',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getSeo()
+
+  return {
+    description: seo.siteIdentity.defaultDescription,
+    alternates: { canonical: '/' },
+    openGraph: {
+      title: seo.siteIdentity.siteName,
+      description: seo.siteIdentity.defaultDescription,
+      type: 'website',
+      url: '/',
+    },
+  }
+}
 
 const dedupeArticles = (articles: (ComponentArticle | null | undefined)[], excludeIDs: Array<string | number> = []) => {
   const seen = new Set<string>(excludeIDs.map(String));
@@ -116,6 +121,7 @@ const getGridArticleIds = (grid: GridRow[]): number[] => {
 
 export default async function Home() {
   const payload = await getPayload({ config });
+  const seo = await getSeo();
 
   const layoutResponse = await payload.find({
     collection: 'layout',
@@ -322,16 +328,16 @@ export default async function Home() {
   const websiteJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
-    name: 'The Polytechnic',
+    name: seo.siteIdentity.siteName,
     url: siteUrl,
   };
 
   const organizationJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'The Polytechnic',
+    name: seo.siteIdentity.siteName,
     url: siteUrl,
-    description: "Rensselaer Polytechnic Institute's student run newspaper, serving the RPI community since 1885.",
+    description: seo.siteIdentity.organizationDescription,
     foundingDate: '1885',
   };
 
