@@ -69,6 +69,7 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    logos: Logo;
     articles: Article;
     'job-titles': JobTitle;
     layout: Layout;
@@ -85,6 +86,7 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    logos: LogosSelect<false> | LogosSelect<true>;
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
     'job-titles': JobTitlesSelect<false> | JobTitlesSelect<true>;
     layout: LayoutSelect<false> | LayoutSelect<true>;
@@ -101,8 +103,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    theme: Theme;
+  };
+  globalsSelect: {
+    theme: ThemeSelect<false> | ThemeSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -247,6 +253,28 @@ export interface JobTitle {
   title: string;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "logos".
+ */
+export interface Logo {
+  id: number;
+  /**
+   * Human-readable name shown in the logo picker (e.g. "Default", "Halloween 2026")
+   */
+  label: string;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -503,6 +531,10 @@ export interface PayloadLockedDocument {
         value: number | Media;
       } | null)
     | ({
+        relationTo: 'logos';
+        value: number | Logo;
+      } | null)
+    | ({
         relationTo: 'articles';
         value: number | Article;
       } | null)
@@ -657,6 +689,24 @@ export interface MediaSelect<T extends boolean = true> {
               filename?: T;
             };
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "logos_select".
+ */
+export interface LogosSelect<T extends boolean = true> {
+  label?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -824,6 +874,98 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "theme".
+ */
+export interface Theme {
+  id: number;
+  logos?: {
+    desktopLight?: (number | null) | Logo;
+    desktopDark?: (number | null) | Logo;
+    mobileLight?: (number | null) | Logo;
+    mobileDark?: (number | null) | Logo;
+  };
+  lightMode?: {
+    background?: string | null;
+    foreground?: string | null;
+    foregroundMuted?: string | null;
+    accent?: string | null;
+    borderColor?: string | null;
+    ruleColor?: string | null;
+    ruleStrongColor?: string | null;
+    headerTopBg?: string | null;
+    headerTopText?: string | null;
+    headerNavBg?: string | null;
+    headerNavText?: string | null;
+    headerBorder?: string | null;
+  };
+  darkMode?: {
+    background?: string | null;
+    foreground?: string | null;
+    foregroundMuted?: string | null;
+    accent?: string | null;
+    borderColor?: string | null;
+    ruleColor?: string | null;
+    ruleStrongColor?: string | null;
+    headerTopBg?: string | null;
+    headerTopText?: string | null;
+    headerNavBg?: string | null;
+    headerNavText?: string | null;
+    headerBorder?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "theme_select".
+ */
+export interface ThemeSelect<T extends boolean = true> {
+  logos?:
+    | T
+    | {
+        desktopLight?: T;
+        desktopDark?: T;
+        mobileLight?: T;
+        mobileDark?: T;
+      };
+  lightMode?:
+    | T
+    | {
+        background?: T;
+        foreground?: T;
+        foregroundMuted?: T;
+        accent?: T;
+        borderColor?: T;
+        ruleColor?: T;
+        ruleStrongColor?: T;
+        headerTopBg?: T;
+        headerTopText?: T;
+        headerNavBg?: T;
+        headerNavText?: T;
+        headerBorder?: T;
+      };
+  darkMode?:
+    | T
+    | {
+        background?: T;
+        foreground?: T;
+        foregroundMuted?: T;
+        accent?: T;
+        borderColor?: T;
+        ruleColor?: T;
+        ruleStrongColor?: T;
+        headerTopBg?: T;
+        headerTopText?: T;
+        headerNavBg?: T;
+        headerNavText?: T;
+        headerBorder?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

@@ -10,6 +10,8 @@ import { cookies, headers } from "next/headers";
 import { getPayload } from "payload";
 import configPromise from "@/payload.config";
 import { User } from "@/payload-types";
+import ThemeStyle from "@/components/ThemeStyle";
+import { getTheme } from "@/lib/getTheme";
 
 const cinzel = Cinzel({
   variable: "--font-cinzel",
@@ -98,9 +100,11 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const cookieStore = await cookies();
-  const theme = cookieStore.get("theme")?.value;
+  const themeCookie = cookieStore.get("theme")?.value;
 
-  const isDarkMode = theme === "dark";
+  const isDarkMode = themeCookie === "dark";
+
+  const siteTheme = await getTheme();
 
   // Fetch current user if logged in
   const payload = await getPayload({ config: configPromise });
@@ -140,6 +144,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""}>
       <head>
+        <ThemeStyle lightMode={siteTheme.lightMode} darkMode={siteTheme.darkMode} />
         <link
           rel="preload"
           href="/fonts/raleway/Raleway-Variable.ttf"
