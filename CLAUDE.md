@@ -6,6 +6,8 @@ This document is the canonical project + operations reference for Claude Code in
 
 Polymer is The Polytechnic's web platform (public newspaper site + Payload CMS admin) built on Next.js + Payload + PostgreSQL.
 
+**This project is live in production with a real production database. Exercise caution with schema changes, migrations, and any destructive operations.**
+
 ## Stack
 
 - Next.js `16.1.6` (App Router, Turbopack build)
