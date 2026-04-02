@@ -400,14 +400,6 @@ export default async function Staff2Page() {
         ) : null}
 
         <section>
-          {hasFeaturedUsers && (
-            <div className="mb-8 mt-16 flex justify-center overflow-hidden px-4 sm:px-8">
-              <h2 className="max-w-full text-center font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#D6001C] dark:text-white whitespace-nowrap text-[36px] sm:text-[48px] md:text-[56px] lg:text-[65px] transition-colors">
-                Everyone Else
-              </h2>
-            </div>
-          )}
-
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-8">
             {everyoneElse.map((user) => (
               <StaffGridCard key={user.id} user={user} />
