@@ -175,8 +175,8 @@ function FeaturedStaffCard({
   const title = getCurrentPositionTitle(user)
   const baseLayout = compact ? 'gap-4 sm:gap-6' : 'gap-6 sm:gap-8 md:gap-10'
   const portraitClass = compact 
-    ? 'w-24 h-32 sm:w-32 sm:h-40 shrink-0' 
-    : 'w-32 h-40 sm:w-40 sm:h-52 md:w-56 md:h-72 shrink-0'
+    ? 'w-24 h-24 sm:w-32 sm:h-32 shrink-0 rounded-full' 
+    : 'w-32 h-32 sm:w-40 sm:h-40 md:w-56 md:h-56 shrink-0 rounded-full'
 
   return (
     <Link
@@ -212,7 +212,7 @@ function StaffGridCard({ user }: { user: Staff2User }) {
       href={getProfileHref(user)}
       className="group flex flex-col items-start text-left"
     >
-      <StaffPortrait user={user} className="w-full aspect-[3/4] mb-3" />
+      <StaffPortrait user={user} className="w-full aspect-square rounded-full mb-3" />
       <h3 className="font-meta text-[15px] md:text-[16px] leading-tight font-semibold text-text-main mb-1 group-hover:text-accent transition-colors">
         {user.firstName} {user.lastName}
       </h3>
