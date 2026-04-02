@@ -57,7 +57,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
       {featuredImage?.url && (() => {
         const photographer = featuredImage.photographer && typeof featuredImage.photographer === 'object' ? featuredImage.photographer as User : null;
         return (
-          <div className="flex flex-col gap-1 max-w-[680px] w-full mx-auto">
+          <div className="flex flex-col max-w-[680px] w-full mx-auto">
             <div className="relative aspect-[3/2] w-screen max-w-none bg-gray-100 dark:bg-zinc-800 overflow-hidden left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] md:left-auto md:right-auto md:ml-0 md:mr-0 md:w-full">
               <Image
                 src={(featuredImage as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || featuredImage.url}
@@ -69,7 +69,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
               />
             </div>
             {(imageCaption || photographer || writeInPhotographer) && (
-              <p data-ie-field="imageCaption" className="mt-1 font-meta text-[12px] italic text-text-muted transition-colors">
+              <p data-ie-field="imageCaption" className="mt-2 font-meta text-[12px] italic text-text-muted transition-colors">
                 {imageCaption}
                 {(photographer || writeInPhotographer) && (
                   <span className="opacity-60">
