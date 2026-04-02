@@ -189,6 +189,13 @@ export const Users: CollectionConfig = {
       },
     },
     {
+      name: 'major',
+      type: 'text',
+      admin: {
+        description: "Format: ECSE '28",
+      },
+    },
+    {
       name: 'bio',
       type: 'richText',
     },
