@@ -175,8 +175,8 @@ function FeaturedStaffCard({
   const title = getCurrentPositionTitle(user)
   const baseLayout = compact ? 'gap-4 sm:gap-6' : 'gap-6 sm:gap-8 md:gap-10'
   const portraitClass = compact 
-    ? 'w-24 h-24 sm:w-32 sm:h-32 shrink-0 rounded-full' 
-    : 'w-32 h-32 sm:w-40 sm:h-40 md:w-56 md:h-56 shrink-0 rounded-full'
+    ? 'w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 shrink-0 rounded-full' 
+    : 'w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 shrink-0 rounded-full'
 
   return (
     <Link
@@ -190,7 +190,7 @@ function FeaturedStaffCard({
             {title}
           </p>
         ) : null}
-        <h2 className={`font-meta font-bold text-text-main transition-colors group-hover:text-accent ${compact ? 'text-xl sm:text-2xl md:text-3xl' : 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl'}`}>
+        <h2 className={`font-meta font-bold text-text-main transition-colors group-hover:text-accent ${compact ? 'text-lg sm:text-xl md:text-2xl lg:text-3xl' : 'text-xl sm:text-2xl md:text-3xl lg:text-4xl'}`}>
           {user.firstName} {user.lastName}
         </h2>
         {user.major ? (
