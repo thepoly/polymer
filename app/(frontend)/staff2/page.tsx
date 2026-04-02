@@ -137,29 +137,27 @@ const sortAlphabetically = (a: Staff2User, b: Staff2User): number => {
 
 function StaffPortrait({
   user,
-  size,
+  className = '',
 }: {
   user: Staff2User
-  size: 'large' | 'medium' | 'small'
+  className?: string
 }) {
-  const sizeClasses = {
-    large: 'h-28 w-28 sm:h-32 sm:w-32 md:h-36 md:w-36',
-    medium: 'h-24 w-24 sm:h-28 sm:w-28 md:h-32 md:w-32',
-    small: 'h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28',
-  }[size]
-
   return (
-    <div className={`relative shrink-0 overflow-hidden rounded-full border-[4px] border-black bg-white ${sizeClasses}`}>
+    <div className={`relative bg-gray-100 dark:bg-zinc-800 overflow-hidden transition-colors ${className}`}>
       {user.headshot?.url ? (
         <Image
           src={user.headshot.url}
           alt={`${user.firstName} ${user.lastName}`}
           fill
           className="object-cover"
-          sizes={size === 'large' ? '144px' : size === 'medium' ? '128px' : '112px'}
+          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
         />
       ) : (
-        <div aria-hidden="true" className="h-full w-full bg-white" />
+        <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-zinc-800 text-text-muted transition-colors">
+          <svg className="w-12 h-12 opacity-50" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+          </svg>
+        </div>
       )}
     </div>
   )
@@ -175,32 +173,33 @@ function FeaturedStaffCard({
   compact: boolean
 }) {
   const title = getCurrentPositionTitle(user)
-  const baseLayout = compact
-    ? 'gap-4 sm:gap-5'
-    : 'gap-5 sm:gap-6'
+  const baseLayout = compact ? 'gap-4 sm:gap-6' : 'gap-6 sm:gap-8 md:gap-10'
+  const portraitClass = compact 
+    ? 'w-24 h-32 sm:w-32 sm:h-40 shrink-0' 
+    : 'w-32 h-40 sm:w-40 sm:h-52 md:w-56 md:h-72 shrink-0'
 
   return (
     <Link
       href={getProfileHref(user)}
       className={`group flex items-center ${baseLayout} ${reverse ? 'justify-end text-right' : 'justify-start text-left'}`}
     >
-      {!reverse && <StaffPortrait user={user} size={compact ? 'small' : 'large'} />}
+      {!reverse && <StaffPortrait user={user} className={portraitClass} />}
       <div className={`min-w-0 ${reverse ? 'items-end' : 'items-start'} flex flex-1 flex-col`}>
         {title ? (
-          <p className={`w-full font-meta text-[1.1rem] font-black uppercase leading-[0.9] tracking-[0.03em] text-black sm:text-[1.45rem] ${compact ? 'md:text-[1.6rem]' : 'md:text-[2.1rem]'}`}>
+          <p className={`font-meta font-semibold uppercase tracking-[0.06em] text-accent transition-colors ${compact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base mb-1'}`}>
             {title}
           </p>
         ) : null}
-        <h2 className={`w-full border-b-[4px] border-black pb-1 font-meta leading-[0.9] text-black transition-colors group-hover:text-[#c5231e] ${compact ? 'text-[2rem] sm:text-[2.35rem] md:text-[2.8rem]' : 'text-[2.45rem] sm:text-[2.9rem] md:text-[3.6rem]'}`}>
+        <h2 className={`font-meta font-bold text-text-main transition-colors group-hover:text-accent ${compact ? 'text-xl sm:text-2xl md:text-3xl' : 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl'}`}>
           {user.firstName} {user.lastName}
         </h2>
         {user.major ? (
-          <p className={`w-full pt-1 font-meta leading-[0.95] text-black ${compact ? 'text-[1.45rem] sm:text-[1.75rem] md:text-[2rem]' : 'text-[1.6rem] sm:text-[1.9rem] md:text-[2.2rem]'}`}>
+          <p className={`pt-1 font-meta text-text-muted transition-colors ${compact ? 'text-sm' : 'text-base sm:text-lg'}`}>
             {user.major}
           </p>
         ) : null}
       </div>
-      {reverse && <StaffPortrait user={user} size={compact ? 'small' : 'large'} />}
+      {reverse && <StaffPortrait user={user} className={portraitClass} />}
     </Link>
   )
 }
@@ -211,28 +210,22 @@ function StaffGridCard({ user }: { user: Staff2User }) {
   return (
     <Link
       href={getProfileHref(user)}
-      className="group flex h-full flex-col justify-between rounded-[1.6rem] border-[3px] border-black bg-white/75 p-5"
+      className="group flex flex-col items-start text-left"
     >
-      <div className="mb-5 flex items-start gap-4">
-        <StaffPortrait user={user} size="medium" />
-        <div className="min-w-0">
-          <h3 className="font-meta text-[1.9rem] leading-[0.92] text-black transition-colors group-hover:text-[#c5231e]">
-            {user.firstName} {user.lastName}
-          </h3>
-          {title ? (
-            <p className="mt-2 font-meta text-[1rem] font-black uppercase leading-[0.95] tracking-[0.04em] text-black sm:text-[1.1rem]">
-              {title}
-            </p>
-          ) : null}
-        </div>
-      </div>
+      <StaffPortrait user={user} className="w-full aspect-[3/4] mb-3" />
+      <h3 className="font-meta text-[15px] md:text-[16px] leading-tight font-semibold text-text-main mb-1 group-hover:text-accent transition-colors">
+        {user.firstName} {user.lastName}
+      </h3>
+      {title ? (
+        <p className="font-meta text-[11px] leading-snug text-accent font-semibold uppercase tracking-[0.06em] transition-colors">
+          {title}
+        </p>
+      ) : null}
       {user.major ? (
-        <p className="font-meta text-[1.2rem] leading-none text-black">
+        <p className="font-meta text-[11px] leading-snug text-text-muted transition-colors mt-0.5">
           {user.major}
         </p>
-      ) : (
-        <span aria-hidden="true" className="block h-5" />
-      )}
+      ) : null}
     </Link>
   )
 }
@@ -364,10 +357,17 @@ export default async function Staff2Page() {
   const hasFeaturedUsers = featuredUsers.some((entry) => entry.user)
 
   return (
-    <div className="w-full text-black">
+    <>
+      <div className="mb-8 -mt-2 flex justify-center overflow-hidden px-4 sm:px-8">
+        <h1 className="max-w-full text-center font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#D6001C] dark:text-white whitespace-nowrap text-[36px] sm:text-[48px] md:text-[56px] lg:text-[65px] transition-colors">
+          Staff
+        </h1>
+      </div>
+
+      <div className="w-full">
         {hasFeaturedUsers ? (
           <>
-            <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
+            <div className="grid gap-10 lg:grid-cols-2 lg:gap-12 mb-10">
               {topRow.map(({ key, reverse, compact, user }) => (
                 <div key={key} className="min-h-[10rem]">
                   {user ? <FeaturedStaffCard user={user} reverse={reverse} compact={compact} /> : null}
@@ -375,10 +375,10 @@ export default async function Staff2Page() {
               ))}
             </div>
 
-            <div className="my-8 border-t-[4px] border-black" />
+            <div className="my-10 border-t border-rule" />
 
-            <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
-              <div className="space-y-9">
+            <div className="grid gap-10 lg:grid-cols-2 lg:gap-16 mb-10">
+              <div className="space-y-10 sm:space-y-14">
                 {lowerLeft.map(({ key, reverse, compact, user }) => (
                   <div key={key} className={compact ? 'pl-0 sm:pl-12' : ''}>
                     {user ? <FeaturedStaffCard user={user} reverse={reverse} compact={compact} /> : null}
@@ -386,7 +386,7 @@ export default async function Staff2Page() {
                 ))}
               </div>
 
-              <div className="space-y-9">
+              <div className="space-y-10 sm:space-y-14">
                 {lowerRight.map(({ key, reverse, compact, user }) => (
                   <div key={key} className={compact ? 'pr-0 sm:pr-12' : ''}>
                     {user ? <FeaturedStaffCard user={user} reverse={reverse} compact={compact} /> : null}
@@ -395,24 +395,26 @@ export default async function Staff2Page() {
               </div>
             </div>
 
-            <div className="my-8 border-t-[4px] border-black" />
+            <div className="my-10 border-t border-rule" />
           </>
         ) : null}
 
         <section>
-          <div className="mb-6 flex items-center justify-between gap-4">
-            <h1 className="font-meta text-[2.2rem] leading-none text-black sm:text-[2.8rem]">
-              Everyone Else
-            </h1>
-            <span className="font-meta text-[1.6rem] leading-none text-black">...</span>
-          </div>
+          {hasFeaturedUsers && (
+            <div className="mb-8 mt-16 flex justify-center overflow-hidden px-4 sm:px-8">
+              <h2 className="max-w-full text-center font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#D6001C] dark:text-white whitespace-nowrap text-[36px] sm:text-[48px] md:text-[56px] lg:text-[65px] transition-colors">
+                Everyone Else
+              </h2>
+            </div>
+          )}
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-8">
             {everyoneElse.map((user) => (
               <StaffGridCard key={user.id} user={user} />
             ))}
           </div>
         </section>
-    </div>
+      </div>
+    </>
   )
 }
