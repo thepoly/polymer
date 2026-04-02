@@ -75,6 +75,7 @@ export interface Config {
     layout: Layout;
     'opinion-page-layout': OpinionPageLayout;
     'features-page-layout': FeaturesPageLayout;
+    'staff-page-layout': StaffPageLayout;
     submissions: Submission;
     'event-submissions': EventSubmission;
     'payload-kv': PayloadKv;
@@ -92,6 +93,7 @@ export interface Config {
     layout: LayoutSelect<false> | LayoutSelect<true>;
     'opinion-page-layout': OpinionPageLayoutSelect<false> | OpinionPageLayoutSelect<true>;
     'features-page-layout': FeaturesPageLayoutSelect<false> | FeaturesPageLayoutSelect<true>;
+    'staff-page-layout': StaffPageLayoutSelect<false> | StaffPageLayoutSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
     'event-submissions': EventSubmissionsSelect<false> | EventSubmissionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -158,6 +160,10 @@ export interface User {
    * A short one-line description (e.g. "is a senior studying computer science")
    */
   oneLiner?: string | null;
+  /**
+   * Format: ECSE '28
+   */
+  major?: string | null;
   bio?: {
     root: {
       type: string;
@@ -454,6 +460,43 @@ export interface FeaturesPageLayout {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "staff-page-layout".
+ */
+export interface StaffPageLayout {
+  id: number;
+  /**
+   * Only the most recently updated document is used on /staff2.
+   */
+  name: string;
+  /**
+   * Large featured slot in the top-left corner.
+   */
+  heroLeft?: (number | null) | User;
+  /**
+   * Large featured slot in the top-right corner.
+   */
+  heroRight?: (number | null) | User;
+  /**
+   * Lead slot in the lower-left column.
+   */
+  columnLeftLead?: (number | null) | User;
+  /**
+   * Support slot below the lower-left lead.
+   */
+  columnLeftSupport?: (number | null) | User;
+  /**
+   * Lead slot in the lower-right column.
+   */
+  columnRightLead?: (number | null) | User;
+  /**
+   * Support slot below the lower-right lead.
+   */
+  columnRightSupport?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "submissions".
  */
 export interface Submission {
@@ -557,6 +600,10 @@ export interface PayloadLockedDocument {
         value: number | FeaturesPageLayout;
       } | null)
     | ({
+        relationTo: 'staff-page-layout';
+        value: number | StaffPageLayout;
+      } | null)
+    | ({
         relationTo: 'submissions';
         value: number | Submission;
       } | null)
@@ -618,6 +665,7 @@ export interface UsersSelect<T extends boolean = true> {
   section?: T;
   headshot?: T;
   oneLiner?: T;
+  major?: T;
   bio?: T;
   positions?:
     | T
@@ -808,6 +856,21 @@ export interface FeaturesPageLayoutSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "staff-page-layout_select".
+ */
+export interface StaffPageLayoutSelect<T extends boolean = true> {
+  name?: T;
+  heroLeft?: T;
+  heroRight?: T;
+  columnLeftLead?: T;
+  columnLeftSupport?: T;
+  columnRightLead?: T;
+  columnRightSupport?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "submissions_select".
  */
 export interface SubmissionsSelect<T extends boolean = true> {
@@ -883,38 +946,131 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
  */
 export interface Theme {
   id: number;
+  /**
+   * Upload or choose replacement logos for each theme and breakpoint combination. Leave blank to fall back to the static public assets.
+   */
   logos?: {
+    /**
+     * Primary desktop logo shown in light mode.
+     */
     desktopLight?: (number | null) | Logo;
+    /**
+     * Primary desktop logo shown in dark mode.
+     */
     desktopDark?: (number | null) | Logo;
+    /**
+     * Compact logo used in mobile headers and overlays in light mode.
+     */
     mobileLight?: (number | null) | Logo;
+    /**
+     * Compact logo used in mobile headers and overlays in dark mode.
+     */
     mobileDark?: (number | null) | Logo;
   };
+  /**
+   * Live light-mode color tokens used across the frontend. Hex values work best with the picker; rgba values can still be typed manually.
+   */
   lightMode?: {
+    /**
+     * Main page background color.
+     */
     background?: string | null;
+    /**
+     * Primary text color for article and UI copy.
+     */
     foreground?: string | null;
+    /**
+     * Secondary text color for metadata and subdued labels.
+     */
     foregroundMuted?: string | null;
+    /**
+     * Brand accent used for highlights, links, and emphasis.
+     */
     accent?: string | null;
+    /**
+     * Standard border color for cards, chrome, and form edges.
+     */
     borderColor?: string | null;
+    /**
+     * Thin divider color. rgba values are supported.
+     */
     ruleColor?: string | null;
+    /**
+     * Heavy divider color. rgba values are supported.
+     */
     ruleStrongColor?: string | null;
+    /**
+     * Background for the top metadata/date strip.
+     */
     headerTopBg?: string | null;
+    /**
+     * Text color for the top metadata/date strip.
+     */
     headerTopText?: string | null;
+    /**
+     * Main navigation bar background color.
+     */
     headerNavBg?: string | null;
+    /**
+     * Main navigation bar text color.
+     */
     headerNavText?: string | null;
+    /**
+     * Border and rule color used around the header chrome.
+     */
     headerBorder?: string | null;
   };
+  /**
+   * Dark-mode equivalents for the same frontend tokens. These are applied under `html.dark`.
+   */
   darkMode?: {
+    /**
+     * Main page background color in dark mode.
+     */
     background?: string | null;
+    /**
+     * Primary text color in dark mode.
+     */
     foreground?: string | null;
+    /**
+     * Secondary text color in dark mode.
+     */
     foregroundMuted?: string | null;
+    /**
+     * Brand accent used for highlights, links, and emphasis in dark mode.
+     */
     accent?: string | null;
+    /**
+     * Standard border color for dark-mode cards and chrome.
+     */
     borderColor?: string | null;
+    /**
+     * Thin divider color in dark mode. rgba values are supported.
+     */
     ruleColor?: string | null;
+    /**
+     * Heavy divider color in dark mode. rgba values are supported.
+     */
     ruleStrongColor?: string | null;
+    /**
+     * Background for the top metadata/date strip in dark mode.
+     */
     headerTopBg?: string | null;
+    /**
+     * Text color for the top metadata/date strip in dark mode.
+     */
     headerTopText?: string | null;
+    /**
+     * Main navigation bar background in dark mode.
+     */
     headerNavBg?: string | null;
+    /**
+     * Main navigation bar text color in dark mode.
+     */
     headerNavText?: string | null;
+    /**
+     * Border and rule color used around dark-mode header chrome.
+     */
     headerBorder?: string | null;
   };
   updatedAt?: string | null;

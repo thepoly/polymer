@@ -68,7 +68,7 @@ async function main() {
   const homepage = await fetchWithTimeout("/");
   assertHealthyHTML("/", homepage.body);
 
-  for (const path of ["/news", "/features", "/sports", "/opinion", "/staff"]) {
+  for (const path of ["/news", "/features", "/sports", "/opinion", "/staff", "/staff2"]) {
     const page = await fetchWithTimeout(path);
     assertHealthyHTML(path, page.body);
   }

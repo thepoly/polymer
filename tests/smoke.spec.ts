@@ -9,7 +9,7 @@ import {
 } from "@playwright/test";
 
 const SECTION_PATHS = ["/news", "/features", "/sports", "/opinion"];
-const UTILITY_PATHS = ["/staff", "/about"];
+const UTILITY_PATHS = ["/staff", "/staff2", "/about"];
 const ARTICLE_PATH_RE = /^\/[^/]+\/\d{4}\/\d{2}\/[^/?#]+\/?$/;
 const STAFF_PROFILE_PATH_RE = /^\/staff\/[^/?#]+\/?$/;
 const CRITICAL_RESOURCE_TYPES = new Set([

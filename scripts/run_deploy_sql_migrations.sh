@@ -30,7 +30,11 @@ VALUES
   ('20260328_100000_add_submissions', 8, NOW(), NOW()),
   ('20260328_200000_add_event_submissions', 8, NOW(), NOW()),
   ('20260328_300000_add_features_page_layout', 8, NOW(), NOW()),
-  ('20260329_100000_add_follytechnic', 9, NOW(), NOW())
+  ('20260329_100000_add_follytechnic', 9, NOW(), NOW()),
+  ('20260331_100000_add_photofeature', 10, NOW(), NOW()),
+  ('20260401_000000_add_theme_and_logos', 11, NOW(), NOW()),
+  ('20260401_010000_add_seo_global', 11, NOW(), NOW()),
+  ('20260402_000000_add_staff_page_layout', 12, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -440,11 +444,6 @@ SELECT
   '#0a0a0a', '#e8e8e8', '#0a0a0a', '#e8e8e8', '#3a3a3a'
 WHERE NOT EXISTS (SELECT 1 FROM "theme");
 
--- Mark migration as run
-INSERT INTO payload_migrations (name, batch, updated_at, created_at)
-VALUES ('20260401_000000_add_theme_and_logos', 99, NOW(), NOW())
-ON CONFLICT (name) DO NOTHING;
-
 -- 20260401: Add SEO global
 CREATE TABLE IF NOT EXISTS "seo" (
   "id" serial PRIMARY KEY NOT NULL,
@@ -616,7 +615,65 @@ SELECT
   '{name} — staff member at {siteName}, RPI''s student newspaper.'
 WHERE NOT EXISTS (SELECT 1 FROM "seo");
 
-INSERT INTO payload_migrations (name, batch, updated_at, created_at)
-VALUES ('20260401_010000_add_seo_global', 100, NOW(), NOW())
-ON CONFLICT (name) DO NOTHING;
+-- 20260402: Add users.major and staff_page_layout collection
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "major" varchar;
+
+CREATE TABLE IF NOT EXISTS "staff_page_layout" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "name" varchar NOT NULL DEFAULT 'Staff Page Layout',
+  "hero_left_id" integer,
+  "hero_right_id" integer,
+  "column_left_lead_id" integer,
+  "column_left_support_id" integer,
+  "column_right_lead_id" integer,
+  "column_right_support_id" integer,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+DO $$ BEGIN
+  ALTER TABLE "staff_page_layout" ADD CONSTRAINT "staff_page_layout_hero_left_id_users_id_fk"
+    FOREIGN KEY ("hero_left_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE "staff_page_layout" ADD CONSTRAINT "staff_page_layout_hero_right_id_users_id_fk"
+    FOREIGN KEY ("hero_right_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE "staff_page_layout" ADD CONSTRAINT "staff_page_layout_column_left_lead_id_users_id_fk"
+    FOREIGN KEY ("column_left_lead_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE "staff_page_layout" ADD CONSTRAINT "staff_page_layout_column_left_support_id_users_id_fk"
+    FOREIGN KEY ("column_left_support_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE "staff_page_layout" ADD CONSTRAINT "staff_page_layout_column_right_lead_id_users_id_fk"
+    FOREIGN KEY ("column_right_lead_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE "staff_page_layout" ADD CONSTRAINT "staff_page_layout_column_right_support_id_users_id_fk"
+    FOREIGN KEY ("column_right_support_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "staff_page_layout_hero_left_idx" ON "staff_page_layout" USING btree ("hero_left_id");
+CREATE INDEX IF NOT EXISTS "staff_page_layout_hero_right_idx" ON "staff_page_layout" USING btree ("hero_right_id");
+CREATE INDEX IF NOT EXISTS "staff_page_layout_column_left_lead_idx" ON "staff_page_layout" USING btree ("column_left_lead_id");
+CREATE INDEX IF NOT EXISTS "staff_page_layout_column_left_support_idx" ON "staff_page_layout" USING btree ("column_left_support_id");
+CREATE INDEX IF NOT EXISTS "staff_page_layout_column_right_lead_idx" ON "staff_page_layout" USING btree ("column_right_lead_id");
+CREATE INDEX IF NOT EXISTS "staff_page_layout_column_right_support_idx" ON "staff_page_layout" USING btree ("column_right_support_id");
+CREATE INDEX IF NOT EXISTS "staff_page_layout_created_at_idx" ON "staff_page_layout" USING btree ("created_at");
+
+ALTER TABLE "payload_locked_documents_rels" ADD COLUMN IF NOT EXISTS "staff_page_layout_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_staff_page_layout_fk"
+    FOREIGN KEY ("staff_page_layout_id") REFERENCES "public"."staff_page_layout"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_staff_page_layout_id_idx"
+  ON "payload_locked_documents_rels" ("staff_page_layout_id");
 SQL

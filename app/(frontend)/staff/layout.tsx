@@ -1,17 +1,10 @@
 import React from 'react';
-import Header from '@/components/Header';
+import StaffPageShell from '@/components/StaffPageShell';
 
 export default function StaffLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="min-h-screen bg-bg-main text-text-main font-sans selection:bg-gray-200 transition-colors duration-300">
-      <Header />
-      <main className="max-w-[1280px] mx-auto px-4 md:px-6 xl:px-[30px] py-10">
-        {children}
-      </main>
-    </div>
-  );
+  return <StaffPageShell>{children}</StaffPageShell>;
 }
