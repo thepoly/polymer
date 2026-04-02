@@ -179,13 +179,13 @@ function FeaturedStaffCard({
     : 'w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 shrink-0 rounded-full z-10'
     
   const tailClass = compact
-    ? (reverse ? 'left-full w-[3rem] sm:w-[3.75rem] md:w-[4.5rem]' : 'right-full w-[3rem] sm:w-[3.75rem] md:w-[4.5rem]')
-    : (reverse ? 'left-full w-[4.25rem] sm:w-[5rem] md:w-[6.5rem]' : 'right-full w-[4.25rem] sm:w-[5rem] md:w-[6.5rem]')
+    ? (reverse ? 'right-full lg:right-auto lg:left-full w-[3rem] sm:w-[3.75rem] md:w-[4.5rem]' : 'right-full w-[3rem] sm:w-[3.75rem] md:w-[4.5rem]')
+    : (reverse ? 'right-full lg:right-auto lg:left-full w-[4.25rem] sm:w-[5rem] md:w-[6.5rem]' : 'right-full w-[4.25rem] sm:w-[5rem] md:w-[6.5rem]')
 
   return (
     <Link
       href={getProfileHref(user)}
-      className={`group flex items-center ${gapClass} ${reverse ? 'flex-row-reverse text-right' : 'flex-row text-left'}`}
+      className={`group flex items-center ${gapClass} ${reverse ? 'flex-row text-left lg:flex-row-reverse lg:text-right' : 'flex-row text-left'}`}
     >
       <StaffPortrait user={user} className={portraitClass} />
       <div className={`min-w-0 flex flex-1 flex-col`}>
@@ -203,7 +203,7 @@ function FeaturedStaffCard({
         </div>
 
         {user.major ? (
-          <p className={`font-meta text-text-muted transition-colors ${compact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'}`}>
+          <p className={`font-meta text-text-muted transition-colors ${compact ? 'text-sm sm:text-base' : 'text-base sm:text-lg md:text-xl'}`}>
             {user.major}
           </p>
         ) : null}
@@ -382,8 +382,6 @@ export default async function Staff2Page() {
                 </div>
               ))}
             </div>
-
-            <div className="my-10 border-t border-rule" />
 
             <div className="grid gap-10 lg:grid-cols-2 lg:gap-16 mb-10">
               <div className="space-y-10 sm:space-y-14">
