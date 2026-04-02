@@ -52,7 +52,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
               />
             </div>
             {(imageCaption || photographer || writeInPhotographer) && (
-              <p data-ie-field="imageCaption" className="font-meta text-[12px] italic text-text-muted transition-colors">
+              <p data-ie-field="imageCaption" className="mt-2 font-meta text-[12px] italic text-text-muted transition-colors">
                 {imageCaption}
                 {(photographer || writeInPhotographer) && (
                   <span className="opacity-60">
