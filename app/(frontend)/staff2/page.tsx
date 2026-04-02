@@ -50,11 +50,6 @@ const FEATURED_SLOT_ORDER: { key: SlotKey; reverse: boolean; compact: boolean }[
   { key: 'columnRightSupport', reverse: true, compact: true },
 ]
 
-const dotGridStyle = {
-  backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(0, 0, 0, 0.18) 1.8px, transparent 0)',
-  backgroundSize: '30px 30px',
-} as const
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
@@ -369,11 +364,7 @@ export default async function Staff2Page() {
   const hasFeaturedUsers = featuredUsers.some((entry) => entry.user)
 
   return (
-    <div className="follytechnic px-1 pb-8 sm:px-3">
-      <div
-        className="rounded-[2rem] border-[5px] border-black bg-[#f7f4ed] p-5 text-black shadow-[0_14px_40px_rgba(0,0,0,0.08)] sm:p-8 md:p-10"
-        style={dotGridStyle}
-      >
+    <div className="w-full text-black">
         {hasFeaturedUsers ? (
           <>
             <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
@@ -422,7 +413,6 @@ export default async function Staff2Page() {
             ))}
           </div>
         </section>
-      </div>
     </div>
   )
 }
