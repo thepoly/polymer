@@ -173,33 +173,41 @@ function FeaturedStaffCard({
   compact: boolean
 }) {
   const title = getCurrentPositionTitle(user)
-  const baseLayout = compact ? 'gap-4 sm:gap-6' : 'gap-6 sm:gap-8 md:gap-10'
+  const gapClass = compact ? 'gap-4 sm:gap-5 md:gap-6' : 'gap-5 sm:gap-6 md:gap-8'
   const portraitClass = compact 
-    ? 'w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 shrink-0 rounded-full' 
-    : 'w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 shrink-0 rounded-full'
+    ? 'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 shrink-0 rounded-full z-10' 
+    : 'w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 shrink-0 rounded-full z-10'
+    
+  const tailClass = compact
+    ? (reverse ? 'left-full w-[3rem] sm:w-[3.75rem] md:w-[4.5rem]' : 'right-full w-[3rem] sm:w-[3.75rem] md:w-[4.5rem]')
+    : (reverse ? 'left-full w-[4.25rem] sm:w-[5rem] md:w-[6.5rem]' : 'right-full w-[4.25rem] sm:w-[5rem] md:w-[6.5rem]')
 
   return (
     <Link
       href={getProfileHref(user)}
-      className={`group flex items-center ${baseLayout} ${reverse ? 'justify-end text-right' : 'justify-start text-left'}`}
+      className={`group flex items-center ${gapClass} ${reverse ? 'flex-row-reverse text-right' : 'flex-row text-left'}`}
     >
-      {!reverse && <StaffPortrait user={user} className={portraitClass} />}
-      <div className={`min-w-0 ${reverse ? 'items-end' : 'items-start'} flex flex-1 flex-col`}>
+      <StaffPortrait user={user} className={portraitClass} />
+      <div className={`min-w-0 flex flex-1 flex-col`}>
         {title ? (
-          <p className={`font-meta font-semibold uppercase tracking-[0.06em] text-accent transition-colors ${compact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base mb-1'}`}>
+          <p className={`font-meta font-semibold uppercase tracking-[0.06em] text-accent transition-colors ${compact ? 'text-[10px] sm:text-xs' : 'text-xs sm:text-sm mb-1'}`}>
             {title}
           </p>
         ) : null}
-        <h2 className={`font-meta font-bold text-text-main transition-colors group-hover:text-accent ${compact ? 'text-lg sm:text-xl md:text-2xl lg:text-3xl' : 'text-xl sm:text-2xl md:text-3xl lg:text-4xl'}`}>
+        <h2 className={`font-meta font-bold text-text-main transition-colors group-hover:text-accent ${compact ? 'text-base sm:text-lg md:text-xl lg:text-2xl' : 'text-lg sm:text-xl md:text-2xl lg:text-3xl'}`}>
           {user.firstName} {user.lastName}
         </h2>
+        
+        <div className={`relative w-full h-[3px] bg-black dark:bg-white transition-colors my-1.5 sm:my-2 z-0`}>
+          <div className={`absolute top-0 bottom-0 bg-black dark:bg-white transition-colors ${tailClass}`} />
+        </div>
+
         {user.major ? (
-          <p className={`pt-1 font-meta text-text-muted transition-colors ${compact ? 'text-sm' : 'text-base sm:text-lg'}`}>
+          <p className={`font-meta text-text-muted transition-colors ${compact ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'}`}>
             {user.major}
           </p>
         ) : null}
       </div>
-      {reverse && <StaffPortrait user={user} className={portraitClass} />}
     </Link>
   )
 }
@@ -367,9 +375,9 @@ export default async function Staff2Page() {
       <div className="w-full">
         {hasFeaturedUsers ? (
           <>
-            <div className="grid gap-10 lg:grid-cols-2 lg:gap-12 mb-10">
-              {topRow.map(({ key, reverse, compact, user }) => (
-                <div key={key} className="min-h-[10rem]">
+            <div className="grid gap-10 lg:grid-cols-2 lg:gap-12 mb-10 items-start">
+              {topRow.map(({ key, reverse, compact, user }, index) => (
+                <div key={key} className={`min-h-[10rem] ${index === 1 ? 'lg:mt-16' : ''}`}>
                   {user ? <FeaturedStaffCard user={user} reverse={reverse} compact={compact} /> : null}
                 </div>
               ))}
