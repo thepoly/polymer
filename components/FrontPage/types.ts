@@ -7,6 +7,10 @@ export interface Article {
   date: string | null;
   image: string | null;
   imageFull: string | null;
+  imageCaption?: string | null;
+  imagePhotographer?: string | null;
+  imagePhotographerId?: string | number | null;
+  imageTitle?: string | null;
   section: string;
   kicker: string | null;
   opinionType?: string | null;

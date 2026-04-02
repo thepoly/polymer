@@ -1,5 +1,6 @@
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import TransitionLink from "@/components/TransitionLink";
 import { Article } from "./types";
 import { Byline } from "./Byline";
@@ -7,7 +8,7 @@ import { getArticleUrl } from "@/utils/getArticleUrl";
 
 export const ArticleCard = ({
   article,
-  caption,
+  caption = article.imageCaption,
   showImage = Boolean(article.image),
   showExcerpt = true,
   imageAspectClassName = "aspect-[4/3]",
@@ -41,15 +42,27 @@ export const ArticleCard = ({
         <div className={`relative w-full overflow-hidden ${imageAspectClassName}`}>
           <Image
             src={article.image}
-            alt={article.title}
+            alt={article.imageTitle || article.title}
             fill
             className="object-cover"
             sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 380px"
           />
         </div>
-        {caption && (
-          <figcaption className="font-meta mt-1.5 text-[10px] leading-snug tracking-wide text-text-muted">
+        {(caption || article.imagePhotographer) && (
+          <figcaption className="font-meta mt-1.5 text-[12px] italic leading-snug tracking-wide text-text-muted transition-colors">
             {caption}
+            {article.imagePhotographer && (
+              <span className="opacity-60">
+                {caption ? ' ' : ''}
+                {article.imagePhotographerId ? (
+                  <Link href={`/staff/${article.imagePhotographerId}`} className="hover:opacity-80 transition-opacity">
+                    {article.imagePhotographer}/The Polytechnic
+                  </Link>
+                ) : (
+                  `${article.imagePhotographer}`
+                )}
+              </span>
+            )}
           </figcaption>
         )}
       </figure>
@@ -87,7 +100,7 @@ export const ArticleCard = ({
         <div className={`relative w-full overflow-hidden ${imageAspectClassName}`}>
           <Image
             src={article.image}
-            alt={article.title}
+            alt={article.imageTitle || article.title}
             fill
             className="object-cover"
             sizes="220px"

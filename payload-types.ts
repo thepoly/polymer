@@ -218,6 +218,10 @@ export interface User {
  */
 export interface Media {
   id: number;
+  /**
+   * The title of the image, used for alt text across the site.
+   */
+  title?: string | null;
   alt?: string | null;
   photographer?: (number | null) | User;
   writeInPhotographer?: string | null;
@@ -700,6 +704,7 @@ export interface UsersSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
+  title?: T;
   alt?: T;
   photographer?: T;
   writeInPhotographer?: T;

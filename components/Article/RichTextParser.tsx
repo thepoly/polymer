@@ -144,10 +144,10 @@ export const SerializeLexical = ({ nodes, isRoot = true }: { nodes: LexicalNode[
                 id={`media-${media.id}`}
                 className="my-10 flex flex-col gap-1 scroll-mt-20"
               >
-                <div className="w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden transition-colors">
+                <div className="w-full relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen md:static md:ml-0 md:mr-0 md:w-full bg-gray-100 dark:bg-zinc-800 overflow-hidden transition-colors">
                   <Image
                     src={media.url}
-                    alt={media.alt || ''}
+                    alt={media.title || media.alt || ''}
                     width={media.width || 1200}
                     height={media.height || 800}
                     sizes="(max-width: 768px) 100vw, 680px"

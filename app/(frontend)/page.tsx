@@ -54,6 +54,7 @@ const ARTICLE_CARD_SELECT = {
   slug: true,
   subdeck: true,
   featuredImage: true,
+  imageCaption: true,
   section: true,
   kicker: true,
   publishedDate: true,

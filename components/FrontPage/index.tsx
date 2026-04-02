@@ -147,7 +147,7 @@ export function SectionBlock({
       {/* Mobile: flat list with dividers */}
       <div className="flex flex-col md:hidden">
         {allSectionArticles.map((article, i) => (
-          <div key={article.id} className={i > 0 ? "mt-12" : ""}>
+          <div key={article.id} className={i > 0 ? "mt-12 pt-12 border-t border-rule" : ""}>
             <ArticleCard
               article={article}
               showImage={Boolean(article.image)}
@@ -290,7 +290,7 @@ export default function FrontPage({
             const rest = textFirst ? [...all.slice(0, textIdx), ...all.slice(textIdx + 1)] : all;
             const ordered = textFirst ? [textFirst, ...rest] : rest;
             return ordered.map((article, i) => (
-              <div key={`${article.id}-${i}`} className="mt-10">
+              <div key={`${article.id}-${i}`} className="mt-10 pt-10 border-t border-rule transition-colors">
                 <ArticleCard article={article} />
               </div>
             ));
