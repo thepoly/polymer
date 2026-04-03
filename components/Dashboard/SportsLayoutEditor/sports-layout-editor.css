@@ -173,36 +173,9 @@
 /* Filled slot */
 .sle-slot-body {
   cursor: grab;
-  flex: 1;
-  min-height: 0;
 }
 .sle-slot-body:active {
   cursor: grabbing;
-}
-.sle-slot-preview {
-  padding: 10px;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.sle-slot-image {
-  margin-bottom: 8px;
-  border-radius: 4px;
-  overflow: hidden;
-  flex: 1;
-  min-height: 0;
-}
-.sle-slot-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-.sle-slot-text {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  flex-shrink: 0;
 }
 .sle-slot-title {
   font-size: 0.8rem;

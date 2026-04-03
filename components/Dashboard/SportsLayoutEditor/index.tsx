@@ -136,14 +136,16 @@ function SlotPreview({ article }: { article: ArticleData }) {
   const author = getAuthorString(article);
 
   return (
-    <div className="sle-slot-preview">
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px' }}>
       {imageUrl && (
-        <div className="sle-slot-image">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={imageUrl} alt="" />
-        </div>
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imageUrl}
+          alt=""
+          style={{ width: '48px', height: '36px', objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
+        />
       )}
-      <div className="sle-slot-text">
+      <div style={{ minWidth: 0 }}>
         <div className="sle-slot-title">{article.title}</div>
         {author && <div className="sle-slot-author">{author}</div>}
       </div>
@@ -548,7 +550,7 @@ export function SportsLayoutEditor() {
           {/* Canvas area */}
           <div style={{ padding: '20px 24px 40px', minWidth: 0 }}>
             {/* 3-column page grid mirroring the frontend layout */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gridTemplateRows: 'auto auto', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gridTemplateRows: 'auto auto auto auto', gap: '12px' }}>
               {/* Hero (large) — top row, spans left 2 columns */}
               <div style={{ gridColumn: '1 / 3', gridRow: '1' }}>
                 <DropSlot
