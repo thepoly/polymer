@@ -226,7 +226,7 @@ export function GridLayout({
       {/* Mobile: flat stacked list */}
       <div className="flex flex-col md:hidden">
         {mobileArticles.map((article, i) => (
-          <div key={article.id} className={i > 0 ? "mt-10 border-t border-rule pt-10" : ""}>
+          <div key={article.id} className={i > 0 ? "mt-[13.33px] pt-[13.33px] border-t border-black dark:border-white" : ""}>
             <MobileArticleCard article={article} />
           </div>
         ))}
