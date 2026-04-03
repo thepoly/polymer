@@ -13,8 +13,6 @@ https://github.com/thepoly/polymer/commit/91b549fafb7f8d4c3fd165ed63ae03971f6bff
 https://github.com/thepoly/polymer/commit/48a1716bdf49acd67c1683cb200246a40cb63a87
 https://github.com/thepoly/polymer/commit/b07b53b858be627043d4df5495e3623060c20cab
 https://github.com/thepoly/polymer/commit/06f2e40537def5f3757a39a8fbe2a1ead3b2b09b
-
-Pull Requests:
 https://github.com/thepoly/polymer/pull/83
 https://github.com/thepoly/polymer/pull/81
 https://github.com/thepoly/polymer/pull/79
@@ -23,8 +21,6 @@ https://github.com/thepoly/polymer/pull/75
 https://github.com/thepoly/polymer/pull/73
 https://github.com/thepoly/polymer/pull/71
 https://github.com/thepoly/polymer/pull/70
-
-Issues:
 https://github.com/thepoly/polymer/issues/85
 https://github.com/thepoly/polymer/issues/84
 https://github.com/thepoly/polymer/issues/82
