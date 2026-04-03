@@ -38,7 +38,7 @@ export function PhotoGallery({ images }: Props) {
       <div className={`grid grid-cols-1 ${mdGridCols}`}>
         {columns.map((col, colIdx) => (
           <div key={colIdx} className="flex flex-col">
-            {col.map(({ image, caption }, i) => (
+            {col.map(({ image }, i) => (
               <Image
                 key={i}
                 src={(image.sizes?.gallery?.url) || image.url!}
