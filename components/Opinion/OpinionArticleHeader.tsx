@@ -61,7 +61,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
             <div className="relative aspect-[3/2] w-screen max-w-none bg-gray-100 dark:bg-zinc-800 overflow-hidden left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] md:left-auto md:right-auto md:ml-0 md:mr-0 md:w-full">
               <Image
                 src={(featuredImage as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || featuredImage.url}
-                alt={featuredImage.alt || article.title}
+                alt={featuredImage.title || ""}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 680px"

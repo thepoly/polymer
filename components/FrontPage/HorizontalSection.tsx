@@ -50,7 +50,7 @@ export const LeadStory = ({
         <div className="relative aspect-[16/10]">
           <Image
             src={article.image}
-            alt={article.title}
+            alt={article.imageTitle || ""}
             fill
             className="object-cover"
             sizes="(max-width: 1024px) 100vw, 760px"
@@ -134,7 +134,7 @@ export const ThumbStory = ({
         <div className="relative aspect-[4/3]">
           <Image
             src={article.image}
-            alt={article.title}
+            alt={article.imageTitle || ""}
             fill
             className="object-cover"
             sizes={`${thumbWidth}px`}
@@ -183,7 +183,7 @@ const SparseSection = ({
             <div className="relative aspect-[16/10]">
               <Image
                 src={lead.image}
-                alt={lead.title}
+                alt={lead.imageTitle || ""}
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 360px"
@@ -199,7 +199,7 @@ const SparseSection = ({
             <div className="relative aspect-[16/10]">
               <Image
                 src={lead.image}
-                alt={lead.title}
+                alt={lead.imageTitle || ""}
                 fill
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 360px"
@@ -351,7 +351,7 @@ const SportsSection = ({ articles }: { articles: Article[] }) => {
                 <div className="relative aspect-[16/10]">
                   <Image
                     src={lead.image}
-                    alt={lead.title}
+                    alt={lead.imageTitle || ""}
                     fill
                     className="object-cover"
                     sizes="(max-width: 1024px) 100vw, 280px"

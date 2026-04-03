@@ -49,7 +49,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
           <div className="absolute inset-0 w-full h-full z-0">
             <Image
               src={(featuredImage as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || featuredImage.url}
-              alt={featuredImage.alt || article.title}
+              alt={featuredImage.title || ""}
               fill
               className="object-cover opacity-90"
               sizes="100vw"
@@ -207,7 +207,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
         onOpen={() => setIsMenuOpen(true)}
-        handleLinkClick={(e, _href) => {
+        handleLinkClick={(e) => {
           if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) return;
           setIsMenuOpen(false);
         }}

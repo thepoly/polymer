@@ -3,6 +3,7 @@ import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
 import { Article } from "./types";
 import { Byline } from "./Byline";
+import { ImageCaption } from "./ImageCaption";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 
 type ImageDirection = "top" | "bottom" | "left" | "right" | "none";
@@ -70,7 +71,7 @@ function GridArticleCard({
   );
 
   const imageContent = showImage && article.image ? (
-    <div
+    <figure
       data-header-anchor="image"
       data-marauders-obstacle="image"
       className={
@@ -90,7 +91,7 @@ function GridArticleCard({
       >
         <Image
           src={article.image}
-          alt={article.title}
+          alt={article.imageTitle || ""}
           fill
           className="object-cover"
           sizes={
@@ -100,7 +101,13 @@ function GridArticleCard({
           }
         />
       </div>
-    </div>
+      <ImageCaption
+        caption={article.imageCaption}
+        photographer={article.imagePhotographer}
+        photographerId={article.imagePhotographerId}
+        className="mt-2"
+      />
+    </figure>
   ) : null;
 
   if (isHorizontal) {
@@ -136,15 +143,25 @@ function MobileArticleCard({ article }: { article: Article }) {
   return (
     <TransitionLink href={getArticleUrl(article)} className="group block">
       {article.image && (
-        <div className="relative w-full overflow-hidden aspect-[3/2] mb-3">
-          <Image
-            src={article.image}
-            alt={article.title}
-            fill
-            className="object-cover"
-            sizes="100vw"
+        <figure className="mb-3">
+          <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden">
+            <div className="relative w-full aspect-[3/2]">
+              <Image
+                src={article.image}
+                alt={article.imageTitle || ""}
+                fill
+                className="object-cover"
+                sizes="100vw"
+              />
+            </div>
+          </div>
+          <ImageCaption
+            caption={article.imageCaption}
+            photographer={article.imagePhotographer}
+            photographerId={article.imagePhotographerId}
+            className="mt-2"
           />
-        </div>
+        </figure>
       )}
       <p className="font-meta mb-1 text-[13px] font-[600] italic capitalize tracking-[0.04em] text-accent dark:text-[#d96b76]">
         {article.section}
@@ -209,7 +226,7 @@ export function GridLayout({
       {/* Mobile: flat stacked list */}
       <div className="flex flex-col md:hidden">
         {mobileArticles.map((article, i) => (
-          <div key={article.id} className={i > 0 ? "mt-10" : ""}>
+          <div key={article.id} className={i > 0 ? "mt-10 border-t border-rule pt-10" : ""}>
             <MobileArticleCard article={article} />
           </div>
         ))}

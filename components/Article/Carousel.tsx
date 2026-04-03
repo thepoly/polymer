@@ -16,7 +16,7 @@ export function Carousel({ images }: Props) {
   return (
     <div className="my-10 relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-x-auto scrollbar-hide">
       <div className="flex h-[360px] md:h-[480px]">
-        {populated.map(({ image, caption }, i) => {
+        {populated.map(({ image }, i) => {
           const aspectRatio =
             image.width && image.height ? image.width / image.height : 3 / 2
           return (
@@ -27,7 +27,7 @@ export function Carousel({ images }: Props) {
             >
               <Image
                 src={(image.sizes?.gallery?.url) || image.url!}
-                alt={image.alt || caption || ''}
+                alt={image.title || ""}
                 fill
                 sizes="(max-width: 768px) 80vw, 40vw"
                 quality={70}

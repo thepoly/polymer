@@ -54,6 +54,7 @@ const ARTICLE_CARD_SELECT = {
   slug: true,
   subdeck: true,
   featuredImage: true,
+  imageCaption: true,
   section: true,
   kicker: true,
   publishedDate: true,
@@ -200,7 +201,7 @@ export default async function Home() {
         },
         sort: "-publishedDate",
         limit: allLayoutIds.length,
-        depth: 1,
+        depth: 2,
         select: ARTICLE_CARD_SELECT,
       })
     : { docs: [] };
@@ -219,7 +220,7 @@ export default async function Home() {
       },
       sort: '-publishedDate',
       limit: 20,
-      depth: 1,
+      depth: 2,
       select: ARTICLE_CARD_SELECT,
     });
     return res.docs.map((a) => formatArticle(a)).filter(Boolean) as ComponentArticle[];

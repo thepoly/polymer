@@ -11,7 +11,7 @@ export const OpinionCard = ({ article, hasImage }: { article: Article, hasImage?
              <div className="relative mb-3 aspect-[16/10] w-full overflow-hidden">
                 <Image
                     src={article.image}
-                    alt={article.title}
+                    alt={article.imageTitle || ""}
                     fill
                     className="object-cover"
                     sizes="(max-width: 1280px) 100vw, 320px"

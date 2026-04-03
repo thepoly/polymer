@@ -13,6 +13,7 @@ export interface StaffProfileUser {
   slug?: string | null;
   headshot?: {
     url?: string | null;
+    title?: string | null;
   } | null;
   bio?: {
     root?: {
@@ -41,6 +42,7 @@ export interface StaffProfileArticle {
 export interface StaffProfilePhoto {
   id: number;
   url?: string | null;
+  title?: string | null;
   alt?: string | null;
   width?: number | null;
   thumbnailURL?: string | null;
@@ -235,7 +237,7 @@ export function StaffProfile({
             {headshot?.url ? (
               <Image
                 src={headshot.url}
-                alt={`${user.firstName} ${user.lastName}`}
+                alt={headshot.title || `${user.firstName} ${user.lastName}`}
                 fill
                 className="object-cover"
                 priority
@@ -341,7 +343,7 @@ export function StaffProfile({
                     const imageNode = (
                       <Image
                         src={photo.thumbnailURL || photo.sizes?.card?.url || photo.sizes?.gallery?.url || photo.url!}
-                        alt={photo.alt || 'Photo credit'}
+                        alt={photo.title || ""}
                         width={photo.sizes?.card?.width || photo.sizes?.gallery?.width || photo.width || 1200}
                         height={photo.sizes?.card?.height || photo.sizes?.gallery?.height || photo.height || 800}
                         sizes={`(max-width: 768px) 100vw, ${Math.round(100 / portfolioColumnCount)}vw`}

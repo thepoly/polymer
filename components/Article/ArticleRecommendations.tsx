@@ -36,6 +36,7 @@ type RecommendationAuthor = {
 type RecommendationImage = {
   id: number;
   url?: string | null;
+  title?: string | null;
   alt?: string | null;
   sizes?: {
     card?: {
@@ -162,6 +163,7 @@ const toPublicRecommendationArticle = (article: Article): RecommendationArticle 
       ? {
           id: article.featuredImage.id,
           url: article.featuredImage.sizes?.card?.url || article.featuredImage.url,
+          title: article.featuredImage.title,
           alt: article.featuredImage.alt,
           sizes: article.featuredImage.sizes,
         }
@@ -249,7 +251,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                 <div className="relative aspect-[16/10] overflow-hidden bg-gray-100 dark:bg-zinc-800">
                   <Image
                     src={leadImage.sizes?.card?.url || leadImage.url}
-                    alt={leadImage.alt || leadArticle.title}
+                    alt={leadImage.title || ""}
                     fill
                     className="object-cover"
                     sizes="(max-width: 1024px) 100vw, 720px"
@@ -299,7 +301,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                         <div className="relative hidden aspect-square overflow-hidden bg-gray-100 dark:bg-zinc-800 sm:block">
                           <Image
                             src={image.sizes?.card?.url || image.url}
-                            alt={image.alt || article.title}
+                            alt={image.title || ""}
                             fill
                             className="object-cover"
                             sizes="104px"

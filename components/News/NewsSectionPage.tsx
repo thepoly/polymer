@@ -20,7 +20,7 @@ function NewsCard({ article, withImage = false, priority = false }: { article: C
         <div className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden mb-3 md:left-0 md:right-0 md:ml-0 md:mr-0 md:w-full" style={{ aspectRatio: "3/2" }}>
           <Image
             src={article.image}
-            alt={article.title}
+            alt={article.imageTitle || ""}
             fill
             className="object-cover"
             sizes="(max-width: 768px) 100vw, 33vw"
@@ -223,7 +223,7 @@ export default function NewsSectionPage({
                     <div className="relative overflow-hidden mb-3" style={{ aspectRatio: "3/2" }}>
                       <Image
                         src={article.image}
-                        alt={article.title}
+                        alt={article.imageTitle || ""}
                         fill
                         className="object-cover"
                         sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 20vw"

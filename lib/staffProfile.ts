@@ -7,7 +7,7 @@ export const STAFF_PORTFOLIO_PAGE_SIZE = 24;
 
 export type StaffPortfolioPhoto = Pick<
   Media,
-  'id' | 'url' | 'alt' | 'width' | 'height' | 'sizes' | 'thumbnailURL' | 'filename' | 'sourceUrl'
+  'id' | 'url' | 'title' | 'alt' | 'width' | 'height' | 'sizes' | 'thumbnailURL' | 'filename' | 'sourceUrl'
 >;
 
 type StaffPortfolioArticle = Pick<Article, 'slug' | 'section' | 'publishedDate' | 'createdAt'>;
@@ -162,6 +162,7 @@ export async function getStaffPortfolioPage(userId: number, page = 1, limit = ST
       filename: true,
       sourceUrl: true,
       url: true,
+      title: true,
       alt: true,
       width: true,
       height: true,

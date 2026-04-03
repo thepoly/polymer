@@ -61,7 +61,7 @@ function FeaturesCard({
         >
           <Image
             src={article.image}
-            alt={article.title}
+            alt={article.imageTitle || ""}
             fill
             className="object-cover"
             sizes={large ? "(max-width: 640px) 100vw, 50vw" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"}
@@ -658,7 +658,7 @@ export default function FeaturesSectionPage({
                 <div className="relative overflow-hidden" style={{ aspectRatio: "3/2" }}>
                   <Image
                     src={wideArticle[0].image}
-                    alt={wideArticle[0].title}
+                    alt={wideArticle[0].imageTitle || ""}
                     fill
                     className="object-cover"
                     sizes="40vw"
@@ -796,7 +796,7 @@ export default function FeaturesSectionPage({
                 <div className="relative overflow-hidden mb-3" style={{ aspectRatio: "3/2" }}>
                   <Image
                     src={article.image}
-                    alt={article.title}
+                    alt={article.imageTitle || ""}
                     fill
                     className="object-cover"
                     sizes="20vw"

@@ -48,6 +48,13 @@ export const Media: CollectionConfig = {
   },
   fields: [
     {
+      name: 'title',
+      type: 'text',
+      admin: {
+        description: 'The title of the image, used for alt text across the site.',
+      },
+    },
+    {
       name: 'alt',
       type: 'text',
     },

@@ -6,7 +6,10 @@ type PublicAuthorLike = {
   lastName: string;
 };
 
-type PublicMediaLike = Pick<Media, 'url'> & {
+type PublicMediaLike = Pick<Media, 'url' | 'alt'> & {
+  title?: string | null;
+  photographer?: number | { id: number | string; firstName: string; lastName: string; slug?: string | null } | null;
+  writeInPhotographer?: string | null;
   sizes?: {
     card?: {
       url?: string | null;
@@ -25,6 +28,7 @@ type FormatArticleInput = {
   title: string;
   subdeck?: string | null;
   featuredImage?: number | PublicMediaLike | null;
+  imageCaption?: string | null;
   section: string;
   kicker?: string | null;
   opinionType?: string | null;
@@ -81,6 +85,20 @@ export const formatArticle = (
     }
   }
 
+  const featuredImage = article.featuredImage as PublicMediaLike | null;
+  let imagePhotographer: string | null = null;
+  let imagePhotographerId: string | number | null = null;
+
+  if (featuredImage) {
+    if (featuredImage.photographer && typeof featuredImage.photographer === 'object') {
+      const p = featuredImage.photographer;
+      imagePhotographer = `${p.firstName} ${p.lastName}`;
+      imagePhotographerId = p.slug || p.id;
+    } else if (featuredImage.writeInPhotographer) {
+      imagePhotographer = featuredImage.writeInPhotographer;
+    }
+  }
+
   return {
     id: article.id,
     slug: article.slug || '#',
@@ -88,8 +106,12 @@ export const formatArticle = (
     excerpt: article.subdeck || '',
     author: authors ? authors.toUpperCase() : 'THE POLY',
     date: dateString,
-    image: (article.featuredImage as Media)?.sizes?.card?.url || (article.featuredImage as Media)?.url || null,
-    imageFull: (article.featuredImage as Media)?.url || null,
+    image: featuredImage?.sizes?.card?.url || featuredImage?.url || null,
+    imageFull: featuredImage?.url || null,
+    imageCaption: article.imageCaption || null,
+    imagePhotographer,
+    imagePhotographerId,
+    imageTitle: featuredImage?.title || null,
     section: article.section,
     kicker: article.kicker || null,
     opinionType: article.opinionType || null,
