@@ -175,21 +175,17 @@ function measureFontMetrics(text: string, fontSize: number): {
 export function DynamicSectionHeader({
   title,
   href,
-  mobileOffsetY = 0,
   offsetX = 0,
   offsetY = 0,
 }: {
   title: string;
   href: string;
-  mobileOffsetY?: number;
   offsetX?: number;
   offsetY?: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const mobileRef = useRef<HTMLDivElement>(null);
   const [fontSize, setFontSize] = useState(MIN_SIZE);
-  const [mobileFontSize, setMobileFontSize] = useState(64);
   const [ty, setTy] = useState(0);
   const [isFloating, setIsFloating] = useState(false);
   const [isReady, setIsReady] = useState(false);
@@ -200,27 +196,6 @@ export function DynamicSectionHeader({
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
-
-  // Size mobile header to fill viewport width
-  useEffect(() => {
-    if (isFloating) return;
-    const fit = () => {
-      const availableWidth = window.innerWidth;
-      const testSize = 100;
-      const testWidth = measureTextWidth(title, testSize);
-      if (testWidth > 0) {
-        const size = (availableWidth / testWidth) * testSize;
-        // Add back the bearing offset we subtract in rendering
-        const adjusted = (availableWidth + size * 0.06) / testWidth * testSize;
-        setMobileFontSize(Math.floor(adjusted));
-        setIsReady(true);
-      }
-    };
-    fit();
-    window.addEventListener("resize", fit);
-    document.fonts?.ready.then(fit);
-    return () => window.removeEventListener("resize", fit);
-  }, [isFloating, title]);
 
   const calculate = useCallback(() => {
     if (!isFloating) return;
@@ -360,26 +335,7 @@ export function DynamicSectionHeader({
   }, [calculate]);
 
   if (!isFloating) {
-    return (
-      <div
-        ref={mobileRef}
-        className="relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen overflow-hidden transition-opacity duration-300"
-        style={{
-          marginBottom: `${HEADER_BOTTOM_SPACE - mobileFontSize * 0.095}px`,
-          marginTop: mobileOffsetY || offsetY ? `${mobileOffsetY + offsetY}px` : undefined,
-          opacity: isReady ? 1 : 0,
-        }}
-      >
-        <TransitionLink href={href} className="group block text-center">
-          <h2
-            className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#D6001C] dark:text-white group-hover:text-[#D6001C] dark:group-hover:text-white whitespace-nowrap"
-            style={{ fontSize: `${mobileFontSize}px`, marginLeft: `${-mobileFontSize * 0.06 + offsetX}px` }}
-          >
-            {title}
-          </h2>
-        </TransitionLink>
-      </div>
-    );
+    return null;
   }
 
   return (
