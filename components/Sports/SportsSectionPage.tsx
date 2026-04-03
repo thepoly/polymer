@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Image from 'next/image';
 import TransitionLink from '@/components/TransitionLink';
 import { Article } from '@/components/FrontPage/types';
 import { getArticleUrl } from '@/utils/getArticleUrl';
@@ -45,49 +44,68 @@ function SportsHeroCard({
   const teamLabel = article.team ? TEAM_LABELS[article.team] || article.team : null;
   const dateStr = formatAbsoluteDate(article);
   const isHero = size === 'hero';
+  const imgHeight = isHero ? 360 : 240;
 
   return (
-    <TransitionLink href={getArticleUrl(article)} className="group relative block w-full h-full overflow-hidden">
-      {article.image ? (
-        <Image
-          src={article.image}
-          alt={article.title}
-          fill
-          className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-          sizes={isHero ? '(max-width: 768px) 100vw, 60vw' : '(max-width: 768px) 100vw, 30vw'}
-        />
-      ) : (
-        <div className="absolute inset-0 bg-neutral-800" />
-      )}
+    <TransitionLink href={getArticleUrl(article)} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+      <div style={{ position: 'relative', width: '100%' }}>
+        {article.image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={article.image}
+            alt={article.title}
+            style={{ display: 'block', width: '100%', height: imgHeight, objectFit: 'cover' }}
+          />
+        ) : (
+          <div style={{ width: '100%', height: imgHeight, background: '#262626' }} />
+        )}
 
-      {/* Bottom text box overlapping the image */}
-      <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-neutral-900 text-text-main">
-        <div className={isHero ? 'px-5 py-4' : 'px-4 py-3'}>
-          {/* Team + date row */}
-          <div className="flex items-center gap-2 mb-1">
+        {/* White text box overlapping the bottom of the image */}
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: 'var(--color-bg-main, #fff)',
+          padding: isHero ? '16px 20px' : '12px 16px',
+          zIndex: 2,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             {teamLabel && (
-              <span className="font-meta text-[11px] font-bold uppercase tracking-[0.08em] text-accent dark:text-[#d96b76]">
+              <span className="font-meta" style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-accent, #d6001c)' }}>
                 {teamLabel}
               </span>
             )}
             {teamLabel && dateStr && (
-              <span className="font-meta text-[10px] text-text-muted">|</span>
+              <span style={{ fontSize: 10, color: 'var(--color-text-muted, #888)' }}>|</span>
             )}
             {dateStr && (
-              <span className="font-meta text-[10px] uppercase tracking-[0.04em] text-text-muted">
+              <span className="font-meta" style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--color-text-muted, #888)' }}>
                 {dateStr}
               </span>
             )}
           </div>
 
-          {/* Title */}
-          <h3 className={`font-copy font-bold leading-[1.15] tracking-[-0.01em] ${isHero ? 'text-[22px] md:text-[28px]' : 'text-[16px] md:text-[19px]'}`}>
+          <h3 className="font-copy" style={{
+            fontWeight: 700,
+            lineHeight: 1.15,
+            letterSpacing: '-0.01em',
+            fontSize: isHero ? 26 : 18,
+            margin: 0,
+          }}>
             {article.title}
           </h3>
 
-          {/* Author — bottom left */}
           {article.author && (
-            <p className={`font-meta font-medium uppercase tracking-[0.04em] text-text-muted ${isHero ? 'text-[11px] mt-2' : 'text-[10px] mt-1.5'}`}>
+            <p className="font-meta" style={{
+              fontWeight: 500,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+              color: 'var(--color-text-muted, #888)',
+              fontSize: isHero ? 11 : 10,
+              marginTop: isHero ? 8 : 6,
+              marginBottom: 0,
+            }}>
               By {article.author}
             </p>
           )}
@@ -138,33 +156,30 @@ export default function SportsSectionPage({
         </h1>
 
         {/* Main grid: left 2/3 hero images + right 1/3 placeholder */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px' }}>
           {/* Left 2/3 — Hero image grid */}
-          <div className="lg:col-span-2 flex flex-col gap-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* Hero — full width on top */}
-            {hero && (
-              <div className="relative aspect-[16/9] md:aspect-[2/1]">
-                <SportsHeroCard article={hero} size="hero" />
-              </div>
-            )}
+            {hero && <SportsHeroCard article={hero} size="hero" />}
 
             {/* Two smaller side-by-side below */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {bottomLeft && (
-                <div className="relative aspect-[4/3]">
-                  <SportsHeroCard article={bottomLeft} size="sub" />
-                </div>
-              )}
-              {bottomRight && (
-                <div className="relative aspect-[4/3]">
-                  <SportsHeroCard article={bottomRight} size="sub" />
-                </div>
-              )}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              {bottomLeft && <SportsHeroCard article={bottomLeft} size="sub" />}
+              {bottomRight && <SportsHeroCard article={bottomRight} size="sub" />}
             </div>
           </div>
 
           {/* Right 1/3 — Placeholder column */}
-          <div className="hidden lg:flex lg:flex-col lg:items-center lg:justify-center border border-dashed border-neutral-300 dark:border-neutral-700 rounded-md min-h-[300px] lg:min-h-0">
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px dashed',
+            borderColor: 'var(--color-border, #ccc)',
+            borderRadius: '6px',
+            minHeight: '300px',
+          }}>
             <p className="font-meta text-sm text-text-muted uppercase tracking-wider">
               Coming Soon
             </p>
