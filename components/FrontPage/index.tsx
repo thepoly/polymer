@@ -134,7 +134,7 @@ export function SectionBlock({
   return (
     <section data-section={sectionSlug}>
       <div className="mb-3">
-        <div className="relative -left-2 w-[calc(100%+0.5rem)] border-t border-rule md:border-black md:dark:border-white transition-colors" />
+        <div className="relative -left-2 w-[calc(100%+0.5rem)] border-t border-black dark:border-white md:border-black md:dark:border-white transition-colors" />
         <h2 className="mt-4 md:mt-2">
           <Link
             href={`/${sectionSlug}`}
@@ -147,7 +147,7 @@ export function SectionBlock({
       {/* Mobile: flat list with dividers */}
       <div className="flex flex-col md:hidden">
         {allSectionArticles.map((article, i) => (
-          <div key={article.id} className={i > 0 ? "mt-12 pt-12 border-t border-rule" : ""}>
+          <div key={article.id} className={i > 0 ? "mt-4 pt-4 border-t border-black dark:border-white" : ""}>
             <ArticleCard
               article={article}
               showImage={Boolean(article.image)}
@@ -290,7 +290,7 @@ export default function FrontPage({
             const rest = textFirst ? [...all.slice(0, textIdx), ...all.slice(textIdx + 1)] : all;
             const ordered = textFirst ? [textFirst, ...rest] : rest;
             return ordered.map((article, i) => (
-              <div key={`${article.id}-${i}`} className="mt-10 pt-10 border-t border-rule transition-colors">
+              <div key={`${article.id}-${i}`} className="mt-[13.33px] pt-[13.33px] border-t border-black dark:border-white md:mt-10 md:pt-10 md:border-rule transition-colors">
                 <ArticleCard article={article} />
               </div>
             ));
