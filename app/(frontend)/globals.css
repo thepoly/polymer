@@ -232,6 +232,7 @@ html.dark .homepage-zodiac {
 html {
   background-color: var(--background);
   color-scheme: light dark;
+  overflow-x: hidden;
 }
 
 body {
@@ -244,6 +245,8 @@ body {
   text-rendering: optimizeLegibility;
   transition: color 0.3s ease, background-color 0.3s ease;
   min-height: 100dvh;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 * {

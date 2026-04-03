@@ -1,9 +1,9 @@
 import React from "react";
 import Image from "next/image";
-import Link from "next/link";
 import TransitionLink from "@/components/TransitionLink";
 import { Article } from "./types";
 import { Byline } from "./Byline";
+import { ImageCaption } from "./ImageCaption";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 
 export const ArticleCard = ({
@@ -37,34 +37,25 @@ export const ArticleCard = ({
       <figure
         data-header-anchor="image"
         data-marauders-obstacle="image"
-        className={`mb-3 ${contained ? 'relative w-full' : 'relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen md:static md:ml-0 md:mr-0 md:w-full'}`}
+        className="mb-3"
       >
-        <div className={`relative w-full overflow-hidden ${imageAspectClassName}`}>
-          <Image
-            src={article.image}
-            alt={article.imageTitle || article.title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 380px"
-          />
+        <div className={contained ? 'relative w-full' : 'relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen md:static md:ml-0 md:mr-0 md:w-full'}>
+          <div className={`relative w-full overflow-hidden ${imageAspectClassName}`}>
+            <Image
+              src={article.image}
+              alt={article.imageTitle || article.title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 380px"
+            />
+          </div>
         </div>
-        {(caption || article.imagePhotographer) && (
-          <figcaption className="font-meta mt-1.5 text-[12px] italic leading-snug tracking-wide text-text-muted transition-colors">
-            {caption}
-            {article.imagePhotographer && (
-              <span className="opacity-60">
-                {caption ? ' ' : ''}
-                {article.imagePhotographerId ? (
-                  <Link href={`/staff/${article.imagePhotographerId}`} className="hover:opacity-80 transition-opacity">
-                    {article.imagePhotographer}/The Polytechnic
-                  </Link>
-                ) : (
-                  `${article.imagePhotographer}`
-                )}
-              </span>
-            )}
-          </figcaption>
-        )}
+        <ImageCaption
+          caption={caption}
+          photographer={article.imagePhotographer}
+          photographerId={article.imagePhotographerId}
+          className="mt-1.5"
+        />
       </figure>
     )}
     <div>
@@ -95,17 +86,25 @@ export const ArticleCard = ({
       <figure
         data-header-anchor="image"
         data-marauders-obstacle="image"
-        className="relative w-full"
+        className="mb-3"
       >
-        <div className={`relative w-full overflow-hidden ${imageAspectClassName}`}>
-          <Image
-            src={article.image}
-            alt={article.imageTitle || article.title}
-            fill
-            className="object-cover"
-            sizes="220px"
-          />
+        <div className={contained ? 'relative w-full' : 'relative left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] w-screen md:static md:ml-0 md:mr-0 md:w-full'}>
+          <div className={`relative w-full overflow-hidden ${imageAspectClassName}`}>
+            <Image
+              src={article.image}
+              alt={article.imageTitle || article.title}
+              fill
+              className="object-cover"
+              sizes="220px"
+            />
+          </div>
         </div>
+        <ImageCaption
+          caption={caption}
+          photographer={article.imagePhotographer}
+          photographerId={article.imagePhotographerId}
+          className="mt-1.5"
+        />
       </figure>
     )}
   </TransitionLink>

@@ -1,9 +1,9 @@
 import React from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import TransitionLink from '@/components/TransitionLink';
 import { Article } from './types';
 import { Byline } from './Byline';
+import { ImageCaption } from './ImageCaption';
 import { getArticleUrl } from '@/utils/getArticleUrl';
 
 const getLeadDate = (article: Article): string | null => {
@@ -60,7 +60,7 @@ export const LeadArticle = ({
                 )}
             </div>
             {(article.imageFull || article.image) && (
-                <div
+                <figure
                     data-header-anchor="image"
                     data-marauders-obstacle="image"
                     className={`mt-4 w-full ${
@@ -84,24 +84,13 @@ export const LeadArticle = ({
                             />
                         </div>
                     </div>
-                    {(caption || article.imagePhotographer) && (
-                        <div className="font-meta mt-2 text-[12px] italic leading-snug tracking-wide text-text-muted transition-colors">
-                            {caption}
-                            {article.imagePhotographer && (
-                                <span className="opacity-60">
-                                    {caption ? ' ' : ''}
-                                    {article.imagePhotographerId ? (
-                                        <Link href={`/staff/${article.imagePhotographerId}`} className="hover:opacity-80 transition-opacity">
-                                            {article.imagePhotographer}/The Polytechnic
-                                        </Link>
-                                    ) : (
-                                        `${article.imagePhotographer}`
-                                    )}
-                                </span>
-                            )}
-                        </div>
-                    )}
-                </div>
+                    <ImageCaption
+                        caption={caption}
+                        photographer={article.imagePhotographer}
+                        photographerId={article.imagePhotographerId}
+                        className="mt-2"
+                    />
+                </figure>
             )}
         </TransitionLink>
     );

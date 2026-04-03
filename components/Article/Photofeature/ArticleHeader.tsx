@@ -49,7 +49,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
           <div className="absolute inset-0 w-full h-full z-0">
             <Image
               src={(featuredImage as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || featuredImage.url}
-              alt={featuredImage.alt || article.title}
+              alt={featuredImage.title || featuredImage.alt || article.title}
               fill
               className="object-cover opacity-90"
               sizes="100vw"

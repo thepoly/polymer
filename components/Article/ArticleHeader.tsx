@@ -44,7 +44,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
             >
               <Image
                 src={(featuredImage as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || featuredImage.url}
-                alt={featuredImage.alt || article.title}
+                alt={featuredImage.title || featuredImage.alt || article.title}
                 fill
                 className="object-cover"
                 sizes="(max-width: 768px) 100vw, 680px"

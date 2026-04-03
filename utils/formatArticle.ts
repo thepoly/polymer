@@ -108,7 +108,7 @@ export const formatArticle = (
     date: dateString,
     image: featuredImage?.sizes?.card?.url || featuredImage?.url || null,
     imageFull: featuredImage?.url || null,
-    imageCaption: article.imageCaption || null,
+    imageCaption: article.imageCaption || featuredImage?.alt || null,
     imagePhotographer,
     imagePhotographerId,
     imageTitle: featuredImage?.title || featuredImage?.alt || null,
