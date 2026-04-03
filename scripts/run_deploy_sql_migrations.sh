@@ -30,7 +30,8 @@ VALUES
   ('20260328_100000_add_submissions', 8, NOW(), NOW()),
   ('20260328_200000_add_event_submissions', 8, NOW(), NOW()),
   ('20260328_300000_add_features_page_layout', 8, NOW(), NOW()),
-  ('20260329_100000_add_follytechnic', 9, NOW(), NOW())
+  ('20260329_100000_add_follytechnic', 9, NOW(), NOW()),
+  ('20260331_100000_add_sports_page_layout_and_team', 10, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -282,4 +283,44 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_features_page_layout_id_idx"
   ON "payload_locked_documents_rels" ("features_page_layout_id");
+
+-- 20260331: Add team field to articles + sports_page_layout table
+DO $$ BEGIN
+  CREATE TYPE "public"."enum_articles_team" AS ENUM (
+    'mens-basketball','womens-basketball','mens-hockey','womens-hockey',
+    'football','mens-soccer','womens-soccer','mens-lacrosse','womens-lacrosse',
+    'baseball','softball','swimming-diving','track-field','cross-country',
+    'golf','tennis','club-sports','intramurals','other'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "team" "public"."enum_articles_team";
+
+DO $$ BEGIN
+  CREATE TYPE "public"."enum__articles_v_version_team" AS ENUM (
+    'mens-basketball','womens-basketball','mens-hockey','womens-hockey',
+    'football','mens-soccer','womens-soccer','mens-lacrosse','womens-lacrosse',
+    'baseball','softball','swimming-diving','track-field','cross-country',
+    'golf','tennis','club-sports','intramurals','other'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_team" "public"."enum__articles_v_version_team";
+
+CREATE TABLE IF NOT EXISTS "sports_page_layout" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "name" varchar NOT NULL DEFAULT 'Sports Layout',
+  "layout" jsonb,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "sports_page_layout_created_at_idx" ON "sports_page_layout" USING btree ("created_at");
+ALTER TABLE "payload_locked_documents_rels" ADD COLUMN IF NOT EXISTS "sports_page_layout_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_sports_page_layout_fk"
+    FOREIGN KEY ("sports_page_layout_id") REFERENCES "public"."sports_page_layout"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_sports_page_layout_id_idx"
+  ON "payload_locked_documents_rels" ("sports_page_layout_id");
 SQL

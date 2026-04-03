@@ -28,6 +28,7 @@ type FormatArticleInput = {
   section: string;
   kicker?: string | null;
   opinionType?: string | null;
+  team?: string | null;
   publishedDate?: string | null;
   createdAt?: string;
   authors?: Array<number | PublicAuthorLike> | null;
@@ -93,6 +94,7 @@ export const formatArticle = (
     section: article.section,
     kicker: article.kicker || null,
     opinionType: article.opinionType || null,
+    team: article.team || null,
     publishedDate: article.publishedDate,
     createdAt: article.createdAt,
     isFollytechnic: article.isFollytechnic || false,

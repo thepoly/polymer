@@ -7,6 +7,7 @@ import SectionPage from '@/components/SectionPage';
 import OpinionSectionPage from '@/components/Opinion/OpinionSectionPage';
 import NewsSectionPage from '@/components/News/NewsSectionPage';
 import FeaturesSectionPage, { type FeaturesEvent, type SpotlightPhoto } from '@/components/Features/FeaturesSectionPage';
+import SportsSectionPage from '@/components/Sports/SportsSectionPage';
 import { Article as PayloadArticle, Media } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
 import type { SpotlightAuthor } from '@/components/Opinion/AuthorSpotlightCarousel';
@@ -79,6 +80,7 @@ export default async function SectionPageRoute({ params }: Args) {
   const payload = await getPayload({ config });
   const isOpinion = section === 'opinion';
   const isNews = section === 'news';
+  const isSports = section === 'sports';
 
   const eightWeeksAgo = new Date();
   eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
@@ -113,6 +115,7 @@ export default async function SectionPageRoute({ params }: Args) {
       updatedAt: true,
       authors: true,
       ...(isOpinion && { opinionType: true }),
+      ...(isSports && { team: true }),
       writeInAuthors: true,
       isFollytechnic: true,
     },
@@ -480,6 +483,56 @@ export default async function SectionPageRoute({ params }: Args) {
     }
   }
 
+  // Fetch sports page layout — hero pinned articles
+  let sportsPinnedHero: ComponentArticle[] = [];
+
+  if (isSports) {
+    type SportsLayoutShape = {
+      heroArticles?: (number | null)[];
+    };
+
+    try {
+      const layoutResponse = await payload.find({
+        collection: 'sports-page-layout',
+        limit: 1,
+        depth: 0,
+        select: { layout: true },
+      });
+      const doc = layoutResponse.docs[0] as Record<string, unknown> | undefined;
+      const layoutJson = doc?.layout as SportsLayoutShape | undefined;
+
+      if (layoutJson?.heroArticles) {
+        const pinnedIds = layoutJson.heroArticles.filter((id): id is number => id !== null);
+        if (pinnedIds.length > 0) {
+          const pinnedResponse = await payload.find({
+            collection: 'articles',
+            where: {
+              and: [
+                { id: { in: pinnedIds } },
+                { _status: { equals: 'published' } },
+              ],
+            },
+            limit: pinnedIds.length,
+            depth: 1,
+            select: {
+              title: true, slug: true, subdeck: true, featuredImage: true,
+              section: true, kicker: true, publishedDate: true, createdAt: true,
+              authors: true, writeInAuthors: true, isFollytechnic: true, team: true,
+            },
+          });
+          const pinnedMap = new Map(
+            pinnedResponse.docs.map((a) => [a.id, formatArticle(a)]),
+          );
+          sportsPinnedHero = pinnedIds
+            .map((id) => pinnedMap.get(id) ?? null)
+            .filter((a): a is ComponentArticle => a !== null);
+        }
+      }
+    } catch {
+      // Table may not exist yet
+    }
+  }
+
   return (
     <main className={`min-h-screen bg-bg-main section-${section} transition-colors duration-300`}>
       <script
@@ -527,6 +580,12 @@ export default async function SectionPageRoute({ params }: Args) {
           articles={formattedArticles}
           pinnedArticle={newsPinnedArticle}
           groupedArticles={newsGroupedArticles}
+        />
+      ) : isSports ? (
+        <SportsSectionPage
+          title={sectionTitle}
+          articles={formattedArticles}
+          pinnedHero={sportsPinnedHero}
         />
       ) : (
         <SectionPage title={sectionTitle} articles={formattedArticles} />

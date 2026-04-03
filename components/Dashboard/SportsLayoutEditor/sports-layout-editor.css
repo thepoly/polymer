@@ -1,0 +1,389 @@
+/* ================================================================
+   Sports Layout Editor
+   ================================================================ */
+
+/* ---- Loading ---- */
+.sle-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 16px;
+  color: var(--theme-text, #fff);
+  opacity: 0.5;
+  font-size: 0.85rem;
+}
+.sle-loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--theme-elevation-200, #333);
+  border-top-color: var(--theme-text, #fff);
+  border-radius: 50%;
+  animation: sle-spin 0.7s linear infinite;
+}
+@keyframes sle-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Root ---- */
+.sle-root {
+  min-height: 100vh;
+  background: var(--theme-bg, #0a0a0a);
+  color: var(--theme-text, #fff);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+.sle-root button,
+.sle-root input {
+  font: inherit;
+}
+
+/* ---- Toolbar ---- */
+.sle-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  background: var(--theme-bg, #0a0a0a);
+  border-bottom: 1px solid var(--theme-elevation-100, #1a1a1a);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.sle-toolbar-left {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.sle-toolbar-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+.sle-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sle-toolbar-error {
+  font-size: 0.75rem;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+/* Save button */
+.sle-save-btn {
+  padding: 7px 18px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.01em;
+}
+.sle-save-btn-unsaved {
+  background: #fff;
+  color: #000;
+  box-shadow: 0 1px 8px rgba(255,255,255,0.1);
+}
+.sle-save-btn-unsaved:hover {
+  background: #e5e5e5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 12px rgba(255,255,255,0.15);
+}
+.sle-save-btn-saved {
+  background: var(--theme-elevation-100, #1a1a1a);
+  color: var(--theme-text, #fff);
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* ---- Slot ---- */
+.sle-slot {
+  background: var(--theme-elevation-100, #1a1a1a);
+  border: 1px solid var(--theme-elevation-200, #2a2a2a);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  display: flex;
+  flex-direction: column;
+}
+.sle-slot-over {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb, inset 0 0 12px rgba(37, 99, 235, 0.08);
+}
+.sle-slot-filled {
+  border-color: var(--theme-elevation-300, #444);
+}
+.sle-slot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--theme-elevation-50, #151515);
+  border-bottom: 1px solid var(--theme-elevation-150, #222);
+  flex-shrink: 0;
+}
+.sle-slot-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.4;
+}
+.sle-slot-clear {
+  background: none;
+  border: none;
+  color: var(--theme-text, #fff);
+  opacity: 0.3;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 2px;
+  transition: opacity 0.1s;
+}
+.sle-slot-clear:hover {
+  opacity: 0.8;
+  color: #ef4444;
+}
+
+/* Empty slot */
+.sle-slot-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 12px;
+}
+.sle-slot-empty-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  opacity: 0.2;
+  font-size: 0.72rem;
+  padding: 8px;
+  border: 1px dashed var(--theme-elevation-300, #444);
+  border-radius: 6px;
+}
+
+/* Filled slot */
+.sle-slot-body {
+  cursor: grab;
+  flex: 1;
+  min-height: 0;
+}
+.sle-slot-body:active {
+  cursor: grabbing;
+}
+.sle-slot-preview {
+  padding: 10px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.sle-slot-image {
+  margin-bottom: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+.sle-slot-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.sle-slot-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.sle-slot-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.sle-slot-author {
+  font-size: 0.68rem;
+  opacity: 0.4;
+  font-weight: 500;
+}
+
+/* ---- Pool ---- */
+.sle-pool {
+  border-left: 1px solid var(--theme-elevation-100, #181818);
+  background: var(--theme-bg, #0a0a0a);
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 53px);
+  position: sticky;
+  top: 53px;
+}
+@media (max-width: 1100px) {
+  .sle-pool {
+    border-left: none;
+    border-top: 1px solid var(--theme-elevation-100, #181818);
+    height: auto;
+    max-height: 500px;
+    position: static;
+  }
+}
+
+/* Pool card */
+.sle-pool-card {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  cursor: grab;
+  transition: background 0.12s;
+  position: relative;
+  align-items: center;
+}
+.sle-pool-card:hover {
+  background: var(--theme-elevation-50, #141414);
+}
+.sle-pool-card:active {
+  cursor: grabbing;
+}
+.sle-pool-thumb {
+  width: 48px;
+  height: 36px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--theme-elevation-200, #222);
+}
+.sle-pool-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.sle-pool-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.15;
+}
+.sle-pool-thumb-empty svg {
+  width: 18px;
+  height: 18px;
+}
+.sle-pool-card-body {
+  flex: 1;
+  min-width: 0;
+}
+.sle-pool-card-title {
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sle-pool-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.sle-pool-card-date {
+  font-size: 0.64rem;
+  opacity: 0.35;
+}
+.sle-used {
+  opacity: 0.35;
+}
+.sle-used-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.4;
+  color: #22c55e;
+}
+
+/* Pool search */
+.sle-root .sle-pool-search {
+  display: block !important;
+  width: calc(100% - 28px) !important;
+  box-sizing: border-box !important;
+  margin: 8px 14px 0 !important;
+  padding: 7px 10px !important;
+  height: auto !important;
+  min-height: unset !important;
+  background: var(--theme-elevation-50, #111) !important;
+  border: 1px solid var(--theme-elevation-150, #222) !important;
+  border-radius: 6px !important;
+  color: var(--theme-text, #fff) !important;
+  font-size: 0.75rem !important;
+  line-height: 1.4 !important;
+  outline: none !important;
+  transition: border-color 0.2s !important;
+}
+.sle-root .sle-pool-search:focus {
+  border-color: var(--theme-elevation-300, #444) !important;
+}
+.sle-root .sle-pool-search::placeholder {
+  color: var(--theme-text, #fff);
+  opacity: 0.2;
+}
+
+/* Dragging states */
+.sle-dragging {
+  opacity: 0.3;
+}
+
+/* ---- Drag Overlay ---- */
+.sle-drag-overlay {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--theme-elevation-200, #222);
+  border: 1px solid var(--theme-elevation-400, #555);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  max-width: 280px;
+  pointer-events: none;
+}
+.sle-drag-overlay-img {
+  width: 48px;
+  height: 36px;
+  border-radius: 4px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.sle-drag-overlay-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.sle-drag-overlay-body {
+  flex: 1;
+  min-width: 0;
+}
+.sle-drag-overlay-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

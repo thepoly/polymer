@@ -20,6 +20,7 @@ import * as migration_20260328_100000_add_submissions from './20260328_100000_ad
 import * as migration_20260328_200000_add_event_submissions from './20260328_200000_add_event_submissions';
 import * as migration_20260328_300000_add_features_page_layout from './20260328_300000_add_features_page_layout';
 import * as migration_20260329_100000_add_follytechnic from './20260329_100000_add_follytechnic';
+import * as migration_20260331_100000_add_sports_page_layout_and_team from './20260331_100000_add_sports_page_layout_and_team';
 
 export const migrations = [
   {
@@ -131,5 +132,10 @@ export const migrations = [
     up: migration_20260329_100000_add_follytechnic.up,
     down: migration_20260329_100000_add_follytechnic.down,
     name: '20260329_100000_add_follytechnic',
+  },
+  {
+    up: migration_20260331_100000_add_sports_page_layout_and_team.up,
+    down: migration_20260331_100000_add_sports_page_layout_and_team.down,
+    name: '20260331_100000_add_sports_page_layout_and_team',
   },
 ];

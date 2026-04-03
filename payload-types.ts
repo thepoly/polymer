@@ -74,6 +74,7 @@ export interface Config {
     layout: Layout;
     'opinion-page-layout': OpinionPageLayout;
     'features-page-layout': FeaturesPageLayout;
+    'sports-page-layout': SportsPageLayout;
     submissions: Submission;
     'event-submissions': EventSubmission;
     'payload-kv': PayloadKv;
@@ -90,6 +91,7 @@ export interface Config {
     layout: LayoutSelect<false> | LayoutSelect<true>;
     'opinion-page-layout': OpinionPageLayoutSelect<false> | OpinionPageLayoutSelect<true>;
     'features-page-layout': FeaturesPageLayoutSelect<false> | FeaturesPageLayoutSelect<true>;
+    'sports-page-layout': SportsPageLayoutSelect<false> | SportsPageLayoutSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
     'event-submissions': EventSubmissionsSelect<false> | EventSubmissionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -104,9 +106,6 @@ export interface Config {
   globals: {};
   globalsSelect: {};
   locale: null;
-  widgets: {
-    collections: CollectionsWidget;
-  };
   user: User;
   jobs: {
     tasks: unknown;
@@ -256,6 +255,29 @@ export interface Article {
   id: number;
   section: 'news' | 'sports' | 'features' | 'opinion';
   title: string;
+  team?:
+    | (
+        | 'mens-basketball'
+        | 'womens-basketball'
+        | 'mens-hockey'
+        | 'womens-hockey'
+        | 'football'
+        | 'mens-soccer'
+        | 'womens-soccer'
+        | 'mens-lacrosse'
+        | 'womens-lacrosse'
+        | 'baseball'
+        | 'softball'
+        | 'swimming-diving'
+        | 'track-field'
+        | 'cross-country'
+        | 'golf'
+        | 'tennis'
+        | 'club-sports'
+        | 'intramurals'
+        | 'other'
+      )
+    | null;
   kicker?: string | null;
   subdeck?: string | null;
   opinionType?:
@@ -416,6 +438,25 @@ export interface FeaturesPageLayout {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sports-page-layout".
+ */
+export interface SportsPageLayout {
+  id: number;
+  name: string;
+  layout?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "submissions".
  */
 export interface Submission {
@@ -513,6 +554,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'features-page-layout';
         value: number | FeaturesPageLayout;
+      } | null)
+    | ({
+        relationTo: 'sports-page-layout';
+        value: number | SportsPageLayout;
       } | null)
     | ({
         relationTo: 'submissions';
@@ -657,6 +702,7 @@ export interface MediaSelect<T extends boolean = true> {
 export interface ArticlesSelect<T extends boolean = true> {
   section?: T;
   title?: T;
+  team?: T;
   kicker?: T;
   subdeck?: T;
   opinionType?: T;
@@ -746,6 +792,16 @@ export interface FeaturesPageLayoutSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sports-page-layout_select".
+ */
+export interface SportsPageLayoutSelect<T extends boolean = true> {
+  name?: T;
+  layout?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "submissions_select".
  */
 export interface SubmissionsSelect<T extends boolean = true> {
@@ -814,16 +870,6 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "collections_widget".
- */
-export interface CollectionsWidget {
-  data?: {
-    [k: string]: unknown;
-  };
-  width: 'full';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
