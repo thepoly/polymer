@@ -106,6 +106,11 @@ const chunkIntoColumns = (articles: Article[], columnCount: number) => {
   return columns;
 };
 
+/**
+ * SectionBlock renders a section's articles with a header and separators.
+ * Spacing on mobile is reduced to exactly one-third of desktop values for a tighter layout.
+ * Reference: #76
+ */
 export function SectionBlock({
   title,
   articles,
