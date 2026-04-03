@@ -196,7 +196,7 @@ function ArchiveArticleRow({ article }: { article: Article }) {
           <div className="relative aspect-[4/3] w-full">
             <Image
               src={article.image}
-              alt={article.title}
+              alt={article.imageTitle || ""}
               fill
               className="object-cover"
               sizes="220px"

@@ -55,7 +55,7 @@ export default function OpinionListPage({
               >
                 <Image
                   src={article.image}
-                  alt={article.title}
+                  alt={article.imageTitle || ""}
                   fill
                   className="object-cover"
                   sizes="180px"

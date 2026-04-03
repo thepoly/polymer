@@ -91,7 +91,7 @@ function GridArticleCard({
       >
         <Image
           src={article.image}
-          alt={article.imageTitle || article.title}
+          alt={article.imageTitle || ""}
           fill
           className="object-cover"
           sizes={
@@ -105,7 +105,7 @@ function GridArticleCard({
         caption={article.imageCaption}
         photographer={article.imagePhotographer}
         photographerId={article.imagePhotographerId}
-        className="mt-1.5"
+        className="mt-2"
       />
     </figure>
   ) : null;
@@ -148,7 +148,7 @@ function MobileArticleCard({ article }: { article: Article }) {
             <div className="relative w-full aspect-[3/2]">
               <Image
                 src={article.image}
-                alt={article.imageTitle || article.title}
+                alt={article.imageTitle || ""}
                 fill
                 className="object-cover"
                 sizes="100vw"
@@ -159,7 +159,7 @@ function MobileArticleCard({ article }: { article: Article }) {
             caption={article.imageCaption}
             photographer={article.imagePhotographer}
             photographerId={article.imagePhotographerId}
-            className="mt-1.5"
+            className="mt-2"
           />
         </figure>
       )}

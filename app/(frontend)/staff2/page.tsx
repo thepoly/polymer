@@ -22,6 +22,7 @@ type Staff2User = {
   major?: string | null
   headshot?: {
     url?: string | null
+    title?: string | null
   } | null
   positions?:
     | {
@@ -80,6 +81,7 @@ const getJobTitle = (
 
 const toStaff2User = (user: Staff2UserSource): Staff2User => {
   const headshotUrl = getHeadshotUrl(user.headshot)
+  const headshotTitle = isRecord(user.headshot) && typeof user.headshot.title === 'string' ? user.headshot.title : null
 
   return {
     id: user.id,
@@ -88,7 +90,7 @@ const toStaff2User = (user: Staff2UserSource): Staff2User => {
     slug: user.slug,
     retired: user.retired,
     major: user.major,
-    headshot: headshotUrl ? { url: headshotUrl } : null,
+    headshot: headshotUrl ? { url: headshotUrl, title: headshotTitle } : null,
     positions: user.positions?.map((position) => {
       const jobTitle = getJobTitle(position.jobTitle)
 
@@ -147,7 +149,7 @@ function StaffPortrait({
       {user.headshot?.url ? (
         <Image
           src={user.headshot.url}
-          alt={`${user.firstName} ${user.lastName}`}
+          alt={user.headshot.title || `${user.firstName} ${user.lastName}`}
           fill
           className="object-cover"
           sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"

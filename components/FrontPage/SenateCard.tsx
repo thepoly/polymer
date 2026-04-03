@@ -24,7 +24,7 @@ export const SenateCard = ({ article }: { article: Article }) => (
                 <div className="aspect-[16/9] w-full overflow-hidden bg-gray-100 dark:bg-zinc-800 relative transition-colors">
                     <Image 
                         src={article.image} 
-                        alt={article.title} 
+                        alt={article.imageTitle || ""} 
                         fill
                         className="object-cover"
                     />

@@ -50,6 +50,7 @@ type PublicArticleUser = {
 type PublicArticleMedia = {
   id: number;
   url?: string | null;
+  title?: string | null;
   alt?: string | null;
   width?: number | null;
   height?: number | null;
@@ -87,6 +88,7 @@ const toPublicArticleMedia = (media: Article['featuredImage']): PublicArticleMed
   return {
     id: media.id,
     url: media.url,
+    title: (media as unknown as Record<string, unknown>).title as string | null | undefined,
     alt: media.alt,
     width: media.width,
     height: media.height,
@@ -203,7 +205,7 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
       section: section.charAt(0).toUpperCase() + section.slice(1),
       authors,
       ...(imageUrl && {
-        images: [{ url: imageUrl, alt: image?.alt || article.title }],
+        images: [{ url: imageUrl, alt: image?.title || "" }],
       }),
     },
     twitter: {

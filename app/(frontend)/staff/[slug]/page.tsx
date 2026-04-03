@@ -40,7 +40,9 @@ const toPublicStaffUser = (user: PublicStaffUserSource): StaffProfileUser => ({
   firstName: user.firstName,
   lastName: user.lastName,
   slug: user.slug,
-  headshot: typeof user.headshot === 'object' && user.headshot ? { url: user.headshot.url } : null,
+  headshot: typeof user.headshot === 'object' && user.headshot 
+    ? { url: user.headshot.url, title: user.headshot.title } 
+    : null,
   bio: user.bio
     ? {
         root: {
@@ -68,6 +70,7 @@ const toPublicStaffArticle = (article: PublicStaffArticleSource): StaffProfileAr
 const toPublicStaffPhoto = (photo: PublicStaffPhotoSource): StaffProfilePhoto => ({
   id: photo.id,
   url: photo.url,
+  title: photo.title,
   alt: photo.alt,
   width: photo.width,
   height: photo.height,
@@ -98,7 +101,7 @@ export async function generateMetadata({ params }: StaffArgs): Promise<Metadata>
       type: 'profile',
       url: `/staff/${user.slug || user.id}`,
       ...(headshot?.url && {
-        images: [{ url: headshot.url, alt: name }],
+        images: [{ url: headshot.url, alt: headshot.title || name }],
       }),
     },
   };

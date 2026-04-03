@@ -30,7 +30,7 @@ export const FeatureBand = ({ article }: { article: Article }) => (
         <div className="relative aspect-[16/10]">
           <Image
             src={article.image}
-            alt={article.title}
+            alt={article.imageTitle || ""}
             fill
             className="object-cover"
             sizes="(max-width: 1024px) 100vw, 360px"

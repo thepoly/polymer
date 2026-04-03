@@ -55,10 +55,10 @@ export default function FeaturesListPage({
               >
                 <Image
                   src={article.image}
-                  alt={article.title}
+                  alt={article.imageTitle || ""}
                   fill
                   className="object-cover"
-                  sizes="180px"
+                  sizes="(max-width: 768px) 100vw, 380px"
                 />
               </div>
             )}

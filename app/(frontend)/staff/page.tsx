@@ -34,6 +34,7 @@ type PublicStaffCard = {
   roles?: User['roles'];
   headshot?: {
     url?: string | null;
+    title?: string | null;
   } | null;
   positions?:
     | {
@@ -58,7 +59,9 @@ const toPublicStaffCard = (user: PublicStaffCardSource): PublicStaffCard => ({
   slug: user.slug,
   retired: user.retired,
   roles: user.roles,
-  headshot: typeof user.headshot === 'object' && user.headshot ? { url: user.headshot.url } : null,
+  headshot: typeof user.headshot === 'object' && user.headshot 
+    ? { url: user.headshot.url, title: user.headshot.title } 
+    : null,
   positions: user.positions?.map((position) => ({
     startDate: position.startDate,
     endDate: position.endDate,
@@ -174,7 +177,7 @@ export default async function StaffPage() {
                 {user.headshot?.url ? (
                   <Image
                     src={user.headshot.url}
-                    alt={`${user.firstName} ${user.lastName}`}
+                    alt={user.headshot.title || `${user.firstName} ${user.lastName}`}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"

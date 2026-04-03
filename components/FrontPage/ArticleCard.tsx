@@ -43,7 +43,7 @@ export const ArticleCard = ({
           <div className={`relative w-full overflow-hidden ${imageAspectClassName}`}>
             <Image
               src={article.image}
-              alt={article.imageTitle || article.title}
+              alt={article.imageTitle || ""}
               fill
               className="object-cover"
               sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 380px"
@@ -54,7 +54,7 @@ export const ArticleCard = ({
           caption={caption}
           photographer={article.imagePhotographer}
           photographerId={article.imagePhotographerId}
-          className="mt-1.5"
+          className="mt-2"
         />
       </figure>
     )}
@@ -92,7 +92,7 @@ export const ArticleCard = ({
           <div className={`relative w-full overflow-hidden ${imageAspectClassName}`}>
             <Image
               src={article.image}
-              alt={article.imageTitle || article.title}
+              alt={article.imageTitle || ""}
               fill
               className="object-cover"
               sizes="220px"
@@ -103,7 +103,7 @@ export const ArticleCard = ({
           caption={caption}
           photographer={article.imagePhotographer}
           photographerId={article.imagePhotographerId}
-          className="mt-1.5"
+          className="mt-2"
         />
       </figure>
     )}

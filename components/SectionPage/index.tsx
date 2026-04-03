@@ -75,7 +75,7 @@ function ColumnCard({
           <div className="relative w-full aspect-[3/2]">
             <Image
               src={article.image}
-              alt={article.title}
+              alt={article.imageTitle || ""}
               fill
               className="object-cover"
               sizes="(max-width: 768px) 100vw, (max-width: 1280px) 33vw, 420px"

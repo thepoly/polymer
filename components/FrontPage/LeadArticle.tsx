@@ -75,7 +75,7 @@ export const LeadArticle = ({
                         >
                             <Image
                                 src={article.imageFull || article.image!}
-                                alt={article.imageTitle || article.title}
+                                alt={article.imageTitle || ""}
                                 fill
                                 className="object-cover"
                                 priority

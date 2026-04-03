@@ -34,7 +34,7 @@ function OpinionCard({ article, withImage = false, priority = false }: { article
         <div className="relative overflow-hidden mb-3 -mx-4 w-auto sm:mx-0 sm:w-full" style={{ aspectRatio: "3/2" }}>
           <Image
             src={article.image}
-            alt={article.title}
+            alt={article.imageTitle || ""}
             fill
             className="object-cover"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -353,7 +353,7 @@ export default function OpinionSectionPage({
                       <div className="relative overflow-hidden mb-3 -mx-4 w-auto sm:mx-0 sm:w-full" style={{ aspectRatio: "3/2" }}>
                         <Image
                           src={article.image}
-                          alt={article.title}
+                          alt={article.imageTitle || ""}
                           fill
                           className="object-cover"
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw"

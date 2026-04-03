@@ -134,7 +134,7 @@ export function SectionBlock({
   return (
     <section data-section={sectionSlug}>
       <div className="mb-3">
-        <div className="relative -left-2 w-[calc(100%+0.5rem)] border-t border-black dark:border-white" />
+        <div className="relative -left-2 w-[calc(100%+0.5rem)] border-t border-rule md:border-black md:dark:border-white transition-colors" />
         <h2 className="mt-4 md:mt-2">
           <Link
             href={`/${sectionSlug}`}

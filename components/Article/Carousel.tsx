@@ -27,7 +27,7 @@ export function Carousel({ images }: Props) {
             >
               <Image
                 src={(image.sizes?.gallery?.url) || image.url!}
-                alt={image.title || image.alt || caption || ''}
+                alt={image.title || ""}
                 fill
                 sizes="(max-width: 768px) 80vw, 40vw"
                 quality={70}
