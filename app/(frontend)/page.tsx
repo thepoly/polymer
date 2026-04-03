@@ -344,10 +344,10 @@ export default async function Home() {
 
   // Shared section blocks for all skeletons
   const sectionBlocks = (
-    <div className="relative z-[0] mt-[21.33px] md:mt-6 flex flex-col gap-[10.66px] lg:gap-6">
+    <div className="relative z-[0] md:mt-6 flex flex-col gap-0 lg:gap-6">
       {newsArticles.length > 0 && (
         <div>
-          <DynamicSectionHeader title="News" href="/news" mobileOffsetY={1} />
+          <DynamicSectionHeader title="News" href="/news" />
           <SectionBlock title="News" articles={newsArticles} />
         </div>
       )}
@@ -386,7 +386,7 @@ export default async function Home() {
         <Header />
         <div className="w-full bg-bg-main text-text-main transition-colors duration-300">
           <div className="mx-auto max-w-[1280px] px-4 pb-14 md:px-6 xl:px-[30px]">
-            <div data-frontpage-top className="pt-4 md:pt-7">
+            <div data-frontpage-top className="pt-5 md:pt-7">
               <GridLayout rows={gridRows} articleMap={gridArticleMap} />
             </div>
             {sectionBlocks}
