@@ -344,7 +344,7 @@ export default async function Home() {
 
   // Shared section blocks for all skeletons
   const sectionBlocks = (
-    <div className="relative z-[0] mt-16 md:mt-6 flex flex-col gap-8 lg:gap-6">
+    <div className="relative z-[0] mt-[21.33px] md:mt-6 flex flex-col gap-[10.66px] lg:gap-6">
       {newsArticles.length > 0 && (
         <div>
           <DynamicSectionHeader title="News" href="/news" mobileOffsetY={1} />
