@@ -101,7 +101,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center text-center px-4 pb-8 sm:pb-10 md:pb-12 pointer-events-none">
           <div className="max-w-[90vw] w-full space-y-1">
             
-            <h1 data-ie-field="title" className={`font-copy font-bold text-[43px] md:text-[38px] lg:text-[47px] text-white leading-[1.05] tracking-[-0.02em] drop-shadow-lg ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""} pointer-events-auto`}>
+            <h1 data-ie-field="title" className={`font-copy font-bold text-[43px] md:text-[38px] lg:text-[47px] text-white leading-[1.05] tracking-[-0.02em] drop-shadow-lg ${article.section === "opinion" ? "font-light" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""} pointer-events-auto`}>
               {article.title}
             </h1>
 
