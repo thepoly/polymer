@@ -30,23 +30,19 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
     : undefined;
 
   React.useEffect(() => {
-    document.documentElement.style.overscrollBehaviorY = 'none';
-    document.body.style.overscrollBehaviorY = 'none';
     document.documentElement.style.backgroundColor = '#000';
     
     return () => {
-      document.documentElement.style.overscrollBehaviorY = '';
-      document.body.style.overscrollBehaviorY = '';
       document.documentElement.style.backgroundColor = '';
     };
   }, []);
 
   return (
     <>
-      <div className="relative w-full h-screen mb-10 bg-black text-white overflow-hidden">
+      <div className="relative w-full h-screen mb-10 bg-black text-white">
         {/* Background Image Layer (z-0) */}
         {featuredImage?.url && (
-          <div className="absolute inset-0 w-full h-full z-0">
+          <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
             <Image
               src={(featuredImage as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || featuredImage.url}
               alt={featuredImage.title || ""}
@@ -105,7 +101,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center text-center px-4 pb-8 sm:pb-10 md:pb-12 pointer-events-none">
           <div className="max-w-[90vw] w-full space-y-1">
             
-            <h1 data-ie-field="title" className={`font-copy font-bold text-[43px] md:text-[38px] lg:text-[47px] text-white leading-[1.05] tracking-[-0.02em] drop-shadow-lg ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""}`}>
+            <h1 data-ie-field="title" className={`font-copy font-bold text-[43px] md:text-[38px] lg:text-[47px] text-white leading-[1.05] tracking-[-0.02em] drop-shadow-lg ${article.section === "features" ? "font-normal italic" : ""} ${article.section === "sports" ? "italic tracking-[0.015em]" : ""} pointer-events-auto`}>
               {article.title}
             </h1>
 
@@ -181,7 +177,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
 
             {article.subdeck && (
               <div className="flex flex-col items-center">
-                <h2 data-ie-field="subdeck" className="font-meta text-xl md:text-2xl font-normal text-white/90 leading-snug max-w-3xl drop-shadow-md">
+                <h2 data-ie-field="subdeck" className="font-meta text-xl md:text-2xl font-normal text-white/90 leading-snug max-w-3xl drop-shadow-md pointer-events-auto">
                   {article.subdeck}
                 </h2>
               </div>
