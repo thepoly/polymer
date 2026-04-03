@@ -491,3 +491,14 @@ html.standalone-pwa body::after {
   animation: archive-dot-shift 3s linear infinite;
   box-shadow: 0 0 12px rgba(255, 106, 106, 0.2);
 }
+
+/* Hide image captions on the home page (issue #80) */
+.homepage-zodiac .image-caption-text,
+.homepage-zodiac .image-caption-space {
+  display: none;
+}
+
+/* Hide the container entirely if there's no photographer, to avoid empty mt-2 space */
+.homepage-zodiac .image-caption-container:not(:has(.image-caption-photographer)) {
+  display: none;
+}
