@@ -67,6 +67,9 @@ export default function FooterClient({ volume, edition }: { volume?: number | nu
               {`Vol. ${volume ? toRoman(volume) : '0'} No. ${edition ?? 0}`}
             </span>
           </div>
+          <Link href="/copyright" className="font-copy text-[11px] text-text-muted text-center leading-relaxed underline underline-offset-2 hover:text-accent transition-colors">
+            &copy; {new Date().getFullYear()} The Rensselaer Polytechnic. All rights reserved.
+          </Link>
         </div>
       </div>
     </footer>

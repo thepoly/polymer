@@ -19,29 +19,29 @@ export default function PrivacyPage() {
             <span className="text-[#b7d7f5] dark:text-[#b7d7f5]">Policy</span>
           </h1>
           <p className="font-copy text-xl italic leading-relaxed text-text-main dark:text-[#CCCCCC] mt-3 transition-colors">
-            Last updated March 29, 2026.
+            Last updated April 4, 2026.
           </p>
         </div>
         <div className="space-y-5 font-copy text-xl leading-relaxed text-text-main dark:text-[#CCCCCC] transition-colors">
           <p>
             We are The Polytechnic, RPI&apos;s student newspaper. We take seriously both the trust
-            you place in us when you read our work and the responsibility that comes with running a
+            you place in us when you read our work and the responsibility that comes with running our
             website.
           </p>
           <p>
-            When you visit poly.rpi.edu, we do not store your IP address. We use two functional
-            cookies across our entire site, both expiring after a year. One remembers your dark or
-            light mode preference. Another remembers whether you have seen our homepage dark mode
-            prompt, so we do not show it to you again.
+            When you visit poly.rpi.edu, we do not store any personally identifying information. We
+            do not store your IP address. We use two functional cookies across our entire site, both
+            expiring after a year. One remembers your dark or light mode preference. Another
+            remembers whether you have seen our homepage dark mode prompt, so we do not show it to
+            you again.
           </p>
           <p>
             We have no advertising partners and do not share anything with data brokers or marketing
             platforms. We link to outside sites from time to time; we&apos;re not responsible for
             what they do. If you are a Polytechnic staff member who logs into the CMS, our
-            publishing platform sets a session cookie to keep you logged in, which expires after a
-            period of inactivity — and our analytics system identifies you by name, email, and role
-            for editorial and operational purposes. This identification persists across visits in
-            your browser until you explicitly log out of the CMS.
+            publishing platform sets a session cookie to keep you logged in, which expires when you
+            log out — and our analytics system identifies you by name, email, and role for editorial
+            and operational purposes.
           </p>
           <p>
             Our analytics are session-only. A temporary anonymous identifier is created when you
@@ -67,8 +67,7 @@ export default function PrivacyPage() {
           </p>
           <p>
             We will disclose information if legally required to do so, and will update this page if
-            our privacy practices change. All content on this site is the property of The
-            Polytechnic and may not be reproduced without written permission.
+            our privacy practices change.
           </p>
           <p>
             Questions? Reach out to us at{' '}
