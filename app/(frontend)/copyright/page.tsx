@@ -28,7 +28,7 @@ export default function CopyrightPage() {
             It may not be reproduced, distributed, or republished without prior written permission.
           </p>
           <p>
-            Links to external websites are provided for readers&apos; convenience. The staff of the
+            Links to external websites are provided for readers&apos; convenience. The staff of the{' '}
             <i>Rensselaer Polytechnic</i> was not involved in producing that content and are not responsible
             for it.
           </p>
