@@ -30,10 +30,11 @@ export default function PrivacyPage() {
           </p>
           <p>
             When you visit poly.rpi.edu, we do not store any personally identifying information. We
-            do not store your IP address. We use two functional cookies across our entire site, both
-            expiring after a year. One remembers your dark or light mode preference. Another
-            remembers whether you have seen our homepage dark mode prompt, so we do not show it to
-            you again.
+            do not retain your IP address. It is used transiently to derive approximate location
+            (city and country) and is not stored after that lookup. We use two functional cookies
+            across our entire site, both expiring after a year. One remembers your dark or light
+            mode preference. Another remembers whether you have seen our homepage dark mode prompt,
+            so we do not show it to you again.
           </p>
           <p>
             We have no advertising partners and do not share anything with data brokers or marketing
@@ -51,12 +52,11 @@ export default function PrivacyPage() {
           <p>
             These analytics are run through PostHog to understand how people use the site. That
             means we collect things like which articles get read, how search gets used, what device
-            and browser you&apos;re on, roughly where in the world you are (city and country,
-            derived from your IP), which links you click, and how long you spend reading. If you
-            copy text from an article, that text is also captured as an event. Analytics traffic is
-            proxied through our own servers before reaching PostHog Cloud, which derives geolocation
-            from your IP server-side but does not store it as part of any event record. PostHog does
-            not use any of this for advertising or cross-site profiling,{' '}
+            and browser you&apos;re on, roughly where in the world you are (city and country),
+            which links you click, and how long you spend reading. If you copy text from an article,
+            that text is also captured as an event. Analytics traffic is proxied through our own
+            servers before reaching PostHog Cloud. PostHog does not use any of this for advertising
+            or cross-site profiling,{' '}
             <a
               href="https://posthog.com/privacy"
               className="text-accent underline underline-offset-2 transition-colors"
