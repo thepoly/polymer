@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { extractTextFromLexical } from '@/utils/formatArticle';
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import { Pool } from "pg";
@@ -82,7 +83,7 @@ async function getCorpus(): Promise<Map<string, number>> {
       },
     });
     for (const doc of docs) {
-      for (const w of extractWords(doc.title)) {
+      for (const w of extractWords(typeof doc.title === 'string' ? doc.title : extractTextFromLexical(doc.title))) {
         corpus.set(w, (corpus.get(w) || 0) + 1);
       }
     }

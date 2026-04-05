@@ -1,5 +1,6 @@
 import { Media } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
+import React from 'react';
 
 type PublicAuthorLike = {
   firstName: string;
@@ -25,7 +26,7 @@ type WriteInAuthor = {
 type FormatArticleInput = {
   id: number | string;
   slug?: string | null;
-  title: string;
+  title: unknown;
   subdeck?: string | null;
   featuredImage?: number | PublicMediaLike | null;
   imageCaption?: string | null;
@@ -39,6 +40,36 @@ type FormatArticleInput = {
   _status?: string | null;
   isFollytechnic?: boolean | null;
 };
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+export function extractTextFromLexical(node: any): string {
+  if (!node) return '';
+  if (typeof node === 'string') return node;
+  if (node.root) return extractTextFromLexical(node.root);
+  if (Array.isArray(node.children)) {
+    return node.children.map(extractTextFromLexical).join('');
+  }
+  if (node.type === 'text') return node.text || '';
+  return '';
+}
+
+export function renderLexicalHeadline(node: any): React.ReactNode {
+  if (!node) return null;
+  if (typeof node === 'string') return node;
+  if (node.root) return renderLexicalHeadline(node.root);
+  if (Array.isArray(node.children)) {
+    return React.createElement(React.Fragment, null, ...node.children.map((child: any, i: number) => React.createElement(React.Fragment, { key: i }, renderLexicalHeadline(child))));
+  }
+  if (node.type === 'text') {
+    let el: React.ReactNode = node.text;
+    if (typeof node.format === 'number') {
+      if (node.format & 1) el = React.createElement('strong', { key: 'b' }, el);
+      if (node.format & 2) el = React.createElement('em', { key: 'i' }, el);
+    }
+    return el;
+  }
+  return null;
+}
 
 export const formatArticle = (
   article: FormatArticleInput | number | null | undefined,
@@ -102,7 +133,8 @@ export const formatArticle = (
   return {
     id: article.id,
     slug: article.slug || '#',
-    title: article.title,
+    title: extractTextFromLexical(article.title),
+    richTitle: renderLexicalHeadline(article.title),
     excerpt: article.subdeck || '',
     author: authors ? authors.toUpperCase() : 'THE POLY',
     date: dateString,

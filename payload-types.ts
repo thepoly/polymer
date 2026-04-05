@@ -295,7 +295,21 @@ export interface Logo {
 export interface Article {
   id: number;
   section: 'news' | 'sports' | 'features' | 'opinion';
-  title: string;
+  title: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
   kicker?: string | null;
   subdeck?: string | null;
   opinionType?:

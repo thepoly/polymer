@@ -25,6 +25,7 @@ import * as migration_20260401_000000_add_theme_and_logos from './20260401_00000
 import * as migration_20260401_010000_add_seo_global from './20260401_010000_add_seo_global';
 import * as migration_20260402_000000_add_staff_page_layout from './20260402_000000_add_staff_page_layout';
 import * as migration_20260402_100000_add_media_title from './20260402_100000_add_media_title';
+import * as migration_20260405_000000_migrate_title_to_richtext from './20260405_000000_migrate_title_to_richtext';
 
 export const migrations = [
   {
@@ -161,5 +162,10 @@ export const migrations = [
     up: migration_20260402_100000_add_media_title.up,
     down: migration_20260402_100000_add_media_title.down,
     name: '20260402_100000_add_media_title',
+  },
+  {
+    up: migration_20260405_000000_migrate_title_to_richtext.up,
+    down: migration_20260405_000000_migrate_title_to_richtext.down,
+    name: '20260405_000000_migrate_title_to_richtext',
   },
 ];

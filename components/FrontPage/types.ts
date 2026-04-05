@@ -1,7 +1,10 @@
+import React from 'react';
+
 export interface Article {
   id: number | string;
   slug: string;
   title: string;
+  richTitle?: React.ReactNode;
   excerpt: string;
   author: string | null;
   date: string | null;

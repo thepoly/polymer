@@ -1,4 +1,5 @@
 "use client";
+import { extractTextFromLexical } from '@/utils/formatArticle';
 
 import React, { useMemo } from "react";
 import Image from "next/image";
@@ -115,7 +116,7 @@ export default function OpinionSectionPage({
             user: author,
             count: 1,
             latestArticle: {
-              title: raw.title,
+              title: extractTextFromLexical(raw.title),
               url: getArticleUrl({
                 section: raw.section,
                 slug: raw.slug,

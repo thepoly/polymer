@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Article, Media, User } from '@/payload-types';
 import { opinionTypeLabels } from './opinionTypeLabels';
+import { renderLexicalHeadline } from '@/utils/formatArticle';
 import { ArticleByline } from '@/components/Article';
 
 type Props = {
@@ -42,7 +43,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
       {/* Title */}
       <div className="flex flex-col gap-4 max-w-[680px] w-full mx-auto">
         <h1 data-ie-field="title" className="font-copy font-light text-[39px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center">
-          {article.title}
+          {renderLexicalHeadline(article.title)}
         </h1>
       </div>
 

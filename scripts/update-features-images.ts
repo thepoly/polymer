@@ -1,3 +1,4 @@
+import { extractTextFromLexical } from '../utils/formatArticle';
 /**
  * Replace placeholder images on features articles with stock photos from Lorem Picsum.
  *
@@ -31,7 +32,7 @@ async function main() {
 
   for (let i = 0; i < articles.length; i++) {
     const article = articles[i];
-    const title = (article.title as string).slice(0, 50);
+    const title = extractTextFromLexical(article.title).slice(0, 50);
     console.log(`[${i + 1}/${articles.length}] "${title}..."`);
 
     try {
@@ -40,7 +41,7 @@ async function main() {
       const mediaDoc = await payload.create({
         collection: 'media',
         data: {
-          alt: `Stock photo for ${(article.title as string).slice(0, 40)}`,
+          alt: `Stock photo for ${extractTextFromLexical(article.title).slice(0, 40)}`,
         },
         file: {
           data: imgBuffer,

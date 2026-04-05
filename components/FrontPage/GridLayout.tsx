@@ -52,7 +52,7 @@ function GridArticleCard({
         data-marauders-title
         className={`relative z-[30] font-copy font-bold leading-[1.08] tracking-[-0.015em] text-text-main transition-colors [overflow-wrap:anywhere] break-words ${titleSize} ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
       >
-        {article.title}
+        {article.richTitle || article.title}
       </h3>
       <Byline author={article.author} date={article.date} split={isLarge} />
       {article.excerpt && (
@@ -170,7 +170,7 @@ function MobileArticleCard({ article }: { article: Article }) {
         data-marauders-title
         className={`relative z-[30] font-copy font-bold leading-[1.08] tracking-[-0.015em] text-text-main transition-colors [overflow-wrap:anywhere] break-words text-[26px] ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""} ${article.section === "opinion" ? "font-light" : ""}`}
       >
-        {article.title}
+        {article.richTitle || article.title}
       </h3>
       <Byline author={article.author} date={article.date} />
       {article.excerpt && (
