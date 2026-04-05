@@ -483,7 +483,7 @@ export interface FeaturesPageLayout {
 export interface StaffPageLayout {
   id: number;
   /**
-   * Only the most recently updated document is used on /staff2.
+   * Only the most recently updated document is used on /staff.
    */
   name: string;
   /**
