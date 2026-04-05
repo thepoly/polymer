@@ -1,5 +1,6 @@
 import React, { cache } from 'react';
 import { notFound } from 'next/navigation';
+import { extractTextFromLexical } from '@/utils/formatArticle';
 import { headers } from 'next/headers';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
@@ -182,21 +183,21 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
   const sectionName = section.charAt(0).toUpperCase() + section.slice(1);
   const seo = await getSeo();
   const description = article.subdeck || fillSeoTemplate(seo.templates.articleFallbackDescription, {
-    title: article.title,
+    title: extractTextFromLexical(article.title),
     section,
     sectionTitle: sectionName,
     siteName: seo.siteIdentity.siteName,
   });
 
   return {
-    title: `${sectionName} | ${article.title}`,
+    title: `${sectionName} | ${extractTextFromLexical(article.title)}`,
     description,
     authors: authors.map((name) => ({ name })),
     alternates: {
       canonical: canonicalPath,
     },
     openGraph: {
-      title: article.title,
+      title: typeof article.title === 'object' ? extractTextFromLexical(article.title) : article.title,
       description,
       type: 'article',
       url: canonicalPath,
@@ -210,7 +211,7 @@ export async function generateMetadata({ params }: Args): Promise<Metadata> {
     },
     twitter: {
       card: imageUrl ? 'summary_large_image' : 'summary',
-      title: article.title,
+      title: extractTextFromLexical(article.title),
       description,
       ...(imageUrl && { images: [imageUrl] }),
     },
@@ -275,7 +276,7 @@ export default async function ArticlePage({ params }: Args) {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'NewsArticle',
-    headline: article.title,
+    headline: extractTextFromLexical(article.title),
     ...(article.subdeck && { description: article.subdeck }),
     ...(image?.url && {
       image: [image.url],
@@ -321,11 +322,11 @@ export default async function ArticlePage({ params }: Args) {
         publishedDate={article.publishedDate || article.createdAt}
         section={article.section}
         slug={article.slug}
-        title={article.title}
+        title={extractTextFromLexical(article.title)}
         wordCount={wordCount}
         isStaff={isStaff}
       />
-      <ArticleScrollBar title={article.title} section={article.section} />
+      <ArticleScrollBar title={extractTextFromLexical(article.title)} section={article.section} />
       <LayoutComponent article={article as unknown as Article} content={cleanContent} />
       {canEdit && <InlineEditor articleId={article.id} />}
     </>

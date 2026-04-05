@@ -1,3 +1,4 @@
+import { extractTextFromLexical } from '../utils/formatArticle';
 /**
  * Seed 15 placeholder features articles with placeholder images.
  *
@@ -148,7 +149,8 @@ async function main() {
       await payload.create({
         collection: 'articles',
         data: {
-          title: article.title,
+          // @ts-expect-error script seeding can use string or basic object
+          title: extractTextFromLexical(article.title) as unknown as Record<string, unknown>,
           section: 'features',
           subdeck: article.subdeck,
           kicker: article.kicker,

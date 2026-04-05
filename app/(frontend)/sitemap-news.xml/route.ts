@@ -1,3 +1,4 @@
+import { extractTextFromLexical } from '@/utils/formatArticle';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
 import { getSeo } from '@/lib/getSeo';
@@ -36,7 +37,7 @@ export async function GET() {
     .map((doc) => {
       const url = `${siteUrl}${getArticleUrl(doc)}`;
       const pubDate = new Date(doc.publishedDate || doc.createdAt).toISOString();
-      const title = doc.title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const title = (typeof doc.title === 'string' ? doc.title : extractTextFromLexical(doc.title)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       return `  <url>
     <loc>${url}</loc>
     <news:news>

@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { lexicalEditor, BoldFeature, ItalicFeature } from '@payloadcms/richtext-lexical'
 import { getPostHogClient } from '../lib/posthog-server'
 
 const Articles: CollectionConfig = {
@@ -48,12 +49,26 @@ const Articles: CollectionConfig = {
 
         if (isNowPublished && !wasPublished) {
           const posthog = getPostHogClient()
+          
+          let plainTitle = '';
+          if (doc.title && typeof doc.title === 'object' && doc.title.root) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const extractText = (node: any): string => {
+              if (node.type === 'text') return node.text || '';
+              if (node.children) return node.children.map(extractText).join('');
+              return '';
+            };
+            plainTitle = extractText(doc.title.root);
+          } else if (typeof doc.title === 'string') {
+            plainTitle = doc.title;
+          }
+
           posthog?.capture({
             distinctId: String(req.user?.id || 'unknown'),
             event: 'article_published',
             properties: {
               article_id: doc.id,
-              article_title: doc.title,
+              article_title: plainTitle,
               article_section: doc.section,
               article_slug: doc.slug,
             },
@@ -93,7 +108,20 @@ const Articles: CollectionConfig = {
         }
 
         // Auto-generate slug from title if not set, or sanitize existing slug
-        const rawSlug = data.slug || data.title || ''
+        let plainTitle = '';
+        if (data.title && typeof data.title === 'object' && data.title.root) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const extractText = (node: any): string => {
+            if (node.type === 'text') return node.text || '';
+            if (node.children) return node.children.map(extractText).join('');
+            return '';
+          };
+          plainTitle = extractText(data.title.root);
+        } else if (typeof data.title === 'string') {
+          plainTitle = data.title;
+        }
+
+        const rawSlug = data.slug || plainTitle || ''
         if (rawSlug) {
           data.slug = rawSlug
             .toLowerCase()
@@ -120,7 +148,17 @@ const Articles: CollectionConfig = {
       ],
       required: true,
     },
-    { name: 'title', type: 'text', required: true },
+    {
+      name: 'title',
+      type: 'richText',
+      required: true,
+      editor: lexicalEditor({
+        features: ({ defaultFeatures }) => [
+          BoldFeature(),
+          ItalicFeature(),
+        ],
+      }),
+    },
     {
       name: 'kicker',
       type: 'text',

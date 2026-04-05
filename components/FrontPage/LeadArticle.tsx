@@ -45,7 +45,7 @@ export const LeadArticle = ({
                         compact ? "text-[29px] md:text-[29px] xl:text-[31px]" : "text-[32px] md:text-[33px] xl:text-[36px]"
                     } ${article.section === "features" ? (compact ? "text-[30px] md:text-[30px] xl:text-[32px]" : "text-[33px] md:text-[34px] xl:text-[37px]") : ""} ${article.section === "news" ? (compact ? "text-[31px] md:text-[31px] xl:text-[33px]" : "text-[34px] md:text-[35px] xl:text-[39px]") : ""}`}
                 >
-                    {article.title}
+                    {article.richTitle || article.title}
                 </h3>
                 <Byline author={article.author} date={getLeadDate(article)} split />
                 {article.excerpt && (

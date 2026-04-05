@@ -1,4 +1,5 @@
 'use client';
+import { renderLexicalHeadline } from '@/utils/formatArticle';
 
 import React, { useState } from 'react';
 import Image from 'next/image';
@@ -102,7 +103,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
           <div className="max-w-[90vw] w-full space-y-1">
             
             <h1 data-ie-field="title" className={`font-copy font-bold text-[43px] md:text-[38px] lg:text-[47px] text-white leading-[1.05] tracking-[-0.02em] drop-shadow-lg ${article.section === "opinion" ? "font-light" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""} pointer-events-auto`}>
-              {article.title}
+              {renderLexicalHeadline(article.title)}
             </h1>
 
             {/* Author and Date */}

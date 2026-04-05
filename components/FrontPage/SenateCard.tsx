@@ -12,7 +12,7 @@ export const SenateCard = ({ article }: { article: Article }) => (
                 <span className="font-meta text-accent dark:text-[#d96b76] font-[440] italic capitalize text-[11px] md:text-[12px] tracking-[0.04em] transition-colors">Student Senate</span>
             </div>
             <h3 className={`font-copy font-bold text-[24px] md:text-[30px] text-text-main mb-3 leading-[1.06] tracking-[-0.018em] transition-colors ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[25px] md:text-[31px]" : ""}`}>
-                {article.title}
+                {article.richTitle || article.title}
             </h3>
              <Byline author={article.author} date={article.date} />
             <p className="font-meta text-text-main text-[13px] font-normal leading-[1.4] mb-3 transition-colors">

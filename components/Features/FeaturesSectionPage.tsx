@@ -78,7 +78,7 @@ function FeaturesCard({
         className="font-copy font-medium leading-[1.12] text-text-main transition-colors group-hover:text-accent"
         style={{ fontSize: large ? 34 : 20 }}
       >
-        {article.title}
+        {article.richTitle || article.title}
       </h3>
       <Byline
         author={article.author}
@@ -645,7 +645,7 @@ export default function FeaturesSectionPage({
                   className="font-copy font-medium leading-[1.12] text-text-main transition-colors group-hover:text-accent"
                   style={{ fontSize: 28 }}
                 >
-                  {wideArticle[0].title}
+                  {wideArticle[0].richTitle || wideArticle[0].title}
                 </h2>
                 <Byline author={wideArticle[0].author} date={wideArticle[0].date} variant="features" className="mt-2 text-[13px]" />
                 {wideArticle[0].excerpt && (
@@ -809,7 +809,7 @@ export default function FeaturesSectionPage({
                 </span>
               )}
               <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors group-hover:text-accent">
-                {article.title}
+                {article.richTitle || article.title}
               </h3>
               <Byline author={article.author} variant="features" className="mt-2 text-[13px]" />
             </TransitionLink>

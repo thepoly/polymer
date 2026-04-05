@@ -83,7 +83,7 @@ async function searchPayload(queryFormsLower: string[], page: number, pageSize: 
   });
 
   const articles = result.docs
-    .map((doc) => formatArticle(doc as PayloadSearchArticle, { absoluteDate: true }))
+    .map((doc) => formatArticle(doc as unknown as Parameters<typeof formatArticle>[0], { absoluteDate: true }))
     .filter((a): a is Article => a !== null);
 
   return {

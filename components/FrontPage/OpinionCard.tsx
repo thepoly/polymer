@@ -22,7 +22,7 @@ export const OpinionCard = ({ article, hasImage }: { article: Article, hasImage?
           {article.section}
         </p>
         <h3 className={`font-copy mb-1 text-[24px] md:text-[26px] font-bold leading-[1.04] text-text-main transition-colors ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[25px] md:text-[27px]" : ""}`}>
-            {article.title}
+            {article.richTitle || article.title}
         </h3>
         <Byline author={article.author} date={article.date} />
         {hasImage && article.excerpt && (

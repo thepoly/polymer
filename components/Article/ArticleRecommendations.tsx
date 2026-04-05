@@ -1,3 +1,4 @@
+import { extractTextFromLexical } from '@/utils/formatArticle';
 import React from 'react';
 import Image from 'next/image';
 import { getPayload } from 'payload';
@@ -148,7 +149,7 @@ const toPublicRecommendationAuthor = (author: User): RecommendationAuthor => ({
 
 const toPublicRecommendationArticle = (article: Article): RecommendationArticle => ({
   id: article.id,
-  title: article.title,
+  title: extractTextFromLexical(article.title),
   slug: article.slug,
   subdeck: article.subdeck,
   section: article.section,

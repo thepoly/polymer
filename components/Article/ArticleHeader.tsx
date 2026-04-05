@@ -2,6 +2,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Article, Media, User } from '@/payload-types';
+import { renderLexicalHeadline } from '@/utils/formatArticle';
 import { ArticleByline } from './ArticleByline';
 
 type Props = {
@@ -24,7 +25,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
             </span>
         )}
         <h1 data-ie-field="title" className={`font-bold text-[39px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em] transition-colors font-copy ${article.section === "opinion" ? "font-light" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""}`}>
-          {article.title}
+          {renderLexicalHeadline(article.title)}
         </h1>
         {article.subdeck && (
             <h2 data-ie-field="subdeck" className="font-meta text-xl md:text-2xl font-normal text-text-muted leading-snug transition-colors">

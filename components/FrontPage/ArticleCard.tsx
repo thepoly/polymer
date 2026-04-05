@@ -69,7 +69,7 @@ export const ArticleCard = ({
           data-marauders-title
           className={`relative z-[30] font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors [overflow-wrap:anywhere] break-words font-copy ${article.section === "opinion" ? "font-light" : ""} ${titleClassName} ${article.section === "news" ? "text-[23px] md:text-[25px]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[23px] md:text-[25px]" : ""}`}
         >
-          {article.title}
+          {article.richTitle || article.title}
         </h3>
         <Byline author={article.author} date={article.date} />
         {showExcerpt && article.excerpt && (

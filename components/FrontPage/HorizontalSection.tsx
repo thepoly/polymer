@@ -63,7 +63,7 @@ export const LeadStory = ({
     <h3
       className={`font-copy font-bold leading-[0.97] tracking-[-0.02em] text-text-main transition-colors ${titleClassName} ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[24px] md:text-[28px]" : ""}`}
     >
-      {article.title}
+      {article.richTitle || article.title}
     </h3>
     <Byline author={article.author} date={article.date} />
     {article.excerpt ? (
@@ -88,7 +88,7 @@ export const TextStory = ({
     <h3
       className={`font-copy font-bold leading-[1.04] tracking-[-0.015em] text-text-main transition-colors ${titleClassName} ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[22px] md:text-[24px]" : ""}`}
     >
-      {article.title}
+      {article.richTitle || article.title}
     </h3>
     <Byline author={article.author} date={article.date} />
     {showExcerpt && article.excerpt ? (
@@ -119,7 +119,7 @@ export const ThumbStory = ({
       <h3
         className={`font-copy font-bold leading-[1.04] tracking-[-0.015em] text-text-main transition-colors ${titleClassName} ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[22px] md:text-[24px]" : ""}`}
       >
-        {article.title}
+        {article.richTitle || article.title}
       </h3>
       <Byline author={article.author} date={article.date} />
       {showExcerpt && article.excerpt ? (
@@ -161,7 +161,7 @@ const SparseSection = ({
     <div>
       <StoryKicker section={lead.section} />
       <h3 className={`font-copy text-[24px] font-bold leading-[1.08] tracking-[-0.018em] text-text-main transition-colors md:text-[28px] ${lead.section === "news" ? "!text-[1.2em]" : ""} ${lead.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${lead.section === "features" ? "font-light text-[25px] md:text-[29px]" : ""}`}>
-        {lead.title}
+        {lead.richTitle || lead.title}
       </h3>
       <Byline author={lead.author} date={lead.date} />
       {lead.excerpt ? (
@@ -336,7 +336,7 @@ const SportsSection = ({ articles }: { articles: Article[] }) => {
             <div>
               <StoryKicker section={lead.section} />
               <h3 className={`font-copy text-[20px] font-bold leading-[1.08] tracking-[-0.018em] text-text-main transition-colors md:text-[24px] ${lead.section === "news" ? "!text-[1.2em]" : ""} ${lead.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${lead.section === "features" ? "font-light text-[21px] md:text-[25px]" : ""}`}>
-                {lead.title}
+                {lead.richTitle || lead.title}
               </h3>
               <Byline author={lead.author} date={lead.date} />
               {lead.excerpt ? (

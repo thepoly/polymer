@@ -1,3 +1,4 @@
+import { renderLexicalHeadline } from '@/utils/formatArticle';
 import React from 'react'
 import Link from 'next/link'
 import type { Article, User } from '@/payload-types.ts'
@@ -20,7 +21,7 @@ export const TodoRow = ({ article }: { article: Article }) => {
       className={`todo-row ${isPublished ? 'published' : 'draft'}`}
     >
       <div className="todo-col-main">
-        <span className="todo-title">{article.title || 'Untitled'}</span>
+        <span className="todo-title">{renderLexicalHeadline(article.title) || 'Untitled'}</span>
         <span className="todo-meta">
            {article.section} • {article.authors?.map((a) => (a as User).firstName).join(', ')}
         </span>
