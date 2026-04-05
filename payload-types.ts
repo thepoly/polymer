@@ -966,6 +966,35 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
 export interface Theme {
   id: number;
   /**
+   * Controls the animated wave effect on the header rule line during page transitions.
+   */
+  headerAnimation?: {
+    /**
+     * First gradient stop for the wave effect.
+     */
+    waveColor1?: string | null;
+    /**
+     * Second gradient stop for the wave effect.
+     */
+    waveColor2?: string | null;
+    /**
+     * Third gradient stop for the wave effect.
+     */
+    waveColor3?: string | null;
+    /**
+     * How many wave lines animate across the header (1-8).
+     */
+    waveCount?: number | null;
+    /**
+     * Stroke width of the wave and rule lines (0.5-4).
+     */
+    lineWeight?: number | null;
+    /**
+     * When enabled, the animation traces around the logo outline before shooting across.
+     */
+    wrapAround?: boolean | null;
+  };
+  /**
    * Upload or choose replacement logos for each theme and breakpoint combination. Leave blank to fall back to the static public assets.
    */
   logos?: {
@@ -1261,6 +1290,16 @@ export interface Seo {
  * via the `definition` "theme_select".
  */
 export interface ThemeSelect<T extends boolean = true> {
+  headerAnimation?:
+    | T
+    | {
+        waveColor1?: T;
+        waveColor2?: T;
+        waveColor3?: T;
+        waveCount?: T;
+        lineWeight?: T;
+        wrapAround?: T;
+      };
   logos?:
     | T
     | {

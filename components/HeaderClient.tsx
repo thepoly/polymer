@@ -15,22 +15,24 @@ import {
 } from "@/components/headerAnimationRoutes";
 // import MaraudersFootsteps from "@/components/MaraudersFootsteps";
 import { useTheme } from "@/components/ThemeProvider";
-import type { ThemeLogoSrcs } from "@/lib/getTheme";
+import type { ThemeLogoSrcs, HeaderAnimationConfig } from "@/lib/getTheme";
 const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
 
 // Header wave fleet: waves fan out from a single start point, converge back at the end.
 const HEADER_WAVE_LAMBDA = 320;
 const HEADER_WAVE_SVG_H = 16;
 const HEADER_WAVE_CONVERGE = 4 * HEADER_WAVE_LAMBDA; // 1280px — where waves fully pinch
-const HEADER_WAVE_FLEET = (() => {
+
+function generateWaveFleet(count: number) {
   const half = HEADER_WAVE_LAMBDA / 2;
   const cp = Math.round(0.3642 * half);
   const baseline = HEADER_WAVE_SVG_H / 2;
   const startX = -4;
   const rampUp = HEADER_WAVE_LAMBDA * 0.6;
   const rampDown = HEADER_WAVE_LAMBDA * 1.2;
+  const convergeEndX = startX + HEADER_WAVE_CONVERGE;
+  const maxHalves = Math.ceil(HEADER_WAVE_CONVERGE / half) + 2;
 
-  // Envelope: 0 at start, ramps to 1, back to 0 at converge point, stays 0 after
   const envelope = (x: number) => {
     const t = x - startX;
     if (t <= 0) return 0;
@@ -40,45 +42,36 @@ const HEADER_WAVE_FLEET = (() => {
     return 0;
   };
 
-  const specs = [
-    { cy: 2,    A: 3.2, opacity: 0.4,  delay: 0.10 },
-    { cy: 6,    A: 4.0, opacity: 0.7,  delay: 0.05 },
-    { cy: 10,   A: 4.6, opacity: 1,    delay: 0 },
-    { cy: 14,   A: 3.2, opacity: 0.4,  delay: 0.08 },
-  ];
+  const n = Math.max(1, Math.min(8, Math.round(count)));
+  const margin = 1.5;
+  const usableH = HEADER_WAVE_SVG_H - 2 * margin;
 
-  const convergeEndX = startX + HEADER_WAVE_CONVERGE;
-  // Generate enough half-periods to reach past the convergence, then truncate
-  const maxHalves = Math.ceil(HEADER_WAVE_CONVERGE / half) + 2;
+  const specs = Array.from({ length: n }, (_, i) => {
+    const t = n === 1 ? 0.5 : i / (n - 1);
+    const cy = margin + t * usableH;
+    const dist = Math.abs(t - 0.5) * 2; // 0 at center, 1 at edges
+    return { cy, A: 4.6 - dist * 1.4, opacity: 1 - dist * 0.6, delay: dist * 0.1 };
+  });
 
   return specs.map(({ cy, A, opacity, delay }) => {
     let d = `M ${startX},${baseline}`;
-
-    for (let n = 0; n < maxHalves; n++) {
-      const x0 = startX + n * half;
-      const x1 = startX + (n + 1) * half;
-
-      // Stop once we've passed the convergence point
+    for (let k = 0; k < maxHalves; k++) {
+      const x0 = startX + k * half;
+      const x1 = startX + (k + 1) * half;
       if (x0 >= convergeEndX) break;
-
       const e0 = envelope(x0);
       const e1 = envelope(x1);
       const eMid = envelope((x0 + x1) / 2);
-
       const y0 = baseline + (cy - baseline) * e0;
       const y1 = baseline + (cy - baseline) * e1;
       const peakA = A * eMid;
-      const sign = n % 2 === 0 ? -1 : 1;
-
+      const sign = k % 2 === 0 ? -1 : 1;
       d += ` C ${x0 + cp},${y0 + sign * peakA} ${x1 - cp},${y1 + sign * peakA} ${x1},${y1}`;
     }
-
-    // Snap to the exact convergence point on the baseline
     d += ` L ${convergeEndX},${baseline}`;
-
     return { d, opacity, delay };
   });
-})();
+}
 
 function formatCurrentDate() {
   return new Date().toLocaleDateString("en-US", {
@@ -123,7 +116,16 @@ function triggerThemeTransition(x: number, y: number, apply: () => void) {
 
 export type HeaderLogoSrcs = ThemeLogoSrcs
 
-export default function Header({ compact = false, mobileTight = false, logoSrcs, volume, edition }: { compact?: boolean; mobileTight?: boolean; logoSrcs?: HeaderLogoSrcs; volume?: number | null; edition?: number | null }) {
+const DEFAULT_HEADER_ANIMATION: HeaderAnimationConfig = {
+  waveColor1: '#0044ff',
+  waveColor2: '#0088ff',
+  waveColor3: '#38bdf8',
+  waveCount: 4,
+  lineWeight: 1,
+  wrapAround: false,
+};
+
+export default function Header({ compact = false, mobileTight = false, logoSrcs, headerAnimation = DEFAULT_HEADER_ANIMATION, volume, edition }: { compact?: boolean; mobileTight?: boolean; logoSrcs?: HeaderLogoSrcs; headerAnimation?: HeaderAnimationConfig; volume?: number | null; edition?: number | null }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
   const [showDarkModePrompt, setShowDarkModePrompt] = useState(false);
@@ -138,11 +140,13 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
   const shouldEnableAnimatedHeaderTransition =
     phase !== "idle" || shouldRenderAnimatedHeader(currentPath);
   const logoOutlineLeftX = -4;
+  const logoBaselineY = 0.5;
   const logoOutlineRightX = 464;
   const logoOutlineTopY = -89.5;
-  const logoBaselineY = 0.5;
-  const shootWrapPathLength = (logoOutlineRightX - logoOutlineLeftX) + (logoBaselineY - logoOutlineTopY) * 2;
-  const shootWrapPathD = `M ${logoOutlineRightX} ${logoBaselineY} V ${logoOutlineTopY} H ${logoOutlineLeftX} V ${logoBaselineY}`;
+  const { waveColor1, waveColor2, waveColor3, waveCount, lineWeight, wrapAround } = headerAnimation;
+  const waveFleet = generateWaveFleet(waveCount);
+  const shootWrapPathLength = wrapAround ? (logoOutlineRightX - logoOutlineLeftX) + (logoBaselineY - logoOutlineTopY) * 2 : 0;
+  const shootWrapPathD = wrapAround ? `M ${logoOutlineRightX} ${logoBaselineY} V ${logoOutlineTopY} H ${logoOutlineLeftX} V ${logoBaselineY}` : '';
 
   const openSearchOverlay = () => {
     setIsSearchOverlayOpen(true);
@@ -368,6 +372,15 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
         {!compact && (
           <div className="mx-auto max-w-[1280px] px-4 pt-6 md:px-6 xl:px-[30px]">
             <style dangerouslySetInnerHTML={{__html: `
+              @keyframes terrySuck {
+                from { transform: scaleX(1); opacity: 1; }
+                to { transform: scaleX(0); opacity: 1; }
+              }
+              .animate-terry-suck {
+                animation: terrySuck ${suckDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+                transform-origin: 468px 0.5px;
+              }
+              ${wrapAround ? `
               @keyframes terryWrapDraw {
                 0% { stroke-dashoffset: ${shootWrapPathLength}; }
                 35% { stroke-dashoffset: 0; }
@@ -381,17 +394,9 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                 95% { stroke-dashoffset: 0; }
                 100% { stroke-dashoffset: 0; }
               }
-              @keyframes terrySuck {
-                from { transform: scaleX(1); opacity: 1; }
-                to { transform: scaleX(0); opacity: 1; }
-              }
-              .animate-terry-suck {
-                animation: terrySuck ${suckDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
-                transform-origin: 468px 0.5px;
-              }
+              ` : ''}
               @keyframes headerWaveDraw {
                 0%   { stroke-dashoffset: 100; }
-                35%  { stroke-dashoffset: 100; }
                 93%  { stroke-dashoffset: 0; }
                 100% { stroke-dashoffset: 0; }
               }
@@ -401,10 +406,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                 85%  { opacity: 0.4; }
                 100% { opacity: 0; }
               }
-              @keyframes headerRainbowHue {
-                from { filter: hue-rotate(0deg); }
-                to   { filter: hue-rotate(360deg); }
-              }
+
             `}} />
 
             <div className="relative flex items-end justify-between gap-8 pb-0.5">
@@ -422,7 +424,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                     x2="100%"
                     y2={logoBaselineY}
                     stroke="currentColor"
-                    strokeWidth="1"
+                    strokeWidth={lineWeight}
                     fill="none"
                     strokeLinecap="square"
                   />
@@ -446,13 +448,13 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                     x2="100%"
                     y2={logoBaselineY}
                     stroke="currentColor"
-                    strokeWidth="1"
+                    strokeWidth={lineWeight}
                     fill="none"
                     strokeLinecap="square"
                   />
                 </svg>
               </div>
-              
+
               {shouldEnableAnimatedHeaderTransition && phase === "shooting" && (
                 <div
                   key={`animated-${animationKey}`}
@@ -460,30 +462,38 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                     isDarkMode ? "text-[#DDDDDD]" : "text-rule-strong"
                   }`}
                 >
-                  {/* Wrap path (around logo) + base line drawing underneath */}
                   <svg className="absolute left-0 bottom-0 w-full h-px overflow-visible">
-                    <path
-                      d={shootWrapPathD}
-                      stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="square"
-                      style={{
-                        strokeDasharray: shootWrapPathLength,
-                        strokeDashoffset: shootWrapPathLength,
-                        animation: `terryWrapDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
-                      }}
-                    />
-                    <line
-                      x1={logoOutlineLeftX} y1={logoBaselineY} x2="100%" y2={logoBaselineY}
-                      pathLength="100"
-                      stroke="currentColor" strokeWidth="1" fill="none" strokeLinecap="square"
-                      style={{
-                        strokeDasharray: 100,
-                        strokeDashoffset: 100,
-                        animation: `terryShootDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
-                      }}
-                    />
+                    {wrapAround && (
+                      <path
+                        d={shootWrapPathD}
+                        stroke="currentColor" strokeWidth={lineWeight} fill="none" strokeLinecap="square"
+                        style={{
+                          strokeDasharray: shootWrapPathLength,
+                          strokeDashoffset: shootWrapPathLength,
+                          animation: `terryWrapDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+                        }}
+                      />
+                    )}
+                    {wrapAround ? (
+                      <line
+                        x1={logoOutlineLeftX} y1={logoBaselineY} x2="100%" y2={logoBaselineY}
+                        pathLength="100"
+                        stroke="currentColor" strokeWidth={lineWeight} fill="none" strokeLinecap="square"
+                        style={{
+                          strokeDasharray: 100,
+                          strokeDashoffset: 100,
+                          animation: `terryShootDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+                        }}
+                      />
+                    ) : (
+                      <line
+                        x1={logoOutlineLeftX} y1={logoBaselineY} x2="100%" y2={logoBaselineY}
+                        stroke="currentColor" strokeWidth={lineWeight} fill="none" strokeLinecap="square"
+                      />
+                    )}
                   </svg>
 
-                  {/* Rainbow wave fleet — draws in via dashoffset, crystallizes to static line */}
+                  {/* Wave fleet — draws in via dashoffset, crystallizes out */}
                   <svg
                     className="absolute"
                     viewBox={`-4 0 ${HEADER_WAVE_CONVERGE} ${HEADER_WAVE_SVG_H}`}
@@ -493,39 +503,36 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                       left: '-4px',
                       width: 'calc(100% + 4px)',
                       bottom: `-${HEADER_WAVE_SVG_H / 2}px`,
-                      animation: `headerRainbowHue 4s linear infinite, headerWaveCrystallize ${shootDurationMs}ms ease-out forwards`,
-                      willChange: 'filter, opacity',
+                      animation: `headerWaveCrystallize ${shootDurationMs}ms ease-out forwards`,
+                      willChange: 'opacity',
                     }}
                   >
-                      <defs>
-                        <linearGradient id={`header-wave-rainbow-${animationKey}`} x1="0" y1="0" x2="1" y2="0">
-                          <stop offset="0%"   stopColor="#ff4040" stopOpacity="0.9" />
-                          <stop offset="14%"  stopColor="#ff9900" stopOpacity="0.9" />
-                          <stop offset="28%"  stopColor="#ffee00" stopOpacity="0.9" />
-                          <stop offset="42%"  stopColor="#44dd44" stopOpacity="0.9" />
-                          <stop offset="57%"  stopColor="#22cccc" stopOpacity="0.9" />
-                          <stop offset="71%"  stopColor="#4488ff" stopOpacity="0.9" />
-                          <stop offset="85%"  stopColor="#cc44ff" stopOpacity="0.9" />
-                          <stop offset="100%" stopColor="#ff4040" stopOpacity="0.9" />
-                        </linearGradient>
-                      </defs>
-                      {HEADER_WAVE_FLEET.map((wave, i) => (
-                        <path
-                          key={i}
-                          d={wave.d}
-                          pathLength="100"
-                          stroke={`url(#header-wave-rainbow-${animationKey})`}
-                          strokeWidth="1"
-                          strokeLinecap="round"
-                          fill="none"
-                          opacity={wave.opacity}
-                          style={{
-                            strokeDasharray: 100,
-                            strokeDashoffset: 100,
-                            animation: `headerWaveDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) ${wave.delay * shootDurationMs}ms forwards`,
-                          }}
-                        />
-                      ))}
+                    <defs>
+                      <linearGradient id={`header-wave-gradient-${animationKey}`} x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%"   stopColor={waveColor1} stopOpacity="0.9" />
+                        <stop offset="25%"  stopColor={waveColor2} stopOpacity="0.9" />
+                        <stop offset="50%"  stopColor={waveColor3} stopOpacity="0.9" />
+                        <stop offset="75%"  stopColor={waveColor2} stopOpacity="0.9" />
+                        <stop offset="100%" stopColor={waveColor1} stopOpacity="0.9" />
+                      </linearGradient>
+                    </defs>
+                    {waveFleet.map((wave, i) => (
+                      <path
+                        key={i}
+                        d={wave.d}
+                        pathLength="100"
+                        stroke={`url(#header-wave-gradient-${animationKey})`}
+                        strokeWidth={lineWeight}
+                        strokeLinecap="round"
+                        fill="none"
+                        opacity={wave.opacity}
+                        style={{
+                          strokeDasharray: 100,
+                          strokeDashoffset: 100,
+                          animation: `headerWaveDraw ${shootDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) ${wave.delay * shootDurationMs}ms forwards`,
+                        }}
+                      />
+                    ))}
                   </svg>
                 </div>
               )}

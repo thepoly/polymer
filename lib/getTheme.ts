@@ -45,10 +45,29 @@ export type ThemeLogoSrcs = {
   mobileDark: string
 }
 
+export type HeaderAnimationConfig = {
+  waveColor1: string
+  waveColor2: string
+  waveColor3: string
+  waveCount: number
+  lineWeight: number
+  wrapAround: boolean
+}
+
+const HEADER_ANIMATION_FALLBACKS: HeaderAnimationConfig = {
+  waveColor1: '#0044ff',
+  waveColor2: '#0088ff',
+  waveColor3: '#38bdf8',
+  waveCount: 4,
+  lineWeight: 1,
+  wrapAround: false,
+}
+
 export type ResolvedTheme = {
   lightMode: ThemeColors
   darkMode: ThemeColors
   logoSrcs: ThemeLogoSrcs
+  headerAnimation: HeaderAnimationConfig
 }
 
 function resolveLogoUrl(logo: Logo | number | null | undefined, fallback: string): string {
@@ -73,9 +92,26 @@ function resolveColors(
   return result
 }
 
+function resolveHeaderAnimation(
+  group: Record<string, unknown> | null | undefined,
+): HeaderAnimationConfig {
+  if (!group) return { ...HEADER_ANIMATION_FALLBACKS }
+  const f = HEADER_ANIMATION_FALLBACKS
+  const waveColor1 = typeof group.waveColor1 === 'string' && group.waveColor1.trim() ? group.waveColor1.trim() : f.waveColor1
+  const waveColor2 = typeof group.waveColor2 === 'string' && group.waveColor2.trim() ? group.waveColor2.trim() : f.waveColor2
+  const waveColor3 = typeof group.waveColor3 === 'string' && group.waveColor3.trim() ? group.waveColor3.trim() : f.waveColor3
+  const rawCount = group.waveCount
+  const waveCount = typeof rawCount === 'number' && rawCount >= 1 ? Math.round(Math.min(8, rawCount)) : f.waveCount
+  const rawWeight = group.lineWeight
+  const lineWeight = typeof rawWeight === 'number' && rawWeight > 0 ? Math.min(4, rawWeight) : f.lineWeight
+  const wrapAround = group.wrapAround === true
+  return { waveColor1, waveColor2, waveColor3, waveCount, lineWeight, wrapAround }
+}
+
 const FALLBACK: ResolvedTheme = {
   lightMode: { ...LIGHT_FALLBACKS },
   darkMode: { ...DARK_FALLBACKS },
+  headerAnimation: { ...HEADER_ANIMATION_FALLBACKS },
   logoSrcs: {
     desktopLight: '/logo-light.svg',
     desktopDark: '/logo-dark.svg',
@@ -102,6 +138,7 @@ const fetchTheme = unstable_cache(
       return {
         lightMode: resolveColors(theme?.lightMode as Record<string, string | null | undefined>, LIGHT_FALLBACKS),
         darkMode: resolveColors(theme?.darkMode as Record<string, string | null | undefined>, DARK_FALLBACKS),
+        headerAnimation: resolveHeaderAnimation(theme?.headerAnimation as Record<string, unknown> | null | undefined),
         logoSrcs: {
           desktopLight: resolveLogoUrl(logos?.desktopLight as Logo | number | null | undefined, '/logo-light.svg'),
           desktopDark: resolveLogoUrl(logos?.desktopDark as Logo | number | null | undefined, '/logo-dark.svg'),

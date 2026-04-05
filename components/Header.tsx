@@ -20,6 +20,7 @@ export default async function Header({ compact, mobileTight }: { compact?: boole
       compact={compact}
       mobileTight={mobileTight}
       logoSrcs={theme.logoSrcs}
+      headerAnimation={theme.headerAnimation}
       volume={layout?.volume}
       edition={layout?.edition}
     />

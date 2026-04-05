@@ -34,7 +34,9 @@ VALUES
   ('20260331_100000_add_photofeature', 10, NOW(), NOW()),
   ('20260401_000000_add_theme_and_logos', 11, NOW(), NOW()),
   ('20260401_010000_add_seo_global', 11, NOW(), NOW()),
-  ('20260402_000000_add_staff_page_layout', 12, NOW(), NOW())
+  ('20260402_000000_add_staff_page_layout', 12, NOW(), NOW()),
+  ('20260402_100000_add_media_title', 13, NOW(), NOW()),
+  ('20260404_000000_add_header_animation', 14, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -676,4 +678,24 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_staff_page_layout_id_idx"
   ON "payload_locked_documents_rels" ("staff_page_layout_id");
+
+-- 20260402_100000: Add title column to media
+ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "title" varchar;
+
+-- 20260404_000000: Add header animation settings to theme
+ALTER TABLE "theme"
+  ADD COLUMN IF NOT EXISTS "header_animation_wave_color1" varchar,
+  ADD COLUMN IF NOT EXISTS "header_animation_wave_color2" varchar,
+  ADD COLUMN IF NOT EXISTS "header_animation_wave_color3" varchar,
+  ADD COLUMN IF NOT EXISTS "header_animation_wave_count" numeric,
+  ADD COLUMN IF NOT EXISTS "header_animation_line_weight" numeric,
+  ADD COLUMN IF NOT EXISTS "header_animation_wrap_around" boolean;
+
+ALTER TABLE "_theme_v"
+  ADD COLUMN IF NOT EXISTS "version_header_animation_wave_color1" varchar,
+  ADD COLUMN IF NOT EXISTS "version_header_animation_wave_color2" varchar,
+  ADD COLUMN IF NOT EXISTS "version_header_animation_wave_color3" varchar,
+  ADD COLUMN IF NOT EXISTS "version_header_animation_wave_count" numeric,
+  ADD COLUMN IF NOT EXISTS "version_header_animation_line_weight" numeric,
+  ADD COLUMN IF NOT EXISTS "version_header_animation_wrap_around" boolean;
 SQL

@@ -54,6 +54,62 @@ export const Theme: GlobalConfig = {
   },
   fields: [
     {
+      name: 'headerAnimation',
+      type: 'group',
+      label: 'Header Animation',
+      admin: {
+        description: 'Controls the animated wave effect on the header rule line during page transitions.',
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            color('waveColor1', 'Wave Color 1', 'First gradient stop for the wave effect.'),
+            color('waveColor2', 'Wave Color 2', 'Second gradient stop for the wave effect.'),
+            color('waveColor3', 'Wave Color 3', 'Third gradient stop for the wave effect.'),
+          ],
+        },
+        {
+          type: 'row',
+          fields: [
+            {
+              name: 'waveCount',
+              type: 'number',
+              label: 'Number of Waves',
+              min: 1,
+              max: 8,
+              admin: {
+                description: 'How many wave lines animate across the header (1-8).',
+                width: '33%',
+                step: 1,
+              },
+            },
+            {
+              name: 'lineWeight',
+              type: 'number',
+              label: 'Line Weight',
+              min: 0.5,
+              max: 4,
+              admin: {
+                description: 'Stroke width of the wave and rule lines (0.5-4).',
+                width: '33%',
+                step: 0.5,
+              },
+            },
+            {
+              name: 'wrapAround',
+              type: 'checkbox',
+              label: 'Logo Wraparound',
+              admin: {
+                description: 'When enabled, the animation traces around the logo outline before shooting across.',
+                width: '33%',
+              },
+            },
+          ],
+        },
+      ],
+    },
+    {
       name: 'logos',
       type: 'group',
       label: 'Logos',
