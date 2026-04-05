@@ -24,7 +24,7 @@ export default function PrivacyPage() {
         </div>
         <div className="space-y-5 font-copy text-xl leading-relaxed text-text-main dark:text-[#CCCCCC] transition-colors">
           <p>
-            We are The Polytechnic, RPI&apos;s student newspaper. We take seriously both the trust
+            We are <i>The Polytechnic</i>, RPI&apos;s student newspaper. We take seriously both the trust
             you place in us when you read our work and the responsibility that comes with running our
             website.
           </p>
@@ -39,7 +39,7 @@ export default function PrivacyPage() {
           <p>
             We have no advertising partners and do not share anything with data brokers or marketing
             platforms. We link to outside sites from time to time but are not responsible for
-            their content. If you are a Polytechnic staff member who logs into the CMS, our
+            their content. If you are a <i>Polytechnic</i> staff member who logs into the CMS, our
             publishing platform sets a session cookie to keep you logged in, which expires when you
             log out — and our analytics system identifies you by name, email, and role for editorial
             and operational purposes.
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
             , or write to us at:
           </p>
           <address className="not-italic leading-[1.8]">
-            The Rensselaer Polytechnic<br />
+            <i>The Rensselaer Polytechnic</i><br />
             Rensselaer Union<br />
             110 8th Street<br />
             Troy, NY 12180
