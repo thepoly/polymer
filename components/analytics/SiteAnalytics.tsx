@@ -136,6 +136,30 @@ export type AnalyticsUser = {
   updatedAt?: string;
 };
 
+export const STAFF_IDENTITY_KEY = "posthog_staff_identity";
+
+function saveStaffIdentity(user: AnalyticsUser) {
+  try {
+    localStorage.setItem(STAFF_IDENTITY_KEY, JSON.stringify(user));
+  } catch {}
+}
+
+function loadStaffIdentity(): AnalyticsUser | null {
+  try {
+    const raw = localStorage.getItem(STAFF_IDENTITY_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearStaffIdentity() {
+  try {
+    localStorage.removeItem(STAFF_IDENTITY_KEY);
+    posthog.reset();
+  } catch {}
+}
+
 type SiteAnalyticsProps = {
   user?: AnalyticsUser | null;
 };
@@ -187,32 +211,57 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
   }, [isDarkMode]);
 
   useEffect(() => {
-    if (user) {
+    const identifyUser = (u: AnalyticsUser) => {
       const currentId = posthog.get_distinct_id();
       const isNumeric = /^\d+$/.test(currentId);
-      if (currentId && isNumeric && currentId !== String(user.id)) {
+      if (currentId && isNumeric && currentId !== String(u.id)) {
         posthog.reset();
       }
 
-      posthog.identify(String(user.id), {
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || undefined,
-        roles: user.roles,
-        slug: user.slug,
-        blackTheme: user.blackTheme,
-        has_bio: user.has_bio,
-        position_count: user.position_count,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
+      posthog.identify(String(u.id), {
+        email: u.email,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        name: `${u.firstName || ""} ${u.lastName || ""}`.trim() || undefined,
+        roles: u.roles,
+        slug: u.slug,
+        blackTheme: u.blackTheme,
+        has_bio: u.has_bio,
+        position_count: u.position_count,
+        createdAt: u.createdAt,
+        updatedAt: u.updatedAt,
         current_theme: isDarkMode ? "dark" : "light",
         $set_once: {
-          initial_email: user.email,
+          initial_email: u.email,
         },
       });
+    };
+
+    if (user) {
+      identifyUser(user);
+      saveStaffIdentity(user);
+    } else {
+      const cached = loadStaffIdentity();
+      if (cached) {
+        identifyUser(cached);
+      }
     }
   }, [user, isDarkMode]);
+
+  // Detect Payload logout by intercepting fetch to the logout endpoint
+  useEffect(() => {
+    const originalFetch = window.fetch;
+    window.fetch = function (...args) {
+      const url = typeof args[0] === "string" ? args[0] : args[0] instanceof URL ? args[0].toString() : (args[0] as Request)?.url;
+      if (url && /\/api\/users\/logout\b/.test(url)) {
+        clearStaffIdentity();
+      }
+      return originalFetch.apply(this, args);
+    };
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, []);
 
   useEffect(() => {
     siteActiveSecondsRef.current = loadStoredActiveSeconds();
