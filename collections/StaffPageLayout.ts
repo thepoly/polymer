@@ -35,7 +35,7 @@ const StaffPageLayout: CollectionConfig = {
       required: true,
       defaultValue: 'Staff Page Layout',
       admin: {
-        description: 'Only the most recently updated document is used on /staff2.',
+        description: 'Only the most recently updated document is used on /staff.',
       },
     },
     {
