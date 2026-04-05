@@ -38,8 +38,8 @@ export default function PrivacyPage() {
           </p>
           <p>
             We have no advertising partners and do not share anything with data brokers or marketing
-            platforms. We link to outside sites from time to time; we&apos;re not responsible for
-            what they do. If you are a Polytechnic staff member who logs into the CMS, our
+            platforms. We link to outside sites from time to time but are not responsible for
+            their content. If you are a Polytechnic staff member who logs into the CMS, our
             publishing platform sets a session cookie to keep you logged in, which expires when you
             log out — and our analytics system identifies you by name, email, and role for editorial
             and operational purposes.
