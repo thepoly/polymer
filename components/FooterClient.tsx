@@ -68,7 +68,7 @@ export default function FooterClient({ volume, edition }: { volume?: number | nu
             </span>
           </div>
           <Link href="/copyright" className="font-copy text-[11px] text-text-muted text-center leading-relaxed underline underline-offset-2 hover:text-accent transition-colors">
-            &copy; {new Date().getFullYear()} The Rensselaer Polytechnic. All rights reserved.
+            &copy; {new Date().getFullYear()} <i>The Rensselaer Polytechnic</i>. All rights reserved.
           </Link>
         </div>
       </div>
