@@ -1,12 +1,13 @@
 import type { CollectionConfig } from 'payload'
 import { lexicalEditor, BoldFeature, ItalicFeature } from '@payloadcms/richtext-lexical'
 import { getPostHogClient } from '../lib/posthog-server'
+import { getPlainText } from '../utils/getPlainText'
 
 const Articles: CollectionConfig = {
   slug: 'articles',
   admin: {
-    useAsTitle: 'title',
-    defaultColumns: ['title', 'updatedAt'],
+    useAsTitle: 'plainTitle',
+    defaultColumns: ['plainTitle', 'updatedAt'],
   },
   access: {
     update: ({ req: { user } }) => {
@@ -50,18 +51,7 @@ const Articles: CollectionConfig = {
         if (isNowPublished && !wasPublished) {
           const posthog = getPostHogClient()
           
-          let plainTitle = '';
-          if (doc.title && typeof doc.title === 'object' && doc.title.root) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const extractText = (node: any): string => {
-              if (node.type === 'text') return node.text || '';
-              if (node.children) return node.children.map(extractText).join('');
-              return '';
-            };
-            plainTitle = extractText(doc.title.root);
-          } else if (typeof doc.title === 'string') {
-            plainTitle = doc.title;
-          }
+          const plainTitle = getPlainText(doc.title);
 
           posthog?.capture({
             distinctId: String(req.user?.id || 'unknown'),
@@ -108,18 +98,8 @@ const Articles: CollectionConfig = {
         }
 
         // Auto-generate slug from title if not set, or sanitize existing slug
-        let plainTitle = '';
-        if (data.title && typeof data.title === 'object' && data.title.root) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const extractText = (node: any): string => {
-            if (node.type === 'text') return node.text || '';
-            if (node.children) return node.children.map(extractText).join('');
-            return '';
-          };
-          plainTitle = extractText(data.title.root);
-        } else if (typeof data.title === 'string') {
-          plainTitle = data.title;
-        }
+        const plainTitle = getPlainText(data.title);
+        data.plainTitle = plainTitle;
 
         const rawSlug = data.slug || plainTitle || ''
         if (rawSlug) {
@@ -158,6 +138,13 @@ const Articles: CollectionConfig = {
           ItalicFeature(),
         ],
       }),
+    },
+    {
+      name: 'plainTitle',
+      type: 'text',
+      admin: {
+        hidden: true,
+      },
     },
     {
       name: 'kicker',

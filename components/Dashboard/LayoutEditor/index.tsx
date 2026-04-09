@@ -33,7 +33,8 @@ type ImageDirection = 'top' | 'bottom' | 'left' | 'right' | 'none';
 
 type ArticleData = {
   id: number;
-  title: string;
+  title: Record<string, unknown>;
+  plainTitle?: string;
   slug: string;
   section: string;
   publishedDate: string | null;
@@ -286,7 +287,7 @@ function CellPreview({ article, direction }: { article: ArticleData; direction: 
       <span className="le-cell-badge" style={{ background: SECTION_COLORS[article.section] || '#888' }}>
         {article.section}
       </span>
-      <div className="le-cell-title">{article.title}</div>
+      <div className="le-cell-title">{article.plainTitle}</div>
       {author && <div className="le-cell-author">{author}</div>}
       {article.subdeck && <div className="le-cell-subdeck">{article.subdeck}</div>}
     </div>
@@ -645,7 +646,7 @@ function DraggablePoolCard({ article, isUsed }: { article: ArticleData; isUsed: 
         </div>
       )}
       <div className="le-pool-card-body">
-        <div className="le-pool-card-title">{article.title}</div>
+        <div className="le-pool-card-title">{article.plainTitle}</div>
         <div className="le-pool-card-meta">
           <span className="le-section-dot" style={{ background: SECTION_COLORS[article.section] || '#888' }} />
           <span className="le-pool-card-section">{article.section}</span>
@@ -667,7 +668,7 @@ function DragOverlayCard({ article }: { article: ArticleData }) {
     <div className="le-drag-overlay">
       {imageUrl && <div className="le-drag-overlay-img"><img src={imageUrl} alt="" /></div>}
       <div className="le-drag-overlay-body">
-        <div className="le-drag-overlay-title">{article.title}</div>
+        <div className="le-drag-overlay-title">{article.plainTitle}</div>
         <div className="le-drag-overlay-badge" style={{ background: SECTION_COLORS[article.section] || '#888' }}>
           {article.section}
         </div>
@@ -807,7 +808,7 @@ function AriesSlot({ slotId, label, article, isLead, isOver, setDropRef, onClear
             )}
             <div className="le-cell-text">
               <span className="le-cell-badge" style={{ background: SECTION_COLORS[article.section] || '#888' }}>{article.section}</span>
-              <div className="le-cell-title">{article.title}</div>
+              <div className="le-cell-title">{article.plainTitle}</div>
               {authorDate && <div className="le-cell-author">{authorDate}</div>}
               {article.subdeck && isLead && <div className="le-cell-subdeck">{article.subdeck}</div>}
             </div>
@@ -1058,7 +1059,7 @@ function TaurusSlot({ slotId, label, article, className, textOnly, onClear, onRe
             )}
             <div className="le-cell-text">
               <span className="le-cell-badge" style={{ background: SECTION_COLORS[article.section] || '#888' }}>{article.section}</span>
-              <div className="le-cell-title">{article.title}</div>
+              <div className="le-cell-title">{article.plainTitle}</div>
               <div className="le-cell-author">{getAuthorDateString(article)}</div>
               {article.subdeck && <div className="le-cell-subdeck">{article.subdeck}</div>}
             </div>
@@ -1898,7 +1899,7 @@ export function LayoutEditor() {
     for (const id of allUsedArticleIds) {
       const article = articleMap.get(id);
       if (article && !article.publishedDate) {
-        unpublished.push(article.title);
+        unpublished.push(article.plainTitle || 'Untitled');
       }
     }
     if (unpublished.length > 0) {
@@ -1963,7 +1964,7 @@ export function LayoutEditor() {
   // ---- Filter pool ----
   const filteredArticles = articles.filter((a) => {
     if (sectionFilter !== 'all' && a.section !== sectionFilter) return false;
-    if (search && !a.title.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search && !(a.plainTitle || '').toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
 

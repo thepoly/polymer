@@ -23,7 +23,8 @@ import './features-layout-editor.css';
 
 type ArticleData = {
   id: number;
-  title: string;
+  title: Record<string, unknown>;
+  plainTitle?: string;
   slug: string;
   section: string;
   publishedDate: string | null;
@@ -280,7 +281,7 @@ function SlotPreview({ article, showImage }: { article: ArticleData; showImage?:
         </div>
       )}
       <div className="fle-slot-text">
-        <div className="fle-slot-title">{article.title}</div>
+        <div className="fle-slot-title">{article.plainTitle}</div>
         {author && <div className="fle-slot-author">{author}</div>}
       </div>
     </div>
@@ -375,7 +376,7 @@ function DraggablePoolCard({ article, isUsed }: { article: ArticleData; isUsed: 
         </div>
       )}
       <div className="fle-pool-card-body">
-        <div className="fle-pool-card-title">{article.title}</div>
+        <div className="fle-pool-card-title">{article.plainTitle}</div>
         <div className="fle-pool-card-meta">
           <span className="fle-pool-card-date">{formatDate(article.publishedDate)}</span>
         </div>
@@ -395,7 +396,7 @@ function DragOverlayCard({ article }: { article: ArticleData }) {
     <div className="fle-drag-overlay">
       {imageUrl && <div className="fle-drag-overlay-img"><img src={imageUrl} alt="" /></div>}
       <div className="fle-drag-overlay-body">
-        <div className="fle-drag-overlay-title">{article.title}</div>
+        <div className="fle-drag-overlay-title">{article.plainTitle}</div>
       </div>
     </div>
   );
@@ -422,7 +423,7 @@ function ArticlePool({
     if (usedIds.has(a.id)) return false;
     if (search) {
       const q = search.toLowerCase();
-      return a.title.toLowerCase().includes(q) || getAuthorString(a).toLowerCase().includes(q);
+      return (a.plainTitle || '').toLowerCase().includes(q) || getAuthorString(a).toLowerCase().includes(q);
     }
     return true;
   });
@@ -465,7 +466,8 @@ function ArticlePool({
 
 type SpotlightArticleResult = {
   id: number;
-  title: string;
+  title: Record<string, unknown>;
+  plainTitle?: string;
   section: string;
   slug: string;
   publishedDate: string | null;
@@ -609,7 +611,7 @@ function SpotlightBrowser({
               return (
                 <div key={article.id} className={`fle-spotlight-article ${isExpanded ? 'fle-spotlight-article-expanded' : ''}`}>
                   <div className="fle-spotlight-article-header" onClick={() => handleArticleClick(article.id)}>
-                    <span className="fle-spotlight-article-title">{article.title}</span>
+                    <span className="fle-spotlight-article-title">{article.plainTitle}</span>
                     <button className={`fle-spotlight-expand-btn ${isExpanded ? 'fle-spotlight-expand-btn-open' : ''}`}>
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="11" height="11">
                         <path d="M6 9l6 6 6-6" />
@@ -637,7 +639,7 @@ function SpotlightBrowser({
                                     const d = new Date(article.publishedDate);
                                     articleUrl = `/${article.section}/${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${article.slug}`;
                                   }
-                                  onAdd({ url: img.url, caption: img.alt, articleTitle: article.title, articleUrl, photographerName: img.photographerName, photographerUrl: img.photographerUrl });
+                                  onAdd({ url: img.url, caption: img.alt, articleTitle: article.plainTitle, articleUrl, photographerName: img.photographerName, photographerUrl: img.photographerUrl });
                                 }
                               }}
                             >

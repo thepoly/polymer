@@ -23,7 +23,8 @@ import './opinion-layout-editor.css';
 
 type ArticleData = {
   id: number;
-  title: string;
+  title: Record<string, unknown>;
+  plainTitle?: string;
   slug: string;
   section: string;
   publishedDate: string | null;
@@ -173,7 +174,7 @@ function SlotPreview({ article, showImage }: { article: ArticleData; showImage?:
         </div>
       )}
       <div className="ole-slot-text">
-        <div className="ole-slot-title">{article.title}</div>
+        <div className="ole-slot-title">{article.plainTitle}</div>
         {author && <div className="ole-slot-author">{author}</div>}
       </div>
     </div>
@@ -268,7 +269,7 @@ function DraggablePoolCard({ article, isUsed }: { article: ArticleData; isUsed: 
         </div>
       )}
       <div className="ole-pool-card-body">
-        <div className="ole-pool-card-title">{article.title}</div>
+        <div className="ole-pool-card-title">{article.plainTitle}</div>
         <div className="ole-pool-card-meta">
           <span className="ole-pool-card-date">{formatDate(article.publishedDate)}</span>
         </div>
@@ -288,7 +289,7 @@ function DragOverlayCard({ article }: { article: ArticleData }) {
     <div className="ole-drag-overlay">
       {imageUrl && <div className="ole-drag-overlay-img"><img src={imageUrl} alt="" /></div>}
       <div className="ole-drag-overlay-body">
-        <div className="ole-drag-overlay-title">{article.title}</div>
+        <div className="ole-drag-overlay-title">{article.plainTitle}</div>
       </div>
     </div>
   );
@@ -315,7 +316,7 @@ function ArticlePool({
     if (usedIds.has(a.id)) return false;
     if (search) {
       const q = search.toLowerCase();
-      return a.title.toLowerCase().includes(q) || getAuthorString(a).toLowerCase().includes(q);
+      return (a.plainTitle || '').toLowerCase().includes(q) || getAuthorString(a).toLowerCase().includes(q);
     }
     return true;
   });
