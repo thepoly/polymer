@@ -268,7 +268,7 @@ export default async function ArticlePage({ params }: Args) {
       {
         '@type': 'ListItem',
         position: 3,
-        name: article.title,
+        name: extractTextFromLexical(article.title),
       },
     ],
   };

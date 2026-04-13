@@ -310,6 +310,7 @@ export interface Article {
     };
     [k: string]: unknown;
   };
+  plainTitle?: string | null;
   kicker?: string | null;
   subdeck?: string | null;
   opinionType?:
@@ -784,6 +785,7 @@ export interface LogosSelect<T extends boolean = true> {
 export interface ArticlesSelect<T extends boolean = true> {
   section?: T;
   title?: T;
+  plainTitle?: T;
   kicker?: T;
   subdeck?: T;
   opinionType?: T;

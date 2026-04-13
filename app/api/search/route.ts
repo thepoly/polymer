@@ -46,6 +46,7 @@ async function searchPayload(queryFormsLower: string[], page: number, pageSize: 
   const payload = await getPayload({ config });
   const articleSearchSelect = {
     title: true,
+    plainTitle: true,
     slug: true,
     subdeck: true,
     featuredImage: true,
@@ -58,10 +59,11 @@ async function searchPayload(queryFormsLower: string[], page: number, pageSize: 
     isFollytechnic: true,
   } as const;
 
-  // Build OR conditions: match any query form in title, subdeck, or kicker
+  // Build OR conditions: match any query form in plainTitle, subdeck, or kicker
+  // (title is a richText field; plainTitle is the auto-derived plain-text version used for search)
   const orConditions: Where[] = [];
   for (const form of queryFormsLower) {
-    orConditions.push({ title: { like: form } });
+    orConditions.push({ plainTitle: { like: form } });
     orConditions.push({ subdeck: { like: form } });
     orConditions.push({ kicker: { like: form } });
     orConditions.push({ 'writeInAuthors.name': { like: form } });
