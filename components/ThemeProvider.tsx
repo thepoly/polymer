@@ -116,11 +116,19 @@ export default function ThemeProvider({
     if (isDarkMode) {
       document.documentElement.classList.add("dark");
       document.documentElement.style.colorScheme = "dark";
-      document.cookie = "theme=dark; path=/; max-age=31536000"; // 1 year
+      try {
+        document.cookie = "theme=dark; path=/; max-age=31536000"; // 1 year
+      } catch {
+        /* iOS Private Browsing */
+      }
     } else {
       document.documentElement.classList.remove("dark");
       document.documentElement.style.colorScheme = "light";
-      document.cookie = "theme=light; path=/; max-age=31536000";
+      try {
+        document.cookie = "theme=light; path=/; max-age=31536000";
+      } catch {
+        /* iOS Private Browsing */
+      }
     }
 
     let themeMeta = document.querySelector('meta[name="theme-color"][data-runtime-theme-color="true"]');

@@ -134,7 +134,6 @@ export const formatArticle = (
     id: article.id,
     slug: article.slug || '#',
     title: extractTextFromLexical(article.title),
-    richTitle: renderLexicalHeadline(article.title),
     excerpt: article.subdeck || '',
     author: authors ? authors.toUpperCase() : 'THE POLY',
     date: dateString,
