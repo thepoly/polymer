@@ -693,7 +693,7 @@ export function FeaturesLayoutEditor() {
       try {
         const artRes = await fetch(
           '/api/articles?where[section][equals]=features&where[_status][equals]=published&sort=-publishedDate&limit=100&depth=1' +
-          '&select[title]=true&select[slug]=true&select[section]=true&select[publishedDate]=true' +
+          '&select[title]=true&select[plainTitle]=true&select[slug]=true&select[section]=true&select[publishedDate]=true' +
           '&select[createdAt]=true&select[featuredImage]=true&select[subdeck]=true&select[kicker]=true' +
           '&select[authors]=true&select[writeInAuthors]=true',
         );
