@@ -3,11 +3,13 @@ import React from 'react';
 export const Byline = ({
     author,
     date,
+    isoDate,
     className = "",
     variant = "default",
 }: {
     author?: string | null;
     date?: string | null;
+    isoDate?: string | null;
     className?: string;
     split?: boolean;
     variant?: "default" | "features";
@@ -54,7 +56,7 @@ export const Byline = ({
             )}
             {author && date && <span className="text-text-muted ml-0.5 mr-1">&middot;</span>}
             {date && (
-                <span className={variant === "features" ? "text-text-muted" : "text-text-muted font-semibold md:font-medium"}>
+                <span suppressHydrationWarning className={variant === "features" ? "text-text-muted" : "text-text-muted font-semibold md:font-medium"}>
                     {date}
                 </span>
             )}

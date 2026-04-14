@@ -15,7 +15,7 @@ export const FeatureBand = ({ article }: { article: Article }) => (
         {article.section}
       </p>
       <h3 className={`font-copy text-[24px] font-bold leading-[1.06] tracking-[-0.018em] text-text-main transition-colors md:text-[30px] ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[25px] md:text-[31px]" : ""}`}>
-        {article.title}
+        {article.richTitle || article.title}
       </h3>
       <Byline author={article.author} date={article.date} />
       {article.excerpt && (

@@ -8,6 +8,7 @@ export interface Article {
   excerpt: string;
   author: string | null;
   date: string | null;
+  isoDate?: string | null;
   image: string | null;
   imageFull: string | null;
   imageCaption?: string | null;

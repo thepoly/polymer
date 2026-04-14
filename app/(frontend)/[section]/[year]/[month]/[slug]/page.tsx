@@ -1,6 +1,6 @@
 import React, { cache } from 'react';
 import { notFound } from 'next/navigation';
-import { extractTextFromLexical } from '@/utils/formatArticle';
+import { extractTextFromLexical, renderLexicalHeadline } from '@/utils/formatArticle';
 import { headers } from 'next/headers';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
@@ -326,7 +326,11 @@ export default async function ArticlePage({ params }: Args) {
         wordCount={wordCount}
         isStaff={isStaff}
       />
-      <ArticleScrollBar title={extractTextFromLexical(article.title)} section={article.section} />
+      <ArticleScrollBar
+        title={extractTextFromLexical(article.title)}
+        richTitle={renderLexicalHeadline(article.title)}
+        section={article.section}
+      />
       <LayoutComponent article={article as unknown as Article} content={cleanContent} />
       {canEdit && <InlineEditor articleId={article.id} />}
     </>

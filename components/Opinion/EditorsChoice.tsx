@@ -69,7 +69,7 @@ export default function EditorsChoice({
                   lineHeight: 1.12,
                 }}
               >
-                {article.title}
+                {article.richTitle || article.title}
               </span>
             </TransitionLink>
           ))}

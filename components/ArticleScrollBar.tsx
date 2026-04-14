@@ -9,6 +9,7 @@ import posthog from 'posthog-js';
 
 type Props = {
   title: string;
+  richTitle?: React.ReactNode;
   section: string;
 };
 
@@ -92,7 +93,7 @@ function ShareIcon({ type, className }: { type: string; className?: string }) {
   }
 }
 
-export default function ArticleScrollBar({ title, section }: Props) {
+export default function ArticleScrollBar({ title, richTitle, section }: Props) {
   const [visible, setVisible] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -211,7 +212,7 @@ export default function ArticleScrollBar({ title, section }: Props) {
             {sectionLabel}
           </a>
           <span className="text-rule-strong shrink-0">|</span>
-          <span className="text-text-muted truncate">{title}</span>
+          <span className="text-text-muted truncate">{richTitle || title}</span>
         </div>
 
         {/* Right: Theme toggle + share button */}

@@ -1,4 +1,4 @@
-import { extractTextFromLexical } from '@/utils/formatArticle';
+import { extractTextFromLexical, renderLexicalHeadline } from '@/utils/formatArticle';
 import React, { cache } from 'react';
 import type { Metadata } from 'next';
 import { getPayload } from 'payload';
@@ -63,6 +63,7 @@ const toPublicStaffUser = (user: PublicStaffUserSource): StaffProfileUser => ({
 const toPublicStaffArticle = (article: PublicStaffArticleSource): StaffProfileArticle => ({
   id: article.id,
   title: extractTextFromLexical(article.title),
+  richTitle: renderLexicalHeadline(article.title),
   slug: article.slug,
   section: article.section,
   publishedDate: article.publishedDate,

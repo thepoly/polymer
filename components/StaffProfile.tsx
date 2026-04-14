@@ -35,6 +35,7 @@ export interface StaffProfileArticle {
   id: number;
   slug?: string | null;
   title: string;
+  richTitle?: React.ReactNode;
   section: string;
   publishedDate?: string | null;
 }
@@ -305,7 +306,7 @@ export function StaffProfile({
                     <div key={article.id} className="group">
                       <Link href={`/${article.section}/${year}/${month}/${article.slug}`} className="block">
                         <h3 className={headlineClassName}>
-                          {article.title}
+                          {article.richTitle || article.title}
                         </h3>
                       </Link>
                       <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-text-muted transition-colors">

@@ -8,7 +8,7 @@ export interface SpotlightAuthor {
   id: number;
   name: string;
   headshot: string | null;
-  latestArticle: { title: string; url: string };
+  latestArticle: { title: string; richTitle?: React.ReactNode; url: string };
 }
 
 export default function AuthorSpotlightCarousel({
@@ -113,7 +113,7 @@ export default function AuthorSpotlightCarousel({
 
         {/* Latest article */}
         <p className="mt-0.5 font-copy text-[19px] leading-[1.3] text-text-muted transition-colors group-hover:text-accent line-clamp-2 max-w-[240px]">
-          {active.latestArticle.title}
+          {active.latestArticle.richTitle || active.latestArticle.title}
         </p>
       </TransitionLink>
 

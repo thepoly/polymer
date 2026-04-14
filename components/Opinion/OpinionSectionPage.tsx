@@ -1,5 +1,5 @@
 "use client";
-import { extractTextFromLexical } from '@/utils/formatArticle';
+import { extractTextFromLexical, renderLexicalHeadline } from '@/utils/formatArticle';
 
 import React, { useMemo } from "react";
 import Image from "next/image";
@@ -49,7 +49,7 @@ function OpinionCard({ article, withImage = false, priority = false }: { article
       </span>
       {/* Title — largest, dominant */}
       <h3 className="font-copy font-medium leading-[1.12] text-[25px] sm:text-[28px] text-text-main transition-colors">
-        {article.title}
+        {article.richTitle || article.title}
       </h3>
       {/* Byline — "BY" is muted, author name is accent */}
       <Byline author={article.author} date={article.date} variant="features" className="mt-2 text-[13px]" />
@@ -100,7 +100,7 @@ export default function OpinionSectionPage({
       {
         user: User;
         count: number;
-        latestArticle: { title: string; url: string };
+        latestArticle: { title: string; richTitle?: React.ReactNode; url: string };
       }
     >();
 
@@ -117,6 +117,7 @@ export default function OpinionSectionPage({
             count: 1,
             latestArticle: {
               title: extractTextFromLexical(raw.title),
+              richTitle: renderLexicalHeadline(raw.title),
               url: getArticleUrl({
                 section: raw.section,
                 slug: raw.slug,
@@ -365,7 +366,7 @@ export default function OpinionSectionPage({
                       {typeLabel}
                     </span>
                     <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors">
-                      {article.title}
+                      {article.richTitle || article.title}
                     </h3>
                     <Byline author={article.author} variant="features" className="mt-2 text-[13px]" />
                   </TransitionLink>

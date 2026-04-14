@@ -256,6 +256,19 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
+const getEmeritusYear = (user: StaffUser): string => {
+  const latestEndedPosition = user.positions
+    ?.filter((position) => Boolean(position.endDate))
+    .sort((a, b) => getTimestamp(b.endDate) - getTimestamp(a.endDate))[0]
+    ?.endDate
+
+  const year = latestEndedPosition
+    ? new Date(latestEndedPosition).getFullYear()
+    : new Date().getFullYear()
+
+  return year.toString().slice(-2)
+}
+
 export default async function StaffPage() {
   const payload = await getPayload({ config })
 
@@ -309,11 +322,6 @@ export default async function StaffPage() {
     depth: 1,
     limit: 0,
     sort: 'lastName',
-    where: {
-      retired: {
-        equals: false,
-      },
-    },
     select: {
       firstName: true,
       lastName: true,
@@ -352,8 +360,11 @@ export default async function StaffPage() {
       .filter((value): value is number => typeof value === 'number'),
   )
 
-  const everyoneElse = allUsersResponse.docs
-    .map((user) => toStaffUser(user))
+  const users = allUsersResponse.docs.map((user) => toStaffUser(user))
+  const activeUsers = users.filter((user) => !user.retired)
+  const retiredUsers = users.filter((user) => user.retired)
+
+  const everyoneElse = activeUsers
     .filter((user) => !featuredUserIds.has(user.id))
     .sort(sortAlphabetically)
 
@@ -410,6 +421,33 @@ export default async function StaffPage() {
             ))}
           </div>
         </section>
+
+        {retiredUsers.length > 0 && (
+          <section className="mt-20">
+            <div className="mb-12 flex justify-center overflow-hidden">
+              <h2 className="max-w-full text-center font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[#D6001C] dark:text-white whitespace-nowrap text-[36px] sm:text-[48px] md:text-[56px] lg:text-[65px] transition-colors">
+                Retired
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+              {retiredUsers.map((user) => (
+                <Link
+                  href={getProfileHref(user)}
+                  key={user.id}
+                  className="group flex flex-col items-start text-left"
+                >
+                  <h3 className="font-meta text-[15px] md:text-[16px] leading-tight font-semibold text-text-main mb-1 group-hover:text-accent transition-colors">
+                    {user.firstName} {user.lastName}
+                  </h3>
+                  <p className="font-meta text-[11px] leading-snug text-accent font-semibold transition-colors">
+                    Poly Emeritus &apos;{getEmeritusYear(user)}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </>
   )

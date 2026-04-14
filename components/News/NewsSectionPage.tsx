@@ -36,7 +36,7 @@ function NewsCard({ article, withImage = false, priority = false }: { article: C
       )}
       {/* Title */}
       <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors">
-        {article.title}
+        {article.richTitle || article.title}
       </h3>
       {/* Byline */}
       <div className="mt-2 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
@@ -236,7 +236,7 @@ export default function NewsSectionPage({
                     </span>
                   )}
                   <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors">
-                    {article.title}
+                    {article.richTitle || article.title}
                   </h3>
                   {article.author && (
                     <div className="mt-2 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">

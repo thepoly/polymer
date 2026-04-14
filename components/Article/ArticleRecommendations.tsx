@@ -1,4 +1,4 @@
-import { extractTextFromLexical } from '@/utils/formatArticle';
+import { extractTextFromLexical, renderLexicalHeadline } from '@/utils/formatArticle';
 import React from 'react';
 import Image from 'next/image';
 import { getPayload } from 'payload';
@@ -49,6 +49,7 @@ type RecommendationImage = {
 type RecommendationArticle = {
   id: number;
   title: string;
+  richTitle?: React.ReactNode;
   slug?: string | null;
   subdeck?: string | null;
   section: Article['section'];
@@ -150,6 +151,7 @@ const toPublicRecommendationAuthor = (author: User): RecommendationAuthor => ({
 const toPublicRecommendationArticle = (article: Article): RecommendationArticle => ({
   id: article.id,
   title: extractTextFromLexical(article.title),
+  richTitle: renderLexicalHeadline(article.title),
   slug: article.slug,
   subdeck: article.subdeck,
   section: article.section,
@@ -266,7 +268,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                   {getArticleLabel(leadArticle)}
                 </p>
                 <h3 className={`mt-2 ${getHeadlineClasses(leadArticle, 'lead')}`}>
-                  {leadArticle.title}
+                  {leadArticle.richTitle || leadArticle.title}
                 </h3>
                 <Byline
                   author={getAuthorString(leadArticle)}
@@ -316,7 +318,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                           {getArticleLabel(article)}
                         </p>
                         <h3 className={`mt-1 ${getHeadlineClasses(article, 'list')}`}>
-                          {article.title}
+                          {article.richTitle || article.title}
                         </h3>
                         <Byline author={getAuthorString(article)} date={formatDate(article)} className="text-[15px] md:text-[14px]" />
                       </div>
