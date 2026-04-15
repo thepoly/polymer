@@ -2,6 +2,7 @@
 
 import { useField, useFormFields, TextInput, FieldLabel } from '@payloadcms/ui'
 import { useCallback, useEffect, useRef } from 'react'
+import { getPlainText } from '../../utils/getPlainText'
 
 function toSlug(value: string): string {
   return value
@@ -28,9 +29,9 @@ export const SlugField = ({ path, label }: { path: string; label?: string }) => 
 
   useEffect(() => {
     if (userEditedRef.current) return
-    const titleValue = title?.value as string | undefined
-    if (!titleValue) return
-    setValue(toSlug(titleValue))
+    const titleText = getPlainText(title?.value)
+    if (!titleText) return
+    setValue(toSlug(titleText))
   }, [title?.value, setValue])
 
   const handleChange = useCallback(
