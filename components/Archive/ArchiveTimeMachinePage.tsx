@@ -181,7 +181,7 @@ function ArchiveArticleRow({ article }: { article: Article }) {
             article.section === "opinion" ? "font-light" : "font-bold"
           } ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""}`}
         >
-          {article.richTitle || article.title}
+          {article.title}
         </h2>
         <Byline author={article.author} date={article.date} className="mt-2 block" />
         {article.excerpt && (
