@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import FrontPage, { SectionBlock } from "@/components/FrontPage";
 import { GridLayout, type GridRow } from "@/components/FrontPage/GridLayout";
 import { DynamicSectionHeader } from "@/components/FrontPage/DynamicSectionHeader";
+import LiveStrip, { type LiveArticleStripEntry } from "@/components/LiveStrip";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import { Article as ComponentArticle } from "@/components/FrontPage/types";
@@ -85,6 +86,18 @@ type HomepageLayout = {
   op3?: LayoutArticleRelation;
   op4?: LayoutArticleRelation;
   special?: LayoutArticleRelation;
+  // `liveArticles` is provided by the parallel-agent-authored `live-articles`
+  // collection + layout field. We type it defensively here since its schema
+  // is not yet merged into this worktree's generated payload-types.
+  liveArticles?: Array<
+    | string
+    | number
+    | {
+        id: string | number;
+        slug?: string | null;
+        section?: string | null;
+      }
+  > | null;
 };
 
 const getRelationId = (value: LayoutArticleRelation) =>
@@ -127,7 +140,9 @@ export default async function Home() {
   const layoutResponse = await payload.find({
     collection: 'layout',
     limit: 1,
-    depth: 0,
+    // depth: 1 so the `liveArticles` hasMany relation comes back populated
+    // from the parallel-agent-authored `live-articles` collection.
+    depth: 1,
     select: {
       skeleton: true,
       grid: true,
@@ -142,15 +157,40 @@ export default async function Home() {
       op3: true,
       op4: true,
       special: true,
+      // liveArticles is not yet in this worktree's generated Payload types
+      // (the backend agent is adding it in parallel). Cast to satisfy TS.
+      ...({ liveArticles: true } as Record<string, true>),
     },
   });
 
   const layout = layoutResponse.docs[0] as HomepageLayout | undefined;
 
+  // Defensive mapping: the `liveArticles` relationship may not yet exist in
+  // this worktree's schema; only populated object entries contribute.
+  type LiveArticleRelationEntry =
+    | string
+    | number
+    | { id: string | number; slug?: string | null; section?: string | null };
+  const rawLiveArticles = (layout?.liveArticles ?? []) as LiveArticleRelationEntry[];
+  const liveStripEntries: LiveArticleStripEntry[] = rawLiveArticles
+    .filter(
+      (entry): entry is { id: string | number; slug: string; section: string } =>
+        typeof entry === "object" &&
+        entry !== null &&
+        typeof entry.slug === "string" &&
+        typeof entry.section === "string",
+    )
+    .map((entry) => ({
+      id: String(entry.id),
+      slug: entry.slug,
+      section: entry.section,
+    }));
+
   if (!layout) {
     return (
       <main className="min-h-screen flex flex-col bg-bg-main transition-colors duration-300">
         <Header />
+        <LiveStrip entries={liveStripEntries} />
         <div className="flex flex-col items-center justify-center flex-1 px-4 text-center">
           <h1 className="font-display text-[28px] md:text-[36px] font-bold text-text-main mb-3">We&apos;ll be right back</h1>
           <p className="font-copy text-[15px] md:text-[17px] text-text-muted max-w-md">The Polytechnic is currently under maintenance. Please check back shortly.</p>
@@ -384,6 +424,7 @@ export default async function Home() {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }} />
         <Header />
+        <LiveStrip entries={liveStripEntries} />
         <div className="w-full bg-bg-main text-text-main transition-colors duration-300">
           <div className="mx-auto max-w-[1280px] px-4 pb-14 md:px-6 xl:px-[30px]">
             <div data-frontpage-top className="pt-5 md:pt-7">
@@ -409,6 +450,7 @@ export default async function Home() {
     return (
       <main className="min-h-screen flex flex-col bg-bg-main transition-colors duration-300">
         <Header />
+        <LiveStrip entries={liveStripEntries} />
         <div className="flex flex-col items-center justify-center flex-1 px-4 text-center">
           <h1 className="font-display text-[28px] md:text-[36px] font-bold text-text-main mb-3">We&apos;ll be right back</h1>
           <p className="font-copy text-[15px] md:text-[17px] text-text-muted max-w-md">The Polytechnic is currently under maintenance. Please check back shortly.</p>
@@ -490,6 +532,7 @@ export default async function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }} />
       <Header />
+      <LiveStrip entries={liveStripEntries} />
       <FrontPage
         topStories={topStories}
         sections={{
