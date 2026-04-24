@@ -21,8 +21,14 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 450,
-      launchAutoHide: true,
+      // The splash is dismissed from MainActivity once the WebView reports
+      // document.readyState === 'complete' (plus a small settle delay), so
+      // the red splash covers the full remote-site init rather than fading
+      // on a fixed timer and flashing unstyled / half-hydrated content.
+      // A hard backstop in MainActivity guarantees dismissal if the page
+      // never reports ready (e.g. broken network).
+      launchShowDuration: 0,
+      launchAutoHide: false,
       launchFadeOutDuration: 250,
       backgroundColor: '#D6001C',
       androidScaleType: 'CENTER_CROP',

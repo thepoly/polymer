@@ -31,6 +31,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.3)
+      '@material-symbols/svg-400':
+        specifier: ^0.44.4
+        version: 0.44.4
       '@payloadcms/db-postgres':
         specifier: ^3.80.0
         version: 3.80.0(@opentelemetry/api@1.9.0)(payload@3.80.0(graphql@16.12.0)(typescript@5.9.3))
@@ -790,6 +793,9 @@ packages:
     resolution: {integrity: sha512-PaKTxSbVC4fpqUjQ7vUL9RkNF1PjL8TFl5jRe03PqoPYpE33buf3VXX6+cOUEfv9+uknSqLCPHoBS/4jN3a97w==}
     peerDependencies:
       yjs: '>=13.5.22'
+
+  '@material-symbols/svg-400@0.44.4':
+    resolution: {integrity: sha512-H170BEVf77bE0LBI2yIqbvvMB4x7u+xoWgcoFtqehRuYNm10ltdi4u0CONOLxhgzOgIwFLoNZTVbOjPFdu2t3g==}
 
   '@monaco-editor/loader@1.7.0':
     resolution: {integrity: sha512-gIwR1HrJrrx+vfyOhYmCZ0/JcWqG5kbfG7+d3f/C1LXk2EvzAbHSg3MQ5lO2sMlo9izoAZ04shohfKLVT6crVA==}
@@ -4323,6 +4329,8 @@ snapshots:
       '@lexical/selection': 0.41.0
       lexical: 0.41.0
       yjs: 13.6.29
+
+  '@material-symbols/svg-400@0.44.4': {}
 
   '@monaco-editor/loader@1.7.0':
     dependencies:

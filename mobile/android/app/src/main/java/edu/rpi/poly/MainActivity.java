@@ -4,6 +4,8 @@ import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.Window;
 import android.webkit.CookieManager;
@@ -21,11 +23,21 @@ public class MainActivity extends BridgeActivity {
     private static final int DARK_BG = 0xFF0A0A0A;
     private static final String SITE_URL = "https://poly.rpi.edu";
     // Keep the red launch bars on screen until the Capacitor splash has faded
-    // out (launchShowDuration + launchFadeOutDuration in capacitor.config.ts).
+    // out. Splash dismissal is driven by WebView readiness now (see below),
+    // so this delay is an upper bound against the splash-hide backstop.
     private static final long BAR_COLOR_APPLY_DELAY_MS = 800;
 
     // Matches the web-side document.startViewTransition() radial wipe.
     private static final long BAR_COLOR_ANIM_DURATION_MS = 320;
+
+    // Splash dismissal timings. The splash is hidden once
+    // document.readyState === 'complete' plus a short settle delay so CSS /
+    // hydration can paint before the splash fades. A hard backstop ensures
+    // we never get stuck on the red splash if the page never reports ready.
+    private static final long SPLASH_READY_POLL_INTERVAL_MS = 120;
+    private static final long SPLASH_SETTLE_DELAY_MS = 350;
+    private static final long SPLASH_HIDE_BACKSTOP_MS = 8000;
+    private static final long SPLASH_FADE_OUT_DURATION_MS = 250;
 
     // null = defer to system / cookie.
     // true / false = site-controlled override (via window.PolyTheme.setDark).
@@ -38,6 +50,10 @@ public class MainActivity extends BridgeActivity {
     // background, light glyph icons). Used for no-op detection.
     private Boolean currentDark = null;
     private ValueAnimator barColorAnimator = null;
+
+    // Splash dismissal state.
+    private boolean splashHidden = false;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -65,12 +81,36 @@ public class MainActivity extends BridgeActivity {
         }, BAR_COLOR_APPLY_DELAY_MS);
 
         PushRegistration.start(this);
+
+        // Drive splash dismissal off WebView readiness instead of the
+        // Capacitor fixed-timer autohide. launchAutoHide is disabled in
+        // capacitor.config.ts, so the red splash stays up until we hide it.
+        scheduleSplashHideWhenReady(webView);
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         applyBars(siteThemeOverride != null ? siteThemeOverride : resolveInitialTheme(), true);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // When the app is backgrounded and returned to the foreground, Android
+        // can reset window bar colors / appearance flags to the system theme
+        // default (e.g. a light status bar over a dark site). Re-apply the
+        // current in-app theme un-animated so the user never sees a mismatched
+        // flash on resume. Prefer the site-pushed override, then the theme
+        // cookie, then the system ui mode.
+        final boolean dark = siteThemeOverride != null
+                ? siteThemeOverride
+                : resolveInitialTheme();
+        // Force re-application by clearing cached state — the window color
+        // may have been changed out from under us while we were paused.
+        currentBarColor = null;
+        currentDark = null;
+        applyBars(dark, false);
     }
 
     private boolean resolveInitialTheme() {
@@ -203,6 +243,84 @@ public class MainActivity extends BridgeActivity {
                 animator.start();
             }
         });
+    }
+
+    /**
+     * Poll the WebView until document.readyState === 'complete', then wait a
+     * short settle delay, then ask the Capacitor SplashScreen plugin to fade
+     * out. A hard backstop dismisses the splash regardless, so a broken
+     * network or a script error never leaves the user stuck on the red screen.
+     */
+    private void scheduleSplashHideWhenReady(final WebView webView) {
+        if (webView == null) {
+            // No WebView to poll — just post the backstop.
+            mainHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    hideSplashOnce();
+                }
+            }, SPLASH_HIDE_BACKSTOP_MS);
+            return;
+        }
+
+        // Backstop: always dismiss after SPLASH_HIDE_BACKSTOP_MS even if the
+        // readiness poll never resolves.
+        mainHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                hideSplashOnce();
+            }
+        }, SPLASH_HIDE_BACKSTOP_MS);
+
+        final Runnable poll = new Runnable() {
+            @Override
+            public void run() {
+                if (splashHidden) return;
+                try {
+                    webView.evaluateJavascript(
+                            "(document.readyState === 'complete') ? '1' : '0'",
+                            new android.webkit.ValueCallback<String>() {
+                                @Override
+                                public void onReceiveValue(String value) {
+                                    if (splashHidden) return;
+                                    // evaluateJavascript returns JSON-encoded
+                                    // strings, so 'complete' comes back as "\"1\"".
+                                    if (value != null && value.contains("1")) {
+                                        mainHandler.postDelayed(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                hideSplashOnce();
+                                            }
+                                        }, SPLASH_SETTLE_DELAY_MS);
+                                    } else {
+                                        mainHandler.postDelayed(MainActivity.this.splashPoller, SPLASH_READY_POLL_INTERVAL_MS);
+                                    }
+                                }
+                            });
+                } catch (Throwable ignored) {
+                    // If evaluateJavascript is unavailable for any reason,
+                    // fall back to the backstop.
+                }
+            }
+        };
+        this.splashPoller = poll;
+        mainHandler.postDelayed(poll, SPLASH_READY_POLL_INTERVAL_MS);
+    }
+
+    private Runnable splashPoller = null;
+
+    private void hideSplashOnce() {
+        if (splashHidden) return;
+        splashHidden = true;
+        final WebView webView = getBridge() != null ? getBridge().getWebView() : null;
+        if (webView == null) return;
+        final String js = "(function(){try{var C=window.Capacitor;if(C&&C.Plugins&&C.Plugins.SplashScreen){"
+                + "C.Plugins.SplashScreen.hide({fadeOutDuration:" + SPLASH_FADE_OUT_DURATION_MS + "});}}catch(e){}})();";
+        try {
+            webView.evaluateJavascript(js, null);
+        } catch (Throwable ignored) {
+            // Swallow; worst case the splash remains until process teardown.
+        }
     }
 
     private class ThemeBridge {
