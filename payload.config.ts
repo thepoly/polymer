@@ -58,14 +58,7 @@ import Theme from './collections/Theme.ts'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-const csrfOrigins = [
-  process.env.NEXT_PUBLIC_SITE_URL,
-  process.env.BASE_URL,
-  process.env.NODE_ENV !== 'production' ? 'http://localhost:3000' : undefined,
-].filter((origin): origin is string => Boolean(origin))
-
 export default buildConfig({
-  csrf: csrfOrigins,
   admin: {
     user: Users.slug,
     suppressHydrationWarning: true,

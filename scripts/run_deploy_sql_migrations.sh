@@ -37,12 +37,14 @@ VALUES
   ('20260402_000000_add_staff_page_layout', 12, NOW(), NOW()),
   ('20260402_100000_add_media_title', 13, NOW(), NOW()),
   ('20260404_000000_add_header_animation', 14, NOW(), NOW()),
-  ('20260420_000000_add_live_articles', 15, NOW(), NOW()),
-  ('20260423_000000_layout_versions_and_remove_edition', 16, NOW(), NOW()),
-  ('20260423_010000_add_articles_last_modified_by', 17, NOW(), NOW()),
-  ('20260423_020000_add_gemini_to_layout_skeleton', 18, NOW(), NOW()),
-  ('20260423_030000_add_header_animation_enabled', 19, NOW(), NOW()),
-  ('20260423_040000_add_last_modified_by_to_layout_live_theme', 20, NOW(), NOW())
+  ('20260405_000000_migrate_title_to_richtext', 15, NOW(), NOW()),
+  ('20260409_000000_backfill_plain_title', 16, NOW(), NOW()),
+  ('20260420_000000_add_live_articles', 17, NOW(), NOW()),
+  ('20260423_000000_layout_versions_and_remove_edition', 18, NOW(), NOW()),
+  ('20260423_010000_add_articles_last_modified_by', 19, NOW(), NOW()),
+  ('20260423_020000_add_gemini_to_layout_skeleton', 20, NOW(), NOW()),
+  ('20260423_030000_add_header_animation_enabled', 21, NOW(), NOW()),
+  ('20260423_040000_add_last_modified_by_to_layout_live_theme', 22, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -704,6 +706,114 @@ ALTER TABLE "_theme_v"
   ADD COLUMN IF NOT EXISTS "version_header_animation_wave_count" numeric,
   ADD COLUMN IF NOT EXISTS "version_header_animation_line_weight" numeric,
   ADD COLUMN IF NOT EXISTS "version_header_animation_wrap_around" boolean;
+
+-- 20260405_000000: Migrate articles.title and _articles_v.version_title from varchar to jsonb (richText).
+-- Idempotent: only converts if the column is still varchar. Wraps existing string values in a
+-- minimal Lexical root/paragraph/text document so Payload keeps rendering them.
+DO $$
+BEGIN
+  IF (
+    SELECT data_type FROM information_schema.columns
+    WHERE table_name = 'articles' AND column_name = 'title'
+  ) = 'character varying' THEN
+    ALTER TABLE "articles" RENAME COLUMN "title" TO "old_title";
+    ALTER TABLE "articles" ADD COLUMN "title" jsonb;
+
+    UPDATE "articles"
+    SET "title" = jsonb_build_object(
+      'root', jsonb_build_object(
+        'type', 'root',
+        'format', '',
+        'indent', 0,
+        'version', 1,
+        'direction', 'ltr',
+        'children', jsonb_build_array(
+          jsonb_build_object(
+            'type', 'paragraph',
+            'format', '',
+            'indent', 0,
+            'version', 1,
+            'direction', 'ltr',
+            'children', jsonb_build_array(
+              jsonb_build_object(
+                'type', 'text',
+                'format', 0,
+                'mode', 'normal',
+                'style', '',
+                'text', "old_title",
+                'version', 1
+              )
+            )
+          )
+        )
+      )
+    );
+
+    ALTER TABLE "articles" ALTER COLUMN "title" SET NOT NULL;
+    ALTER TABLE "articles" DROP COLUMN "old_title";
+  END IF;
+
+  IF (
+    SELECT data_type FROM information_schema.columns
+    WHERE table_name = '_articles_v' AND column_name = 'version_title'
+  ) = 'character varying' THEN
+    ALTER TABLE "_articles_v" RENAME COLUMN "version_title" TO "old_version_title";
+    ALTER TABLE "_articles_v" ADD COLUMN "version_title" jsonb;
+
+    UPDATE "_articles_v"
+    SET "version_title" = jsonb_build_object(
+      'root', jsonb_build_object(
+        'type', 'root',
+        'format', '',
+        'indent', 0,
+        'version', 1,
+        'direction', 'ltr',
+        'children', jsonb_build_array(
+          jsonb_build_object(
+            'type', 'paragraph',
+            'format', '',
+            'indent', 0,
+            'version', 1,
+            'direction', 'ltr',
+            'children', jsonb_build_array(
+              jsonb_build_object(
+                'type', 'text',
+                'format', 0,
+                'mode', 'normal',
+                'style', '',
+                'text', "old_version_title",
+                'version', 1
+              )
+            )
+          )
+        )
+      )
+    ) WHERE "old_version_title" IS NOT NULL;
+
+    ALTER TABLE "_articles_v" DROP COLUMN "old_version_title";
+  END IF;
+END $$;
+
+-- 20260409_000000: Add plain_title columns and backfill from the jsonb title by concatenating
+-- every text node in document order. Only updates rows still missing plain_title so re-runs are cheap.
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "plain_title" varchar;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_plain_title" varchar;
+
+UPDATE "articles"
+SET "plain_title" = (
+  SELECT string_agg(value->>'text', '' ORDER BY ordinality)
+  FROM jsonb_path_query("title", 'strict $.**.children[*] ? (@.type == "text")')
+    WITH ORDINALITY t(value, ordinality)
+)
+WHERE "plain_title" IS NULL AND "title" IS NOT NULL;
+
+UPDATE "_articles_v"
+SET "version_plain_title" = (
+  SELECT string_agg(value->>'text', '' ORDER BY ordinality)
+  FROM jsonb_path_query("version_title", 'strict $.**.children[*] ? (@.type == "text")')
+    WITH ORDINALITY t(value, ordinality)
+)
+WHERE "version_plain_title" IS NULL AND "version_title" IS NOT NULL;
 
 -- 20260420_000000: Add live_articles collection + layout.liveArticles relationship
 DO $$ BEGIN
