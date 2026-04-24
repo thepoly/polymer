@@ -23,6 +23,11 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import {
+  getSlotNumber,
+  getCustomGridSlotLookup,
+  type HomepageLayoutName,
+} from '@/lib/homepageSlots';
 import './layout-editor.css';
 
 // ---------------------------------------------------------------------------
@@ -351,10 +356,11 @@ function ResizeHandle({ cellId, onResize }: {
 // Sub-cell inside a stack (droppable + draggable)
 // ---------------------------------------------------------------------------
 
-function SubCellComponent({ cell, article, onUpdateDirection, onClear, onDelete, canDelete }: {
+function SubCellComponent({ cell, article, onUpdateDirection, onClear, onDelete, canDelete, slotNumber }: {
   cell: GridCell; article: ArticleData | null;
   onUpdateDirection: (d: ImageDirection) => void; onClear: () => void;
   onDelete: () => void; canDelete: boolean;
+  slotNumber?: number | null;
 }) {
   const { isOver, setNodeRef: setDropRef } = useDroppable({
     id: `cell-${cell.id}`,
@@ -364,6 +370,9 @@ function SubCellComponent({ cell, article, onUpdateDirection, onClear, onDelete,
 
   return (
     <div ref={setDropRef} className={`le-subcell ${isOver ? 'le-cell-over' : ''} ${article ? 'le-subcell-filled' : ''}`}>
+      {typeof slotNumber === 'number' && (
+        <span className="le-slot-number" aria-label={`Slot ${slotNumber}`}>#{slotNumber}</span>
+      )}
       <div className="le-subcell-toolbar">
         {article && <DirectionPicker value={cell.direction} hasImage={hasImage} onChange={onUpdateDirection} />}
         <div className="le-cell-actions">
@@ -396,6 +405,7 @@ function SortableGridCell({
   onUpdateDirection, onClear, onDelete, canDelete,
   onSplit, onAddSubCell, onUpdateSubCell, onClearSubCell, onDeleteSubCell, onUnsplit,
   onResize,
+  slotNumberLookup,
 }: {
   cell: GridCell; article: ArticleData | null;
   articleMap: Map<number, ArticleData>;
@@ -406,8 +416,10 @@ function SortableGridCell({
   onClearSubCell: (subId: string) => void; onDeleteSubCell: (subId: string) => void;
   onUnsplit: () => void;
   onResize: (delta: number) => void;
+  slotNumberLookup?: Map<string, number>;
 }) {
   const stacked = isStackCell(cell);
+  const cellSlotNumber = !stacked ? slotNumberLookup?.get(cell.id) ?? null : null;
 
   const {
     attributes, listeners, setNodeRef: setSortRef,
@@ -437,6 +449,9 @@ function SortableGridCell({
       className={`le-cell ${!stacked && isOver ? 'le-cell-over' : ''} ${!stacked && article ? 'le-cell-filled' : ''} ${stacked ? 'le-cell-stacked' : ''}`}
       style={style}
     >
+      {typeof cellSlotNumber === 'number' && (
+        <span className="le-slot-number" aria-label={`Slot ${cellSlotNumber}`}>#{cellSlotNumber}</span>
+      )}
       {/* Cell toolbar */}
       <div className="le-cell-toolbar">
         {/* Drag handle for reordering columns */}
@@ -469,6 +484,7 @@ function SortableGridCell({
               onClear={() => onClearSubCell(sub.id)}
               onDelete={() => onDeleteSubCell(sub.id)}
               canDelete={cell.children!.length > 1}
+              slotNumber={slotNumberLookup?.get(sub.id) ?? null}
             />
           ))}
         </div>
@@ -522,6 +538,7 @@ function SortableGridRow({
   onDeleteRow, onAddCell, onUpdateCell, onDeleteCell, onClearCell,
   onSplitCell, onAddSubCell, onUpdateSubCell, onClearSubCell, onDeleteSubCell, onUnsplitCell,
   onResizeCell,
+  slotNumberLookup,
 }: {
   row: GridRow; rowIndex: number;
   articleMap: Map<number, ArticleData>;
@@ -534,6 +551,7 @@ function SortableGridRow({
   onDeleteSubCell: (cellId: string, subId: string) => void;
   onUnsplitCell: (cellId: string) => void;
   onResizeCell: (cellId: string, delta: number) => void;
+  slotNumberLookup?: Map<string, number>;
 }) {
   const {
     attributes, listeners, setNodeRef,
@@ -581,6 +599,7 @@ function SortableGridRow({
               onDeleteSubCell={(subId) => onDeleteSubCell(cell.id, subId)}
               onUnsplit={() => onUnsplitCell(cell.id)}
               onResize={(delta) => onResizeCell(cell.id, delta)}
+              slotNumberLookup={slotNumberLookup}
             />
           ))}
           {rowTotal < 12 && (
@@ -763,10 +782,11 @@ const getAriesBottomRequirement = (
 // Aries Slot Droppable
 // ---------------------------------------------------------------------------
 
-function AriesSlot({ slotId, label, article, isLead, isOver, setDropRef, onClear, emptyConstraint }: {
+function AriesSlot({ slotId, label, article, isLead, isOver, setDropRef, onClear, emptyConstraint, slotNumber }: {
   slotId: string; label: string; article: ArticleData | null; isLead: boolean;
   isOver: boolean; setDropRef: (node: HTMLElement | null) => void; onClear: () => void;
   emptyConstraint?: 'image' | 'text' | null;
+  slotNumber?: number | null;
 }) {
   const imageUrl = article ? getImageUrl(article) : null;
   const authorDate = article ? getAuthorDateString(article) : '';
@@ -776,6 +796,9 @@ function AriesSlot({ slotId, label, article, isLead, isOver, setDropRef, onClear
       ref={setDropRef}
       className={`le-aries-slot ${isLead ? 'le-aries-lead' : 'le-aries-hero'} ${isOver ? 'le-cell-over' : ''} ${article ? 'le-cell-filled' : ''}`}
     >
+      {typeof slotNumber === 'number' && (
+        <span className="le-slot-number" aria-label={`Slot ${slotNumber}`}>#{slotNumber}</span>
+      )}
       <div className="le-aries-slot-header">
         <span className="le-aries-slot-label">{label}</span>
         {article && <button className="le-cell-action-btn" onClick={onClear} title="Remove article">✕</button>}
@@ -851,14 +874,22 @@ function AriesSlot({ slotId, label, article, isLead, isOver, setDropRef, onClear
   );
 }
 
-function AriesDropSlot({ slotId, label, article, isLead, onClear, emptyConstraint }: {
+function AriesDropSlot({ slotId, label, article, isLead, onClear, emptyConstraint, numberingSkeleton }: {
   slotId: string; label: string; article: ArticleData | null; isLead: boolean; onClear: () => void;
   emptyConstraint?: 'image' | 'text' | null;
+  /**
+   * Which skeleton's slot-number scheme to use for the corner badge. This can
+   * differ from the DnD data `skeleton` key (which is always 'aries' here) —
+   * e.g. the gemini preset reuses AriesDropSlot for its slots but wants the
+   * gemini numbering.
+   */
+  numberingSkeleton?: Exclude<HomepageLayoutName, 'custom'> | null;
 }) {
   const { isOver, setNodeRef } = useDroppable({
     id: `aries-${slotId}`,
     data: { cellId: slotId, skeleton: 'aries' },
   });
+  const slotNumber = numberingSkeleton ? getSlotNumber(numberingSkeleton, slotId) : null;
   return (
     <AriesSlot
       slotId={slotId}
@@ -869,6 +900,7 @@ function AriesDropSlot({ slotId, label, article, isLead, onClear, emptyConstrain
       setDropRef={setNodeRef}
       onClear={onClear}
       emptyConstraint={emptyConstraint}
+      slotNumber={slotNumber}
     />
   );
 }
@@ -914,6 +946,7 @@ function AriesEditor({ data, articleMap, onClear, onToggleLeadImportant }: {
             article={data.lead !== null ? articleMap.get(data.lead) || null : null}
             isLead
             onClear={() => onClear('lead')}
+            numberingSkeleton="aries"
           />
           <label className="le-aries-important-toggle">
             <input
@@ -933,6 +966,7 @@ function AriesEditor({ data, articleMap, onClear, onToggleLeadImportant }: {
               article={article}
               isLead={false}
               onClear={() => onClear(slotId)}
+              numberingSkeleton="aries"
             />
           ))}
         </div>
@@ -951,6 +985,7 @@ function AriesEditor({ data, articleMap, onClear, onToggleLeadImportant }: {
               isLead={false}
               onClear={() => onClear('bottom-0')}
               emptyConstraint="text"
+              numberingSkeleton="aries"
             />
             <div className="le-aries-bottom-left-pair">
               {[1, 2].map((i) => (
@@ -962,6 +997,7 @@ function AriesEditor({ data, articleMap, onClear, onToggleLeadImportant }: {
                   isLead={false}
                   onClear={() => onClear(`bottom-${i}`)}
                   emptyConstraint="text"
+                  numberingSkeleton="aries"
                 />
               ))}
             </div>
@@ -972,6 +1008,7 @@ function AriesEditor({ data, articleMap, onClear, onToggleLeadImportant }: {
               isLead={false}
               onClear={() => onClear('bottom-3')}
               emptyConstraint="text"
+              numberingSkeleton="aries"
             />
           </div>
           <div className="le-aries-bottom-right">
@@ -982,6 +1019,7 @@ function AriesEditor({ data, articleMap, onClear, onToggleLeadImportant }: {
               isLead={false}
               onClear={() => onClear('bottom-4')}
               emptyConstraint="image"
+              numberingSkeleton="aries"
             />
             <div className="le-aries-bottom-right-pair">
               {[5, 6].map((i) => (
@@ -993,6 +1031,7 @@ function AriesEditor({ data, articleMap, onClear, onToggleLeadImportant }: {
                   isLead={false}
                   onClear={() => onClear(`bottom-${i}`)}
                   emptyConstraint="text"
+                  numberingSkeleton="aries"
                 />
               ))}
             </div>
@@ -1003,6 +1042,7 @@ function AriesEditor({ data, articleMap, onClear, onToggleLeadImportant }: {
               isLead={false}
               onClear={() => onClear('bottom-7')}
               emptyConstraint="text"
+              numberingSkeleton="aries"
             />
           </div>
         </div>
@@ -1281,6 +1321,13 @@ export function LayoutEditor() {
     : collectArticleIds(grid);
   const usedIds = new Set([...heroUsedIds, ...sectionPinnedIds]);
   const rowSortIds = grid.map((r) => `sortrow-${r.id}`);
+
+  /**
+   * Column-major slot-number lookup for the custom grid. Recomputed whenever
+   * grid structure changes. Used to show "#N" badges on each cell during
+   * drag-and-drop so editors can reference a slot by its stable number.
+   */
+  const customGridSlotLookup = getCustomGridSlotLookup(grid);
 
   // ---- Fetch ----
   useEffect(() => {
@@ -1986,6 +2033,7 @@ export function LayoutEditor() {
                           article={aries.left[i] !== null ? articleMap.get(aries.left[i]!) || null : null}
                           isLead={false}
                           onClear={() => { setAries((p) => { const next = { ...p, left: [...p.left] }; next.left[i] = null; return next; }); markDirty(); }}
+                          numberingSkeleton="gemini"
                         />
                         <SubdeckToggle slotId={`left-${i}`} />
                       </div>
@@ -1999,6 +2047,7 @@ export function LayoutEditor() {
                       article={aries.lead !== null ? articleMap.get(aries.lead) || null : null}
                       isLead
                       onClear={() => { setAries((p) => ({ ...p, lead: null })); markDirty(); }}
+                      numberingSkeleton="gemini"
                     />
                     <label className="le-aries-important-toggle">
                       <input
@@ -2037,6 +2086,7 @@ export function LayoutEditor() {
                           article={aries.right[i] !== null ? articleMap.get(aries.right[i]!) || null : null}
                           isLead={false}
                           onClear={() => { setAries((p) => { const next = { ...p, right: [...p.right] }; next.right[i] = null; return next; }); markDirty(); }}
+                          numberingSkeleton="gemini"
                         />
                         <SubdeckToggle slotId={`right-${i}`} />
                       </div>
@@ -2053,6 +2103,7 @@ export function LayoutEditor() {
                         article={aries.bottom[i] !== null ? articleMap.get(aries.bottom[i]!) || null : null}
                         isLead={false}
                         onClear={() => { setAries((p) => { const next = { ...p, bottom: [...p.bottom] }; next.bottom[i] = null; return next; }); markDirty(); }}
+                        numberingSkeleton="gemini"
                       />
                       <SubdeckToggle slotId={`bottom-${i}`} />
                     </div>
@@ -2070,16 +2121,16 @@ export function LayoutEditor() {
                 </div>
                 <div className="le-tau-grid">
                   <div className="le-tau-feature">
-                    <AriesDropSlot slotId="lead" label="Feature" article={aries.lead !== null ? articleMap.get(aries.lead) || null : null} isLead onClear={() => { setAries((p) => ({ ...p, lead: null })); markDirty(); }} />
+                    <AriesDropSlot slotId="lead" label="Feature" article={aries.lead !== null ? articleMap.get(aries.lead) || null : null} isLead onClear={() => { setAries((p) => ({ ...p, lead: null })); markDirty(); }} numberingSkeleton="taurus" />
                   </div>
                   <div className="le-tau-supporting">
                     {[0, 1, 2].map((i) => (
-                      <AriesDropSlot key={`left-${i}`} slotId={`left-${i}`} label={`Support ${i + 1}`} article={aries.left[i] !== null ? articleMap.get(aries.left[i]!) || null : null} isLead={false} onClear={() => { setAries((p) => { const next = { ...p, left: [...p.left] }; next.left[i] = null; return next; }); markDirty(); }} />
+                      <AriesDropSlot key={`left-${i}`} slotId={`left-${i}`} label={`Support ${i + 1}`} article={aries.left[i] !== null ? articleMap.get(aries.left[i]!) || null : null} isLead={false} onClear={() => { setAries((p) => { const next = { ...p, left: [...p.left] }; next.left[i] = null; return next; }); markDirty(); }} numberingSkeleton="taurus" />
                     ))}
                   </div>
                   <div className="le-tau-list">
                     {[0, 1, 2].map((i) => (
-                      <AriesDropSlot key={`right-${i}`} slotId={`right-${i}`} label={`List ${i + 1}`} article={aries.right[i] !== null ? articleMap.get(aries.right[i]!) || null : null} isLead={false} onClear={() => { setAries((p) => { const next = { ...p, right: [...p.right] }; next.right[i] = null; return next; }); markDirty(); }} />
+                      <AriesDropSlot key={`right-${i}`} slotId={`right-${i}`} label={`List ${i + 1}`} article={aries.right[i] !== null ? articleMap.get(aries.right[i]!) || null : null} isLead={false} onClear={() => { setAries((p) => { const next = { ...p, right: [...p.right] }; next.right[i] = null; return next; }); markDirty(); }} numberingSkeleton="taurus" />
                     ))}
                   </div>
                 </div>
@@ -2106,6 +2157,7 @@ export function LayoutEditor() {
                       onDeleteSubCell={(cellId, subId) => deleteSubCell(cellId, subId)}
                       onUnsplitCell={(cellId) => unsplitCell(cellId)}
                       onResizeCell={(cellId, delta) => resizeCell(cellId, delta)}
+                      slotNumberLookup={customGridSlotLookup}
                     />
                   ))}
                 </SortableContext>
