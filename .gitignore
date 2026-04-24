@@ -46,3 +46,7 @@ media/
 # scraping
 scripts/scraper/
 .env
+
+# worktrees
+.worktrees/
+.claude/worktrees/

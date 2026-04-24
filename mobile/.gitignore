@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Capacitor generated
+.capacitor/
+
+# Android build artifacts
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/captures/
+android/.idea/
+android/*.iml
+android/app/*.iml
+android/gradle/wrapper/dists/
+
+# Firebase config (provide via CI secret or copy from placeholder)
+android/app/google-services.json
+
+# Signing material — never commit
+android/app/release.keystore
+android/app/*.keystore
+android/app/*.jks
+android/app/keystore.properties
+
+# OS cruft
+.DS_Store
+Thumbs.db

@@ -35,6 +35,8 @@ import * as migration_20260423_020000_add_gemini_to_layout_skeleton from './2026
 import * as migration_20260423_030000_add_header_animation_enabled from './20260423_030000_add_header_animation_enabled';
 import * as migration_20260423_040000_add_last_modified_by_to_layout_live_theme from './20260423_040000_add_last_modified_by_to_layout_live_theme';
 import * as migration_20260424_000000_add_news_more_seo_fields from './20260424_000000_add_news_more_seo_fields';
+import * as migration_20260424_010000_add_breaking_news from './20260424_010000_add_breaking_news';
+import * as migration_20260424_020000_add_device_tokens from './20260424_020000_add_device_tokens';
 
 export const migrations = [
   {
@@ -221,5 +223,15 @@ export const migrations = [
     up: migration_20260424_000000_add_news_more_seo_fields.up,
     down: migration_20260424_000000_add_news_more_seo_fields.down,
     name: '20260424_000000_add_news_more_seo_fields',
+  },
+  {
+    up: migration_20260424_010000_add_breaking_news.up,
+    down: migration_20260424_010000_add_breaking_news.down,
+    name: '20260424_010000_add_breaking_news',
+  },
+  {
+    up: migration_20260424_020000_add_device_tokens.up,
+    down: migration_20260424_020000_add_device_tokens.down,
+    name: '20260424_020000_add_device_tokens',
   },
 ];

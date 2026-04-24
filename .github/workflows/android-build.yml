@@ -1,0 +1,221 @@
+name: Android Build & Release
+
+# Single-job design: main-push auto-bumps the patch version, creates the tag,
+# builds the APK, and publishes the GitHub Release in one run. Tag pushes
+# (for intentional minor/major releases) run the same job without the
+# auto-bump step. Manual workflow_dispatch runs upload an artifact only.
+#
+# Why a single job: pushing a tag with GITHUB_TOKEN does NOT retrigger
+# workflows, so a "tag-then-rebuild" split would silently drop the release.
+# Doing everything in one run sidesteps that and keeps the tag + release
+# atomic. See docs/android-release.md for the operator runbook.
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "mobile/**"
+      - ".github/workflows/android-build.yml"
+    tags:
+      - "v*.*.*-android"
+  workflow_dispatch:
+
+permissions:
+  # Needed so GITHUB_TOKEN can push the auto-created tag and create the Release.
+  contents: write
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          # Full history so `git tag -l` can see prior android tags for version bumping.
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Setup Java (Temurin 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('mobile/android/**/*.gradle*', 'mobile/android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Determine version and mode
+        id: mode
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${REF}" == refs/tags/v*.*.*-android ]]; then
+            # Tag push: build at the tag, do not auto-bump.
+            RAW="${REF_NAME#v}"
+            VERSION="${RAW%-android}"
+            echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+            echo "action=release" >> "$GITHUB_OUTPUT"
+            echo "Tag push detected; building v${VERSION}-android"
+          elif [[ "${EVENT_NAME}" == "push" && "${REF}" == "refs/heads/main" ]]; then
+            # main push: auto-bump patch from the latest android tag.
+            LAST="$(git tag -l 'v*.*.*-android' --sort=-v:refname | head -1 || true)"
+            NEXT="$(node mobile/scripts/bump-patch.mjs "${LAST}")"
+            echo "version=${NEXT}" >> "$GITHUB_OUTPUT"
+            echo "action=tag-and-release" >> "$GITHUB_OUTPUT"
+            echo "main push detected; last=${LAST:-<none>} next=${NEXT}"
+          else
+            # workflow_dispatch: ephemeral dev build, no tag, no release.
+            LAST="$(git tag -l 'v*.*.*-android' --sort=-v:refname | head -1 || true)"
+            NEXT="$(node mobile/scripts/bump-patch.mjs "${LAST}")"
+            echo "version=${NEXT}-dev" >> "$GITHUB_OUTPUT"
+            echo "action=artifact" >> "$GITHUB_OUTPUT"
+            echo "Manual dispatch detected; building ${NEXT}-dev (artifact only)"
+          fi
+
+      - name: Install root dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: pnpm install --frozen-lockfile
+
+      - name: Write google-services.json
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          set -euo pipefail
+
+          TARGET="mobile/android/app/google-services.json"
+          PLACEHOLDER="mobile/android/app/google-services.json.placeholder"
+
+          if [[ -n "${GOOGLE_SERVICES_JSON_BASE64:-}" ]]; then
+            echo "Using GOOGLE_SERVICES_JSON_BASE64 secret"
+            echo "${GOOGLE_SERVICES_JSON_BASE64}" | base64 -d > "${TARGET}"
+          elif [[ -f "${PLACEHOLDER}" ]]; then
+            echo "Secret not set; falling back to placeholder at ${PLACEHOLDER}"
+            cp "${PLACEHOLDER}" "${TARGET}"
+          else
+            echo "ERROR: no google-services.json secret and no placeholder at ${PLACEHOLDER}" >&2
+            exit 1
+          fi
+
+      - name: Write release keystore (if provided)
+        id: keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${ANDROID_KEYSTORE_BASE64:-}" \
+             && -n "${ANDROID_KEYSTORE_PASSWORD:-}" \
+             && -n "${ANDROID_KEY_ALIAS:-}" \
+             && -n "${ANDROID_KEY_PASSWORD:-}" ]]; then
+            echo "${ANDROID_KEYSTORE_BASE64}" | base64 -d > mobile/android/app/release.keystore
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+            echo "Signing secrets present; will build signed release APK"
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "Signing secrets incomplete or missing; falling back to debug APK"
+          fi
+
+      - name: Sync version into Gradle
+        env:
+          APP_VERSION: ${{ steps.mode.outputs.version }}
+        run: node mobile/scripts/sync-version.mjs "${APP_VERSION}"
+
+      - name: Sync Capacitor to Android
+        working-directory: mobile
+        run: npx cap sync android
+
+      - name: Build signed release APK
+        if: steps.keystore.outputs.signed == 'true'
+        working-directory: mobile/android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Build debug APK (fallback)
+        if: steps.keystore.outputs.signed == 'false'
+        working-directory: mobile/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Configure git identity
+        if: steps.mode.outputs.action == 'tag-and-release'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and push auto tag
+        if: steps.mode.outputs.action == 'tag-and-release'
+        env:
+          APP_VERSION: ${{ steps.mode.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          TAG="v${APP_VERSION}-android"
+
+          # Guard against collision: if someone already pushed this tag manually,
+          # skip creation so the release step below can still attach to it.
+          if git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists locally, skipping creation"
+          elif git ls-remote --tags origin "${TAG}" | grep -q "${TAG}"; then
+            echo "Tag ${TAG} already exists on origin, fetching"
+            git fetch origin "refs/tags/${TAG}:refs/tags/${TAG}"
+          else
+            git tag -a "${TAG}" -m "Android release ${TAG}"
+            git push origin "${TAG}"
+            echo "Created and pushed ${TAG}"
+          fi
+
+      - name: Create GitHub Release
+        if: steps.mode.outputs.action == 'tag-and-release' || steps.mode.outputs.action == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.mode.outputs.version }}-android
+          name: Android v${{ steps.mode.outputs.version }}
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+          files: |
+            mobile/android/app/build/outputs/apk/release/*.apk
+            mobile/android/app/build/outputs/apk/debug/*.apk
+
+      - name: Upload workflow artifact (manual dispatch)
+        if: steps.mode.outputs.action == 'artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ steps.mode.outputs.version }}
+          path: mobile/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+          retention-days: 14

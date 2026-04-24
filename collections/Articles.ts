@@ -50,7 +50,7 @@ const Articles: CollectionConfig = {
 
         if (isNowPublished && !wasPublished) {
           const posthog = getPostHogClient()
-          
+
           const plainTitle = getPlainText(doc.title);
 
           posthog?.capture({
@@ -63,6 +63,28 @@ const Articles: CollectionConfig = {
               article_slug: doc.slug,
             },
           })
+
+          // Fire a breaking-news push notification when flagged.
+          // Delegated to the internal /api/push/send endpoint so the
+          // heavy FCM work doesn't block the article save.
+          if (doc.breakingNews === true) {
+            try {
+              const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://127.0.0.1:3000'
+              const secret = process.env.INTERNAL_PUSH_SECRET || ''
+              void fetch(`${baseUrl}/api/push/send`, {
+                method: 'POST',
+                headers: {
+                  'content-type': 'application/json',
+                  'x-internal-secret': secret,
+                },
+                body: JSON.stringify({ articleId: doc.id }),
+              }).catch((err) => {
+                console.error('[breaking-news] push dispatch failed', err)
+              })
+            } catch (err) {
+              console.error('[breaking-news] push dispatch threw', err)
+            }
+          }
         }
       },
     ],
@@ -283,6 +305,15 @@ const Articles: CollectionConfig = {
       admin: {
         position: 'sidebar',
         description: 'Summary shown in search engine results (150–160 characters recommended).',
+      },
+    },
+    {
+      name: 'breakingNews',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Fires a push notification to mobile app users when this article is published.',
+        position: 'sidebar',
       },
     },
     {

@@ -45,7 +45,9 @@ VALUES
   ('20260423_020000_add_gemini_to_layout_skeleton', 20, NOW(), NOW()),
   ('20260423_030000_add_header_animation_enabled', 21, NOW(), NOW()),
   ('20260423_040000_add_last_modified_by_to_layout_live_theme', 22, NOW(), NOW()),
-  ('20260424_000000_add_news_more_seo_fields', 23, NOW(), NOW())
+  ('20260424_000000_add_news_more_seo_fields', 23, NOW(), NOW()),
+  ('20260424_010000_add_breaking_news', 24, NOW(), NOW()),
+  ('20260424_020000_add_device_tokens', 25, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1188,4 +1190,41 @@ ALTER TABLE "seo" ADD COLUMN IF NOT EXISTS "pages_news_more_title" varchar;
 ALTER TABLE "seo" ADD COLUMN IF NOT EXISTS "pages_news_more_description" varchar;
 ALTER TABLE "_seo_v" ADD COLUMN IF NOT EXISTS "version_pages_news_more_title" varchar;
 ALTER TABLE "_seo_v" ADD COLUMN IF NOT EXISTS "version_pages_news_more_description" varchar;
+
+-- 20260424_010000: Add breaking_news flag to articles (+ version shadow)
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "breaking_news" boolean DEFAULT false NOT NULL;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_breaking_news" boolean DEFAULT false;
+
+-- 20260424_020000: Create device_tokens table for push notification registration
+DO $$ BEGIN
+  CREATE TYPE "public"."enum_device_tokens_platform" AS ENUM('android', 'ios');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS "device_tokens" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "token" varchar NOT NULL,
+  "platform" "public"."enum_device_tokens_platform" DEFAULT 'android' NOT NULL,
+  "last_seen_at" timestamp(3) with time zone,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "device_tokens_token_idx" ON "device_tokens" USING btree ("token");
+CREATE INDEX IF NOT EXISTS "device_tokens_created_at_idx" ON "device_tokens" USING btree ("created_at");
+CREATE INDEX IF NOT EXISTS "device_tokens_updated_at_idx" ON "device_tokens" USING btree ("updated_at");
+
+ALTER TABLE "payload_locked_documents_rels"
+  ADD COLUMN IF NOT EXISTS "device_tokens_id" integer;
+
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels"
+    ADD CONSTRAINT "payload_locked_documents_rels_device_tokens_fk"
+    FOREIGN KEY ("device_tokens_id") REFERENCES "public"."device_tokens"("id")
+    ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_device_tokens_id_idx"
+  ON "payload_locked_documents_rels" ("device_tokens_id");
 SQL

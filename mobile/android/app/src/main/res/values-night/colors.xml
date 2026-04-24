@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#D6001C</color>
+    <color name="colorPrimaryDark">#D6001C</color>
+    <color name="colorAccent">#D6001C</color>
+
+    <!-- Dark-mode system bar colors (match poly.rpi.edu dark background) -->
+    <color name="statusBarColor">#0A0A0A</color>
+    <color name="navigationBarColor">#0A0A0A</color>
+
+    <!-- Splash background (dark) -->
+    <color name="splashBackground">#0A0A0A</color>
+</resources>
