@@ -492,21 +492,6 @@ html.standalone-pwa body::after {
   box-shadow: 0 0 12px rgba(255, 106, 106, 0.2);
 }
 
-/* ── Live strip pulsing dot ── */
-@keyframes liveStripDotPulse {
-  0%   { opacity: 1; transform: scale(1); }
-  50%  { opacity: 0.4; transform: scale(0.85); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-.live-strip-dot {
-  animation: liveStripDotPulse 2s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .live-strip-dot { animation: none; }
-}
-
 /* Hide image captions on the home page (issue #80) */
 .homepage-zodiac .image-caption-text,
 .homepage-zodiac .image-caption-space {
@@ -516,4 +501,13 @@ html.standalone-pwa body::after {
 /* Hide the container entirely if there's no photographer, to avoid empty mt-2 space */
 .homepage-zodiac .image-caption-container:not(:has(.image-caption-photographer)) {
   display: none;
+}
+
+/* Gemini homepage 3-column + 2-row grid. Defined as explicit CSS to avoid
+   Tailwind v4 arbitrary-value edge cases on grid-template-columns. */
+@media (min-width: 768px) {
+  .gemini-top-grid {
+    grid-template-columns: 2fr 3fr 2fr;
+    grid-template-rows: auto auto;
+  }
 }

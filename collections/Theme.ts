@@ -42,6 +42,14 @@ export const Theme: GlobalConfig = {
   },
   versions: true,
   hooks: {
+    beforeChange: [
+      ({ data, req }) => {
+        if (req?.user?.id && data) {
+          data.lastModifiedBy = req.user.id
+        }
+        return data
+      },
+    ],
     afterChange: [
       () => {
         revalidatePath('/', 'layout')
@@ -54,6 +62,17 @@ export const Theme: GlobalConfig = {
   },
   fields: [
     {
+      name: 'lastModifiedBy',
+      type: 'relationship',
+      relationTo: 'users',
+      hasMany: false,
+      label: 'Last Modified By',
+      admin: {
+        readOnly: true,
+        description: 'Automatically set to the user who most recently saved theme settings. Each version captures the editor.',
+      },
+    },
+    {
       name: 'headerAnimation',
       type: 'group',
       label: 'Header Animation',
@@ -61,6 +80,15 @@ export const Theme: GlobalConfig = {
         description: 'Controls the animated wave effect on the header rule line during page transitions.',
       },
       fields: [
+        {
+          name: 'enabled',
+          type: 'checkbox',
+          label: 'Enable Header Animation',
+          defaultValue: true,
+          admin: {
+            description: 'Uncheck to disable the header wave animation entirely — the header rule will render as a static line with no transition effects.',
+          },
+        },
         {
           type: 'row',
           fields: [

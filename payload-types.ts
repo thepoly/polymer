@@ -71,6 +71,7 @@ export interface Config {
     media: Media;
     logos: Logo;
     articles: Article;
+    'live-articles': LiveArticle;
     'job-titles': JobTitle;
     layout: Layout;
     'opinion-page-layout': OpinionPageLayout;
@@ -89,6 +90,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     logos: LogosSelect<false> | LogosSelect<true>;
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
+    'live-articles': LiveArticlesSelect<false> | LiveArticlesSelect<true>;
     'job-titles': JobTitlesSelect<false> | JobTitlesSelect<true>;
     layout: LayoutSelect<false> | LayoutSelect<true>;
     'opinion-page-layout': OpinionPageLayoutSelect<false> | OpinionPageLayoutSelect<true>;
@@ -342,6 +344,10 @@ export interface Article {
       }[]
     | null;
   publishedDate?: string | null;
+  /**
+   * Automatically set to the user who most recently saved this article. Each version in the history tab records the editor who made that change.
+   */
+  lastModifiedBy?: (number | null) | User;
   featuredImage?: (number | null) | Media;
   imageCaption?: string | null;
   content?: {
@@ -386,12 +392,96 @@ export interface Article {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "live-articles".
+ */
+export interface LiveArticle {
+  id: number;
+  title: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * Automatically set to the user who most recently saved this live article. Each version captures the editor.
+   */
+  lastModifiedBy?: (number | null) | User;
+  plainTitle: string;
+  slug: string;
+  /**
+   * Short topic label shown on the homepage strip (e.g. "Labor Department", "Election Night").
+   */
+  section: string;
+  hero: number | Media;
+  summary?:
+    | {
+        label: string;
+        body: {
+          root: {
+            type: string;
+            children: {
+              type: any;
+              version: number;
+              [k: string]: unknown;
+            }[];
+            direction: ('ltr' | 'rtl') | null;
+            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+            indent: number;
+            version: number;
+          };
+          [k: string]: unknown;
+        };
+        id?: string | null;
+      }[]
+    | null;
+  updates: {
+    timestamp: string;
+    heading?: string | null;
+    author: number | User;
+    body: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    };
+    id?: string | null;
+  }[];
+  publishedDate?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "layout".
  */
 export interface Layout {
   id: number;
   name: string;
-  skeleton?: ('custom' | 'aries' | 'taurus') | null;
+  /**
+   * Automatically set to the user who most recently saved the homepage layout. Each version in the history tab records the editor who made that change.
+   */
+  lastModifiedBy?: (number | null) | User;
+  liveArticles?: (number | LiveArticle)[] | null;
+  skeleton?: ('custom' | 'aries' | 'taurus' | 'gemini') | null;
   grid?:
     | {
         [k: string]: unknown;
@@ -401,8 +491,6 @@ export interface Layout {
     | number
     | boolean
     | null;
-  volume?: number | null;
-  edition?: number | null;
   /**
    * Per-section layout configuration (skeleton + pinned articles)
    */
@@ -603,6 +691,10 @@ export interface PayloadLockedDocument {
         value: number | Article;
       } | null)
     | ({
+        relationTo: 'live-articles';
+        value: number | LiveArticle;
+      } | null)
+    | ({
         relationTo: 'job-titles';
         value: number | JobTitle;
       } | null)
@@ -798,6 +890,7 @@ export interface ArticlesSelect<T extends boolean = true> {
         id?: T;
       };
   publishedDate?: T;
+  lastModifiedBy?: T;
   featuredImage?: T;
   imageCaption?: T;
   content?: T;
@@ -807,6 +900,38 @@ export interface ArticlesSelect<T extends boolean = true> {
   isFollytechnic?: T;
   isPhotofeature?: T;
   gradientOpacity?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "live-articles_select".
+ */
+export interface LiveArticlesSelect<T extends boolean = true> {
+  title?: T;
+  lastModifiedBy?: T;
+  plainTitle?: T;
+  slug?: T;
+  section?: T;
+  hero?: T;
+  summary?:
+    | T
+    | {
+        label?: T;
+        body?: T;
+        id?: T;
+      };
+  updates?:
+    | T
+    | {
+        timestamp?: T;
+        heading?: T;
+        author?: T;
+        body?: T;
+        id?: T;
+      };
+  publishedDate?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -826,10 +951,10 @@ export interface JobTitlesSelect<T extends boolean = true> {
  */
 export interface LayoutSelect<T extends boolean = true> {
   name?: T;
+  lastModifiedBy?: T;
+  liveArticles?: T;
   skeleton?: T;
   grid?: T;
-  volume?: T;
-  edition?: T;
   sectionLayouts?: T;
   mainArticle?: T;
   top1?: T;
@@ -968,9 +1093,17 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
 export interface Theme {
   id: number;
   /**
+   * Automatically set to the user who most recently saved theme settings. Each version captures the editor.
+   */
+  lastModifiedBy?: (number | null) | User;
+  /**
    * Controls the animated wave effect on the header rule line during page transitions.
    */
   headerAnimation?: {
+    /**
+     * Uncheck to disable the header wave animation entirely — the header rule will render as a static line with no transition effects.
+     */
+    enabled?: boolean | null;
     /**
      * First gradient stop for the wave effect.
      */
@@ -1292,9 +1425,11 @@ export interface Seo {
  * via the `definition` "theme_select".
  */
 export interface ThemeSelect<T extends boolean = true> {
+  lastModifiedBy?: T;
   headerAnimation?:
     | T
     | {
+        enabled?: T;
         waveColor1?: T;
         waveColor2?: T;
         waveColor3?: T;

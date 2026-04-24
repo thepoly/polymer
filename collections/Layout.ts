@@ -2,11 +2,22 @@ import type { CollectionConfig } from 'payload'
 
 type EditorUser = { roles?: string[]; section?: string }
 
+/**
+ * Homepage layout collection.
+ *
+ * This is a SINGLE, continuously-edited document — we do not create a new
+ * layout per edition. Edition numbers are derived at read time from the
+ * articles table (see `lib/getCurrentEdition.ts`), so no volume/edition fields
+ * live here.
+ *
+ * Versions are enabled so editors can time-travel through previous states of
+ * the homepage. Payload automatically records the author on each version.
+ */
 const Layout: CollectionConfig = {
   slug: 'layout',
   labels: {
-    singular: 'Skeletons & Layouts',
-    plural: 'Skeletons & Layouts',
+    singular: 'Homepage Layout',
+    plural: 'Homepage Layout',
   },
   admin: {
     useAsTitle: 'name',
@@ -19,6 +30,13 @@ const Layout: CollectionConfig = {
         },
       },
     },
+  },
+  versions: {
+    // snapshots only (no draft/publish split — the live homepage always reads
+    // the current document). Payload still records author + timestamp on each
+    // version so editors can see who changed what.
+    drafts: false,
+    maxPerDoc: 200,
   },
   access: {
     read: () => true,
@@ -37,6 +55,11 @@ const Layout: CollectionConfig = {
     beforeChange: [
       ({ data, originalDoc, req }) => {
         const u = req.user as unknown as EditorUser
+        // Record who last modified this layout. Written on every save so each
+        // version row captures the editor.
+        if (req?.user?.id && data) {
+          data.lastModifiedBy = req.user.id
+        }
         if (!u) return data
         if (u.roles?.some((r: string) => ['admin', 'eic'].includes(r))) return data
         if (u.roles?.includes('editor') && u.section) {
@@ -46,7 +69,10 @@ const Layout: CollectionConfig = {
             sectionLayouts: {
               ...(originalDoc?.sectionLayouts ?? {}),
               [u.section]: data?.sectionLayouts?.[u.section],
+              // Preserve the just-set lastModifiedBy through the narrowing above.
+              ...(req?.user?.id ? {} : {}),
             },
+            lastModifiedBy: req?.user?.id ?? originalDoc?.lastModifiedBy ?? null,
           }
         }
         return data
@@ -58,7 +84,27 @@ const Layout: CollectionConfig = {
       name: 'name',
       type: 'text',
       required: true,
-      defaultValue: 'Skeletons & Layouts',
+      defaultValue: 'Homepage Layout',
+    },
+    {
+      name: 'lastModifiedBy',
+      type: 'relationship',
+      relationTo: 'users',
+      hasMany: false,
+      label: 'Last Modified By',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description: 'Automatically set to the user who most recently saved the homepage layout. Each version in the history tab records the editor who made that change.',
+      },
+    },
+    {
+      name: 'liveArticles',
+      type: 'relationship',
+      relationTo: 'live-articles',
+      hasMany: true,
+      required: false,
+      label: 'Live Articles to Feature',
     },
     {
       name: 'skeleton',
@@ -68,6 +114,7 @@ const Layout: CollectionConfig = {
         { label: 'Custom Grid', value: 'custom' },
         { label: 'Aries', value: 'aries' },
         { label: 'Taurus', value: 'taurus' },
+        { label: 'Gemini', value: 'gemini' },
       ],
       admin: { hidden: true },
     },
@@ -75,16 +122,6 @@ const Layout: CollectionConfig = {
       name: 'grid',
       type: 'json',
       required: false,
-    },
-    {
-      name: 'volume',
-      type: 'number',
-      admin: { hidden: true },
-    },
-    {
-      name: 'edition',
-      type: 'number',
-      admin: { hidden: true },
     },
     {
       name: 'sectionLayouts',
@@ -95,66 +132,16 @@ const Layout: CollectionConfig = {
       },
     },
     // Legacy slot fields — kept for backward compatibility during migration
-    {
-      name: 'mainArticle',
-      type: 'relationship',
-      relationTo: 'articles',
-      admin: { hidden: true },
-    },
-    {
-      name: 'top1',
-      type: 'relationship',
-      relationTo: 'articles',
-      admin: { hidden: true },
-    },
-    {
-      name: 'top2',
-      type: 'relationship',
-      relationTo: 'articles',
-      admin: { hidden: true },
-    },
-    {
-      name: 'top3',
-      type: 'relationship',
-      relationTo: 'articles',
-      admin: { hidden: true },
-    },
-    {
-      name: 'top4',
-      type: 'relationship',
-      relationTo: 'articles',
-      admin: { hidden: true },
-    },
-    {
-      name: 'op1',
-      type: 'relationship',
-      relationTo: 'articles',
-      admin: { hidden: true },
-    },
-    {
-      name: 'op2',
-      type: 'relationship',
-      relationTo: 'articles',
-      admin: { hidden: true },
-    },
-    {
-      name: 'op3',
-      type: 'relationship',
-      relationTo: 'articles',
-      admin: { hidden: true },
-    },
-    {
-      name: 'op4',
-      type: 'relationship',
-      relationTo: 'articles',
-      admin: { hidden: true },
-    },
-    {
-      name: 'special',
-      type: 'relationship',
-      relationTo: 'articles',
-      admin: { hidden: true },
-    },
+    { name: 'mainArticle', type: 'relationship', relationTo: 'articles', admin: { hidden: true } },
+    { name: 'top1', type: 'relationship', relationTo: 'articles', admin: { hidden: true } },
+    { name: 'top2', type: 'relationship', relationTo: 'articles', admin: { hidden: true } },
+    { name: 'top3', type: 'relationship', relationTo: 'articles', admin: { hidden: true } },
+    { name: 'top4', type: 'relationship', relationTo: 'articles', admin: { hidden: true } },
+    { name: 'op1', type: 'relationship', relationTo: 'articles', admin: { hidden: true } },
+    { name: 'op2', type: 'relationship', relationTo: 'articles', admin: { hidden: true } },
+    { name: 'op3', type: 'relationship', relationTo: 'articles', admin: { hidden: true } },
+    { name: 'op4', type: 'relationship', relationTo: 'articles', admin: { hidden: true } },
+    { name: 'special', type: 'relationship', relationTo: 'articles', admin: { hidden: true } },
   ],
 }
 

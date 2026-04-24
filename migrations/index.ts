@@ -28,6 +28,12 @@ import * as migration_20260402_100000_add_media_title from './20260402_100000_ad
 import * as migration_20260404_000000_add_header_animation from './20260404_000000_add_header_animation';
 import * as migration_20260405_000000_migrate_title_to_richtext from './20260405_000000_migrate_title_to_richtext';
 import * as migration_20260409_000000_backfill_plain_title from './20260409_000000_backfill_plain_title';
+import * as migration_20260420_000000_add_live_articles from './20260420_000000_add_live_articles';
+import * as migration_20260423_000000_layout_versions_and_remove_edition from './20260423_000000_layout_versions_and_remove_edition';
+import * as migration_20260423_010000_add_articles_last_modified_by from './20260423_010000_add_articles_last_modified_by';
+import * as migration_20260423_020000_add_gemini_to_layout_skeleton from './20260423_020000_add_gemini_to_layout_skeleton';
+import * as migration_20260423_030000_add_header_animation_enabled from './20260423_030000_add_header_animation_enabled';
+import * as migration_20260423_040000_add_last_modified_by_to_layout_live_theme from './20260423_040000_add_last_modified_by_to_layout_live_theme';
 
 export const migrations = [
   {
@@ -179,5 +185,35 @@ export const migrations = [
     up: migration_20260409_000000_backfill_plain_title.up,
     down: migration_20260409_000000_backfill_plain_title.down,
     name: '20260409_000000_backfill_plain_title',
+  },
+  {
+    up: migration_20260420_000000_add_live_articles.up,
+    down: migration_20260420_000000_add_live_articles.down,
+    name: '20260420_000000_add_live_articles',
+  },
+  {
+    up: migration_20260423_000000_layout_versions_and_remove_edition.up,
+    down: migration_20260423_000000_layout_versions_and_remove_edition.down,
+    name: '20260423_000000_layout_versions_and_remove_edition',
+  },
+  {
+    up: migration_20260423_010000_add_articles_last_modified_by.up,
+    down: migration_20260423_010000_add_articles_last_modified_by.down,
+    name: '20260423_010000_add_articles_last_modified_by',
+  },
+  {
+    up: migration_20260423_020000_add_gemini_to_layout_skeleton.up,
+    down: migration_20260423_020000_add_gemini_to_layout_skeleton.down,
+    name: '20260423_020000_add_gemini_to_layout_skeleton',
+  },
+  {
+    up: migration_20260423_030000_add_header_animation_enabled.up,
+    down: migration_20260423_030000_add_header_animation_enabled.down,
+    name: '20260423_030000_add_header_animation_enabled',
+  },
+  {
+    up: migration_20260423_040000_add_last_modified_by_to_layout_live_theme.up,
+    down: migration_20260423_040000_add_last_modified_by_to_layout_live_theme.down,
+    name: '20260423_040000_add_last_modified_by_to_layout_live_theme',
   },
 ];

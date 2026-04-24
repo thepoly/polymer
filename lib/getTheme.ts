@@ -46,6 +46,7 @@ export type ThemeLogoSrcs = {
 }
 
 export type HeaderAnimationConfig = {
+  enabled: boolean
   waveColor1: string
   waveColor2: string
   waveColor3: string
@@ -55,6 +56,7 @@ export type HeaderAnimationConfig = {
 }
 
 const HEADER_ANIMATION_FALLBACKS: HeaderAnimationConfig = {
+  enabled: true,
   waveColor1: '#0044ff',
   waveColor2: '#0088ff',
   waveColor3: '#38bdf8',
@@ -105,7 +107,9 @@ function resolveHeaderAnimation(
   const rawWeight = group.lineWeight
   const lineWeight = typeof rawWeight === 'number' && rawWeight > 0 ? Math.min(4, rawWeight) : f.lineWeight
   const wrapAround = group.wrapAround === true
-  return { waveColor1, waveColor2, waveColor3, waveCount, lineWeight, wrapAround }
+  // Default true when unset — matches the field defaultValue and existing behavior.
+  const enabled = group.enabled === false ? false : true
+  return { enabled, waveColor1, waveColor2, waveColor3, waveCount, lineWeight, wrapAround }
 }
 
 const FALLBACK: ResolvedTheme = {

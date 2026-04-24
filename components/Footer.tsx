@@ -1,11 +1,7 @@
-import { getPayload } from 'payload'
-import configPromise from '@/payload.config'
+import { getCurrentEdition } from '@/lib/getCurrentEdition'
 import FooterClient from './FooterClient'
 
 export default async function Footer() {
-  const payload = await getPayload({ config: configPromise })
-  const layoutResponse = await payload.find({ collection: 'layout', limit: 1, depth: 0 })
-  const layout = layoutResponse.docs[0]
-
-  return <FooterClient volume={layout?.volume} edition={layout?.edition} />
+  const edition = await getCurrentEdition()
+  return <FooterClient volume={edition.volume} edition={edition.issue} />
 }
