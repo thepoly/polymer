@@ -151,6 +151,16 @@ export default function ThemeProvider({
       "content",
       isStandalonePwa ? "black-translucent" : isDarkMode ? "black" : "default",
     );
+
+    // Android app bridge: drive the native status + nav bars from the in-app
+    // theme so they follow the site toggle rather than the phone's ui mode.
+    // window.PolyTheme is only present when loaded inside the Capacitor shell.
+    try {
+      const polyTheme = (window as unknown as { PolyTheme?: { setDark?: (dark: boolean) => void } }).PolyTheme;
+      polyTheme?.setDark?.(isDarkMode);
+    } catch {
+      /* bridge unavailable (web browser or iOS) */
+    }
   }, [isDarkMode, isStandalonePwa]);
 
   const toggleDarkMode = () => {
