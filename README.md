@@ -149,6 +149,19 @@ The deploy workflow:
 
 Because `main` is deployment-sensitive, treat it as a release branch rather than a scratch branch.
 
+## Android app
+
+The [`mobile/`](mobile/) directory contains a Capacitor-based Android shell
+that loads `poly.rpi.edu` in a native WebView and adds push notifications
+for breaking news.
+
+- **Install:** grab the latest `app-release.apk` (or `app-debug.apk` prior
+  to keystore setup) from the [Releases](../../releases) page, enable
+  "Install unknown apps" for your browser or file manager, and tap the APK.
+- **Build locally:** see [`mobile/README.md`](mobile/README.md) for SDK
+  setup, icon regeneration, Firebase configuration, and signing.
+- **Design doc:** [`docs/superpowers/specs/2026-04-24-capacitor-android-app-design.md`](docs/superpowers/specs/2026-04-24-capacitor-android-app-design.md).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

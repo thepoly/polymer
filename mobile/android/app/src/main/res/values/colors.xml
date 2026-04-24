@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Polytechnic brand red -->
+    <color name="colorPrimary">#D6001C</color>
+    <color name="colorPrimaryDark">#D6001C</color>
+    <color name="colorAccent">#D6001C</color>
+
+    <!-- Light-mode system bar colors (match poly.rpi.edu light background) -->
+    <color name="statusBarColor">#FFFFFF</color>
+    <color name="navigationBarColor">#FFFFFF</color>
+
+    <!-- Splash background (light) -->
+    <color name="splashBackground">#FFFFFF</color>
+</resources>

@@ -79,6 +79,7 @@ export interface Config {
     'staff-page-layout': StaffPageLayout;
     submissions: Submission;
     'event-submissions': EventSubmission;
+    'device-tokens': DeviceToken;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -98,6 +99,7 @@ export interface Config {
     'staff-page-layout': StaffPageLayoutSelect<false> | StaffPageLayoutSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
     'event-submissions': EventSubmissionsSelect<false> | EventSubmissionsSelect<true>;
+    'device-tokens': DeviceTokensSelect<false> | DeviceTokensSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -374,6 +376,10 @@ export interface Article {
    * Summary shown in search engine results (150–160 characters recommended).
    */
   searchDescription?: string | null;
+  /**
+   * Fires a push notification to mobile app users when this article is published.
+   */
+  breakingNews?: boolean | null;
   /**
    * Render this article in Comic Sans everywhere it appears.
    */
@@ -652,6 +658,18 @@ export interface EventSubmission {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "device-tokens".
+ */
+export interface DeviceToken {
+  id: number;
+  token: string;
+  platform: 'android' | 'ios';
+  lastSeenAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -721,6 +739,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'event-submissions';
         value: number | EventSubmission;
+      } | null)
+    | ({
+        relationTo: 'device-tokens';
+        value: number | DeviceToken;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -897,6 +919,7 @@ export interface ArticlesSelect<T extends boolean = true> {
   slug?: T;
   seoTitle?: T;
   searchDescription?: T;
+  breakingNews?: T;
   isFollytechnic?: T;
   isPhotofeature?: T;
   gradientOpacity?: T;
@@ -1043,6 +1066,17 @@ export interface EventSubmissionsSelect<T extends boolean = true> {
   contactName?: T;
   contactInfo?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "device-tokens_select".
+ */
+export interface DeviceTokensSelect<T extends boolean = true> {
+  token?: T;
+  platform?: T;
+  lastSeenAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

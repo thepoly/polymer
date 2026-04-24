@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">The Poly</string>
+    <string name="title_activity_main">The Poly</string>
+    <string name="package_name">edu.rpi.poly</string>
+    <string name="custom_url_scheme">edu.rpi.poly</string>
+</resources>
