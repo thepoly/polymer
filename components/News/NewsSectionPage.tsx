@@ -206,7 +206,7 @@ export default function NewsSectionPage({
                 {group.label}
               </h2>
               <TransitionLink
-                href={group.kickers ? `/search?q=${encodeURIComponent(group.kickers[0])}` : `/news`}
+                href={group.kickers ? `/search?q=${encodeURIComponent(group.kickers[0])}` : `/news/more-in-news`}
                 className="font-meta text-[14px] uppercase tracking-[0.08em] text-accent hover:underline transition-colors"
               >
                 More &rarr;

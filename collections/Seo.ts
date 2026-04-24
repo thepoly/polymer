@@ -91,6 +91,8 @@ export const Seo: GlobalConfig = {
         longText('opinionEditorialsDescription', 'Opinion Editorials Description', 'Used for the /opinion/editorials page description.'),
         shortText('opinionMoreTitle', 'More in Opinion Title', 'Used for the /opinion/more-in-opinion page title.'),
         longText('opinionMoreDescription', 'More in Opinion Description', 'Used for the /opinion/more-in-opinion page description.'),
+        shortText('newsMoreTitle', 'More in News Title', 'Used for the /news/more-in-news page title.'),
+        longText('newsMoreDescription', 'More in News Description', 'Used for the /news/more-in-news page description.'),
       ],
     },
     {
