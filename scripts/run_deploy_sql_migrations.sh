@@ -1121,8 +1121,13 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS "articles_last_modified_by_idx" ON "articles" USING btree ("last_modified_by_id");
 CREATE INDEX IF NOT EXISTS "_articles_v_version_version_last_modified_by_idx" ON "_articles_v" USING btree ("version_last_modified_by_id");
 
--- 20260423_020000: Add 'gemini' value to layout skeleton enum
-ALTER TYPE "public"."enum_layout_skeleton" ADD VALUE IF NOT EXISTS 'gemini';
+-- 20260423_020000: Add 'gemini' value to layout skeleton enum (only if it exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_layout_skeleton') THEN
+    ALTER TYPE "public"."enum_layout_skeleton" ADD VALUE IF NOT EXISTS 'gemini';
+  END IF;
+END $$;
 
 -- 20260423_030000: Add header_animation_enabled toggle to theme global
 ALTER TABLE "theme" ADD COLUMN IF NOT EXISTS "header_animation_enabled" boolean DEFAULT true;
