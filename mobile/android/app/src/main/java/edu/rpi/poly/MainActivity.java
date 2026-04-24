@@ -2,7 +2,9 @@ package edu.rpi.poly;
 
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.view.View;
 import android.view.Window;
+import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 
@@ -15,8 +17,12 @@ public class MainActivity extends BridgeActivity {
 
     private static final int LIGHT_BG = 0xFFFFFFFF;
     private static final int DARK_BG = 0xFF0A0A0A;
+    private static final String SITE_URL = "https://poly.rpi.edu";
+    // Keep the red launch bars on screen until the Capacitor splash has faded
+    // out (launchShowDuration + launchFadeOutDuration in capacitor.config.ts).
+    private static final long BAR_COLOR_APPLY_DELAY_MS = 800;
 
-    // null = no override; mirror the phone's ui mode.
+    // null = defer to system / cookie.
     // true / false = site-controlled override (via window.PolyTheme.setDark).
     private Boolean siteThemeOverride = null;
 
@@ -26,21 +32,55 @@ public class MainActivity extends BridgeActivity {
 
         WebView webView = getBridge() != null ? getBridge().getWebView() : null;
         if (webView != null) {
-            // Exposes window.PolyTheme.setDark(boolean) to poly.rpi.edu so the
-            // in-app theme toggle can drive the Android status + navigation bars.
             webView.addJavascriptInterface(new ThemeBridge(), "PolyTheme");
         }
 
-        applyBars(isSystemDark());
+        final boolean initialDark = resolveInitialTheme();
+
+        // Stall bar colorization briefly so the red splash can fade out
+        // without a mid-animation flip to white or black.
+        final View decor = getWindow().getDecorView();
+        decor.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                applyBars(siteThemeOverride != null ? siteThemeOverride : initialDark);
+            }
+        }, BAR_COLOR_APPLY_DELAY_MS);
+
         PushRegistration.start(this);
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        // If the site hasn't reported a theme yet, follow the system. Once the
-        // site has spoken we keep honoring its choice until it changes.
-        applyBars(siteThemeOverride != null ? siteThemeOverride : isSystemDark());
+        applyBars(siteThemeOverride != null ? siteThemeOverride : resolveInitialTheme());
+    }
+
+    private boolean resolveInitialTheme() {
+        Boolean fromCookie = readSiteThemeCookie();
+        if (fromCookie != null) return fromCookie;
+        return isSystemDark();
+    }
+
+    // Reads the site's `theme` cookie so cold launches come up with the
+    // bars already matching the in-app theme, without waiting for the
+    // WebView + React + JavascriptInterface round trip.
+    private Boolean readSiteThemeCookie() {
+        try {
+            String cookies = CookieManager.getInstance().getCookie(SITE_URL);
+            if (cookies == null) return null;
+            for (String raw : cookies.split(";")) {
+                String cookie = raw.trim();
+                if (cookie.startsWith("theme=")) {
+                    String value = cookie.substring(6).toLowerCase();
+                    if ("dark".equals(value)) return Boolean.TRUE;
+                    if ("light".equals(value)) return Boolean.FALSE;
+                }
+            }
+        } catch (Throwable ignored) {
+            // Cookie access failed (rare); fall back to system theme.
+        }
+        return null;
     }
 
     private boolean isSystemDark() {
@@ -67,8 +107,6 @@ public class MainActivity extends BridgeActivity {
         });
     }
 
-    // JavaScript interface exposed to the WebView as `window.PolyTheme`.
-    // Only setDark(boolean) is exposed; no sensitive capabilities are reachable.
     private class ThemeBridge {
         @JavascriptInterface
         public void setDark(boolean dark) {
