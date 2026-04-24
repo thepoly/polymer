@@ -5,6 +5,7 @@ import { Article } from "./types";
 import { Byline } from "./Byline";
 import { ImageCaption } from "./ImageCaption";
 import { getArticleUrl } from "@/utils/getArticleUrl";
+import { getCustomGridSlotLookup } from "@/lib/homepageSlots";
 
 type ImageDirection = "top" | "bottom" | "left" | "right" | "none";
 
@@ -191,25 +192,6 @@ const cellHasContent = (cell: GridCell, articleMap: Map<number, Article>): boole
   return false;
 };
 
-/** Collect all articles from the grid in order, for the mobile flat list */
-const collectGridArticles = (rows: GridRow[], articleMap: Map<number, Article>): Article[] => {
-  const result: Article[] = [];
-  for (const row of rows) {
-    for (const cell of row.cells) {
-      if (cell.children) {
-        for (const sub of cell.children) {
-          const a = sub.articleId ? articleMap.get(sub.articleId) : undefined;
-          if (a) result.push(a);
-        }
-      } else {
-        const a = cell.articleId ? articleMap.get(cell.articleId) : undefined;
-        if (a) result.push(a);
-      }
-    }
-  }
-  return result;
-};
-
 export function GridLayout({
   rows,
   articleMap,
@@ -219,17 +201,48 @@ export function GridLayout({
 }) {
   if (rows.length === 0) return null;
 
-  const mobileArticles = collectGridArticles(rows, articleMap);
+  // Stable column-major slot numbers (cellId -> slot number) used for
+  // homepage-click analytics. Matches the badge numbering shown in the admin
+  // layout editor.
+  const slotNumberLookup = getCustomGridSlotLookup(rows);
+
+  /**
+   * Collect mobile articles with their cell IDs so we can tag the stacked
+   * mobile list with the same slot numbers as the desktop grid. Equivalent to
+   * `collectGridArticles` but also preserves the originating cell id.
+   */
+  const mobileArticleEntries: Array<{ article: Article; cellId: string | null }> = [];
+  for (const row of rows) {
+    for (const cell of row.cells) {
+      if (cell.children) {
+        for (const sub of cell.children) {
+          const a = sub.articleId ? articleMap.get(sub.articleId) : undefined;
+          if (a) mobileArticleEntries.push({ article: a, cellId: sub.id });
+        }
+      } else {
+        const a = cell.articleId ? articleMap.get(cell.articleId) : undefined;
+        if (a) mobileArticleEntries.push({ article: a, cellId: cell.id });
+      }
+    }
+  }
 
   return (
     <div data-header-scope="primary">
       {/* Mobile: flat stacked list */}
       <div className="flex flex-col md:hidden">
-        {mobileArticles.map((article) => (
-          <div key={article.id} className="mt-5 pt-5 border-t border-black dark:border-white">
-            <MobileArticleCard article={article} />
-          </div>
-        ))}
+        {mobileArticleEntries.map(({ article, cellId }) => {
+          const slot = cellId ? slotNumberLookup.get(cellId) : undefined;
+          return (
+            <div
+              key={article.id}
+              className="mt-5 pt-5 border-t border-black dark:border-white"
+              data-homepage-layout="custom"
+              data-homepage-slot={slot ?? undefined}
+            >
+              <MobileArticleCard article={article} />
+            </div>
+          );
+        })}
       </div>
 
       {/* Desktop: 12-column grid */}
@@ -249,7 +262,9 @@ export function GridLayout({
               {row.cells.map((cell) => {
                 if (!cellHasContent(cell, articleMap)) return null;
 
-                // Stacked cell — render children vertically
+                // Stacked cell — render children vertically. Each sub-cell
+                // has its own slot number; we tag each sub-cell wrapper so
+                // clicks attribute to the correct slot.
                 if (cell.children && cell.children.length > 0) {
                   return (
                     <div
@@ -260,13 +275,19 @@ export function GridLayout({
                       {cell.children.map((sub) => {
                         const subArticle = sub.articleId ? articleMap.get(sub.articleId) : null;
                         if (!subArticle) return null;
+                        const subSlot = slotNumberLookup.get(sub.id);
                         return (
-                          <GridArticleCard
+                          <div
                             key={sub.id}
-                            article={subArticle}
-                            direction={sub.direction}
-                            span={cell.span}
-                          />
+                            data-homepage-layout="custom"
+                            data-homepage-slot={subSlot ?? undefined}
+                          >
+                            <GridArticleCard
+                              article={subArticle}
+                              direction={sub.direction}
+                              span={cell.span}
+                            />
+                          </div>
                         );
                       })}
                     </div>
@@ -276,12 +297,15 @@ export function GridLayout({
                 // Flat cell
                 const article = cell.articleId ? articleMap.get(cell.articleId) : null;
                 if (!article) return null;
+                const cellSlot = slotNumberLookup.get(cell.id);
 
                 return (
                   <div
                     key={cell.id}
                     style={{ gridColumn: `span ${cell.span}` }}
                     className="min-w-0"
+                    data-homepage-layout="custom"
+                    data-homepage-slot={cellSlot ?? undefined}
                   >
                     <GridArticleCard
                       article={article}

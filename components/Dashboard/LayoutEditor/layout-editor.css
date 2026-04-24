@@ -1150,6 +1150,7 @@
   padding: 4px 0 0;
 }
 .le-aries-slot {
+  position: relative;
   border: 1.5px dashed var(--theme-elevation-150, #252525);
   border-radius: 6px;
   background: var(--theme-bg, #0a0a0a);
@@ -1727,4 +1728,26 @@
   font-size: 11px;
   color: var(--theme-elevation-400, #666);
   font-style: italic;
+}
+
+/*
+ * Slot-number badge: rendered on every drop slot (aries/taurus/gemini/custom
+ * grid) so editors can reference a slot by its stable analytics "key" while
+ * dragging and dropping. Numbers come from lib/homepageSlots.ts.
+ */
+.le-slot-number {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 5;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  pointer-events: none;
+  letter-spacing: 0.02em;
 }

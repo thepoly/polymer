@@ -689,6 +689,7 @@ export default async function Home() {
       <Header liveEntries={liveStripEntries} />
       <FrontPage
         topStories={topStories}
+        layoutName={layout.skeleton === 'taurus' ? 'taurus' : 'aries'}
         sections={{
           news: dropHero(newsArticles),
           features: dropHero(featuresArticles),
