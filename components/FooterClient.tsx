@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
@@ -10,24 +10,29 @@ export default function FooterClient({ volume, edition }: { volume?: number | nu
   const { isDarkMode, logoSrcs } = useTheme();
   const logoSrc = isDarkMode ? logoSrcs.mobileDark : logoSrcs.mobileLight;
   const [lineVisible, setLineVisible] = useState(false);
+  const logoRef = useRef<HTMLAnchorElement | null>(null);
 
   useEffect(() => {
-    const checkIfAtBottom = () => {
-      const viewportBottom = window.scrollY + window.innerHeight;
-      const pageBottom = document.documentElement.scrollHeight;
+    const target = logoRef.current;
+    if (!target) return;
 
-      if (viewportBottom >= pageBottom - 2) {
-        setLineVisible(true);
-      }
-    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting && entry.intersectionRatio >= 1) {
+            setLineVisible(true);
+            observer.disconnect();
+            break;
+          }
+        }
+      },
+      { threshold: 1 },
+    );
 
-    checkIfAtBottom();
-    window.addEventListener("scroll", checkIfAtBottom, { passive: true });
-    window.addEventListener("resize", checkIfAtBottom);
+    observer.observe(target);
 
     return () => {
-      window.removeEventListener("scroll", checkIfAtBottom);
-      window.removeEventListener("resize", checkIfAtBottom);
+      observer.disconnect();
     };
   }, []);
 
@@ -44,7 +49,7 @@ export default function FooterClient({ volume, edition }: { volume?: number | nu
       </div>
       <div className="safe-area-mobile-page-x mx-auto max-w-[1280px] px-6 pt-6 pb-8 md:px-6 xl:px-[30px]">
         <div className="flex flex-col items-center gap-6">
-          <Link href="/" className="relative block h-[52px] w-[320px]">
+          <Link ref={logoRef} href="/" className="relative block h-[52px] w-[320px]">
             <Image
               src={logoSrc}
               alt="The Polytechnic"
