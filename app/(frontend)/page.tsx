@@ -243,8 +243,8 @@ export default async function Home() {
 
   if (!layout) {
     return (
-      <main className="min-h-screen flex flex-col bg-bg-main transition-colors duration-300 pt-[56px]">
-        <ArticleStaticHeader alwaysVisible />
+      <main className="min-h-screen flex flex-col bg-bg-main transition-colors duration-300">
+        <ArticleStaticHeader />
         <Header liveEntries={liveStripEntries} />
         <div className="flex flex-col items-center justify-center flex-1 px-4 text-center">
           <h1 className="font-display text-[28px] md:text-[36px] font-bold text-text-main mb-3">We&apos;ll be right back</h1>
@@ -548,10 +548,10 @@ export default async function Home() {
       );
 
       return (
-        <main className="min-h-screen bg-bg-main transition-colors duration-300 pt-[56px]">
+        <main className="min-h-screen bg-bg-main transition-colors duration-300">
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }} />
-          <ArticleStaticHeader alwaysVisible />
+          <ArticleStaticHeader />
         <Header liveEntries={liveStripEntries} />
           <GeminiHomepage
             lead={lead}
@@ -580,10 +580,10 @@ export default async function Home() {
     }
 
     return (
-      <main className="min-h-screen bg-bg-main transition-colors duration-300 pt-[56px]">
+      <main className="min-h-screen bg-bg-main transition-colors duration-300">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }} />
-        <ArticleStaticHeader alwaysVisible />
+        <ArticleStaticHeader />
         <Header liveEntries={liveStripEntries} />
         <div className="w-full bg-bg-main text-text-main transition-colors duration-300">
           <div className="mx-auto max-w-[1280px] px-4 pb-14 md:px-6 xl:px-[30px]">
@@ -608,8 +608,8 @@ export default async function Home() {
 
   if (!mainArticle) {
     return (
-      <main className="min-h-screen flex flex-col bg-bg-main transition-colors duration-300 pt-[56px]">
-        <ArticleStaticHeader alwaysVisible />
+      <main className="min-h-screen flex flex-col bg-bg-main transition-colors duration-300">
+        <ArticleStaticHeader />
         <Header liveEntries={liveStripEntries} />
         <div className="flex flex-col items-center justify-center flex-1 px-4 text-center">
           <h1 className="font-display text-[28px] md:text-[36px] font-bold text-text-main mb-3">We&apos;ll be right back</h1>
@@ -688,10 +688,10 @@ export default async function Home() {
   const dropHero = (arts: typeof newsArticles) => arts.filter((a) => !heroArticleIds.has(String(a.id)));
 
   return (
-    <main className="min-h-screen bg-bg-main transition-colors duration-300 pt-[56px]">
+    <main className="min-h-screen bg-bg-main transition-colors duration-300">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }} />
-      <ArticleStaticHeader alwaysVisible />
+      <ArticleStaticHeader />
         <Header liveEntries={liveStripEntries} />
       <FrontPage
         topStories={topStories}
