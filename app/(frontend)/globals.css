@@ -502,3 +502,12 @@ html.standalone-pwa body::after {
 .homepage-zodiac .image-caption-container:not(:has(.image-caption-photographer)) {
   display: none;
 }
+
+/* Gemini homepage 3-column + 2-row grid. Defined as explicit CSS to avoid
+   Tailwind v4 arbitrary-value edge cases on grid-template-columns. */
+@media (min-width: 768px) {
+  .gemini-top-grid {
+    grid-template-columns: 2fr 3fr 2fr;
+    grid-template-rows: auto auto;
+  }
+}

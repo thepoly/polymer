@@ -31,6 +31,7 @@ import './layout-editor.css';
 
 type ImageDirection = 'top' | 'bottom' | 'left' | 'right' | 'none';
 
+type MediaImageSize = { url?: string | null } | null | undefined;
 type ArticleData = {
   id: number;
   title: Record<string, unknown>;
@@ -39,7 +40,15 @@ type ArticleData = {
   section: string;
   publishedDate: string | null;
   createdAt: string;
-  featuredImage?: { url?: string | null; alt?: string | null } | number | null;
+  featuredImage?:
+    | {
+        url?: string | null;
+        thumbnailURL?: string | null;
+        alt?: string | null;
+        sizes?: { card?: MediaImageSize; gallery?: MediaImageSize };
+      }
+    | number
+    | null;
   subdeck?: string | null;
   kicker?: string | null;
   authors?: Array<number | { firstName: string; lastName: string }>;
@@ -104,44 +113,19 @@ const ROW_PRESETS: { label: string; spans: number[]; icon: string }[] = [
 let _idCounter = 0;
 const newId = () => `c${Date.now().toString(36)}${(++_idCounter).toString(36)}`;
 
-const toRoman = (num: number): string => {
-  if (num <= 0) return String(num);
-  const vals = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
-  const syms = ['M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I'];
-  let result = '';
-  let n = num;
-  for (let i = 0; i < vals.length; i++) {
-    while (n >= vals[i]) { result += syms[i]; n -= vals[i]; }
-  }
-  return result;
-};
-
-/**
- * Auto-calculate volume & edition from current date.
- * Reference: 2026-02-28 = Volume 143, Edition 1.
- * Edition increments weekly; volume increments every 52 weeks (edition resets).
- */
-const calculateVolumeEdition = (): { volume: number; edition: number } => {
-  const refStart = new Date('2026-02-28T00:00:00');
-  const now = new Date();
-  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-  const totalWeeks = Math.floor((now.getTime() - refStart.getTime()) / msPerWeek);
-  if (totalWeeks < 0) return { volume: 143, edition: 1 };
-  const volumeOffset = Math.floor(totalWeeks / 52);
-  const editionInYear = (totalWeeks % 52) + 1;
-  return { volume: 143 + volumeOffset, edition: editionInYear };
-};
-
 /** Color associated with each skeleton's zodiac sign */
 const SKELETON_SIGN_COLORS: Record<string, string> = {
   aries: '#e85d4a',
   taurus: '#e8892d',
+  gemini: '#f0c94a',
   custom: '#3b82f6',
 };
 
+/** Prefer the small `card` size, then explicit thumbnailURL, then full URL. */
 const getImageUrl = (article: ArticleData): string | null => {
-  if (!article.featuredImage || typeof article.featuredImage === 'number') return null;
-  return article.featuredImage.url || null;
+  const img = article.featuredImage;
+  if (!img || typeof img === 'number') return null;
+  return img.sizes?.card?.url || img.thumbnailURL || img.url || null;
 };
 
 const getAuthorString = (article: ArticleData): string => {
@@ -169,15 +153,6 @@ const extractDocId = (): string | null => {
   const idx = parts.indexOf('layout');
   if (idx >= 0 && parts[idx + 1] && parts[idx + 1] !== 'create') return parts[idx + 1];
   return null;
-};
-
-const isCreateRoute = (): boolean => window.location.pathname.split('/').includes('create');
-
-const incrementVolumeEdition = (currentVolume: number, currentEdition: number): { volume: number; edition: number } => {
-  if (currentEdition >= 52) {
-    return { volume: currentVolume + 1, edition: 1 };
-  }
-  return { volume: currentVolume, edition: currentEdition + 1 };
 };
 
 const makeRow = (spans: number[]): GridRow => ({
@@ -681,7 +656,7 @@ function DragOverlayCard({ article }: { article: ArticleData }) {
 // Skeleton definitions — built-in layout templates
 // ---------------------------------------------------------------------------
 
-type SkeletonId = 'custom' | 'aries' | 'taurus';
+type SkeletonId = 'custom' | 'aries' | 'taurus' | 'gemini';
 
 type SkeletonDef = {
   id: SkeletonId;
@@ -698,6 +673,7 @@ type SkeletonDef = {
 const SKELETON_LIBRARY: SkeletonDef[] = [
   { id: 'aries', name: 'Aries', description: 'Lead story with photo + 2×2 hero grid. Fully responsive.', icon: '♈', pinned: true, top: true, section: true },
   { id: 'taurus', name: 'Taurus', description: 'Feature story with image + supporting text stories + optional list rail.', icon: '♉', pinned: true, top: true, section: true },
+  { id: 'gemini', name: 'Gemini', description: 'Three-column: text-only headline stack left, hero photo + secondary center, photo feature stack right, plus a bottom card row.', icon: '♊', pinned: true, top: true, section: false },
   { id: 'custom', name: 'Custom Grid', description: 'Build your own layout with rows and columns.', icon: '⊞', pinned: false, top: true, section: false },
 ];
 
@@ -727,12 +703,18 @@ const EMPTY_SECTION_LAYOUTS: AllSectionLayouts = {
 type AriesData = {
   lead: number | null;
   leadImportant?: boolean;
-  left: (number | null)[];   // always length 3 internally
-  right: (number | null)[];  // always length 3 internally
-  bottom: (number | null)[]; // always length 8 internally
+  left: (number | null)[];   // 6 slots for Gemini, 3 used by Aries/Taurus
+  right: (number | null)[];  // 5 slots for Gemini, 3 used by Aries/Taurus
+  bottom: (number | null)[]; // 8 slots internally
+  // Per-slot "show subdeck" toggle (Gemini only — Aries/Taurus ignore).
+  // Missing key = show by default.
+  showSubdeck?: Record<string, boolean>;
+  // Gemini only: "above" (default) puts the hero photo on top of the text,
+  // "below" renders it after the headline/byline/excerpt.
+  leadPhotoPosition?: 'above' | 'below';
 };
 
-const EMPTY_ARIES: AriesData = { lead: null, leadImportant: false, left: [null, null, null], right: [null, null, null], bottom: [null, null, null, null, null, null, null, null] };
+const EMPTY_ARIES: AriesData = { lead: null, leadImportant: false, left: [null, null, null, null, null, null], right: [null, null, null, null, null], bottom: [null, null, null, null, null, null, null, null], showSubdeck: {}, leadPhotoPosition: 'above' };
 
 /** How many visible slots does a column get? 2 if any article has a photo, else 3. */
 const ariesColSlotCount = (col: (number | null)[], articleMap: Map<number, ArticleData>): number => {
@@ -756,7 +738,7 @@ const ariesUsedIds = (d: AriesData): Set<number> => {
 };
 
 /** All aries slot IDs (for DnD source identification) */
-const ALL_ARIES_IDS = ['lead', 'left-0', 'left-1', 'left-2', 'right-0', 'right-1', 'right-2', 'bottom-0', 'bottom-1', 'bottom-2', 'bottom-3', 'bottom-4', 'bottom-5', 'bottom-6', 'bottom-7'];
+const ALL_ARIES_IDS = ['lead', 'left-0', 'left-1', 'left-2', 'left-3', 'left-4', 'left-5', 'right-0', 'right-1', 'right-2', 'right-3', 'right-4', 'bottom-0', 'bottom-1', 'bottom-2', 'bottom-3', 'bottom-4', 'bottom-5', 'bottom-6', 'bottom-7'];
 const isAriesSlotId = (id: string) => ALL_ARIES_IDS.includes(id);
 const isAriesBottomSlotId = (id: string) => id.startsWith('bottom-');
 const getArticleHasImage = (article: ArticleData | null | undefined): boolean => Boolean(article && getImageUrl(article));
@@ -1274,8 +1256,6 @@ export function LayoutEditor() {
   const [grid, setGrid] = useState<GridRow[]>([]);
   const [aries, setAries] = useState<AriesData>({ ...EMPTY_ARIES });
   const [sectionLayouts, setSectionLayouts] = useState<AllSectionLayouts>({ ...EMPTY_SECTION_LAYOUTS });
-  const [volume, setVolume] = useState<number>(() => calculateVolumeEdition().volume);
-  const [edition, setEdition] = useState<number>(() => calculateVolumeEdition().edition);
   const [articles, setArticles] = useState<ArticleData[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -1296,70 +1276,16 @@ export function LayoutEditor() {
       if (id) sectionPinnedIds.add(id);
     }
   }
-  const heroUsedIds = (skeleton === 'aries' || skeleton === 'taurus')
+  const heroUsedIds = (skeleton === 'aries' || skeleton === 'taurus' || skeleton === 'gemini')
     ? ariesUsedIds(aries)
     : collectArticleIds(grid);
   const usedIds = new Set([...heroUsedIds, ...sectionPinnedIds]);
   const rowSortIds = grid.map((r) => `sortrow-${r.id}`);
 
-  // ---- Style & update the Payload document header (scoped to this editor only) ----
-  // Uses a MutationObserver so the title persists even when Payload re-renders
-  // the header (e.g. switching between Edit/API tabs).
-  const volEdRef = useRef({ volume, edition });
-  volEdRef.current = { volume, edition };
-
-  useEffect(() => {
-    const applyHeader = () => {
-      const header = document.querySelector('[class*="doc-header"], [class*="documentHeader"]') as HTMLElement | null;
-      if (!header) return;
-      const h1 = header.querySelector('h1') as HTMLElement | null;
-      if (!h1) return;
-
-      const { volume: v, edition: e } = volEdRef.current;
-      const titleText = `Volume ${toRoman(v)}, Edition ${toRoman(e)}`;
-
-      // Center the title
-      header.style.position = 'relative';
-      h1.style.position = 'absolute';
-      h1.style.left = '50%';
-      h1.style.transform = 'translateX(-50%)';
-      h1.style.pointerEvents = 'auto';
-      h1.style.whiteSpace = 'nowrap';
-
-      // Update title text — preserve any existing <a> link
-      const anchor = h1.querySelector('a');
-      if (anchor) {
-        anchor.textContent = titleText;
-      } else {
-        h1.textContent = titleText;
-      }
-
-      // Ensure Edit/API buttons stay flush right
-      const lastChild = header.lastElementChild as HTMLElement | null;
-      if (lastChild && lastChild !== h1) {
-        lastChild.style.position = 'relative';
-        lastChild.style.zIndex = '1';
-        lastChild.style.marginLeft = 'auto';
-      }
-    };
-
-    // Apply immediately
-    applyHeader();
-
-    // Re-apply whenever Payload mutates the header (tab switches, re-renders)
-    const target = document.querySelector('[class*="doc-header"], [class*="documentHeader"]')?.parentElement;
-    if (!target) return;
-    const observer = new MutationObserver(() => { requestAnimationFrame(applyHeader); });
-    observer.observe(target, { childList: true, subtree: true, characterData: true });
-
-    return () => observer.disconnect();
-  }, [volume, edition]);
-
   // ---- Fetch ----
   useEffect(() => {
     (async () => {
       try {
-        const creatingNewLayout = isCreateRoute();
         const artRes = await fetch(
           '/api/articles?where[_status][equals]=published&sort=-publishedDate&limit=100&depth=1' +
           '&select[title]=true&select[plainTitle]=true&select[slug]=true&select[section]=true&select[publishedDate]=true' +
@@ -1369,6 +1295,8 @@ export function LayoutEditor() {
         const artData = await artRes.json();
         setArticles(artData.docs || []);
 
+        // There is ONE homepage layout document. Prefer URL-id, else the
+        // single existing doc, else create one. We no longer fork per edition.
         let id = extractDocId();
         let layoutData: Record<string, unknown> | null = null;
 
@@ -1377,19 +1305,17 @@ export function LayoutEditor() {
           if (layoutRes.ok) { layoutData = await layoutRes.json(); } else { id = null; }
         }
         if (!id) {
-          const listRes = await fetch('/api/layout?limit=1&depth=1&sort=-volume,-edition');
+          const listRes = await fetch('/api/layout?limit=1&depth=1&sort=-updatedAt');
           const listData = await listRes.json();
           if (listData.docs?.length > 0) {
             layoutData = listData.docs[0];
-            if (!creatingNewLayout) {
-              id = String((layoutData as Record<string, unknown>).id);
-            }
+            id = String((layoutData as Record<string, unknown>).id);
           }
         }
-        if (!id && !creatingNewLayout) {
+        if (!id) {
           const createRes = await fetch('/api/layout', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: 'Skeletons & Layouts' }),
+            body: JSON.stringify({ name: 'Homepage Layout' }),
           });
           if (createRes.ok) { const c = await createRes.json(); id = String(c.doc.id); layoutData = c.doc; }
         }
@@ -1398,7 +1324,7 @@ export function LayoutEditor() {
         if (layoutData) {
           // Read skeleton
           const skel = (layoutData as Record<string, unknown>).skeleton as string | undefined;
-          if (skel === 'aries' || skel === 'taurus') {
+          if (skel === 'aries' || skel === 'taurus' || skel === 'gemini') {
             setSkeleton(skel as SkeletonId);
             const getRelId = (val: unknown): number | null => {
               if (typeof val === 'number') return val;
@@ -1408,21 +1334,23 @@ export function LayoutEditor() {
             // Try loading from grid JSON first (new format), fall back to legacy fields
             const gridData = (layoutData as Record<string, unknown>).grid;
             if (gridData && typeof gridData === 'object' && !Array.isArray(gridData) && 'lead' in gridData) {
-              const g = gridData as { lead?: number | null; leadImportant?: boolean; left?: (number | null)[]; right?: (number | null)[]; bottom?: (number | null)[] };
+              const g = gridData as { lead?: number | null; leadImportant?: boolean; left?: (number | null)[]; right?: (number | null)[]; bottom?: (number | null)[]; showSubdeck?: Record<string, boolean>; leadPhotoPosition?: 'above' | 'below' };
               setAries({
                 lead: g.lead ?? null,
                 leadImportant: !!g.leadImportant,
-                left: [...(g.left || [null, null, null]), null, null, null].slice(0, 3) as (number | null)[],
-                right: [...(g.right || [null, null, null]), null, null, null].slice(0, 3) as (number | null)[],
+                left: [...(g.left || []), null, null, null, null, null, null].slice(0, 6) as (number | null)[],
+                right: [...(g.right || []), null, null, null, null, null].slice(0, 5) as (number | null)[],
                 bottom: [...(g.bottom || [null, null, null, null, null, null, null, null]), null, null, null, null, null, null, null, null].slice(0, 8) as (number | null)[],
+                showSubdeck: g.showSubdeck ?? {},
+                leadPhotoPosition: g.leadPhotoPosition === 'below' ? 'below' : 'above',
               });
             } else {
               // Legacy field import
               const ld = layoutData as Record<string, unknown>;
               setAries({
                 lead: getRelId(ld.mainArticle),
-                left: [getRelId(ld.top1), getRelId(ld.top2), getRelId(ld.top3)],
-                right: [getRelId(ld.top4), getRelId(ld.op1), getRelId(ld.op2)],
+                left: [getRelId(ld.top1), getRelId(ld.top2), getRelId(ld.top3), null, null, null],
+                right: [getRelId(ld.top4), getRelId(ld.op1), getRelId(ld.op2), null, null],
                 bottom: [getRelId(ld.op3), getRelId(ld.op4), getRelId(ld.special), null, null, null, null, null],
               });
             }
@@ -1464,21 +1392,6 @@ export function LayoutEditor() {
             }
           }
 
-          // Load volume & edition (fall back to auto-calculated)
-          const savedVolume = (layoutData as Record<string, unknown>).volume;
-          const savedEdition = (layoutData as Record<string, unknown>).edition;
-          if (creatingNewLayout) {
-            const baseVolume = typeof savedVolume === 'number' && savedVolume > 0 ? savedVolume : calculateVolumeEdition().volume;
-            const baseEdition = typeof savedEdition === 'number' && savedEdition > 0 ? savedEdition : calculateVolumeEdition().edition;
-            const nextVersion = incrementVolumeEdition(baseVolume, baseEdition);
-            setVolume(nextVersion.volume);
-            setEdition(nextVersion.edition);
-            setSaved(false);
-          } else {
-            if (typeof savedVolume === 'number' && savedVolume > 0) setVolume(savedVolume);
-            if (typeof savedEdition === 'number' && savedEdition > 0) setEdition(savedEdition);
-          }
-
           // Load section layouts
           const sectionLayoutsData = (layoutData as Record<string, unknown>).sectionLayouts;
           if (sectionLayoutsData && typeof sectionLayoutsData === 'object') {
@@ -1494,43 +1407,10 @@ export function LayoutEditor() {
             }
             setSectionLayouts(loaded);
           }
-        } else if (creatingNewLayout) {
-          const auto = calculateVolumeEdition();
-          setVolume(auto.volume);
-          setEdition(auto.edition);
-          setSaved(false);
         }
       } catch (err) { setError('Failed to load data'); console.error(err); } finally { setLoading(false); }
     })();
   }, []);
-
-  // ---- Check for edition conflicts ----
-  const [editionConflict, setEditionConflict] = useState<string | null>(null);
-  useEffect(() => {
-    if (loading) return;
-    const controller = new AbortController();
-    const check = async () => {
-      try {
-        const res = await fetch(
-          `/api/layout?where[volume][equals]=${volume}&where[edition][equals]=${edition}&limit=1&depth=0&select[name]=true`,
-          { signal: controller.signal },
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        const currentId = docIdRef.current;
-        const conflict = (data.docs || []).find((d: { id: number | string }) => String(d.id) !== currentId);
-        if (conflict) {
-          setEditionConflict(`Volume ${toRoman(volume)} Edition ${toRoman(edition)} already exists as "${conflict.name || 'Untitled'}"`);
-        } else {
-          setEditionConflict(null);
-        }
-      } catch {
-        // aborted or network error — ignore
-      }
-    };
-    const timeout = setTimeout(check, 300);
-    return () => { controller.abort(); clearTimeout(timeout); };
-  }, [volume, edition, loading]);
 
   // ---- Grid mutations ----
   const markDirty = useCallback(() => setSaved(false), []);
@@ -1791,8 +1671,9 @@ export function LayoutEditor() {
     // Aries skeleton drop
     if (overData.skeleton === 'aries') {
       if (isAriesSlotId(targetCellId)) {
-        // Enforce bottom slot constraints: 0-3,5-7 = text only, 4 = image only
-        if (isAriesBottomSlotId(targetCellId)) {
+        // Enforce Aries-specific bottom slot constraints (0-3,5-7 = text only, 4 = image only).
+        // Gemini reuses the same bottom-N slot IDs but allows images in both of its bottom cards.
+        if (isAriesBottomSlotId(targetCellId) && skeleton === 'aries') {
           const slotIdx = Number(targetCellId.split('-')[1]);
           const hasImage = getArticleHasImage(draggedArticle);
           if (slotIdx === 4 && !hasImage) return;   // image-only slot
@@ -1885,7 +1766,7 @@ export function LayoutEditor() {
   const handleActivate = async () => {
     // Check for unpublished articles in all slots
     const allUsedArticleIds = new Set<number>();
-    if (skeleton === 'aries' || skeleton === 'taurus') {
+    if (skeleton === 'aries' || skeleton === 'taurus' || skeleton === 'gemini') {
       for (const id of ariesUsedIds(aries)) allUsedArticleIds.add(id);
     } else {
       for (const id of collectArticleIds(grid)) allUsedArticleIds.add(id);
@@ -1919,16 +1800,22 @@ export function LayoutEditor() {
         cleanSectionLayouts[sec] = { skeleton: sectionLayouts[sec].skeleton, pinnedArticles: pins };
       }
 
-      const layoutName = `Volume ${toRoman(volume)}, Edition ${toRoman(edition)}`;
-      const commonFields = { name: layoutName, volume, edition, sectionLayouts: cleanSectionLayouts };
+      const layoutName = 'Homepage Layout';
+      const commonFields = { name: layoutName, sectionLayouts: cleanSectionLayouts };
       let body: Record<string, unknown>;
-      if (skeleton === 'aries' || skeleton === 'taurus') {
-        const visLeft = aries.left.slice(0, ariesColSlotCount(aries.left, articleMap));
-        const visRight = aries.right.slice(0, ariesColSlotCount(aries.right, articleMap));
+      if (skeleton === 'aries' || skeleton === 'taurus' || skeleton === 'gemini') {
+        // Gemini uses left[0..2] + right[0] as a cluster of 4 auxiliary headlines;
+        // preserve the full arrays so slot positions round-trip correctly.
+        const visLeft = skeleton === 'gemini'
+          ? aries.left
+          : aries.left.slice(0, ariesColSlotCount(aries.left, articleMap));
+        const visRight = skeleton === 'gemini'
+          ? aries.right
+          : aries.right.slice(0, ariesColSlotCount(aries.right, articleMap));
         body = {
           ...commonFields,
           skeleton,
-          grid: { lead: aries.lead, leadImportant: !!aries.leadImportant, left: visLeft, right: visRight, bottom: aries.bottom },
+          grid: { lead: aries.lead, leadImportant: !!aries.leadImportant, left: visLeft, right: visRight, bottom: aries.bottom, showSubdeck: aries.showSubdeck ?? {}, leadPhotoPosition: aries.leadPhotoPosition ?? 'above' },
           mainArticle: aries.lead,
           top1: aries.left[0] ?? null, top2: aries.left[1] ?? null, top3: aries.left[2] ?? null,
           top4: aries.right[0] ?? null, op1: aries.right[1] ?? null, op2: aries.right[2] ?? null,
@@ -1972,7 +1859,7 @@ export function LayoutEditor() {
     return <div className="le-loading"><div className="le-loading-spinner" /><p>Loading layout editor...</p></div>;
   }
 
-  const articleCount = (skeleton === 'aries' || skeleton === 'taurus')
+  const articleCount = (skeleton === 'aries' || skeleton === 'taurus' || skeleton === 'gemini')
     ? ariesUsedIds(aries).size
     : [...collectArticleIds(grid)].length;
 
@@ -1990,34 +1877,20 @@ export function LayoutEditor() {
             </span>
           </div>
           <div className="le-toolbar-right">
-            {(error || editionConflict) && <span className="le-toolbar-error">{editionConflict || error}</span>}
-            <button className={`le-save-btn ${saved ? 'le-save-btn-saved' : 'le-save-btn-unsaved'}`} onClick={handleActivate} disabled={saving || saved || !!editionConflict}>
-              {saving ? 'Activating...' : saved ? 'Active' : 'Activate'}
+            {error && <span className="le-toolbar-error">{error}</span>}
+            <button className={`le-save-btn ${saved ? 'le-save-btn-saved' : 'le-save-btn-unsaved'}`} onClick={handleActivate} disabled={saving || saved}>
+              {saving ? 'Saving...' : saved ? 'Saved' : 'Save'}
             </button>
           </div>
         </div>
 
-        {/* Volume & Edition */}
+        {/* Edition indicator — derived from articles, read-only */}
         <div className="le-volume-bar" style={{ color: signColor }}>
           <span className="le-volume-sign">{currentSkeleton?.icon}</span>
           <div className="le-volume-group">
-            <span className="le-volume-label">Volume</span>
-            <span className="le-volume-numeral">{toRoman(volume)}</span>
-            <div className="le-volume-arrows">
-              <button className="le-volume-arrow" onClick={() => { setVolume((v) => v + 1); markDirty(); }} title="Increment volume">▲</button>
-              <button className="le-volume-arrow" onClick={() => { setVolume((v) => Math.max(1, v - 1)); markDirty(); }} title="Decrement volume">▼</button>
-            </div>
+            <span className="le-volume-label">Single homepage layout</span>
+            <span className="le-volume-numeral" style={{ fontSize: '0.95rem' }}>history via “Versions”</span>
           </div>
-          <span className="le-volume-separator">·</span>
-          <div className="le-volume-group">
-            <span className="le-volume-label">Edition</span>
-            <span className="le-volume-numeral">{toRoman(edition)}</span>
-            <div className="le-volume-arrows">
-              <button className="le-volume-arrow" onClick={() => { setEdition((e) => e + 1); markDirty(); }} title="Increment edition">▲</button>
-              <button className="le-volume-arrow" onClick={() => { setEdition((e) => Math.max(1, e - 1)); markDirty(); }} title="Decrement edition">▼</button>
-            </div>
-          </div>
-          {editionConflict && <span className="le-volume-conflict">⚠ Already exists</span>}
         </div>
 
         {/* Skeleton picker */}
@@ -2068,6 +1941,126 @@ export function LayoutEditor() {
                   markDirty();
                 }}
               />
+            ) : skeleton === 'gemini' ? (
+              /* Gemini: three-column top region (text stack / hero+secondary / feature stack) with bottom card row */
+              (() => {
+                // Default: show subdeck on hero/left/right; hide on bottom cards (matches the prior render).
+                const subdeckDefault = (slotId: string) => !slotId.startsWith('bottom-');
+                const subdeckFor = (slotId: string): boolean => {
+                  const v = aries.showSubdeck?.[slotId];
+                  return v === undefined ? subdeckDefault(slotId) : !!v;
+                };
+                const toggleSubdeck = (slotId: string) => {
+                  setAries((p) => {
+                    const current = subdeckFor(slotId);
+                    return { ...p, showSubdeck: { ...(p.showSubdeck ?? {}), [slotId]: !current } };
+                  });
+                  markDirty();
+                };
+                const SubdeckToggle = ({ slotId }: { slotId: string }) => (
+                  <label className="le-subdeck-toggle">
+                    <input
+                      type="checkbox"
+                      checked={subdeckFor(slotId)}
+                      onChange={() => toggleSubdeck(slotId)}
+                    />
+                    <span>Show subdeck</span>
+                  </label>
+                );
+                return (
+              <div className="le-aries-canvas">
+                <div className="le-aries-description">
+                  <span className="le-presets-label">Gemini</span>
+                  <span className="le-aries-desc-text">
+                    Three-column: text-only headline stack at left, big hero photo and headline center with a secondary item below, photo features stacked at right, and a row of small cards across the bottom.
+                  </span>
+                </div>
+                <div className="le-gemini-top">
+                  <div className="le-gemini-col le-gemini-left">
+                    <div className="le-gemini-col-label">Text stack (all optional)</div>
+                    {[0, 1, 2, 3, 4, 5].map((i) => (
+                      <div key={`left-${i}`} className="le-gemini-slot">
+                        <AriesDropSlot
+                          slotId={`left-${i}`}
+                          label={`Headline ${i + 1}`}
+                          article={aries.left[i] !== null ? articleMap.get(aries.left[i]!) || null : null}
+                          isLead={false}
+                          onClear={() => { setAries((p) => { const next = { ...p, left: [...p.left] }; next.left[i] = null; return next; }); markDirty(); }}
+                        />
+                        <SubdeckToggle slotId={`left-${i}`} />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="le-gemini-col le-gemini-center">
+                    <div className="le-gemini-col-label">Center</div>
+                    <AriesDropSlot
+                      slotId="lead"
+                      label="Hero (photo + lead)"
+                      article={aries.lead !== null ? articleMap.get(aries.lead) || null : null}
+                      isLead
+                      onClear={() => { setAries((p) => ({ ...p, lead: null })); markDirty(); }}
+                    />
+                    <label className="le-aries-important-toggle">
+                      <input
+                        type="checkbox"
+                        checked={!!aries.leadImportant}
+                        onChange={() => { setAries((p) => ({ ...p, leadImportant: !p.leadImportant })); markDirty(); }}
+                      />
+                      <span>Important</span>
+                    </label>
+                    <SubdeckToggle slotId="lead" />
+                    <div className="le-lead-position-toggle">
+                      <span>Photo:</span>
+                      <button
+                        type="button"
+                        className={(aries.leadPhotoPosition ?? 'above') === 'above' ? 'active' : ''}
+                        onClick={() => { setAries((p) => ({ ...p, leadPhotoPosition: 'above' })); markDirty(); }}
+                      >
+                        Above text
+                      </button>
+                      <button
+                        type="button"
+                        className={aries.leadPhotoPosition === 'below' ? 'active' : ''}
+                        onClick={() => { setAries((p) => ({ ...p, leadPhotoPosition: 'below' })); markDirty(); }}
+                      >
+                        Below text
+                      </button>
+                    </div>
+                  </div>
+                  <div className="le-gemini-col le-gemini-right">
+                    <div className="le-gemini-col-label">Feature stack (all optional)</div>
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <div key={`right-${i}`} className="le-gemini-slot">
+                        <AriesDropSlot
+                          slotId={`right-${i}`}
+                          label={`Feature ${i + 1}`}
+                          article={aries.right[i] !== null ? articleMap.get(aries.right[i]!) || null : null}
+                          isLead={false}
+                          onClear={() => { setAries((p) => { const next = { ...p, right: [...p.right] }; next.right[i] = null; return next; }); markDirty(); }}
+                        />
+                        <SubdeckToggle slotId={`right-${i}`} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="le-gemini-bottom-label">Bottom row (under left + center)</div>
+                <div className="le-gemini-bottom-grid">
+                  {[0, 1].map((i) => (
+                    <div key={`bottom-${i}`} className="le-gemini-slot">
+                      <AriesDropSlot
+                        slotId={`bottom-${i}`}
+                        label={`Card ${i + 1}`}
+                        article={aries.bottom[i] !== null ? articleMap.get(aries.bottom[i]!) || null : null}
+                        isLead={false}
+                        onClear={() => { setAries((p) => { const next = { ...p, bottom: [...p.bottom] }; next.bottom[i] = null; return next; }); markDirty(); }}
+                      />
+                      <SubdeckToggle slotId={`bottom-${i}`} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+                );
+              })()
             ) : skeleton === 'taurus' ? (
               /* Top-area Taurus: reuses aries state — lead=feature, left=supporting, right=list */
               <div className="le-aries-canvas">

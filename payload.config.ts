@@ -43,6 +43,7 @@ const CarouselBlock: Block = {
 import { Users } from './collections/Users.ts'
 import { Media } from './collections/Media.ts'
 import Articles from './collections/Articles.ts'
+import LiveArticles from './collections/LiveArticles.ts'
 import JobTitles from './collections/JobTitles.ts'
 import Layout from './collections/Layout.ts'
 import OpinionPageLayout from './collections/OpinionPageLayout.ts'
@@ -85,7 +86,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Media, Logos, Articles, JobTitles, Layout, OpinionPageLayout, FeaturesPageLayout, StaffPageLayout, Submissions, EventSubmissions],
+  collections: [Users, Media, Logos, Articles, LiveArticles, JobTitles, Layout, OpinionPageLayout, FeaturesPageLayout, StaffPageLayout, Submissions, EventSubmissions],
   globals: [Theme, Seo],
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [
@@ -120,7 +121,7 @@ export default buildConfig({
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
   db: postgresAdapter({
-    push: process.env.NODE_ENV === 'development',
+    push: process.env.NODE_ENV === 'development' && process.env.PAYLOAD_DISABLE_PUSH !== '1',
     pool: {
       connectionString: process.env.DATABASE_URL || '',
     },

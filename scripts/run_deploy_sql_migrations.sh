@@ -38,7 +38,13 @@ VALUES
   ('20260402_100000_add_media_title', 13, NOW(), NOW()),
   ('20260404_000000_add_header_animation', 14, NOW(), NOW()),
   ('20260405_000000_migrate_title_to_richtext', 15, NOW(), NOW()),
-  ('20260409_000000_backfill_plain_title', 16, NOW(), NOW())
+  ('20260409_000000_backfill_plain_title', 16, NOW(), NOW()),
+  ('20260420_000000_add_live_articles', 17, NOW(), NOW()),
+  ('20260423_000000_layout_versions_and_remove_edition', 18, NOW(), NOW()),
+  ('20260423_010000_add_articles_last_modified_by', 19, NOW(), NOW()),
+  ('20260423_020000_add_gemini_to_layout_skeleton', 20, NOW(), NOW()),
+  ('20260423_030000_add_header_animation_enabled', 21, NOW(), NOW()),
+  ('20260423_040000_add_last_modified_by_to_layout_live_theme', 22, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -808,4 +814,371 @@ SET "version_plain_title" = (
     WITH ORDINALITY t(value, ordinality)
 )
 WHERE "version_plain_title" IS NULL AND "version_title" IS NOT NULL;
+
+-- 20260420_000000: Add live_articles collection + layout.liveArticles relationship
+DO $$ BEGIN
+  CREATE TYPE "public"."enum_live_articles_status" AS ENUM('draft', 'published');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "public"."enum__live_articles_v_version_status" AS ENUM('draft', 'published');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS "live_articles" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "title" jsonb NOT NULL,
+  "plain_title" varchar NOT NULL,
+  "slug" varchar NOT NULL,
+  "section" varchar NOT NULL,
+  "hero_id" integer NOT NULL,
+  "published_date" timestamp(3) with time zone,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "_status" "public"."enum_live_articles_status" DEFAULT 'draft'
+);
+
+CREATE TABLE IF NOT EXISTS "live_articles_summary" (
+  "_order" integer NOT NULL,
+  "_parent_id" integer NOT NULL,
+  "id" varchar PRIMARY KEY NOT NULL,
+  "label" varchar NOT NULL,
+  "body" jsonb NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "live_articles_updates" (
+  "_order" integer NOT NULL,
+  "_parent_id" integer NOT NULL,
+  "id" varchar PRIMARY KEY NOT NULL,
+  "timestamp" timestamp(3) with time zone NOT NULL,
+  "heading" varchar,
+  "body" jsonb NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "live_articles_rels" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "order" integer,
+  "parent_id" integer NOT NULL,
+  "path" varchar NOT NULL,
+  "users_id" integer
+);
+
+CREATE TABLE IF NOT EXISTS "_live_articles_v" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "parent_id" integer,
+  "version_title" jsonb,
+  "version_plain_title" varchar,
+  "version_slug" varchar,
+  "version_section" varchar,
+  "version_hero_id" integer,
+  "version_published_date" timestamp(3) with time zone,
+  "version_updated_at" timestamp(3) with time zone,
+  "version_created_at" timestamp(3) with time zone,
+  "version__status" "public"."enum__live_articles_v_version_status" DEFAULT 'draft',
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "latest" boolean
+);
+
+CREATE TABLE IF NOT EXISTS "_live_articles_v_version_summary" (
+  "_order" integer NOT NULL,
+  "_parent_id" integer NOT NULL,
+  "id" serial PRIMARY KEY NOT NULL,
+  "label" varchar,
+  "body" jsonb,
+  "_uuid" varchar
+);
+
+CREATE TABLE IF NOT EXISTS "_live_articles_v_version_updates" (
+  "_order" integer NOT NULL,
+  "_parent_id" integer NOT NULL,
+  "id" serial PRIMARY KEY NOT NULL,
+  "timestamp" timestamp(3) with time zone,
+  "heading" varchar,
+  "body" jsonb,
+  "_uuid" varchar
+);
+
+CREATE TABLE IF NOT EXISTS "_live_articles_v_rels" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "order" integer,
+  "parent_id" integer NOT NULL,
+  "path" varchar NOT NULL,
+  "users_id" integer
+);
+
+DO $$ BEGIN
+  ALTER TABLE "live_articles" ADD CONSTRAINT "live_articles_hero_id_media_id_fk"
+    FOREIGN KEY ("hero_id") REFERENCES "public"."media"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "live_articles_summary" ADD CONSTRAINT "live_articles_summary_parent_id_fk"
+    FOREIGN KEY ("_parent_id") REFERENCES "public"."live_articles"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "live_articles_updates" ADD CONSTRAINT "live_articles_updates_parent_id_fk"
+    FOREIGN KEY ("_parent_id") REFERENCES "public"."live_articles"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "live_articles_rels" ADD CONSTRAINT "live_articles_rels_parent_fk"
+    FOREIGN KEY ("parent_id") REFERENCES "public"."live_articles"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "live_articles_rels" ADD CONSTRAINT "live_articles_rels_users_fk"
+    FOREIGN KEY ("users_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "_live_articles_v" ADD CONSTRAINT "_live_articles_v_parent_id_live_articles_id_fk"
+    FOREIGN KEY ("parent_id") REFERENCES "public"."live_articles"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "_live_articles_v" ADD CONSTRAINT "_live_articles_v_version_hero_id_media_id_fk"
+    FOREIGN KEY ("version_hero_id") REFERENCES "public"."media"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "_live_articles_v_version_summary" ADD CONSTRAINT "_live_articles_v_version_summary_parent_id_fk"
+    FOREIGN KEY ("_parent_id") REFERENCES "public"."_live_articles_v"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "_live_articles_v_version_updates" ADD CONSTRAINT "_live_articles_v_version_updates_parent_id_fk"
+    FOREIGN KEY ("_parent_id") REFERENCES "public"."_live_articles_v"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "_live_articles_v_rels" ADD CONSTRAINT "_live_articles_v_rels_parent_fk"
+    FOREIGN KEY ("parent_id") REFERENCES "public"."_live_articles_v"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "_live_articles_v_rels" ADD CONSTRAINT "_live_articles_v_rels_users_fk"
+    FOREIGN KEY ("users_id") REFERENCES "public"."users"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS "live_articles_slug_idx" ON "live_articles" USING btree ("slug");
+CREATE INDEX IF NOT EXISTS "live_articles_hero_idx" ON "live_articles" USING btree ("hero_id");
+CREATE INDEX IF NOT EXISTS "live_articles_updated_at_idx" ON "live_articles" USING btree ("updated_at");
+CREATE INDEX IF NOT EXISTS "live_articles_created_at_idx" ON "live_articles" USING btree ("created_at");
+CREATE INDEX IF NOT EXISTS "live_articles__status_idx" ON "live_articles" USING btree ("_status");
+CREATE INDEX IF NOT EXISTS "live_articles_summary_order_idx" ON "live_articles_summary" USING btree ("_order");
+CREATE INDEX IF NOT EXISTS "live_articles_summary_parent_id_idx" ON "live_articles_summary" USING btree ("_parent_id");
+CREATE INDEX IF NOT EXISTS "live_articles_updates_order_idx" ON "live_articles_updates" USING btree ("_order");
+CREATE INDEX IF NOT EXISTS "live_articles_updates_parent_id_idx" ON "live_articles_updates" USING btree ("_parent_id");
+CREATE INDEX IF NOT EXISTS "live_articles_rels_order_idx" ON "live_articles_rels" USING btree ("order");
+CREATE INDEX IF NOT EXISTS "live_articles_rels_parent_idx" ON "live_articles_rels" USING btree ("parent_id");
+CREATE INDEX IF NOT EXISTS "live_articles_rels_path_idx" ON "live_articles_rels" USING btree ("path");
+CREATE INDEX IF NOT EXISTS "live_articles_rels_users_id_idx" ON "live_articles_rels" USING btree ("users_id");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_parent_idx" ON "_live_articles_v" USING btree ("parent_id");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_version_version_hero_idx" ON "_live_articles_v" USING btree ("version_hero_id");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_version_version_slug_idx" ON "_live_articles_v" USING btree ("version_slug");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_version_version_updated_at_idx" ON "_live_articles_v" USING btree ("version_updated_at");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_version_version_created_at_idx" ON "_live_articles_v" USING btree ("version_created_at");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_version_version__status_idx" ON "_live_articles_v" USING btree ("version__status");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_created_at_idx" ON "_live_articles_v" USING btree ("created_at");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_updated_at_idx" ON "_live_articles_v" USING btree ("updated_at");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_latest_idx" ON "_live_articles_v" USING btree ("latest");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_version_summary_order_idx" ON "_live_articles_v_version_summary" USING btree ("_order");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_version_summary_parent_id_idx" ON "_live_articles_v_version_summary" USING btree ("_parent_id");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_version_updates_order_idx" ON "_live_articles_v_version_updates" USING btree ("_order");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_version_updates_parent_id_idx" ON "_live_articles_v_version_updates" USING btree ("_parent_id");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_rels_order_idx" ON "_live_articles_v_rels" USING btree ("order");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_rels_parent_idx" ON "_live_articles_v_rels" USING btree ("parent_id");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_rels_path_idx" ON "_live_articles_v_rels" USING btree ("path");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_rels_users_id_idx" ON "_live_articles_v_rels" USING btree ("users_id");
+
+CREATE TABLE IF NOT EXISTS "layout_rels" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "order" integer,
+  "parent_id" integer NOT NULL,
+  "path" varchar NOT NULL,
+  "live_articles_id" integer
+);
+
+DO $$ BEGIN
+  ALTER TABLE "layout_rels" ADD CONSTRAINT "layout_rels_parent_fk"
+    FOREIGN KEY ("parent_id") REFERENCES "public"."layout"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "layout_rels" ADD CONSTRAINT "layout_rels_live_articles_fk"
+    FOREIGN KEY ("live_articles_id") REFERENCES "public"."live_articles"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE INDEX IF NOT EXISTS "layout_rels_order_idx" ON "layout_rels" USING btree ("order");
+CREATE INDEX IF NOT EXISTS "layout_rels_parent_idx" ON "layout_rels" USING btree ("parent_id");
+CREATE INDEX IF NOT EXISTS "layout_rels_path_idx" ON "layout_rels" USING btree ("path");
+CREATE INDEX IF NOT EXISTS "layout_rels_live_articles_id_idx" ON "layout_rels" USING btree ("live_articles_id");
+
+ALTER TABLE "payload_locked_documents_rels" ADD COLUMN IF NOT EXISTS "live_articles_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_live_articles_fk"
+    FOREIGN KEY ("live_articles_id") REFERENCES "public"."live_articles"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_live_articles_id_idx"
+  ON "payload_locked_documents_rels" ("live_articles_id");
+
+-- 20260423_000000: Enable versions on layout + remove volume/edition columns.
+-- Edition is now derived from articles.publishedDate via lib/getCurrentEdition.ts.
+ALTER TABLE "layout" DROP COLUMN IF EXISTS "volume";
+ALTER TABLE "layout" DROP COLUMN IF EXISTS "edition";
+
+CREATE TABLE IF NOT EXISTS "_layout_v" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "parent_id" integer,
+  "version_name" varchar,
+  "version_skeleton" varchar DEFAULT 'custom',
+  "version_grid" jsonb,
+  "version_section_layouts" jsonb,
+  "version_main_article_id" integer,
+  "version_top1_id" integer,
+  "version_top2_id" integer,
+  "version_top3_id" integer,
+  "version_top4_id" integer,
+  "version_op1_id" integer,
+  "version_op2_id" integer,
+  "version_op3_id" integer,
+  "version_op4_id" integer,
+  "version_special_id" integer,
+  "version_updated_at" timestamp(3) with time zone,
+  "version_created_at" timestamp(3) with time zone,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "latest" boolean
+);
+
+CREATE TABLE IF NOT EXISTS "_layout_v_rels" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "order" integer,
+  "parent_id" integer NOT NULL,
+  "path" varchar NOT NULL,
+  "live_articles_id" integer
+);
+
+DO $$ BEGIN
+  ALTER TABLE "_layout_v" ADD CONSTRAINT "_layout_v_parent_id_layout_id_fk"
+    FOREIGN KEY ("parent_id") REFERENCES "public"."layout"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "_layout_v" ADD CONSTRAINT "_layout_v_main_article_fk"
+    FOREIGN KEY ("version_main_article_id") REFERENCES "public"."articles"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "_layout_v_rels" ADD CONSTRAINT "_layout_v_rels_parent_fk"
+    FOREIGN KEY ("parent_id") REFERENCES "public"."_layout_v"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "_layout_v_rels" ADD CONSTRAINT "_layout_v_rels_live_articles_fk"
+    FOREIGN KEY ("live_articles_id") REFERENCES "public"."live_articles"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE INDEX IF NOT EXISTS "_layout_v_parent_idx" ON "_layout_v" USING btree ("parent_id");
+CREATE INDEX IF NOT EXISTS "_layout_v_version_updated_at_idx" ON "_layout_v" USING btree ("version_updated_at");
+CREATE INDEX IF NOT EXISTS "_layout_v_latest_idx" ON "_layout_v" USING btree ("latest");
+CREATE INDEX IF NOT EXISTS "_layout_v_rels_order_idx" ON "_layout_v_rels" USING btree ("order");
+CREATE INDEX IF NOT EXISTS "_layout_v_rels_parent_idx" ON "_layout_v_rels" USING btree ("parent_id");
+CREATE INDEX IF NOT EXISTS "_layout_v_rels_path_idx" ON "_layout_v_rels" USING btree ("path");
+CREATE INDEX IF NOT EXISTS "_layout_v_rels_live_articles_id_idx" ON "_layout_v_rels" USING btree ("live_articles_id");
+
+-- 20260423_010000: Add lastModifiedBy relationship column to articles (+ version shadow)
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "last_modified_by_id" integer;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_last_modified_by_id" integer;
+
+DO $$ BEGIN
+  ALTER TABLE "articles" ADD CONSTRAINT "articles_last_modified_by_id_users_id_fk"
+    FOREIGN KEY ("last_modified_by_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "_articles_v" ADD CONSTRAINT "_articles_v_version_last_modified_by_id_users_id_fk"
+    FOREIGN KEY ("version_last_modified_by_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE INDEX IF NOT EXISTS "articles_last_modified_by_idx" ON "articles" USING btree ("last_modified_by_id");
+CREATE INDEX IF NOT EXISTS "_articles_v_version_version_last_modified_by_idx" ON "_articles_v" USING btree ("version_last_modified_by_id");
+
+-- 20260423_020000: Add 'gemini' value to layout skeleton enum (only if it exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_layout_skeleton') THEN
+    ALTER TYPE "public"."enum_layout_skeleton" ADD VALUE IF NOT EXISTS 'gemini';
+  END IF;
+END $$;
+
+-- 20260423_030000: Add header_animation_enabled toggle to theme global
+ALTER TABLE "theme" ADD COLUMN IF NOT EXISTS "header_animation_enabled" boolean DEFAULT true;
+ALTER TABLE "_theme_v" ADD COLUMN IF NOT EXISTS "version_header_animation_enabled" boolean DEFAULT true;
+
+-- 20260423_040000: Add lastModifiedBy tracking to Layout, LiveArticles, and Theme
+ALTER TABLE "layout" ADD COLUMN IF NOT EXISTS "last_modified_by_id" integer;
+ALTER TABLE "_layout_v" ADD COLUMN IF NOT EXISTS "version_last_modified_by_id" integer;
+
+DO $$ BEGIN
+  ALTER TABLE "layout" ADD CONSTRAINT "layout_last_modified_by_id_users_id_fk"
+    FOREIGN KEY ("last_modified_by_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "_layout_v" ADD CONSTRAINT "_layout_v_version_last_modified_by_id_users_id_fk"
+    FOREIGN KEY ("version_last_modified_by_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE INDEX IF NOT EXISTS "layout_last_modified_by_idx" ON "layout" USING btree ("last_modified_by_id");
+CREATE INDEX IF NOT EXISTS "_layout_v_version_version_last_modified_by_idx" ON "_layout_v" USING btree ("version_last_modified_by_id");
+
+ALTER TABLE "live_articles" ADD COLUMN IF NOT EXISTS "last_modified_by_id" integer;
+ALTER TABLE "_live_articles_v" ADD COLUMN IF NOT EXISTS "version_last_modified_by_id" integer;
+
+DO $$ BEGIN
+  ALTER TABLE "live_articles" ADD CONSTRAINT "live_articles_last_modified_by_id_users_id_fk"
+    FOREIGN KEY ("last_modified_by_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "_live_articles_v" ADD CONSTRAINT "_live_articles_v_version_last_modified_by_id_users_id_fk"
+    FOREIGN KEY ("version_last_modified_by_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE INDEX IF NOT EXISTS "live_articles_last_modified_by_idx" ON "live_articles" USING btree ("last_modified_by_id");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_version_version_last_modified_by_idx" ON "_live_articles_v" USING btree ("version_last_modified_by_id");
+
+ALTER TABLE "theme" ADD COLUMN IF NOT EXISTS "last_modified_by_id" integer;
+ALTER TABLE "_theme_v" ADD COLUMN IF NOT EXISTS "version_last_modified_by_id" integer;
+
+DO $$ BEGIN
+  ALTER TABLE "theme" ADD CONSTRAINT "theme_last_modified_by_id_users_id_fk"
+    FOREIGN KEY ("last_modified_by_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "_theme_v" ADD CONSTRAINT "_theme_v_version_last_modified_by_id_users_id_fk"
+    FOREIGN KEY ("version_last_modified_by_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE INDEX IF NOT EXISTS "theme_last_modified_by_idx" ON "theme" USING btree ("last_modified_by_id");
+CREATE INDEX IF NOT EXISTS "_theme_v_version_version_last_modified_by_idx" ON "_theme_v" USING btree ("version_last_modified_by_id");
 SQL

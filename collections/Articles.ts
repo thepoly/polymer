@@ -7,7 +7,7 @@ const Articles: CollectionConfig = {
   slug: 'articles',
   admin: {
     useAsTitle: 'plainTitle',
-    defaultColumns: ['plainTitle', 'updatedAt'],
+    defaultColumns: ['plainTitle', 'updatedAt', 'lastModifiedBy'],
   },
   access: {
     update: ({ req: { user } }) => {
@@ -67,13 +67,19 @@ const Articles: CollectionConfig = {
       },
     ],
     beforeChange: [
-      ({ data, originalDoc }) => {
+      ({ data, originalDoc, req }) => {
         // LOGIC: If transitioning to 'published' via Payload's internal _status, set the publishedDate
         const isNowPublished = data._status === 'published'
         const wasPublished = originalDoc?._status === 'published'
 
         if (isNowPublished && !wasPublished) {
           data.publishedDate = new Date().toISOString()
+        }
+
+        // Track who last modified this article. Written on every change so each
+        // version document captures the editor making that change.
+        if (req?.user?.id) {
+          data.lastModifiedBy = req.user.id
         }
 
         // Auto-derive opinionType from kicker for opinion articles
@@ -219,6 +225,18 @@ const Articles: CollectionConfig = {
       type: 'date',
       admin: {
         hidden: true,
+      },
+    },
+    {
+      name: 'lastModifiedBy',
+      type: 'relationship',
+      relationTo: 'users',
+      hasMany: false,
+      label: 'Last Modified By',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description: 'Automatically set to the user who most recently saved this article. Each version in the history tab records the editor who made that change.',
       },
     },
     {

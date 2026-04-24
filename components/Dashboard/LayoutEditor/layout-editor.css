@@ -1271,6 +1271,51 @@
   font-weight: 600;
   letter-spacing: 0.03em;
 }
+.le-gemini-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.le-subdeck-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--theme-elevation-500, #999);
+  cursor: pointer;
+  user-select: none;
+  padding-left: 2px;
+}
+.le-subdeck-toggle input {
+  accent-color: var(--theme-text, currentColor);
+}
+.le-subdeck-toggle span {
+  letter-spacing: 0.02em;
+}
+.le-lead-position-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--theme-elevation-500, #999);
+  user-select: none;
+}
+.le-lead-position-toggle button {
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  border: 1px solid var(--theme-elevation-150, #333);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.le-lead-position-toggle button.active {
+  background: var(--theme-elevation-150, #333);
+  color: var(--theme-text, #fff);
+}
 .le-aries-bottom {
   margin-top: 4px;
   padding-top: 10px;
@@ -1300,6 +1345,54 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+/* ---- Gemini skeleton ---- */
+.le-gemini-top {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.le-gemini-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.le-gemini-col-label {
+  font-size: 0.55rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.35;
+  padding-bottom: 2px;
+}
+.le-gemini-center .le-aries-slot:first-of-type {
+  min-height: 220px;
+}
+.le-gemini-bottom-label {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--theme-elevation-100, #1a1a1a);
+  font-size: 0.55rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  opacity: 0.35;
+}
+.le-gemini-bottom-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+@media (max-width: 900px) {
+  .le-gemini-top {
+    grid-template-columns: 1fr;
+  }
+  .le-gemini-bottom-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 /* ---- Section Layout Editors ---- */

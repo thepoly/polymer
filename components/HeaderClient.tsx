@@ -5,7 +5,7 @@ import { toRoman } from "@/lib/toRoman";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, Moon, Search, Sun, X } from "lucide-react";
+import { Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, Cloudy, Menu, Moon, Search, Sun, Wind, X } from "lucide-react";
 import SearchOverlay, { SearchOverlayTrigger } from "@/components/SearchOverlay";
 import { MobileMenuDrawer, primaryNavItems, secondaryNavItems, isExternalHref } from "@/components/MobileMenuDrawer";
 import { useHeaderTransition } from "@/components/HeaderTransitionProvider";
@@ -16,6 +16,7 @@ import {
 // import MaraudersFootsteps from "@/components/MaraudersFootsteps";
 import { useTheme } from "@/components/ThemeProvider";
 import type { ThemeLogoSrcs, HeaderAnimationConfig } from "@/lib/getTheme";
+import LiveStrip, { type LiveArticleStripEntry } from "@/components/LiveStrip";
 const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
 
 // Header wave fleet: waves fan out from a single start point, converge back at the end.
@@ -117,6 +118,7 @@ function triggerThemeTransition(x: number, y: number, apply: () => void) {
 export type HeaderLogoSrcs = ThemeLogoSrcs
 
 const DEFAULT_HEADER_ANIMATION: HeaderAnimationConfig = {
+  enabled: true,
   waveColor1: '#0044ff',
   waveColor2: '#0088ff',
   waveColor3: '#38bdf8',
@@ -125,7 +127,24 @@ const DEFAULT_HEADER_ANIMATION: HeaderAnimationConfig = {
   wrapAround: false,
 };
 
-export default function Header({ compact = false, mobileTight = false, logoSrcs, headerAnimation = DEFAULT_HEADER_ANIMATION, volume, edition }: { compact?: boolean; mobileTight?: boolean; logoSrcs?: HeaderLogoSrcs; headerAnimation?: HeaderAnimationConfig; volume?: number | null; edition?: number | null }) {
+export type HeaderWeather = { temperature: number; unit: 'F' | 'C'; shortForecast: string } | null
+
+function pickWeatherIcon(forecast: string): React.ComponentType<{ className?: string }> {
+  const f = (forecast || '').toLowerCase();
+  if (/thunder|t-storm/.test(f)) return CloudLightning;
+  if (/snow|flurries|sleet/.test(f)) return CloudSnow;
+  if (/drizzle/.test(f)) return CloudDrizzle;
+  if (/rain|shower/.test(f)) return CloudRain;
+  if (/fog|mist|haze/.test(f)) return CloudFog;
+  if (/wind/.test(f)) return Wind;
+  if (/mostly cloudy|overcast/.test(f)) return Cloudy;
+  if (/partly cloudy|partly sunny|mostly sunny|few clouds/.test(f)) return Cloud;
+  if (/cloud/.test(f)) return Cloudy;
+  if (/sunny|clear|fair/.test(f)) return Sun;
+  return Cloud;
+}
+
+export default function Header({ compact = false, mobileTight = false, logoSrcs, headerAnimation = DEFAULT_HEADER_ANIMATION, volume, edition, liveEntries, weather }: { compact?: boolean; mobileTight?: boolean; logoSrcs?: HeaderLogoSrcs; headerAnimation?: HeaderAnimationConfig; volume?: number | null; edition?: number | null; liveEntries?: LiveArticleStripEntry[]; weather?: HeaderWeather }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
   const [showDarkModePrompt, setShowDarkModePrompt] = useState(false);
@@ -138,7 +157,8 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
   const pathname = usePathname();
   const currentPath = pathname ?? "";
   const shouldEnableAnimatedHeaderTransition =
-    phase !== "idle" || shouldRenderAnimatedHeader(currentPath);
+    headerAnimation.enabled !== false &&
+    (phase !== "idle" || shouldRenderAnimatedHeader(currentPath));
   const logoOutlineLeftX = -4;
   const logoBaselineY = 0.5;
   const logoOutlineRightX = 464;
@@ -323,6 +343,28 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
               </span>
             </div>
 
+            {weather && (() => {
+              const WeatherIcon = pickWeatherIcon(weather.shortForecast);
+              const t = Math.max(0, Math.min(1, (weather.temperature - 25) / (80 - 25)));
+              // hue 220 (blue) → 360 (red) going through indigo/purple/magenta
+              const hue = 220 + 140 * t;
+              // darker in light mode for contrast, brighter in dark mode
+              const lightness = isDarkMode ? 68 : 42;
+              const tempColor = `hsl(${hue.toFixed(0)}, 72%, ${lightness}%)`;
+              return (
+                <div
+                  className="pointer-events-none absolute left-3/4 -translate-x-1/2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.1em] whitespace-nowrap text-text-main"
+                  title={weather.shortForecast ? `Troy, NY — ${weather.shortForecast}` : 'Troy, NY'}
+                >
+                  <WeatherIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>
+                    {weather.shortForecast ? `${weather.shortForecast} ` : ''}
+                    <span style={{ color: tempColor }}>{`${Math.round(weather.temperature)}°`}</span>
+                  </span>
+                </div>
+              );
+            })()}
+
             <div className="flex items-center gap-2">
               <div className="relative">
                 <button
@@ -409,7 +451,8 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
 
             `}} />
 
-            <div className="relative flex items-end justify-between gap-8 pb-0.5">
+            <div className="relative">
+            <div className="flex items-end justify-between gap-8 pb-0.5">
               <div
                 className={`absolute -left-1 right-0 bottom-0 h-px overflow-visible pointer-events-none ${
                   isDarkMode ? "text-[#DDDDDD]" : "text-rule-strong"
@@ -567,6 +610,30 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                   </Link>
                 ))}
               </nav>
+            </div>
+            {liveEntries && liveEntries.length > 0 && (
+              <div className="relative">
+                <div
+                  className={`absolute -left-1 right-0 top-0 h-px overflow-visible pointer-events-none ${
+                    isDarkMode ? "text-[#DDDDDD]" : "text-rule-strong"
+                  }`}
+                >
+                  <svg className="absolute left-0 top-0 w-full h-px overflow-visible">
+                    <line
+                      x1={logoOutlineLeftX}
+                      y1={logoBaselineY}
+                      x2="100%"
+                      y2={logoBaselineY}
+                      stroke="currentColor"
+                      strokeWidth={lineWeight}
+                      fill="none"
+                      strokeLinecap="square"
+                    />
+                  </svg>
+                </div>
+                <LiveStrip entries={liveEntries} />
+              </div>
+            )}
             </div>
           </div>
         )}

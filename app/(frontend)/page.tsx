@@ -3,8 +3,11 @@ import type { Metadata } from "next";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FrontPage, { SectionBlock } from "@/components/FrontPage";
+import { GeminiHomepage } from "@/components/FrontPage/GeminiHomepage";
 import { GridLayout, type GridRow } from "@/components/FrontPage/GridLayout";
 import { DynamicSectionHeader } from "@/components/FrontPage/DynamicSectionHeader";
+import { type LiveArticleStripEntry } from "@/components/LiveStrip";
+import { formatRelativeTime } from "@/components/LiveArticle/relativeTime";
 import { getPayload } from "payload";
 import config from "@/payload.config";
 import { Article as ComponentArticle } from "@/components/FrontPage/types";
@@ -85,6 +88,21 @@ type HomepageLayout = {
   op3?: LayoutArticleRelation;
   op4?: LayoutArticleRelation;
   special?: LayoutArticleRelation;
+  // `liveArticles` is provided by the parallel-agent-authored `live-articles`
+  // collection + layout field. We type it defensively here since its schema
+  // is not yet merged into this worktree's generated payload-types.
+  liveArticles?: Array<
+    | string
+    | number
+    | {
+        id: string | number;
+        slug?: string | null;
+        section?: string | null;
+        publishedDate?: string | null;
+        updatedAt?: string | null;
+        updates?: Array<{ timestamp?: string | null }> | null;
+      }
+  > | null;
 };
 
 const getRelationId = (value: LayoutArticleRelation) =>
@@ -127,7 +145,9 @@ export default async function Home() {
   const layoutResponse = await payload.find({
     collection: 'layout',
     limit: 1,
-    depth: 0,
+    // depth: 1 so the `liveArticles` hasMany relation comes back populated
+    // from the parallel-agent-authored `live-articles` collection.
+    depth: 1,
     select: {
       skeleton: true,
       grid: true,
@@ -142,15 +162,88 @@ export default async function Home() {
       op3: true,
       op4: true,
       special: true,
+      // liveArticles is not yet in this worktree's generated Payload types
+      // (the backend agent is adding it in parallel). Cast to satisfy TS.
+      ...({ liveArticles: true } as Record<string, true>),
     },
   });
 
   const layout = layoutResponse.docs[0] as HomepageLayout | undefined;
 
+  // Defensive mapping: the `liveArticles` relationship may not yet exist in
+  // this worktree's schema; only populated object entries contribute.
+  type LiveMediaSize = { url?: string | null };
+  type LiveMedia = {
+    url?: string | null;
+    sizes?: {
+      card?: LiveMediaSize | null;
+      gallery?: LiveMediaSize | null;
+    } | null;
+  };
+  type LiveArticleRelationEntry =
+    | string
+    | number
+    | {
+        id: string | number;
+        slug?: string | null;
+        section?: string | null;
+        publishedDate?: string | null;
+        updatedAt?: string | null;
+        updates?: Array<{ timestamp?: string | null }> | null;
+        hero?: number | string | LiveMedia | null;
+      };
+  const rawLiveArticles = (layout?.liveArticles ?? []) as LiveArticleRelationEntry[];
+  const liveStripEntries: LiveArticleStripEntry[] = rawLiveArticles
+    .filter(
+      (
+        entry,
+      ): entry is {
+        id: string | number;
+        slug: string;
+        section: string;
+        publishedDate?: string | null;
+        updatedAt?: string | null;
+        updates?: Array<{ timestamp?: string | null }> | null;
+        hero?: number | string | LiveMedia | null;
+      } =>
+        typeof entry === "object" &&
+        entry !== null &&
+        typeof entry.slug === "string" &&
+        typeof entry.section === "string",
+    )
+    .map((entry) => {
+      const timestamps = (entry.updates ?? [])
+        .map((u) => (u?.timestamp ? new Date(u.timestamp).getTime() : NaN))
+        .filter((t) => !Number.isNaN(t));
+      const lastUpdateMs = timestamps.length > 0 ? Math.max(...timestamps) : NaN;
+      const fallbackMs = entry.publishedDate
+        ? new Date(entry.publishedDate).getTime()
+        : entry.updatedAt
+          ? new Date(entry.updatedAt).getTime()
+          : NaN;
+      const latestMs = Number.isNaN(lastUpdateMs) ? fallbackMs : lastUpdateMs;
+      const lastUpdatedLabel = Number.isNaN(latestMs)
+        ? undefined
+        : formatRelativeTime(new Date(latestMs));
+      const hero =
+        entry.hero && typeof entry.hero === "object"
+          ? (entry.hero as LiveMedia)
+          : null;
+      const imageUrl =
+        hero?.sizes?.card?.url || hero?.url || undefined;
+      return {
+        id: String(entry.id),
+        slug: entry.slug,
+        section: entry.section,
+        lastUpdatedLabel,
+        imageUrl: imageUrl ?? undefined,
+      };
+    });
+
   if (!layout) {
     return (
       <main className="min-h-screen flex flex-col bg-bg-main transition-colors duration-300">
-        <Header />
+        <Header liveEntries={liveStripEntries} />
         <div className="flex flex-col items-center justify-center flex-1 px-4 text-center">
           <h1 className="font-display text-[28px] md:text-[36px] font-bold text-text-main mb-3">We&apos;ll be right back</h1>
           <p className="font-copy text-[15px] md:text-[17px] text-text-muted max-w-md">The Polytechnic is currently under maintenance. Please check back shortly.</p>
@@ -372,6 +465,110 @@ export default async function Home() {
     </div>
   );
 
+  // --- Gemini skeleton: centered hero + cluster of 4 aux headlines ---
+  if (
+    layout.skeleton === 'gemini' &&
+    layout.grid &&
+    typeof layout.grid === 'object' &&
+    !Array.isArray(layout.grid) &&
+    'lead' in layout.grid
+  ) {
+    const g = layout.grid as {
+      lead?: number | null;
+      leadImportant?: boolean;
+      left?: (number | null)[];
+      right?: (number | null)[];
+      bottom?: (number | null)[];
+      showSubdeck?: Record<string, boolean>;
+      leadPhotoPosition?: 'above' | 'below';
+    };
+    const lead = g.lead ? layoutArticleMap.get(g.lead) ?? null : null;
+    if (lead) {
+      const resolve = (ids: (number | null)[] | undefined): ComponentArticle[] =>
+        (ids || [])
+          .map((id) => (id ? layoutArticleMap.get(id) ?? null : null))
+          .filter((a): a is ComponentArticle => Boolean(a));
+
+      // Gemini slot shape:
+      //   left[0..5]    -> left-column text-only stack (up to 6, all optional)
+      //   right[0..4]   -> right-column feature stack (up to 5, all optional)
+      //   bottom[0..1]  -> bottom row under left + center (2)
+      const leftPinned = resolve((g.left || []).slice(0, 6));
+      const rightPinned = resolve((g.right || []).slice(0, 5));
+      const bottomPinned = resolve((g.bottom || []).slice(0, 2));
+
+      const recentPool = dedupeArticles(
+        [
+          ...newsArticlesRaw,
+          ...featuresArticlesRaw,
+          ...sportsArticlesRaw,
+          ...opinionArticlesRaw,
+        ],
+        [
+          lead.id,
+          ...leftPinned.map((a) => a.id),
+          ...rightPinned.map((a) => a.id),
+          ...bottomPinned.map((a) => a.id),
+        ],
+      );
+      // Left stack: pinned only (all 6 slots are optional — no recent-pool fill).
+      const leftStack: ComponentArticle[] = leftPinned.slice(0, 6);
+      // Right features: pinned only (all 5 slots are optional — no recent-pool fill).
+      const rightFeatures: ComponentArticle[] = rightPinned.slice(0, 5);
+      const bottomRow: ComponentArticle[] = [
+        ...bottomPinned,
+        ...recentPool.slice(0, Math.max(0, 2 - bottomPinned.length)),
+      ].slice(0, 2);
+
+      const heroUsedForSections = new Set<string>([
+        String(lead.id),
+        ...leftStack.map((a) => String(a.id)),
+        ...rightFeatures.map((a) => String(a.id)),
+        ...bottomRow.map((a) => String(a.id)),
+      ]);
+      const dropGemHero = (arts: ComponentArticle[]) =>
+        arts.filter((a) => !heroUsedForSections.has(String(a.id)));
+      const gemSectionBlocks = (
+        <div className="relative z-[0] md:mt-6 flex flex-col gap-0 lg:gap-6">
+          {dropGemHero(newsArticles).length > 0 && (
+            <SectionBlock title="News" articles={dropGemHero(newsArticles)} />
+          )}
+          {dropGemHero(featuresArticles).length > 0 && (
+            <SectionBlock title="Features" articles={dropGemHero(featuresArticles)} />
+          )}
+          {dropGemHero(opinionArticles).length > 0 && (
+            <SectionBlock title="Opinion" articles={dropGemHero(opinionArticles)} />
+          )}
+          {dropGemHero(sportsArticles).length > 0 && (
+            <SectionBlock title="Sports" articles={dropGemHero(sportsArticles)} />
+          )}
+        </div>
+      );
+
+      return (
+        <main className="min-h-screen bg-bg-main transition-colors duration-300">
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }} />
+          <Header liveEntries={liveStripEntries} />
+          <GeminiHomepage
+            lead={lead}
+            leftStack={leftStack}
+            rightFeatures={rightFeatures}
+            bottomRow={bottomRow}
+            leadImportant={!!g.leadImportant}
+            leadPhotoPosition={g.leadPhotoPosition === 'below' ? 'below' : 'above'}
+            showSubdeckLead={g.showSubdeck?.lead !== false}
+            showSubdeckLeft={Array.from({ length: 6 }, (_, i) => g.showSubdeck?.[`left-${i}`] !== false)}
+            showSubdeckRight={Array.from({ length: 5 }, (_, i) => g.showSubdeck?.[`right-${i}`] !== false)}
+            showSubdeckBottom={Array.from({ length: 2 }, (_, i) => g.showSubdeck?.[`bottom-${i}`] === true)}
+            sectionBlocks={gemSectionBlocks}
+          />
+          <Footer />
+        </main>
+      );
+    }
+  }
+
   // --- Custom grid skeleton ---
   if (layout.skeleton === 'custom' && hasGrid && gridArticleIds.length > 0) {
     const gridArticleMap = new Map<number, ComponentArticle>();
@@ -383,7 +580,7 @@ export default async function Home() {
       <main className="min-h-screen bg-bg-main transition-colors duration-300">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }} />
-        <Header />
+        <Header liveEntries={liveStripEntries} />
         <div className="w-full bg-bg-main text-text-main transition-colors duration-300">
           <div className="mx-auto max-w-[1280px] px-4 pb-14 md:px-6 xl:px-[30px]">
             <div data-frontpage-top className="pt-5 md:pt-7">
@@ -408,7 +605,7 @@ export default async function Home() {
   if (!mainArticle) {
     return (
       <main className="min-h-screen flex flex-col bg-bg-main transition-colors duration-300">
-        <Header />
+        <Header liveEntries={liveStripEntries} />
         <div className="flex flex-col items-center justify-center flex-1 px-4 text-center">
           <h1 className="font-display text-[28px] md:text-[36px] font-bold text-text-main mb-3">We&apos;ll be right back</h1>
           <p className="font-copy text-[15px] md:text-[17px] text-text-muted max-w-md">The Polytechnic is currently under maintenance. Please check back shortly.</p>
@@ -489,7 +686,7 @@ export default async function Home() {
     <main className="min-h-screen bg-bg-main transition-colors duration-300">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }} />
-      <Header />
+      <Header liveEntries={liveStripEntries} />
       <FrontPage
         topStories={topStories}
         sections={{

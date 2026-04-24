@@ -1,19 +1,26 @@
-import { getPayload } from 'payload'
-import configPromise from '@/payload.config'
 import { getTheme } from '@/lib/getTheme'
+import { getCurrentEdition } from '@/lib/getCurrentEdition'
+import { getWeather } from '@/lib/getWeather'
 import HeaderClient from './HeaderClient'
 import type { HeaderLogoSrcs } from './HeaderClient'
+import type { LiveArticleStripEntry } from './LiveStrip'
 
 export type { HeaderLogoSrcs }
 
-export default async function Header({ compact, mobileTight }: { compact?: boolean; mobileTight?: boolean }) {
-  const [theme, layoutResponse] = await Promise.all([
+export default async function Header({
+  compact,
+  mobileTight,
+  liveEntries,
+}: {
+  compact?: boolean
+  mobileTight?: boolean
+  liveEntries?: LiveArticleStripEntry[]
+}) {
+  const [theme, edition, weather] = await Promise.all([
     getTheme(),
-    getPayload({ config: configPromise }).then(payload =>
-      payload.find({ collection: 'layout', limit: 1, depth: 0 })
-    ),
+    getCurrentEdition(),
+    getWeather(),
   ])
-  const layout = layoutResponse.docs[0]
 
   return (
     <HeaderClient
@@ -21,8 +28,10 @@ export default async function Header({ compact, mobileTight }: { compact?: boole
       mobileTight={mobileTight}
       logoSrcs={theme.logoSrcs}
       headerAnimation={theme.headerAnimation}
-      volume={layout?.volume}
-      edition={layout?.edition}
+      volume={edition.volume}
+      edition={edition.issue}
+      liveEntries={liveEntries}
+      weather={weather}
     />
   )
 }
