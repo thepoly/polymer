@@ -45,12 +45,34 @@ function isActive(pathname: string, item: NavItem): boolean {
 }
 
 // Only render inside the Android / iOS Capacitor shell; on the mobile web
-// the regular hamburger + drawer remain the nav affordance.
+// the regular hamburger + drawer remain the nav affordance. Capacitor injects
+// window.Capacitor after the page loads, so we poll briefly instead of
+// checking once on mount.
 function useInNativeApp() {
   const [inApp, setInApp] = useState(false);
   useEffect(() => {
-    const isNative = typeof window !== 'undefined' && Boolean((window as unknown as { Capacitor?: unknown }).Capacitor);
-    setInApp(isNative);
+    let cancelled = false;
+    let attempts = 0;
+    const detect = () => {
+      const w = window as unknown as { Capacitor?: unknown; PolyTheme?: unknown };
+      return Boolean(w.Capacitor) || Boolean(w.PolyTheme);
+    };
+    const tick = () => {
+      if (cancelled) return;
+      if (detect()) {
+        setInApp(true);
+        return;
+      }
+      if (attempts++ < 30) {
+        window.setTimeout(tick, 100);
+      }
+    };
+    // setTimeout 0 defers the first setState out of the effect's sync body.
+    const kick = window.setTimeout(tick, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(kick);
+    };
   }, []);
   return inApp;
 }
