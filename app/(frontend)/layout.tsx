@@ -71,6 +71,13 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
     },
+    alternates: {
+      types: {
+        'application/rss+xml': [
+          { url: '/feed', title: seo.siteIdentity.siteName },
+        ],
+      },
+    },
     icons: {
       icon: [
         {
