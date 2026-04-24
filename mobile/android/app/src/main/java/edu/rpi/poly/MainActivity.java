@@ -2,50 +2,49 @@ package edu.rpi.poly;
 
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.view.Window;
+
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.getcapacitor.BridgeActivity;
 
-/**
- * Host activity for the Capacitor WebView.
- *
- * The WebView loads https://poly.rpi.edu (configured in capacitor.config.ts).
- * This class layers two native behaviours on top of Capacitor's defaults:
- *
- *   1) System-bar theming that follows the Android UI mode. The parent theme
- *      (Theme.AppCompat.DayNight.NoActionBar) already resolves the correct
- *      colors from values/ vs values-night/; this class just forces a refresh
- *      when the uiMode changes at runtime so the bars pick up the new tone
- *      without a full activity recreate.
- *
- *      Known tradeoff (see design spec §Theme bridge): toggling the in-site
- *      theme button while the Android system theme is fixed will not move
- *      the system bars. A full bridge needs coordinated postMessage support
- *      on the web side, scheduled for v0.1.0.
- *
- *   2) Push-notification registration. Deferred to PushRegistration so
- *      failures (no Firebase, missing plugin, no network) don't crash the
- *      main activity. Device-token POST goes to the production /api/push/register.
- */
 public class MainActivity extends BridgeActivity {
+
+    private static final int LIGHT_BG = 0xFFFFFFFF;
+    private static final int DARK_BG = 0xFF0A0A0A;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Fire-and-forget; handles its own errors.
+        applySystemBars();
         PushRegistration.start(this);
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+        applySystemBars();
+    }
 
-        int currentNightMode = newConfig.uiMode & Configuration.UI_MODE_NIGHT_MASK;
-        if (currentNightMode == Configuration.UI_MODE_NIGHT_YES
-                || currentNightMode == Configuration.UI_MODE_NIGHT_NO) {
-            // Re-resolve themed resources so the status/nav bar colours
-            // pick up the new night-qualifier values immediately.
-            getWindow().getDecorView().requestApplyInsets();
-        }
+    // Theme.SplashScreen (the activity's launch theme) ignores our themed
+    // statusBarColor/navigationBarColor attributes, which is why the bars
+    // stayed black regardless of light/dark before. Pinning them here at
+    // runtime forces the bars to the current uiMode's colors.
+    private void applySystemBars() {
+        final Window window = getWindow();
+        final boolean night =
+                (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                        == Configuration.UI_MODE_NIGHT_YES;
+        final int color = night ? DARK_BG : LIGHT_BG;
+
+        WindowCompat.setDecorFitsSystemWindows(window, true);
+        window.setStatusBarColor(color);
+        window.setNavigationBarColor(color);
+
+        WindowInsetsControllerCompat controller =
+                new WindowInsetsControllerCompat(window, window.getDecorView());
+        controller.setAppearanceLightStatusBars(!night);
+        controller.setAppearanceLightNavigationBars(!night);
     }
 }

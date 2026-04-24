@@ -11,6 +11,7 @@ import { getPayload } from "payload";
 import configPromise from "@/payload.config";
 import { User } from "@/payload-types";
 import ThemeStyle from "@/components/ThemeStyle";
+import MobileScrollHeader from "@/components/MobileScrollHeader";
 import { getTheme } from "@/lib/getTheme";
 import { getSeo } from "@/lib/getSeo";
 
@@ -171,7 +172,8 @@ export default async function RootLayout({
         <ThemeProvider initialDarkMode={isDarkMode} logoSrcs={siteTheme.logoSrcs}>
           <SiteAnalytics user={analyticsUser} />
           <WebVitals />
-<HeaderTransitionProvider>{children}</HeaderTransitionProvider>
+          <MobileScrollHeader />
+          <HeaderTransitionProvider>{children}</HeaderTransitionProvider>
         </ThemeProvider>
       </body>
     </html>
