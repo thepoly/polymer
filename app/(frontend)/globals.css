@@ -425,6 +425,12 @@ h6.font-display.italic {
   padding-left: calc(1.125rem + var(--safe-area-left));
 }
 
+/* Bottom nav only reserves space when mounted (Capacitor shell only).
+   BottomNav adds `.has-bottom-nav` to <body> on mount. */
+body.has-bottom-nav {
+  padding-bottom: calc(56px + var(--safe-area-bottom));
+}
+
 html.standalone-pwa .mobile-chrome-header-inner {
   padding-top: 0;
 }

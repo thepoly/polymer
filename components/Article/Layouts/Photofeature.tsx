@@ -14,7 +14,7 @@ export const PhotofeatureLayout = ({ article, content }: { article: Article, con
       {/* Mobile: standard layout header */}
       <div className="sm:hidden">
         <div className="pt-[56px]">
-          <ArticleStaticHeader />
+          <ArticleStaticHeader alwaysVisible />
           <article className="container mx-auto px-4 mt-8">
             <StandardArticleHeader article={article} />
             <ArticleContent content={content} />

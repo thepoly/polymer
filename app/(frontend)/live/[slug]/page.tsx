@@ -168,7 +168,7 @@ export default async function LiveArticlePage({ params }: Args) {
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-bg-main pt-[56px] transition-colors duration-300">
-      <ArticleStaticHeader />
+      <ArticleStaticHeader alwaysVisible />
 
       <article className="container mx-auto px-4 md:px-6 mt-8 md:mt-12">
         <div className="flex flex-col gap-6 mb-8" style={{ paddingTop: '40px' }}>
