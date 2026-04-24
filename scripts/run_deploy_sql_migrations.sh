@@ -45,8 +45,9 @@ VALUES
   ('20260423_020000_add_gemini_to_layout_skeleton', 20, NOW(), NOW()),
   ('20260423_030000_add_header_animation_enabled', 21, NOW(), NOW()),
   ('20260423_040000_add_last_modified_by_to_layout_live_theme', 22, NOW(), NOW()),
-  ('20260424_010000_add_breaking_news', 23, NOW(), NOW()),
-  ('20260424_020000_add_device_tokens', 23, NOW(), NOW())
+  ('20260424_000000_add_news_more_seo_fields', 23, NOW(), NOW()),
+  ('20260424_010000_add_breaking_news', 24, NOW(), NOW()),
+  ('20260424_020000_add_device_tokens', 25, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1183,6 +1184,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 CREATE INDEX IF NOT EXISTS "theme_last_modified_by_idx" ON "theme" USING btree ("last_modified_by_id");
 CREATE INDEX IF NOT EXISTS "_theme_v_version_version_last_modified_by_idx" ON "_theme_v" USING btree ("version_last_modified_by_id");
+
+-- 20260424_000000: Add News "More in News" SEO fields to seo global
+ALTER TABLE "seo" ADD COLUMN IF NOT EXISTS "pages_news_more_title" varchar;
+ALTER TABLE "seo" ADD COLUMN IF NOT EXISTS "pages_news_more_description" varchar;
+ALTER TABLE "_seo_v" ADD COLUMN IF NOT EXISTS "version_pages_news_more_title" varchar;
+ALTER TABLE "_seo_v" ADD COLUMN IF NOT EXISTS "version_pages_news_more_description" varchar;
 
 -- 20260424_010000: Add breaking_news flag to articles (+ version shadow)
 ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "breaking_news" boolean DEFAULT false NOT NULL;

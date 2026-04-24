@@ -4,6 +4,7 @@ import { LeadArticle } from "./LeadArticle";
 import { ArticleCard } from "./ArticleCard";
 import { ArticleListItem } from "./ArticleListItem";
 import { Article } from "./types";
+import { getSlotNumber, type HomepageLayoutName } from "@/lib/homepageSlots";
 
 interface FrontPageProps {
   topStories: {
@@ -23,6 +24,13 @@ interface FrontPageProps {
     sports: Article[];
     opinion: Article[];
   };
+  /**
+   * Identifies which top-level homepage skeleton is being rendered (for
+   * click-tracking analytics). The FrontPage component visually renders
+   * aries-style for both 'aries' and 'taurus'/legacy fallback; callers pass
+   * the actual skeleton name so analytics attribute correctly.
+   */
+  layoutName?: Exclude<HomepageLayoutName, "custom" | "gemini">;
 }
 
 interface HeroColumns {
@@ -271,6 +279,7 @@ export function SectionBlock({
 export default function FrontPage({
   topStories,
   sections,
+  layoutName = "aries",
 }: FrontPageProps) {
   const heroStories: HeroColumns = topStories.heroLeft && topStories.heroRight
     ? { left: topStories.heroLeft, right: topStories.heroRight }
@@ -280,22 +289,46 @@ export default function FrontPage({
   ).length;
   const leadIsCompact = heroImageCount >= 2;
 
+  /**
+   * Resolve the stable slot number for the current skeleton. Returns undefined
+   * when the slot key is unknown — we then skip emitting `data-homepage-slot`
+   * entirely rather than writing a misleading placeholder.
+   */
+  const slotAttr = (slotKey: string): number | undefined => {
+    const n = getSlotNumber(layoutName, slotKey);
+    return n ?? undefined;
+  };
+
   return (
     <div className="homepage-zodiac w-full bg-bg-main text-text-main transition-colors duration-300">
       <div className="mx-auto max-w-[1280px] px-4 pb-14 md:px-6 xl:px-[30px]">
         {/* Mobile: lead first, then a text article, then the rest */}
         <div className="pt-2 flex flex-col md:hidden" data-frontpage-top>
-          <LeadArticle article={topStories.lead} compact={false} hideKicker important={topStories.leadImportant} />
+          <div data-homepage-layout={layoutName} data-homepage-slot={slotAttr("lead")}>
+            <LeadArticle article={topStories.lead} compact={false} hideKicker important={topStories.leadImportant} />
+          </div>
           {(() => {
-            const heroArticles = [...heroStories.left, ...heroStories.right];
-            const bottomArticles = topStories.bottomRow || [];
-            const all = [...heroArticles, ...bottomArticles].filter((article): article is Article => Boolean(article));
-            const textIdx = all.findIndex((a) => !a.image);
+            // Keep a stable slot key for each article so mobile click tracking
+            // reports the same slot number as the desktop layout.
+            const taggedHero: Array<{ article: Article; slotKey: string }> = [
+              ...heroStories.left.map((article, i) => ({ article, slotKey: `left-${i}` })),
+              ...heroStories.right.map((article, i) => ({ article, slotKey: `right-${i}` })),
+            ];
+            const taggedBottom: Array<{ article: Article; slotKey: string }> = (topStories.bottomRow || [])
+              .map((article, i) => (article ? { article, slotKey: `bottom-${i}` } : null))
+              .filter((entry): entry is { article: Article; slotKey: string } => entry !== null);
+            const all = [...taggedHero, ...taggedBottom];
+            const textIdx = all.findIndex((e) => !e.article.image);
             const textFirst = textIdx >= 0 ? all[textIdx] : null;
             const rest = textFirst ? [...all.slice(0, textIdx), ...all.slice(textIdx + 1)] : all;
             const ordered = textFirst ? [textFirst, ...rest] : rest;
-            return ordered.map((article, i) => (
-              <div key={`${article.id}-${i}`} className="mt-5 pt-5 border-t border-black dark:border-white md:mt-10 md:pt-10 md:border-rule transition-colors">
+            return ordered.map(({ article, slotKey }, i) => (
+              <div
+                key={`${article.id}-${i}`}
+                className="mt-5 pt-5 border-t border-black dark:border-white md:mt-10 md:pt-10 md:border-rule transition-colors"
+                data-homepage-layout={layoutName}
+                data-homepage-slot={slotAttr(slotKey)}
+              >
                 <ArticleCard article={article} />
               </div>
             ));
@@ -309,33 +342,43 @@ export default function FrontPage({
         >
           {/* Left column: lead + bottom-left articles */}
           <div className="flex flex-col gap-5">
-            <LeadArticle article={topStories.lead} compact={leadIsCompact} important={topStories.leadImportant} />
+            <div data-homepage-layout={layoutName} data-homepage-slot={slotAttr("lead")}>
+              <LeadArticle article={topStories.lead} compact={leadIsCompact} important={topStories.leadImportant} />
+            </div>
             {topStories.bottomRow?.[0] && (
-              <ArticleCard
-                article={topStories.bottomRow[0]}
-                showImage={false}
-                contained
-                showKicker
-              />
+              <div data-homepage-layout={layoutName} data-homepage-slot={slotAttr("bottom-0")}>
+                <ArticleCard
+                  article={topStories.bottomRow[0]}
+                  showImage={false}
+                  contained
+                  showKicker
+                />
+              </div>
             )}
             {(topStories.bottomRow?.[1] || topStories.bottomRow?.[2]) && (
               <div className="grid grid-cols-[1fr_1px_1fr] gap-x-5 items-start">
                 {topStories.bottomRow[1] && (
-                  <ArticleCard article={topStories.bottomRow[1]} showImage={false} contained showKicker />
+                  <div data-homepage-layout={layoutName} data-homepage-slot={slotAttr("bottom-1")}>
+                    <ArticleCard article={topStories.bottomRow[1]} showImage={false} contained showKicker />
+                  </div>
                 )}
                 <div className="self-stretch bg-rule" />
                 {topStories.bottomRow[2] && (
-                  <ArticleCard article={topStories.bottomRow[2]} showImage={false} contained showKicker />
+                  <div data-homepage-layout={layoutName} data-homepage-slot={slotAttr("bottom-2")}>
+                    <ArticleCard article={topStories.bottomRow[2]} showImage={false} contained showKicker />
+                  </div>
                 )}
               </div>
             )}
             {topStories.bottomRow?.[3] && (
-              <ArticleCard
-                article={topStories.bottomRow[3]}
-                showImage={false}
-                contained
-                showKicker
-              />
+              <div data-homepage-layout={layoutName} data-homepage-slot={slotAttr("bottom-3")}>
+                <ArticleCard
+                  article={topStories.bottomRow[3]}
+                  showImage={false}
+                  contained
+                  showKicker
+                />
+              </div>
             )}
           </div>
           {/* Column divider */}
@@ -345,7 +388,12 @@ export default function FrontPage({
             <div className="grid grid-cols-[1fr_1px_1fr] gap-x-5">
               <div className="flex flex-col">
                 {heroStories.left.map((article, i) => (
-                  <div key={article.id} className={i > 0 ? "pt-3" : "pb-3"}>
+                  <div
+                    key={article.id}
+                    className={i > 0 ? "pt-3" : "pb-3"}
+                    data-homepage-layout={layoutName}
+                    data-homepage-slot={slotAttr(`left-${i}`)}
+                  >
                     <ArticleCard article={article} showKicker />
                   </div>
                 ))}
@@ -353,40 +401,53 @@ export default function FrontPage({
               <div className="self-stretch bg-rule" />
               <div className="flex flex-col">
                 {heroStories.right.map((article, i) => (
-                  <div key={article.id} className={i > 0 ? "pt-3" : "pb-3"}>
+                  <div
+                    key={article.id}
+                    className={i > 0 ? "pt-3" : "pb-3"}
+                    data-homepage-layout={layoutName}
+                    data-homepage-slot={slotAttr(`right-${i}`)}
+                  >
                     <ArticleCard article={article} showKicker />
                   </div>
                 ))}
               </div>
             </div>
             {topStories.bottomRow?.[4] && (
-              <ArticleCard
-                article={topStories.bottomRow[4]}
-                contained
-                showKicker
-                imageRight
-                imageAspectClassName="aspect-[4/3]"
-              />
+              <div data-homepage-layout={layoutName} data-homepage-slot={slotAttr("bottom-4")}>
+                <ArticleCard
+                  article={topStories.bottomRow[4]}
+                  contained
+                  showKicker
+                  imageRight
+                  imageAspectClassName="aspect-[4/3]"
+                />
+              </div>
             )}
             {(topStories.bottomRow?.[5] || topStories.bottomRow?.[6]) && (
               <div className="grid grid-cols-[1fr_1px_1fr] gap-x-5 items-start">
                 {topStories.bottomRow[5] && (
-                  <ArticleCard article={topStories.bottomRow[5]} showImage={false} contained showKicker />
+                  <div data-homepage-layout={layoutName} data-homepage-slot={slotAttr("bottom-5")}>
+                    <ArticleCard article={topStories.bottomRow[5]} showImage={false} contained showKicker />
+                  </div>
                 )}
                 <div className="self-stretch bg-rule" />
                 {topStories.bottomRow[6] && (
-                  <ArticleCard article={topStories.bottomRow[6]} showImage={false} contained showKicker />
+                  <div data-homepage-layout={layoutName} data-homepage-slot={slotAttr("bottom-6")}>
+                    <ArticleCard article={topStories.bottomRow[6]} showImage={false} contained showKicker />
+                  </div>
                 )}
               </div>
             )}
             {topStories.bottomRow?.[7] && (
-              <ArticleCard
-                article={topStories.bottomRow[7]}
-                showImage={false}
-                showExcerpt={false}
-                contained
-                showKicker
-              />
+              <div data-homepage-layout={layoutName} data-homepage-slot={slotAttr("bottom-7")}>
+                <ArticleCard
+                  article={topStories.bottomRow[7]}
+                  showImage={false}
+                  showExcerpt={false}
+                  contained
+                  showKicker
+                />
+              </div>
             )}
           </div>
         </div>

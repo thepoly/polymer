@@ -6,6 +6,7 @@ import { ImageCaption } from "./ImageCaption";
 import { ArticleCard } from "./ArticleCard";
 import type { Article } from "./types";
 import { getArticleUrl } from "@/utils/getArticleUrl";
+import { getSlotNumber } from "@/lib/homepageSlots";
 
 const getLeadDate = (article: Article): string | null => {
   if (article.date) return article.date;
@@ -183,14 +184,23 @@ export function GeminiHomepage({
             <aside className="order-2 md:order-none md:col-start-1 md:row-start-1 md:border-r md:border-rule md:pr-6 lg:pr-7">
               <div className="flex flex-col divide-y divide-rule">
                 {leftStack.map((article, i) => (
-                  <div key={article.id} className={i === 0 ? "pb-5" : "py-5 last:pb-0"}>
+                  <div
+                    key={article.id}
+                    className={i === 0 ? "pb-5" : "py-5 last:pb-0"}
+                    data-homepage-layout="gemini"
+                    data-homepage-slot={getSlotNumber("gemini", `left-${i}`) ?? undefined}
+                  >
                     <TextOnlyItem article={article} showSubdeck={showSubdeckLeft[i] !== false} />
                   </div>
                 ))}
               </div>
             </aside>
 
-            <div className="order-1 md:order-none md:col-start-2 md:row-start-1">
+            <div
+              className="order-1 md:order-none md:col-start-2 md:row-start-1"
+              data-homepage-layout="gemini"
+              data-homepage-slot={getSlotNumber("gemini", "lead") ?? undefined}
+            >
               <CenterLead
                 article={lead}
                 important={leadImportant}
@@ -202,7 +212,12 @@ export function GeminiHomepage({
             <aside className="order-4 md:order-none md:col-start-3 md:row-start-1 md:row-span-2 md:border-l md:border-rule md:pl-6 lg:pl-7">
               <div className="flex flex-col divide-y divide-rule">
                 {rightFeatures.map((article, i) => (
-                  <div key={article.id} className={i === 0 ? "pb-5" : "py-5 last:pb-0"}>
+                  <div
+                    key={article.id}
+                    className={i === 0 ? "pb-5" : "py-5 last:pb-0"}
+                    data-homepage-layout="gemini"
+                    data-homepage-slot={getSlotNumber("gemini", `right-${i}`) ?? undefined}
+                  >
                     <SideFeature article={article} showSubdeck={showSubdeckRight[i] !== false} />
                   </div>
                 ))}
@@ -216,6 +231,8 @@ export function GeminiHomepage({
                     <div
                       key={article.id}
                       className={`${i > 0 ? "pt-5 border-t border-rule sm:border-t-0 sm:pt-0 sm:pl-5" : "sm:pr-5"}`}
+                      data-homepage-layout="gemini"
+                      data-homepage-slot={getSlotNumber("gemini", `bottom-${i}`) ?? undefined}
                     >
                       <ArticleCard
                         article={article}

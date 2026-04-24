@@ -18,6 +18,21 @@ const ACTIVE_WINDOW_MS = 30_000;
 const TICK_SECONDS = 5;
 const READ_COMPLETION_THRESHOLD = 85;
 const SITE_ACTIVE_SECONDS_STORAGE_KEY = "posthog_site_active_seconds";
+/**
+ * Cap the session-scoped homepage-slot click log so we don't bloat
+ * `page_session_summary` payloads on runaway sessions. Visitors almost never
+ * exceed a handful of slot clicks; 25 is a safe upper bound.
+ */
+const MAX_HOMEPAGE_SLOT_CLICKS_PER_SESSION = 25;
+
+type HomepageSlotClick = {
+  /** Skeleton name from data-homepage-layout, e.g. "aries" / "custom". */
+  layout: string;
+  /** Stable column-major slot number from data-homepage-slot. */
+  slot: number;
+  /** Seconds since session start when the click happened. */
+  at_seconds: number;
+};
 
 function getDocumentScrollPercentage() {
   const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -197,6 +212,13 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
   const themeSecondsRef = useRef({ light: 0, dark: 0 });
   const currentThemeRef = useRef(isDarkMode ? "dark" : "light");
 
+  // Homepage slot-click history for the current session. Issue #45 — an array
+  // of {layout, slot, at_seconds} entries describing which homepage-layout
+  // slots the user clicked. Flushed into `page_session_summary` so we can
+  // filter sessions by homepage behavior.
+  const homepageSlotClicksRef = useRef<HomepageSlotClick[]>([]);
+  const sessionStartTimeRef = useRef<number>(Date.now());
+
   useEffect(() => {
     const newTheme = isDarkMode ? "dark" : "light";
     themeRef.current = newTheme;
@@ -374,11 +396,50 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
       const destinationPath = normalizePath(destination.pathname);
       const clickContext = getClickContext(anchor, currentPath);
       const linkText = getLinkLabel(anchor);
+
+      // Homepage slot enrichment: when the click originated inside a slot
+      // tagged by the homepage renderers (see lib/homepageSlots.ts +
+      // components/FrontPage/*), capture the layout name + stable slot number
+      // so downstream analytics can attribute clicks to specific homepage
+      // positions. Only populated on `/` since those data-attributes are only
+      // emitted there.
+      let homepageLayout: string | undefined;
+      let homepageSlot: number | undefined;
+      const slotElement = anchor.closest("[data-homepage-slot]");
+      if (slotElement instanceof HTMLElement) {
+        const rawSlot = slotElement.dataset.homepageSlot;
+        const rawLayout =
+          slotElement.dataset.homepageLayout ||
+          (slotElement.closest("[data-homepage-layout]") as HTMLElement | null)?.dataset.homepageLayout;
+        const parsedSlot = rawSlot ? Number.parseInt(rawSlot, 10) : NaN;
+        if (Number.isFinite(parsedSlot) && rawLayout) {
+          homepageLayout = rawLayout;
+          homepageSlot = parsedSlot;
+          // Append to the session log (capped).
+          if (homepageSlotClicksRef.current.length < MAX_HOMEPAGE_SLOT_CLICKS_PER_SESSION) {
+            homepageSlotClicksRef.current.push({
+              layout: rawLayout,
+              slot: parsedSlot,
+              at_seconds: Math.max(
+                0,
+                Math.round((Date.now() - sessionStartTimeRef.current) / 1000),
+              ),
+            });
+          }
+        }
+      }
+
+      const slotProperties =
+        homepageLayout && typeof homepageSlot === "number"
+          ? { homepage_layout: homepageLayout, homepage_slot: homepageSlot }
+          : {};
+
       const baseProperties = {
         ...getPageEventProperties(currentPath),
         theme: themeRef.current,
         click_context: clickContext,
         link_text: linkText,
+        ...slotProperties,
       };
 
       const isExternal = destination.origin !== window.location.origin;
@@ -437,6 +498,19 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
         ? Math.round(meta.wordCount / (pageActiveSecondsRef.current / 60))
         : undefined;
 
+      // Homepage slot summary — only attached when at least one slot click
+      // happened this session. We copy the array so the ref can continue to
+      // mutate without affecting the emitted event.
+      const slotClicks = homepageSlotClicksRef.current;
+      const lastSlotClick = slotClicks.length > 0 ? slotClicks[slotClicks.length - 1] : null;
+      const slotSummaryProps = slotClicks.length > 0
+        ? {
+            homepage_slot_clicks: slotClicks.slice(),
+            homepage_last_layout: lastSlotClick?.layout,
+            homepage_last_slot: lastSlotClick?.slot,
+          }
+        : {};
+
       posthog.capture("page_session_summary", {
         ...getPageEventProperties(currentPath),
         theme: themeRef.current,
@@ -454,6 +528,10 @@ export default function SiteAnalytics({ user }: SiteAnalyticsProps) {
         total_chars_copied: totalCharsCopiedRef.current,
         seconds_spent_in_light_mode: finalThemeSeconds.light,
         seconds_spent_in_dark_mode: finalThemeSeconds.dark,
+
+        // Homepage slot interactions (Issue #45) — only present when the
+        // user clicked at least one tagged homepage slot this session.
+        ...slotSummaryProps,
 
         // Article-specific fields (null/absent on non-article pages)
         ...(isArticle ? {
