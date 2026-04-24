@@ -6,7 +6,6 @@ import { getPayload, type CollectionSlug } from 'payload';
 import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical';
 import config from '@/payload.config';
 import Footer from '@/components/Footer';
-import ArticleStaticHeader from '@/components/Article/ArticleStaticHeader';
 import { ArticleDivider } from '@/components/Article/ArticleDivider';
 import { SerializeLexical, type LexicalNode } from '@/components/Article/RichTextParser';
 import { extractTextFromLexical, renderLexicalHeadline } from '@/utils/formatArticle';
@@ -167,9 +166,7 @@ export default async function LiveArticlePage({ params }: Args) {
   const hasSummary = Array.isArray(article.summary) && article.summary.length > 0;
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-bg-main pt-[56px] transition-colors duration-300">
-      <ArticleStaticHeader alwaysVisible />
-
+    <main className="min-h-screen overflow-x-hidden bg-bg-main pt-[64px] transition-colors duration-300">
       <article className="container mx-auto px-4 md:px-6 mt-8 md:mt-12">
         <div className="flex flex-col gap-6 mb-8" style={{ paddingTop: '40px' }}>
           {/* Meta row: LIVE badge + relative updated time */}

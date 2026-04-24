@@ -3,15 +3,18 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Search, Sun } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
+import SearchOverlay from '@/components/SearchOverlay';
 import posthog from 'posthog-js';
 
 type Props = {
-  title: string;
+  title?: string;
   richTitle?: React.ReactNode;
-  section: string;
+  section?: string;
 };
+
+const HOME_SCROLL_THRESHOLD = 220;
 
 const shareOptions = [
   { label: 'Copy link', icon: 'link' },
@@ -93,39 +96,46 @@ function ShareIcon({ type, className }: { type: string; className?: string }) {
   }
 }
 
+const ARTICLE_LOGO_SHIFT_THRESHOLD = 100;
+
 export default function ArticleScrollBar({ title, richTitle, section }: Props) {
-  const [visible, setVisible] = useState(false);
+  const isHome = !title || !section;
+  // Home: controls whether the whole bar fades in.
+  // Article: unused; bar is always visible, but `atTop` controls the
+  // logo-centered vs logo-left layout.
+  const [visible, setVisible] = useState(!isHome);
+  const [atTop, setAtTop] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { isDarkMode, toggleDarkMode, logoSrcs } = useTheme();
 
   const logoSrc = isDarkMode ? logoSrcs.mobileDark : logoSrcs.mobileLight;
-  const sectionLabel = section.charAt(0).toUpperCase() + section.slice(1);
-  const sectionHref = `/${section.toLowerCase()}`;
+  const sectionLabel = section ? section.charAt(0).toUpperCase() + section.slice(1) : '';
+  const sectionHref = section ? `/${section.toLowerCase()}` : '/';
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.innerWidth < 768) {
-        setVisible(true);
-        return;
+      const y = window.scrollY;
+      if (isHome) {
+        setVisible(y > HOME_SCROLL_THRESHOLD);
+      } else {
+        // Articles: bar is always visible; just flip the atTop flag that
+        // drives the logo-centered vs logo-left layout.
+        setAtTop(y <= ARTICLE_LOGO_SHIFT_THRESHOLD);
+        if (y > ARTICLE_LOGO_SHIFT_THRESHOLD + 50) setShareOpen(false);
       }
-
-      setVisible(prev => {
-        if (!prev && window.scrollY > 400) return true;
-        if (prev && window.scrollY < 300) {
-          setShareOpen(false);
-          return false;
-        }
-        return prev;
-      });
     };
 
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [isHome]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -141,7 +151,7 @@ export default function ArticleScrollBar({ title, richTitle, section }: Props) {
 
   const handleShare = (type: string) => {
     const url = window.location.href;
-    const text = title;
+    const text = title ?? '';
 
     switch (type) {
       case 'link':
@@ -185,14 +195,21 @@ export default function ArticleScrollBar({ title, richTitle, section }: Props) {
     <div
       className="fixed top-0 left-0 right-0 z-[51] bg-bg-main border-b border-border-main"
       style={{
-        opacity: visible ? 1 : 0,
-        pointerEvents: visible ? 'auto' : 'none',
+        opacity: isHome && !visible ? 0 : 1,
+        pointerEvents: isHome && !visible ? 'none' : 'auto',
         transition: 'opacity 0.1s ease-in-out',
       }}
     >
       <div className="relative flex items-center h-[56px] px-4 md:px-6">
-        {/* Left: Mobile logo (used even on desktop) */}
-        <Link href="/" className="shrink-0">
+        {/* Left logo: hidden on articles while at top (a centered copy shows
+            there instead); always shown on home mode. */}
+        <Link
+          href="/"
+          className={`shrink-0 transition-opacity duration-300 ease-out ${
+            !isHome && atTop ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+          aria-hidden={!isHome && atTop ? true : undefined}
+        >
           <div className="relative h-[56px] w-[180px]">
             <Image
               src={logoSrc}
@@ -203,17 +220,47 @@ export default function ArticleScrollBar({ title, richTitle, section }: Props) {
           </div>
         </Link>
 
-        {/* Center: Section | Title */}
-        <div className="hidden md:flex items-center gap-2 font-meta text-[13px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[50%]">
-          <a
-            href={sectionHref}
-            className="font-bold uppercase tracking-wide text-text-main shrink-0 transition-colors hover:text-accent"
+        {/* Centered logo: article-only, only while at top of page. Fades
+            out as the user scrolls, at which point section|title takes
+            its place. */}
+        {!isHome && (
+          <Link
+            href="/"
+            className={`absolute left-1/2 -translate-x-1/2 transition-opacity duration-300 ease-out ${
+              atTop ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+            aria-hidden={!atTop}
           >
-            {sectionLabel}
-          </a>
-          <span className="text-rule-strong shrink-0">|</span>
-          <span className="text-text-muted truncate">{richTitle || title}</span>
-        </div>
+            <div className="relative h-[56px] w-[180px]">
+              <Image
+                src={logoSrc}
+                alt="The Polytechnic"
+                fill
+                className="object-contain"
+              />
+            </div>
+          </Link>
+        )}
+
+        {/* Center: Section | Title — only in article mode, and only once
+            the user has scrolled past the logo-shift threshold. */}
+        {!isHome && (
+          <div
+            className={`hidden md:flex items-center gap-2 font-meta text-[13px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[50%] transition-opacity duration-300 ease-out ${
+              atTop ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}
+            aria-hidden={atTop}
+          >
+            <a
+              href={sectionHref}
+              className="font-bold uppercase tracking-wide text-text-main shrink-0 transition-colors hover:text-accent"
+            >
+              {sectionLabel}
+            </a>
+            <span className="text-rule-strong shrink-0">|</span>
+            <span className="text-text-muted truncate">{richTitle || title}</span>
+          </div>
+        )}
 
         {/* Right: Theme toggle + share button */}
         <div className="ml-auto flex items-center gap-2">
@@ -236,6 +283,19 @@ export default function ArticleScrollBar({ title, richTitle, section }: Props) {
             {isDarkMode ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
           </button>
 
+          {isHome ? (
+            <button
+              onClick={() => setSearchOpen(true)}
+              className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-colors shrink-0 ${
+                isDarkMode
+                  ? 'text-text-main hover:bg-white/10'
+                  : 'text-text-main hover:bg-black/6'
+              }`}
+              aria-label="Search"
+            >
+              <Search className="h-[18px] w-[18px]" />
+            </button>
+          ) : (
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setShareOpen(!shareOpen)}
@@ -276,8 +336,10 @@ export default function ArticleScrollBar({ title, richTitle, section }: Props) {
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
+      {isHome && searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
     </div>
   );
 }
