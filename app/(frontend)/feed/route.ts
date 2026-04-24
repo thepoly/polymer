@@ -7,6 +7,59 @@ import { getPlainText } from '@/utils/getPlainText'
 import { getSeo } from '@/lib/getSeo'
 import type { Article, Media, User } from '@/payload-types'
 
+// Minimal HTML escaper for attribute values and text content inside CDATA-bound HTML
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function renderFigure(params: {
+  url: string
+  alt?: string | null
+  caption?: string | null
+  width?: number | null
+  height?: number | null
+}): string {
+  const { url, alt, caption, width, height } = params
+  const w = width ? ` width="${width}"` : ''
+  const h = height ? ` height="${height}"` : ''
+  const a = escapeHtml(alt || caption || '')
+  const imgTag = `<img src="${escapeHtml(url)}" alt="${a}"${w}${h} />`
+  if (caption && caption.trim().length > 0) {
+    return `<figure>${imgTag}<figcaption>${escapeHtml(caption)}</figcaption></figure>`
+  }
+  return `<figure>${imgTag}</figure>`
+}
+
+function renderGalleryImages(
+  images: Array<{ image?: Media | number | null; caption?: string | null }> | undefined,
+  siteUrl: string,
+): string {
+  if (!Array.isArray(images) || images.length === 0) return ''
+  const parts: string[] = []
+  for (const item of images) {
+    if (!item) continue
+    const img = item.image
+    if (!img || typeof img === 'number') continue
+    const absolute = toAbsoluteUrl(img.url, siteUrl)
+    if (!absolute) continue
+    parts.push(
+      renderFigure({
+        url: absolute,
+        alt: img.alt || img.title || item.caption || '',
+        caption: item.caption || null,
+        width: img.width || null,
+        height: img.height || null,
+      }),
+    )
+  }
+  return parts.join('\n')
+}
+
 export const revalidate = 300
 
 const FALLBACK_SITE_URL = 'https://poly.rpi.edu'
@@ -149,11 +202,13 @@ export async function GET(): Promise<Response> {
     // only render content:encoded still see it.
     let bodyHtml = ''
     if (featuredUrl) {
-      const imgAlt = escapeXml(featuredAlt)
-      const captionHtml = article.imageCaption
-        ? `<figcaption>${escapeXml(article.imageCaption)}</figcaption>`
-        : ''
-      bodyHtml += `<figure><img src="${escapeXml(featuredUrl)}" alt="${imgAlt}" />${captionHtml}</figure>`
+      bodyHtml += renderFigure({
+        url: featuredUrl,
+        alt: featuredAlt,
+        caption: article.imageCaption || null,
+        width: featured?.width ?? null,
+        height: featured?.height ?? null,
+      })
     }
 
     if (article.content) {
@@ -161,6 +216,61 @@ export async function GET(): Promise<Response> {
         const html = convertLexicalToHTML({
           data: article.content as SerializedEditorState,
           disableContainer: true,
+          converters: ({ defaultConverters }) => ({
+            ...defaultConverters,
+            // Render upload nodes (embedded images in article body) as
+            // <figure><img/><figcaption/></figure> so captions live with the
+            // correct image in feed readers.
+            upload: ({ node }) => {
+              const uploadNode = node as unknown as {
+                value?: Media | number | null
+                fields?: { caption?: string | null; alt?: string | null }
+              }
+              const media = uploadNode.value
+              if (!media || typeof media === 'number') return ''
+              if (!media.url) return ''
+              // Non-image uploads: fall back to a link
+              if (media.mimeType && !media.mimeType.startsWith('image')) {
+                const absolute = toAbsoluteUrl(media.url, siteUrl)
+                if (!absolute) return ''
+                return `<a href="${escapeHtml(absolute)}" rel="noopener noreferrer">${escapeHtml(media.filename ?? '')}</a>`
+              }
+              const absolute = toAbsoluteUrl(media.url, siteUrl)
+              if (!absolute) return ''
+              const caption = uploadNode.fields?.caption ?? null
+              const alt =
+                uploadNode.fields?.alt ||
+                media.alt ||
+                media.title ||
+                caption ||
+                ''
+              return renderFigure({
+                url: absolute,
+                alt,
+                caption,
+                width: media.width ?? null,
+                height: media.height ?? null,
+              })
+            },
+            blocks: {
+              photo_gallery: ({ node }: { node: unknown }) => {
+                const fields = (node as unknown as {
+                  fields?: {
+                    images?: Array<{ image?: Media | number | null; caption?: string | null }>
+                  }
+                }).fields
+                return renderGalleryImages(fields?.images, siteUrl)
+              },
+              carousel: ({ node }: { node: unknown }) => {
+                const fields = (node as unknown as {
+                  fields?: {
+                    images?: Array<{ image?: Media | number | null; caption?: string | null }>
+                  }
+                }).fields
+                return renderGalleryImages(fields?.images, siteUrl)
+              },
+            },
+          }),
         })
         bodyHtml += rewriteRelativeImageUrls(html, siteUrl)
       } catch (err) {
