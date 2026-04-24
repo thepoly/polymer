@@ -34,6 +34,8 @@ const PAGE_FALLBACKS = {
   opinionEditorialsDescription: 'Staff editorials, editorial notebooks, and endorsements from The Polytechnic.',
   opinionMoreTitle: 'More in Opinion',
   opinionMoreDescription: 'General opinion pieces and letters to the editor from The Polytechnic.',
+  newsMoreTitle: 'More in News',
+  newsMoreDescription: 'All news articles from The Polytechnic.',
 }
 
 const SECTION_FALLBACKS = {

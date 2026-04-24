@@ -1378,6 +1378,14 @@ export interface Seo {
      * Used for the /opinion/more-in-opinion page description.
      */
     opinionMoreDescription?: string | null;
+    /**
+     * Used for the /news/more-in-news page title.
+     */
+    newsMoreTitle?: string | null;
+    /**
+     * Used for the /news/more-in-news page description.
+     */
+    newsMoreDescription?: string | null;
   };
   /**
    * Descriptions used by the top-level section pages like /news, /sports, /features, and /opinion.
@@ -1519,6 +1527,8 @@ export interface SeoSelect<T extends boolean = true> {
         opinionEditorialsDescription?: T;
         opinionMoreTitle?: T;
         opinionMoreDescription?: T;
+        newsMoreTitle?: T;
+        newsMoreDescription?: T;
       };
   sections?:
     | T
