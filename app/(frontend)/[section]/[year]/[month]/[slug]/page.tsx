@@ -330,6 +330,7 @@ export default async function ArticlePage({ params }: Args) {
         title={extractTextFromLexical(article.title)}
         richTitle={renderLexicalHeadline(article.title)}
         section={article.section}
+        hideUntilScroll={layoutType === 'photofeature'}
       />
       <LayoutComponent article={article as unknown as Article} content={cleanContent} />
       {canEdit && <InlineEditor articleId={article.id} />}

@@ -12,9 +12,11 @@ type Props = {
   title?: string;
   richTitle?: React.ReactNode;
   section?: string;
+  hideUntilScroll?: boolean;
 };
 
 const HOME_SCROLL_THRESHOLD = 220;
+const SCROLLBAR_HEIGHT = 56;
 
 const shareOptions = [
   { label: 'Copy link', icon: 'link' },
@@ -98,12 +100,12 @@ function ShareIcon({ type, className }: { type: string; className?: string }) {
 
 const ARTICLE_LOGO_SHIFT_THRESHOLD = 100;
 
-export default function ArticleScrollBar({ title, richTitle, section }: Props) {
+export default function ArticleScrollBar({ title, richTitle, section, hideUntilScroll = false }: Props) {
   const isHome = !title || !section;
-  // Home: controls whether the whole bar fades in.
-  // Article: unused; bar is always visible, but `atTop` controls the
+  // Home / hideUntilScroll: controls whether the whole bar fades in.
+  // Article (default): bar is always visible, but `atTop` controls the
   // logo-centered vs logo-left layout.
-  const [visible, setVisible] = useState(!isHome);
+  const [visible, setVisible] = useState(!isHome && !hideUntilScroll);
   const [atTop, setAtTop] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -120,12 +122,24 @@ export default function ArticleScrollBar({ title, richTitle, section }: Props) {
       const y = window.scrollY;
       if (isHome) {
         setVisible(y > HOME_SCROLL_THRESHOLD);
-      } else {
-        // Articles: bar is always visible; just flip the atTop flag that
-        // drives the logo-centered vs logo-left layout.
-        setAtTop(y <= ARTICLE_LOGO_SHIFT_THRESHOLD);
-        if (y > ARTICLE_LOGO_SHIFT_THRESHOLD + 50) setShareOpen(false);
+        return;
       }
+      if (hideUntilScroll) {
+        // Photofeature desktop: hero is h-screen with its own header overlay.
+        // Wait until the hero has scrolled most of the way out before fading
+        // the bar in, so it doesn't double up on the in-hero header.
+        // On mobile (< sm), the photofeature falls back to the standard
+        // text header layout, so the bar should behave normally (always on).
+        const isMobile = window.matchMedia('(max-width: 639px)').matches;
+        if (isMobile) {
+          setVisible(true);
+        } else {
+          const threshold = Math.max(HOME_SCROLL_THRESHOLD, window.innerHeight - SCROLLBAR_HEIGHT);
+          setVisible(y > threshold);
+        }
+      }
+      setAtTop(y <= ARTICLE_LOGO_SHIFT_THRESHOLD);
+      if (y > ARTICLE_LOGO_SHIFT_THRESHOLD + 50) setShareOpen(false);
     };
 
     handleScroll();
@@ -135,7 +149,7 @@ export default function ArticleScrollBar({ title, richTitle, section }: Props) {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
     };
-  }, [isHome]);
+  }, [isHome, hideUntilScroll]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -195,8 +209,8 @@ export default function ArticleScrollBar({ title, richTitle, section }: Props) {
     <div
       className="fixed top-0 left-0 right-0 z-[51] bg-bg-main border-b border-border-main"
       style={{
-        opacity: isHome && !visible ? 0 : 1,
-        pointerEvents: isHome && !visible ? 'none' : 'auto',
+        opacity: (isHome || hideUntilScroll) && !visible ? 0 : 1,
+        pointerEvents: (isHome || hideUntilScroll) && !visible ? 'none' : 'auto',
         transition: 'opacity 0.1s ease-in-out',
       }}
     >
