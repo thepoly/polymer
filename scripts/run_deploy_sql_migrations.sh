@@ -47,7 +47,8 @@ VALUES
   ('20260423_040000_add_last_modified_by_to_layout_live_theme', 22, NOW(), NOW()),
   ('20260424_000000_add_news_more_seo_fields', 23, NOW(), NOW()),
   ('20260424_010000_add_breaking_news', 24, NOW(), NOW()),
-  ('20260424_020000_add_device_tokens', 25, NOW(), NOW())
+  ('20260424_020000_add_device_tokens', 25, NOW(), NOW()),
+  ('20260428_000000_add_media_image_sizes', 26, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1227,4 +1228,21 @@ END $$;
 
 CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_device_tokens_id_idx"
   ON "payload_locked_documents_rels" ("device_tokens_id");
+
+-- 20260428_000000: Backfill imageSizes columns on media (gallery + card).
+-- Production picked these up via Payload's dev push at some point; this is the
+-- formal migration so a fresh DB built from migrations matches the live schema.
+ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "sizes_gallery_url" varchar;
+ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "sizes_gallery_width" numeric;
+ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "sizes_gallery_height" numeric;
+ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "sizes_gallery_mime_type" varchar;
+ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "sizes_gallery_filesize" numeric;
+ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "sizes_gallery_filename" varchar;
+
+ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "sizes_card_url" varchar;
+ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "sizes_card_width" numeric;
+ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "sizes_card_height" numeric;
+ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "sizes_card_mime_type" varchar;
+ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "sizes_card_filesize" numeric;
+ALTER TABLE "media" ADD COLUMN IF NOT EXISTS "sizes_card_filename" varchar;
 SQL
