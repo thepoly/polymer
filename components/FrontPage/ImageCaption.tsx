@@ -1,18 +1,20 @@
-import Link from 'next/link';
-
 type Props = {
   caption?: string | null;
   photographer?: string | null;
+  /** Kept for callsite compatibility; ignored — see note below. */
   photographerId?: string | number | null;
   photographerSlug?: string | null;
   className?: string;
 };
 
+// All current callers render this caption inside an article-wide
+// <TransitionLink>. Wrapping the photographer in a separate <Link> produces a
+// nested <a>, which is invalid HTML and triggers a hydration error. The
+// photographer is reachable from the article detail page, so on cards we
+// render the credit as plain text.
 export function ImageCaption({
   caption,
   photographer,
-  photographerId,
-  photographerSlug,
   className = 'mt-2',
 }: Props) {
   if (!caption && !photographer) {
@@ -25,13 +27,7 @@ export function ImageCaption({
       {photographer && (
         <span className="image-caption-photographer opacity-60">
           {caption ? <span className="image-caption-space"> </span> : ''}
-          {photographerId || photographerSlug ? (
-            <Link href={`/staff/${photographerSlug || photographerId}`} className="hover:opacity-80 transition-opacity">
-              {photographer}/The Polytechnic
-            </Link>
-          ) : (
-            photographer
-          )}
+          {photographer}/The Polytechnic
         </span>
       )}
     </figcaption>
