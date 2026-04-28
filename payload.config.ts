@@ -55,6 +55,9 @@ import Logos from './collections/Logos.ts'
 import Seo from './collections/Seo.ts'
 import Theme from './collections/Theme.ts'
 import DeviceTokens from './collections/DeviceTokens.ts'
+import { AudioFiles } from './collections/AudioFiles.ts'
+import { AudioJobs } from './collections/AudioJobs.ts'
+import { Transcripts } from './collections/Transcripts.ts'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -87,7 +90,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Media, Logos, Articles, LiveArticles, JobTitles, Layout, OpinionPageLayout, FeaturesPageLayout, StaffPageLayout, Submissions, EventSubmissions, DeviceTokens],
+  collections: [Users, Media, Logos, Articles, LiveArticles, JobTitles, Layout, OpinionPageLayout, FeaturesPageLayout, StaffPageLayout, Submissions, EventSubmissions, DeviceTokens, AudioFiles, AudioJobs, Transcripts],
   globals: [Theme, Seo],
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [
