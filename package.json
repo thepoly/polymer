@@ -4,7 +4,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "bash scripts/dev-up.sh && next dev",
+    "dev:next": "next dev",
     "build": "next build",
     "start": "next start -H 127.0.0.1",
     "lint": "eslint",
@@ -13,6 +14,13 @@
     "test:search-limit": "playwright test --project=desktop-chromium tests/search-limit.spec.ts",
     "test:deploy-smoke": "node scripts/deploy-smoke.mjs",
     "generate:types": "payload generate:types",
+    "db:up": "docker compose up -d --wait db",
+    "db:down": "docker compose down",
+    "db:fresh": "docker compose down -v && docker compose up -d --wait db && echo y | pnpm exec payload migrate && pnpm exec tsx --env-file=.env scripts/seed.ts",
+    "db:seed": "pnpm exec tsx --env-file=.env scripts/seed.ts",
+    "db:migrate-test": "bash scripts/db-migrate-test.sh",
+    "db:migrate-test:seed": "bash scripts/db-migrate-test.sh --seed",
+    "db:migrate-test:boot": "bash scripts/db-migrate-test.sh --seed --boot",
     "postinstall": "node scripts/generate-env.js"
   },
   "dependencies": {
