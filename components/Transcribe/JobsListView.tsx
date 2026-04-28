@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Gutter } from '@payloadcms/ui'
 import UploadModal from './UploadModal'
@@ -96,9 +97,9 @@ export default function JobsListView() {
               </option>
             ))}
           </select>
-          <a href="/admin/transcribe/search" style={{ marginLeft: 'auto' }}>
+          <Link href="/admin/transcribe/search" style={{ marginLeft: 'auto' }}>
             Search transcripts →
-          </a>
+          </Link>
         </div>
 
         {loading ? (

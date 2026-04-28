@@ -8,8 +8,19 @@ interface Props {
   onClose: () => void
 }
 
+const META_CHARS = '.*+?^${}()|[]\\'
 function escapeForRegex(input: string): string {
-  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  let out = ''
+  for (let i = 0; i < input.length; i++) {
+    const ch = input[i]
+    out += META_CHARS.includes(ch) ? `\\${ch}` : ch
+  }
+  return out
+}
+
+interface PatternResult {
+  pattern: RegExp | null
+  error: string | null
 }
 
 export default function FindReplace({ data, onApply, onClose }: Props) {
@@ -17,19 +28,20 @@ export default function FindReplace({ data, onApply, onClose }: Props) {
   const [replace, setReplace] = useState('')
   const [regex, setRegex] = useState(false)
   const [caseSensitive, setCaseSensitive] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  const pattern = useMemo<RegExp | null>(() => {
-    if (!find) return null
-    setError(null)
+  const compiled = useMemo<PatternResult>(() => {
+    if (!find) return { pattern: null, error: null }
     const flags = caseSensitive ? 'g' : 'gi'
     try {
-      return regex ? new RegExp(find, flags) : new RegExp(escapeForRegex(find), flags)
+      const p = regex ? new RegExp(find, flags) : new RegExp(escapeForRegex(find), flags)
+      return { pattern: p, error: null }
     } catch (e) {
-      setError(String(e))
-      return null
+      return { pattern: null, error: String(e) }
     }
   }, [find, regex, caseSensitive])
+
+  const pattern = compiled.pattern
+  const error = compiled.error
 
   const matchCount = useMemo(() => {
     if (!pattern) return 0

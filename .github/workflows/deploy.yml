@@ -60,6 +60,12 @@ jobs:
             "NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}" \
             "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}" \
             "NEXT_PUBLIC_POSTHOG_HOST=${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}" \
+            "TRANSCRIBE_API_URL=${{ secrets.TRANSCRIBE_API_URL }}" \
+            "TRANSCRIBE_API_KEY=${{ secrets.TRANSCRIBE_API_KEY }}" \
+            "TRANSCRIBE_CF_ACCESS_CLIENT_ID=${{ secrets.TRANSCRIBE_CF_ACCESS_CLIENT_ID }}" \
+            "TRANSCRIBE_CF_ACCESS_CLIENT_SECRET=${{ secrets.TRANSCRIBE_CF_ACCESS_CLIENT_SECRET }}" \
+            "TRANSCRIBE_PUBLIC_BASE_URL=${{ secrets.TRANSCRIBE_PUBLIC_BASE_URL }}" \
+            "AUDIO_DIR=/var/www/polymer-media/audio" \
             > "$SHARED_DIR/.env"
 
           # Runtime may not use the same UNIX user as the deploy runner.

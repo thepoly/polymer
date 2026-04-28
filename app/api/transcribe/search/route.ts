@@ -4,10 +4,16 @@ import pg from 'pg'
 import config from '@/payload.config'
 import { findMatchRanges, type HighlightRange } from '@/lib/transcribe/highlight'
 
+export const dynamic = 'force-dynamic'
+
 let pool: pg.Pool | null = null
 function getPool(): pg.Pool {
   if (!pool) {
-    pool = new pg.Pool({ connectionString: process.env.DATABASE_URL })
+    pool = new pg.Pool({
+      connectionString: process.env.DATABASE_URL,
+      max: 2,
+      idleTimeoutMillis: 10_000,
+    })
   }
   return pool
 }

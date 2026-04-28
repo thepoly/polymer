@@ -25,18 +25,26 @@ export default function SearchView() {
       setResults([])
       return
     }
-    setLoading(true)
+    let alive = true
     const t = setTimeout(async () => {
-      const res = await fetch(`/api/transcribe/search?q=${encodeURIComponent(q)}`, {
-        credentials: 'include',
-      })
-      if (res.ok) {
-        const j = (await res.json()) as { results: Result[] }
-        setResults(j.results)
+      if (!alive) return
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/transcribe/search?q=${encodeURIComponent(q)}`, {
+          credentials: 'include',
+        })
+        if (alive && res.ok) {
+          const j = (await res.json()) as { results: Result[] }
+          setResults(j.results)
+        }
+      } finally {
+        if (alive) setLoading(false)
       }
-      setLoading(false)
     }, 250)
-    return () => clearTimeout(t)
+    return () => {
+      alive = false
+      clearTimeout(t)
+    }
   }, [q])
 
   return (
