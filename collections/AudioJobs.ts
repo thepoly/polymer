@@ -31,6 +31,16 @@ export const AudioJobs: CollectionConfig = {
     useAsTitle: 'title',
     defaultColumns: ['title', 'kind', 'status', 'uploader', 'createdAt'],
     group: 'Newsroom',
+    components: {
+      views: {
+        list: { Component: '@/components/Transcribe/JobsListView#default' },
+        edit: {
+          default: {
+            Component: '@/components/Transcribe/JobEditView#default',
+          },
+        },
+      },
+    },
   },
   access: {
     read: ownOrStaffView,
