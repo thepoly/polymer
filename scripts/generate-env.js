@@ -14,6 +14,14 @@ NEXT_PUBLIC_POSTHOG_KEY=
 # LEGACY_DATABASE_URI=postgres://user:password@host:port/legacy_database_name
 # NEXT_PUBLIC_SITE_URL=http://localhost:3000
 # NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
+# Audio transcription service (homelab GPU box behind Cloudflare Tunnel).
+# Leave blank to disable transcription locally.
+TRANSCRIBE_API_URL=
+TRANSCRIBE_API_KEY=
+TRANSCRIBE_CF_ACCESS_CLIENT_ID=
+TRANSCRIBE_CF_ACCESS_CLIENT_SECRET=
+TRANSCRIBE_PUBLIC_BASE_URL=http://localhost:3000
+AUDIO_DIR=/var/www/polymer-media/audio
 `;
 
   fs.writeFileSync(envPath, content);
