@@ -38,6 +38,7 @@ import * as migration_20260424_000000_add_news_more_seo_fields from './20260424_
 import * as migration_20260424_010000_add_breaking_news from './20260424_010000_add_breaking_news';
 import * as migration_20260424_020000_add_device_tokens from './20260424_020000_add_device_tokens';
 import * as migration_20260428_000000_add_media_image_sizes from './20260428_000000_add_media_image_sizes';
+import * as migration_20260428_100000_add_audio_transcription from './20260428_100000_add_audio_transcription';
 
 export const migrations = [
   {
@@ -239,5 +240,10 @@ export const migrations = [
     up: migration_20260428_000000_add_media_image_sizes.up,
     down: migration_20260428_000000_add_media_image_sizes.down,
     name: '20260428_000000_add_media_image_sizes',
+  },
+  {
+    up: migration_20260428_100000_add_audio_transcription.up,
+    down: migration_20260428_100000_add_audio_transcription.down,
+    name: '20260428_100000_add_audio_transcription',
   },
 ];
