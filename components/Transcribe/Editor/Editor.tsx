@@ -1,10 +1,13 @@
 'use client'
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranscript } from '../hooks/useTranscript'
 import { useAudioPlayback } from '../hooks/useAudioPlayback'
 import AudioPlayer from './AudioPlayer'
 import SegmentList from './SegmentList'
 import SpeakerSidebar from './SpeakerSidebar'
+import FindReplace from './FindReplace'
+import ExportMenu from './ExportMenu'
+import { mergeSegments, splitSegment, reassignSpeaker } from '@/lib/transcribe/segments'
 import type { TranscriptData } from '@/lib/transcribe/types'
 
 interface Props {
@@ -14,9 +17,26 @@ interface Props {
 }
 
 export default function Editor({ audioJobId, title }: Props) {
-  const { data, update, saveState } = useTranscript(audioJobId)
+  const { data, update, forceSave, saveState } = useTranscript(audioJobId)
   const audioRef = useRef<HTMLAudioElement>(null)
   const pos = useAudioPlayback(audioRef, data)
+  const [showFind, setShowFind] = useState(false)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        e.preventDefault()
+        setShowFind(true)
+      } else if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault()
+        void forceSave()
+      } else if (e.key === 'Escape') {
+        setShowFind(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [forceSave])
 
   const segmentCounts = useMemo(() => {
     if (!data) return {}
@@ -48,14 +68,33 @@ export default function Editor({ audioJobId, title }: Props) {
   const onSpeakerChange = useCallback(
     (id: string, speakerId: string) => {
       if (!data) return
-      const speakers = data.speakers.some((sp) => sp.id === speakerId)
-        ? data.speakers
-        : [...data.speakers, { id: speakerId, label: null }]
-      update({
-        ...data,
-        speakers,
-        segments: data.segments.map((s) => (s.id === id ? { ...s, speakerId } : s)),
-      })
+      update(reassignSpeaker(data, id, speakerId))
+    },
+    [data, update],
+  )
+
+  const onMergeAbove = useCallback(
+    (id: string) => {
+      if (!data) return
+      const idx = data.segments.findIndex((s) => s.id === id)
+      if (idx <= 0) return
+      update(mergeSegments(data, data.segments[idx - 1].id, id))
+    },
+    [data, update],
+  )
+  const onMergeBelow = useCallback(
+    (id: string) => {
+      if (!data) return
+      const idx = data.segments.findIndex((s) => s.id === id)
+      if (idx < 0 || idx >= data.segments.length - 1) return
+      update(mergeSegments(data, id, data.segments[idx + 1].id))
+    },
+    [data, update],
+  )
+  const onSplitAt = useCallback(
+    (id: string, wordIndex: number) => {
+      if (!data) return
+      update(splitSegment(data, id, wordIndex))
     },
     [data, update],
   )
@@ -73,10 +112,6 @@ export default function Editor({ audioJobId, title }: Props) {
     [data, update],
   )
 
-  // Phase 5 utilities are wired here as no-ops for now; replaced when Phase 5 lands.
-  const noopMerge = useCallback((_id: string) => {}, [])
-  const noopSplit = useCallback((_id: string, _wordIndex: number) => {}, [])
-
   if (!data) return <div style={{ padding: '2rem' }}>Loading transcript…</div>
 
   const saveText: Record<typeof saveState, string> = {
@@ -91,6 +126,25 @@ export default function Editor({ audioJobId, title }: Props) {
     <div className="transcribe-editor">
       <header className="transcribe-editor__header">
         <h2>{title || 'Transcript'}</h2>
+        <ExportMenu
+          data={data}
+          baseName={(title || 'transcript').replace(/[^a-z0-9-]+/gi, '_')}
+        />
+        <button
+          onClick={() => setShowFind(true)}
+          style={{
+            background: 'none',
+            border: '1px solid var(--theme-elevation-200, #ccc)',
+            borderRadius: 4,
+            padding: '0.25rem 0.6rem',
+            fontSize: 12,
+            cursor: 'pointer',
+            color: 'inherit',
+          }}
+          title="Find & Replace (⌘F)"
+        >
+          Find
+        </button>
         <span
           className={`transcribe-editor__save${
             saveState === 'error' ? ' transcribe-editor__save--error' : ''
@@ -117,12 +171,19 @@ export default function Editor({ audioJobId, title }: Props) {
             onSeek={onSeek}
             onTextChange={onTextChange}
             onSpeakerChange={onSpeakerChange}
-            onMergeAbove={noopMerge}
-            onMergeBelow={noopMerge}
-            onSplitAt={noopSplit}
+            onMergeAbove={onMergeAbove}
+            onMergeBelow={onMergeBelow}
+            onSplitAt={onSplitAt}
           />
         </div>
       </div>
+      {showFind && (
+        <FindReplace
+          data={data}
+          onApply={(next: TranscriptData) => update(next)}
+          onClose={() => setShowFind(false)}
+        />
+      )}
     </div>
   )
 }
