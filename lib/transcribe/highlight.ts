@@ -3,30 +3,42 @@ export interface HighlightRange {
   end: number
 }
 
-const REGEX_META_CHARS = '.*+?^${}()|[]\\'
-
-function escapeForRegex(input: string): string {
-  let out = ''
-  for (let i = 0; i < input.length; i++) {
-    const ch = input[i]
-    out += REGEX_META_CHARS.includes(ch) ? `\\${ch}` : ch
-  }
-  return out
-}
-
-const TOKEN_RE = /"([^"]+)"|'([^']+)'|(\S+)/g
-
 /**
  * Tokenize a search query into individual terms. Quoted phrases (single or
  * double) are kept as one term. Whitespace separates terms otherwise.
+ *
+ * Implemented as a small character-level scanner — keeps the user query out of
+ * any RegExp construction so we cannot inject regex metacharacters.
  */
 export function tokenizeQuery(q: string): string[] {
   const tokens: string[] = []
-  TOKEN_RE.lastIndex = 0
-  let m: RegExpExecArray | null
-  while ((m = TOKEN_RE.exec(q)) !== null) {
-    const term = (m[1] ?? m[2] ?? m[3] ?? '').trim()
+  let i = 0
+  while (i < q.length) {
+    const ch = q[i]
+    if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') {
+      i++
+      continue
+    }
+    if (ch === '"' || ch === "'") {
+      const quote = ch
+      const end = q.indexOf(quote, i + 1)
+      if (end === -1) {
+        const tail = q.slice(i + 1).trim()
+        if (tail) tokens.push(tail)
+        break
+      }
+      const inner = q.slice(i + 1, end).trim()
+      if (inner) tokens.push(inner)
+      i = end + 1
+      continue
+    }
+    let j = i
+    while (j < q.length && q[j] !== ' ' && q[j] !== '\t' && q[j] !== '\n' && q[j] !== '\r') {
+      j++
+    }
+    const term = q.slice(i, j).trim()
     if (term) tokens.push(term)
+    i = j
   }
   return tokens
 }
@@ -34,6 +46,9 @@ export function tokenizeQuery(q: string): string[] {
 /**
  * Find non-overlapping match ranges for each term in `text`. Adjacent or
  * overlapping ranges are merged. Default is case-insensitive.
+ *
+ * Uses String.prototype.indexOf instead of RegExp so the search query is
+ * treated as a literal — no regex injection surface.
  */
 export function findMatchRanges(
   text: string,
@@ -43,17 +58,17 @@ export function findMatchRanges(
   const terms = tokenizeQuery(query)
   if (!terms.length || !text) return []
 
-  const flags = opts.caseSensitive ? 'g' : 'gi'
+  const haystack = opts.caseSensitive ? text : text.toLowerCase()
   const ranges: HighlightRange[] = []
-  for (const term of terms) {
-    const pattern = new RegExp(escapeForRegex(term), flags)
-    let match: RegExpExecArray | null
-    while ((match = pattern.exec(text)) !== null) {
-      if (match[0].length === 0) {
-        pattern.lastIndex++
-        continue
-      }
-      ranges.push({ start: match.index, end: match.index + match[0].length })
+  for (const rawTerm of terms) {
+    const needle = opts.caseSensitive ? rawTerm : rawTerm.toLowerCase()
+    if (!needle) continue
+    let from = 0
+    while (from <= haystack.length) {
+      const at = haystack.indexOf(needle, from)
+      if (at === -1) break
+      ranges.push({ start: at, end: at + needle.length })
+      from = at + needle.length
     }
   }
   if (!ranges.length) return []
