@@ -3,11 +3,10 @@ import { getPayload } from 'payload'
 import { randomBytes } from 'node:crypto'
 import { mkdtemp, rm, unlink, readFile, stat } from 'node:fs/promises'
 import { createWriteStream } from 'node:fs'
-import { Readable } from 'node:stream'
-import { pipeline } from 'node:stream/promises'
 import path from 'node:path'
 import os from 'node:os'
-import Busboy from 'busboy'
+import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import config from '@/payload.config'
 import { ffprobe, transcodeToOpus } from '@/lib/transcribe/ffmpeg'
 import { dispatchToTranscribeApi } from '@/lib/transcribe/dispatch'
@@ -15,86 +14,12 @@ import { getTranscribeConfig } from '@/lib/transcribe/config'
 
 const MAX_HOURS = 6
 const STAFF_ROLES = ['admin', 'eic', 'editor', 'writer']
+const VALID_KINDS = ['interview', 'meeting', 'presser', 'lecture', 'court', 'other']
 
 export const dynamic = 'force-dynamic'
+// Allow up to 30 min for very large uploads. The bytes are streamed straight
+// to disk so memory stays flat regardless of request size.
 export const maxDuration = 1800
-
-interface ParsedUpload {
-  audioPath: string
-  audioName: string
-  audioMimeType: string
-  title?: string
-  kind?: string
-  notes?: string
-}
-
-async function parseMultipart(req: Request, tmpDir: string): Promise<ParsedUpload> {
-  if (!req.body) throw new Error('request has no body')
-
-  const headers = Object.fromEntries(req.headers) as Record<string, string>
-  const bb = Busboy({ headers })
-  const fields: Record<string, string> = {}
-  let audioPath: string | undefined
-  let audioName: string | undefined
-  let audioMimeType: string | undefined
-
-  const nodeStream = Readable.fromWeb(req.body as Parameters<typeof Readable.fromWeb>[0])
-
-  await new Promise<void>((resolve, reject) => {
-    let pendingFile: Promise<void> | null = null
-    let settled = false
-    const settle = (fn: () => void) => {
-      if (settled) return
-      settled = true
-      fn()
-    }
-
-    bb.on('file', (name, file, info) => {
-      if (name !== 'audio') {
-        file.resume()
-        return
-      }
-      audioName = info.filename || 'upload.bin'
-      audioMimeType = info.mimeType || 'application/octet-stream'
-      const dest = path.join(tmpDir, audioName)
-      audioPath = dest
-      pendingFile = pipeline(file, createWriteStream(dest)).catch((err) => {
-        settle(() => reject(err))
-        throw err
-      })
-    })
-
-    bb.on('field', (name, value) => {
-      fields[name] = value
-    })
-
-    bb.on('error', (err) => {
-      settle(() => reject(err instanceof Error ? err : new Error(String(err))))
-    })
-
-    bb.on('finish', () => {
-      Promise.resolve(pendingFile)
-        .then(() => settle(() => resolve()))
-        .catch((err) => settle(() => reject(err)))
-    })
-
-    nodeStream.on('error', (err) => settle(() => reject(err)))
-    nodeStream.pipe(bb)
-  })
-
-  if (!audioPath || !audioName || !audioMimeType) {
-    throw new Error('audio file required')
-  }
-
-  return {
-    audioPath,
-    audioName,
-    audioMimeType,
-    title: fields.title,
-    kind: fields.kind,
-    notes: fields.notes,
-  }
-}
 
 export async function POST(req: Request) {
   const payload = await getPayload({ config })
@@ -105,28 +30,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   }
 
+  const url = new URL(req.url)
+  const filename = sanitizeFilename(url.searchParams.get('filename') ?? 'upload.bin')
+  const title = (url.searchParams.get('title') ?? '').trim() || filename.replace(/\.[^.]+$/, '')
+  const kindParam = url.searchParams.get('kind') ?? 'interview'
+  const kind = VALID_KINDS.includes(kindParam) ? kindParam : 'interview'
+  const notes = url.searchParams.get('notes') || undefined
+
   const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'polymer-upload-'))
-
-  let parsed: ParsedUpload
-  try {
-    parsed = await parseMultipart(req, tmpDir)
-  } catch (err) {
-    await rm(tmpDir, { recursive: true, force: true }).catch(() => {})
-    const message = err instanceof Error ? err.message : 'invalid upload'
-    return NextResponse.json({ error: message }, { status: 400 })
-  }
-
-  const tmpPath = parsed.audioPath
-  const audioName = parsed.audioName
-  const audioMimeType = parsed.audioMimeType
-  const title = parsed.title ?? audioName
-  const kind = parsed.kind ?? 'interview'
-  const notes = parsed.notes && parsed.notes.length > 0 ? parsed.notes : undefined
+  const tmpPath = path.join(tmpDir, filename)
 
   try {
-    const probe = await ffprobe(tmpPath)
-    if (!probe.hasAudio) {
-      return NextResponse.json({ error: 'file has no audio stream' }, { status: 415 })
+    await streamRequestBodyToFile(req, tmpPath)
+
+    const probe = await ffprobe(tmpPath).catch(() => null)
+    if (!probe || !probe.hasAudio) {
+      return NextResponse.json(
+        { error: 'unsupported file or no audio stream detected' },
+        { status: 415 },
+      )
     }
     if (probe.durationSeconds > MAX_HOURS * 3600) {
       return NextResponse.json(
@@ -135,16 +57,17 @@ export async function POST(req: Request) {
       )
     }
 
-    const fileStat = await stat(tmpPath)
-    const fileBuffer = await readFile(tmpPath)
+    const fileStats = await stat(tmpPath)
+    const audioBuffer = await readFile(tmpPath)
+    const detectedMime = req.headers.get('x-content-type') || 'application/octet-stream'
 
     const audioFile = await payload.create({
       collection: 'audio-files',
       file: {
-        data: fileBuffer,
-        mimetype: audioMimeType,
-        name: audioName,
-        size: fileStat.size,
+        data: audioBuffer,
+        mimetype: detectedMime,
+        name: filename,
+        size: fileStats.size,
       },
       data: {
         durationSeconds: probe.durationSeconds,
@@ -172,22 +95,33 @@ export async function POST(req: Request) {
       audioJobId,
       audioFilePath: tmpPath,
       tmpDir,
-      audioMimeType,
       callbackSecret,
     })
 
     return NextResponse.json({ id: job.id, status: 'queued' }, { status: 201 })
   } catch (err) {
     await rm(tmpDir, { recursive: true, force: true }).catch(() => {})
-    throw err
+    const message = err instanceof Error ? err.message : String(err)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
+}
+
+function sanitizeFilename(name: string): string {
+  const base = path.basename(name)
+  return base.replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 200) || 'upload.bin'
+}
+
+async function streamRequestBodyToFile(req: Request, dest: string): Promise<void> {
+  if (!req.body) throw new Error('empty request body')
+  const out = createWriteStream(dest)
+  const nodeStream = Readable.fromWeb(req.body as unknown as Parameters<typeof Readable.fromWeb>[0])
+  await pipeline(nodeStream, out)
 }
 
 interface BackgroundArgs {
   audioJobId: number
   audioFilePath: string
   tmpDir: string
-  audioMimeType: string
   callbackSecret: string
 }
 
