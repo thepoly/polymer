@@ -80,6 +80,9 @@ export interface Config {
     submissions: Submission;
     'event-submissions': EventSubmission;
     'device-tokens': DeviceToken;
+    'audio-files': AudioFile;
+    'audio-jobs': AudioJob;
+    transcripts: Transcript;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -100,6 +103,9 @@ export interface Config {
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
     'event-submissions': EventSubmissionsSelect<false> | EventSubmissionsSelect<true>;
     'device-tokens': DeviceTokensSelect<false> | DeviceTokensSelect<true>;
+    'audio-files': AudioFilesSelect<false> | AudioFilesSelect<true>;
+    'audio-jobs': AudioJobsSelect<false> | AudioJobsSelect<true>;
+    transcripts: TranscriptsSelect<false> | TranscriptsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -669,6 +675,73 @@ export interface DeviceToken {
   createdAt: string;
 }
 /**
+ * Raw audio uploads. Linked to audio-jobs.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audio-files".
+ */
+export interface AudioFile {
+  id: number;
+  durationSeconds?: number | null;
+  uploader?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audio-jobs".
+ */
+export interface AudioJob {
+  id: number;
+  title: string;
+  kind: 'interview' | 'meeting' | 'presser' | 'lecture' | 'court' | 'other';
+  notes?: string | null;
+  audioFile: number | AudioFile;
+  uploader?: (number | null) | User;
+  status: 'queued' | 'dispatching' | 'processing' | 'completed' | 'failed';
+  externalJobId?: string | null;
+  callbackSecret?: string | null;
+  progress?: number | null;
+  dispatchAttempts?: number | null;
+  error?: string | null;
+  transcribedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Transcript JSON blobs linked 1:1 with audio-jobs. Edited via the custom audio-jobs admin view, not directly here.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transcripts".
+ */
+export interface Transcript {
+  id: number;
+  audioJob: number | AudioJob;
+  data:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  searchableText?: string | null;
+  editedAt?: string | null;
+  editedBy?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -743,6 +816,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'device-tokens';
         value: number | DeviceToken;
+      } | null)
+    | ({
+        relationTo: 'audio-files';
+        value: number | AudioFile;
+      } | null)
+    | ({
+        relationTo: 'audio-jobs';
+        value: number | AudioJob;
+      } | null)
+    | ({
+        relationTo: 'transcripts';
+        value: number | Transcript;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1077,6 +1162,58 @@ export interface DeviceTokensSelect<T extends boolean = true> {
   token?: T;
   platform?: T;
   lastSeenAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audio-files_select".
+ */
+export interface AudioFilesSelect<T extends boolean = true> {
+  durationSeconds?: T;
+  uploader?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "audio-jobs_select".
+ */
+export interface AudioJobsSelect<T extends boolean = true> {
+  title?: T;
+  kind?: T;
+  notes?: T;
+  audioFile?: T;
+  uploader?: T;
+  status?: T;
+  externalJobId?: T;
+  callbackSecret?: T;
+  progress?: T;
+  dispatchAttempts?: T;
+  error?: T;
+  transcribedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transcripts_select".
+ */
+export interface TranscriptsSelect<T extends boolean = true> {
+  audioJob?: T;
+  data?: T;
+  searchableText?: T;
+  editedAt?: T;
+  editedBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -13,6 +13,7 @@
     "test:smoke": "playwright test tests/smoke.spec.ts",
     "test:search-limit": "playwright test --project=desktop-chromium tests/search-limit.spec.ts",
     "test:deploy-smoke": "node scripts/deploy-smoke.mjs",
+    "test:unit": "vitest run",
     "generate:types": "payload generate:types",
     "db:up": "docker compose up -d --wait db",
     "db:down": "docker compose down",
@@ -44,6 +45,7 @@
     "posthog-node": "^5.28.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-window": "^2.2.7",
     "sharp": "^0.34.5"
   },
   "devDependencies": {
@@ -53,11 +55,13 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-window": "^2.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.7",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.5"
   },
   "pnpm": {
     "overrides": {
