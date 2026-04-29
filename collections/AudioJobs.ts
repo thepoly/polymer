@@ -33,10 +33,10 @@ export const AudioJobs: CollectionConfig = {
     group: 'Newsroom',
     components: {
       views: {
-        list: { Component: '@/components/Transcribe/JobsListView#default' },
+        list: { Component: '@/components/Transcribe/PanelRedirect#default' },
         edit: {
           default: {
-            Component: '@/components/Transcribe/JobEditView#default',
+            Component: '@/components/Transcribe/PanelRedirect#default',
           },
         },
       },

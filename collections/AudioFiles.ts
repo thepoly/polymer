@@ -39,17 +39,6 @@ export const AudioFiles: CollectionConfig = {
   },
   upload: {
     staticDir: process.env.AUDIO_DIR || '/var/www/polymer-media/audio',
-    mimeTypes: [
-      'audio/mpeg',
-      'audio/mp4',
-      'audio/x-m4a',
-      'audio/wav',
-      'audio/x-wav',
-      'audio/ogg',
-      'audio/flac',
-      'audio/webm',
-      'audio/opus',
-    ],
   },
   fields: [
     {

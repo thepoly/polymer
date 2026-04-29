@@ -87,9 +87,9 @@ export default buildConfig({
         dashboard: {
           Component: '@/components/Dashboard#default',
         },
-        transcribeSearch: {
-          Component: '@/components/Transcribe/Search/SearchView#default',
-          path: '/transcribe/search',
+        transcribe: {
+          Component: '@/components/Transcribe/Panel#default',
+          path: '/transcribe',
         },
       },
     },
