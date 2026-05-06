@@ -355,6 +355,29 @@ const Articles: CollectionConfig = {
         condition: (data: Record<string, unknown>) => Boolean(data?.isPhotofeature),
       },
     },
+    {
+      name: 'legacyHtmlUrl',
+      type: 'text',
+      label: 'Legacy Archive URL',
+      admin: {
+        position: 'sidebar',
+        description: 'Full URL or path to the original archived HTML for this article. Populated by the legacy import scripts; when set, the article page shows a "View on poly.rpi.edu" button.',
+      },
+    },
+    {
+      name: 'legacySource',
+      type: 'text',
+      label: 'Legacy Source',
+      admin: {
+        position: 'sidebar',
+        description: "Origin of the legacy HTML. One of: 'polytechnic-online', 'wordpress', 'pipeline'.",
+      },
+      validate: (value: string | null | undefined) => {
+        if (value == null || value === '') return true
+        const allowed = ['polytechnic-online', 'wordpress', 'pipeline']
+        return allowed.includes(value) || `legacySource must be one of: ${allowed.join(', ')}`
+      },
+    },
   ],
 }
 

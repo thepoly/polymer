@@ -2,7 +2,7 @@ import React from 'react';
 import Footer from '@/components/Footer';
 import { ArticleRecommendations } from '@/components/Article';
 import { ArticleHeader, ArticleContent, ArticleDivider, ArticleStaffBios } from '@/components/Article/Photofeature';
-import { ArticleHeader as StandardArticleHeader, ArticleDivider as StandardDivider, ArticleStaffBios as StandardStaffBios } from '@/components/Article';
+import { ArticleHeader as StandardArticleHeader, ArticleDivider as StandardDivider, ArticleStaffBios as StandardStaffBios, LegacyArchiveLink } from '@/components/Article';
 import { Article } from '@/payload-types';
 
 export const PhotofeatureLayout = ({ article, content }: { article: Article, content: Article['content'] }) => {
@@ -14,6 +14,7 @@ export const PhotofeatureLayout = ({ article, content }: { article: Article, con
       <div className="sm:hidden pt-[64px]">
         <article className="container mx-auto px-4 mt-8">
           <StandardArticleHeader article={article} />
+          <LegacyArchiveLink article={article} />
           <ArticleContent content={content} />
           <StandardDivider />
           <StandardStaffBios article={article} />
@@ -24,6 +25,7 @@ export const PhotofeatureLayout = ({ article, content }: { article: Article, con
       <div className="hidden sm:block">
         <ArticleHeader article={article} />
         <article className="container mx-auto px-4 md:px-6">
+          <LegacyArchiveLink article={article} />
           <ArticleContent content={content} />
           <ArticleDivider className="mt-0" />
           <ArticleStaffBios article={article} />

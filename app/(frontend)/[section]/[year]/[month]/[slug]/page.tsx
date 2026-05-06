@@ -139,6 +139,8 @@ const getArticle = cache(async (slug: string, section?: string): Promise<Article
       isFollytechnic: true,
       isPhotofeature: true,
       gradientOpacity: true,
+      legacyHtmlUrl: true,
+      legacySource: true,
     },
   });
   const article = result.docs[0] as Article | undefined;

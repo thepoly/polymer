@@ -48,7 +48,8 @@ VALUES
   ('20260424_000000_add_news_more_seo_fields', 23, NOW(), NOW()),
   ('20260424_010000_add_breaking_news', 24, NOW(), NOW()),
   ('20260424_020000_add_device_tokens', 25, NOW(), NOW()),
-  ('20260428_000000_add_media_image_sizes', 26, NOW(), NOW())
+  ('20260428_000000_add_media_image_sizes', 26, NOW(), NOW()),
+  ('20260506_000000_add_articles_legacy_archive', 27, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1348,4 +1349,12 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_audio_files_id_idx" ON "payload_locked_documents_rels" ("audio_files_id");
 CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_audio_jobs_id_idx" ON "payload_locked_documents_rels" ("audio_jobs_id");
 CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_transcripts_id_idx" ON "payload_locked_documents_rels" ("transcripts_id");
+
+-- 20260506_000000: Legacy archive pointers on articles (+ version shadow).
+-- Both columns nullable; populated by separate legacy-import scripts. The
+-- article page renders a "View original" link when legacy_html_url is set.
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "legacy_html_url" varchar;
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "legacy_source" varchar;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_legacy_html_url" varchar;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_legacy_source" varchar;
 SQL
