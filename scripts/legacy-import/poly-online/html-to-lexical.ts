@@ -94,32 +94,22 @@ export function rewriteImageSrc(src: string): string | null {
  * Decode HTML entities commonly found in poly-online bodies.
  */
 function decodeEntities(text: string): string {
-  return text
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
-    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)))
-    .replace(/&laquo;/g, '«')
-    .replace(/&raquo;/g, '»')
-    .replace(/&hellip;/g, '…')
-    .replace(/&mdash;/g, '—')
-    .replace(/&ndash;/g, '–')
-    .replace(/&lsquo;/g, '‘')
-    .replace(/&rsquo;/g, '’')
-    .replace(/&ldquo;/g, '“')
-    .replace(/&rdquo;/g, '”')
-    .replace(/&aacute;/gi, 'á')
-    .replace(/&eacute;/gi, 'é')
-    .replace(/&iacute;/gi, 'í')
-    .replace(/&oacute;/gi, 'ó')
-    .replace(/&uacute;/gi, 'ú')
-    .replace(/&ntilde;/gi, 'ñ')
-    .replace(/&ccedil;/gi, 'ç')
-    .replace(/&[a-z][a-z0-9]+;/gi, ' ')
+  // Single-pass replacement so we never double-decode `&amp;lt;` into `<`.
+  const named: Record<string, string> = {
+    amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+    laquo: '«', raquo: '»', hellip: '…', mdash: '—', ndash: '–',
+    lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”',
+    aacute: 'á', eacute: 'é', iacute: 'í', oacute: 'ó', uacute: 'ú',
+    ntilde: 'ñ', uuml: 'ü', ouml: 'ö', auml: 'ä', ccedil: 'ç',
+  }
+  return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+|#39);/gi, (m, body: string) => {
+    const lower = body.toLowerCase()
+    if (lower === '#39') return "'"
+    if (lower.startsWith('#x')) return String.fromCharCode(parseInt(lower.slice(2), 16))
+    if (lower.startsWith('#')) return String.fromCharCode(Number(lower.slice(1)))
+    if (named[lower] !== undefined) return named[lower]
+    return m // leave unknown entities as-is
+  })
 }
 
 // ===== Tokenizer =====
@@ -290,7 +280,12 @@ export function htmlToLexicalBlocks(html: string): LexicalNode[] {
           break
         case 'a': {
           const href = tok.attrs.href || ''
-          if (href && !href.startsWith('#') && !href.toLowerCase().startsWith('javascript:')) {
+          // Block dangerous URL schemes; allow http(s)/mailto/relative/anchor.
+          const lower = href.toLowerCase().trim()
+          const dangerous = lower.startsWith('javascript:')
+            || lower.startsWith('data:')
+            || lower.startsWith('vbscript:')
+          if (href && !lower.startsWith('#') && !dangerous) {
             linkStack.push(href)
           } else {
             linkStack.push('__SKIP__')

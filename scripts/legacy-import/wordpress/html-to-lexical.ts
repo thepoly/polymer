@@ -548,10 +548,17 @@ export function preprocessWpHtml(input: string): string {
 
   // Strip <script>/<style>/<iframe> blocks completely (the tokenizer does this
   // too via SKIP_TAGS, but doing it here keeps the wpautop pass from acting
-  // on script bodies).
-  s = s.replace(/<script\b[\s\S]*?<\/script>/gi, '')
-  s = s.replace(/<style\b[\s\S]*?<\/style>/gi, '')
-  s = s.replace(/<iframe\b[\s\S]*?<\/iframe>/gi, '')
+  // on script bodies). Loop because nested/sequential blocks need multiple
+  // passes; close-tag pattern allows whitespace before the '>'.
+  let prev: string
+  do {
+    prev = s
+    s = s.replace(/<script\b[\s\S]*?<\/script\s*>/gi, '')
+    s = s.replace(/<style\b[\s\S]*?<\/style\s*>/gi, '')
+    s = s.replace(/<iframe\b[\s\S]*?<\/iframe\s*>/gi, '')
+  } while (s !== prev)
+  // Drop any unmatched/unterminated remnants so partial tags can't slip through.
+  s = s.replace(/<\/?(script|style|iframe)\b[^>]*>/gi, '')
 
   // ===== wpautop =====
   // If there are no <p> tags AND the HTML has blank-line separated text
