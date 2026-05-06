@@ -185,6 +185,7 @@ type Flags = {
   manifestPath: string
   dumpPath: string
   mirrorRoot: string
+  update: boolean
 }
 
 function parseFlags(argv: string[]): Flags {
@@ -198,9 +199,11 @@ function parseFlags(argv: string[]): Flags {
     manifestPath: DEFAULT_MANIFEST,
     dumpPath: DEFAULT_DUMP,
     mirrorRoot: DEFAULT_MIRROR_ROOT,
+    update: false,
   }
   for (const a of argv) {
     if (a === '--dry-run') flags.dryRun = true
+    else if (a === '--update') flags.update = true
     else if (a.startsWith('--limit=')) flags.limit = Number(a.slice('--limit='.length))
     else if (a === '--limit') {
       // handled by next-arg lookup below
@@ -571,8 +574,68 @@ async function main() {
 
       // Real insert path.
       const existingId = await existingArticleId(payload!, entry.wp_id)
-      if (existingId !== null) {
+      if (existingId !== null && !flags.update) {
         skipped++
+        continue
+      }
+      if (existingId !== null && flags.update) {
+        // --update mode: rewrite content/plainTitle/legacyHtmlUrl/legacyCategory
+        // on the existing row without touching slug or status. Hook will
+        // re-derive plainContent from the updated content.
+        try {
+          const updateData: Record<string, unknown> = {
+            content: built.data.content,
+            plainTitle: built.data.plainTitle,
+            legacyHtmlUrl: built.data.legacyHtmlUrl,
+            legacyCategory: built.data.legacyCategory,
+            legacySource: built.data.legacySource,
+            legacyArticleId: built.data.legacyArticleId,
+          }
+          if (built.data.kicker !== undefined) updateData.kicker = built.data.kicker
+          /* eslint-disable @typescript-eslint/no-explicit-any */
+          await payload!.update({
+            collection: 'articles',
+            id: existingId,
+            data: updateData as any,
+            req: { context: { legacyImport: true } } as any,
+          })
+          /* eslint-enable @typescript-eslint/no-explicit-any */
+          imported++
+        } catch (updateErr) {
+          const msg = updateErr instanceof Error ? updateErr.message : String(updateErr)
+          if (/Content/i.test(msg)) {
+            // Same Content fallback as create: minimal-body Lexical doc.
+            const fallbackText = (entry.title || '').trim()
+            const updateData: Record<string, unknown> = {
+              content: {
+                root: {
+                  type: 'root', format: '', indent: 0, version: 1, direction: 'ltr',
+                  children: [{
+                    type: 'paragraph', format: '', indent: 0, version: 1, direction: 'ltr',
+                    textFormat: 0, textStyle: '',
+                    children: fallbackText
+                      ? [{ type: 'text', format: 0, mode: 'normal', style: '', text: fallbackText, detail: 0, version: 1 }]
+                      : [],
+                  }],
+                },
+              },
+              plainTitle: built.data.plainTitle,
+              legacyHtmlUrl: built.data.legacyHtmlUrl,
+              legacyCategory: built.data.legacyCategory,
+            }
+            /* eslint-disable @typescript-eslint/no-explicit-any */
+            await payload!.update({
+              collection: 'articles',
+              id: existingId,
+              data: updateData as any,
+              req: { context: { legacyImport: true } } as any,
+            })
+            /* eslint-enable @typescript-eslint/no-explicit-any */
+            imported++
+          } else {
+            throw updateErr
+          }
+        }
         continue
       }
       // We always create with _status='draft' to dodge the

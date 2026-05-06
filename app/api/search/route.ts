@@ -67,6 +67,7 @@ async function searchPayload(queryFormsLower: string[], page: number, pageSize: 
     orConditions.push({ subdeck: { like: form } });
     orConditions.push({ kicker: { like: form } });
     orConditions.push({ 'writeInAuthors.name': { like: form } });
+    orConditions.push({ plainContent: { like: form } });
   }
 
   const result = await payload.find({

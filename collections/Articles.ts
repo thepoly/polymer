@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 import { lexicalEditor, BoldFeature, ItalicFeature } from '@payloadcms/richtext-lexical'
 import { getPostHogClient } from '../lib/posthog-server'
 import { getPlainText } from '../utils/getPlainText'
+import { getContentPlainText } from '../utils/getContentPlainText'
 
 const Articles: CollectionConfig = {
   slug: 'articles',
@@ -136,6 +137,15 @@ const Articles: CollectionConfig = {
         const plainTitle = getPlainText(data.title);
         data.plainTitle = plainTitle;
 
+        // Derive plain searchable body from the Lexical content. Used by the
+        // search adapter to ILIKE-match body text. Caller can pass a
+        // pre-computed `plainContent` (e.g. legacy-import path) — we only
+        // overwrite when we actually have content to derive from.
+        if (data.content !== undefined) {
+          const plainContent = getContentPlainText(data.content)
+          if (plainContent) data.plainContent = plainContent
+        }
+
         const rawSlug = data.slug || plainTitle || ''
         if (rawSlug) {
           data.slug = rawSlug
@@ -179,6 +189,14 @@ const Articles: CollectionConfig = {
       type: 'text',
       admin: {
         hidden: true,
+      },
+    },
+    {
+      name: 'plainContent',
+      type: 'textarea',
+      admin: {
+        hidden: true,
+        description: 'Auto-derived plain-text body for search. Do not edit by hand.',
       },
     },
     {

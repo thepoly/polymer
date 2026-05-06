@@ -321,6 +321,10 @@ export interface Article {
     [k: string]: unknown;
   };
   plainTitle?: string | null;
+  /**
+   * Auto-derived plain-text body for search. Do not edit by hand.
+   */
+  plainContent?: string | null;
   kicker?: string | null;
   subdeck?: string | null;
   opinionType?:
@@ -1001,6 +1005,7 @@ export interface ArticlesSelect<T extends boolean = true> {
   section?: T;
   title?: T;
   plainTitle?: T;
+  plainContent?: T;
   kicker?: T;
   subdeck?: T;
   opinionType?: T;
