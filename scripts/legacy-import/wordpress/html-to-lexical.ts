@@ -546,19 +546,12 @@ export function preprocessWpHtml(input: string): string {
   // additionally remove JetpackRelatedPosts placeholder comments.
   s = s.replace(/<!--\s*jetpack-related-posts\s*-->/gi, '')
 
-  // Strip <script>/<style>/<iframe> blocks completely (the tokenizer does this
-  // too via SKIP_TAGS, but doing it here keeps the wpautop pass from acting
-  // on script bodies). Loop because nested/sequential blocks need multiple
-  // passes; close-tag pattern allows whitespace before the '>'.
-  let prev: string
-  do {
-    prev = s
-    s = s.replace(/<script\b[\s\S]*?<\/script\s*>/gi, '')
-    s = s.replace(/<style\b[\s\S]*?<\/style\s*>/gi, '')
-    s = s.replace(/<iframe\b[\s\S]*?<\/iframe\s*>/gi, '')
-  } while (s !== prev)
-  // Drop any unmatched/unterminated remnants so partial tags can't slip through.
-  s = s.replace(/<\/?(script|style|iframe)\b[^>]*>/gi, '')
+  // Strip <script>/<style>/<iframe> blocks. The tokenizer also handles these
+  // via SKIP_TAGS, but stripping here keeps the wpautop pass below from
+  // acting on script bodies. Done with an indexOf scan rather than a regex
+  // so that close tags with arbitrary whitespace/garbage before the '>'
+  // (e.g. `</script\t bar>`) are still removed.
+  s = stripDangerousBlocks(s)
 
   // ===== wpautop =====
   // If there are no <p> tags AND the HTML has blank-line separated text
@@ -569,6 +562,59 @@ export function preprocessWpHtml(input: string): string {
   }
 
   return s
+}
+
+/**
+ * Remove <script>, <style>, <iframe> sections from raw HTML using a manual
+ * indexOf scan. Handles close tags with whitespace/attrs before '>' and any
+ * unmatched/orphan opens or closes.
+ */
+function stripDangerousBlocks(html: string): string {
+  const TAGS = ['script', 'style', 'iframe']
+  let out = html
+  for (const tag of TAGS) {
+    const open = `<${tag}`
+    const close = `</${tag}`
+    const lower = () => out.toLowerCase()
+    while (true) {
+      const lo = lower()
+      const start = lo.indexOf(open)
+      if (start < 0) break
+      // Confirm the open is a real tag (next char must be space, '>', '/', or end).
+      const after = out.charAt(start + open.length)
+      if (after !== '' && after !== ' ' && after !== '\t' && after !== '\n' && after !== '\r' && after !== '>' && after !== '/') {
+        // Not a real tag (e.g. <scripted>); skip past this match.
+        out = out.slice(0, start) + out.slice(start + 1)
+        continue
+      }
+      // Find matching close tag (case-insensitive). End at next '>' after `</tag`.
+      const closeStart = lo.indexOf(close, start + open.length)
+      if (closeStart < 0) {
+        // Unterminated — drop everything from the open onward.
+        out = out.slice(0, start)
+        break
+      }
+      const closeEnd = out.indexOf('>', closeStart)
+      if (closeEnd < 0) {
+        out = out.slice(0, start)
+        break
+      }
+      out = out.slice(0, start) + out.slice(closeEnd + 1)
+    }
+    // Drop any orphan close tags `</tag ...>` left behind.
+    while (true) {
+      const lo = lower()
+      const orphan = lo.indexOf(close)
+      if (orphan < 0) break
+      const orphanEnd = out.indexOf('>', orphan)
+      if (orphanEnd < 0) {
+        out = out.slice(0, orphan)
+        break
+      }
+      out = out.slice(0, orphan) + out.slice(orphanEnd + 1)
+    }
+  }
+  return out
 }
 
 /** Minimal WP wpautop: split on double-newlines, wrap each chunk in <p>. */
