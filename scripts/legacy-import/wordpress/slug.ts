@@ -48,5 +48,7 @@ export function buildLegacyHtmlUrl(opts: {
   const yyyy = String(opts.year).padStart(4, '0')
   const mm = String(opts.month).padStart(2, '0')
   const dd = String(opts.day).padStart(2, '0')
-  return `/archive/wordpress/${yyyy}/${mm}/${dd}/${opts.slug}/`
+  // The wget-mirror tarball was extracted with `mirror/` subdirectory intact,
+  // so the on-disk path is /var/www/archive/wordpress/mirror/<Y>/<M>/<D>/<slug>/.
+  return `/archive/wordpress/mirror/${yyyy}/${mm}/${dd}/${opts.slug}/`
 }

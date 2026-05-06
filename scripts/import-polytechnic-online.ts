@@ -63,6 +63,7 @@ type Flags = {
   startFrom: number
   sourceOnly: number | null
   verbose: boolean
+  update: boolean
 }
 
 function parseFlags(argv: string[]): Flags {
@@ -72,10 +73,12 @@ function parseFlags(argv: string[]): Flags {
     startFrom: 0,
     sourceOnly: null,
     verbose: false,
+    update: false,
   }
   for (const arg of argv) {
     if (arg === '--dry-run') flags.dryRun = true
     else if (arg === '--verbose') flags.verbose = true
+    else if (arg === '--update') flags.update = true
     else if (arg.startsWith('--limit=')) flags.limit = Number(arg.slice('--limit='.length))
     else if (arg === '--limit') {
       // Two-arg form. Handled below.
@@ -130,11 +133,39 @@ function groupByView(entries: LegacyArticleEntry[]): CanonicalArticle[] {
 
 // ===== Body assembly =====
 
+// CP1252 → unicode for the 0x80-0x9F range that differs from ISO-8859-1.
+// All other bytes (0xA0-0xFF) map directly to U+00A0-U+00FF (Latin-1).
+const CP1252_HIGH: Record<number, string> = {
+  0x80: '€', 0x82: '‚', 0x83: 'ƒ', 0x84: '„', 0x85: '…', 0x86: '†', 0x87: '‡',
+  0x88: 'ˆ', 0x89: '‰', 0x8A: 'Š', 0x8B: '‹', 0x8C: 'Œ', 0x8E: 'Ž',
+  0x91: '‘', 0x92: '’', 0x93: '“', 0x94: '”',
+  0x95: '•', 0x96: '–', 0x97: '—', 0x98: '˜', 0x99: '™',
+  0x9A: 'š', 0x9B: '›', 0x9C: 'œ', 0x9E: 'ž', 0x9F: 'Ÿ',
+}
+
+function decodeCp1252(buf: Buffer): string {
+  let out = ''
+  for (let i = 0; i < buf.length; i++) {
+    const b = buf[i]
+    if (b < 0x80 || b >= 0xA0) {
+      out += String.fromCharCode(b)
+    } else if (CP1252_HIGH[b] !== undefined) {
+      out += CP1252_HIGH[b]
+    }
+    // 0x81, 0x8D, 0x8F, 0x90, 0x9D are undefined in CP1252 — skip silently.
+  }
+  return out
+}
+
 function readBodyForPart(entry: LegacyArticleEntry): string | null {
   const filePath = path.join(ARCHIVE_ROOT, entry.local_path)
   let raw: string
   try {
-    raw = fs.readFileSync(filePath, 'utf8')
+    // Source HTML is CP1252 (Windows-1252) — used by classic Polytechnic
+    // CMS for typographic glyphs (curly quotes, en/em dashes). Reading as
+    // UTF-8 turns 0x91-0x97 into U+FFFD replacement chars. Decode explicitly.
+    const buf = fs.readFileSync(filePath)
+    raw = decodeCp1252(buf)
   } catch {
     return null
   }
@@ -178,7 +209,9 @@ function buildRow(article: CanonicalArticle): BuiltRow {
     .filter((a) => a && a.name && a.name.trim())
     .map((a) => ({ name: a.name.trim() }))
 
-  const legacyHtmlUrl = `/archive/polytechnic-online/article_view.php3?view=${article.view}&part=1.html`
+  // Static archive serves files whose names literally contain '?' and '&';
+  // they must be percent-encoded so nginx doesn't strip them as query string.
+  const legacyHtmlUrl = `/archive/polytechnic-online/article_view.php3%3Fview=${article.view}%26part=1.html`
 
   // canonical_date is a YYYY-MM-DD string. Convert to ISO at noon UTC so
   // timezone math doesn't bump it into the previous day in the admin UI.
@@ -295,8 +328,65 @@ async function main() {
         // is also fine — the legacy importer always writes _status='published'.
         pagination: false,
       })
-      if (existing.docs.length > 0) {
+      if (existing.docs.length > 0 && !flags.update) {
         skipped++
+      } else if (existing.docs.length > 0 && flags.update) {
+        // --update mode: rewrite content/plainTitle/legacyHtmlUrl/legacyCategory
+        // on the existing row. Preserves the existing slug (which may have
+        // been disambiguated with a -<articleID> suffix during the original
+        // import) and any user-authored fields not in row.data.
+        const existingDoc = existing.docs[0]
+        const existingId = existingDoc.id
+        const updateData: Record<string, unknown> = {
+          content: row.data.content,
+          plainTitle: row.data.plainTitle,
+          legacyHtmlUrl: row.data.legacyHtmlUrl,
+          legacyCategory: row.data.legacyCategory,
+          legacySource: row.data.legacySource,
+          legacyArticleId: row.data.legacyArticleId,
+        }
+        if (row.data.kicker !== undefined) updateData.kicker = row.data.kicker
+        try {
+          await payload.update({
+            collection: 'articles',
+            id: existingId,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            data: updateData as any,
+            req: { context: { legacyImport: true } } as Parameters<typeof payload.update>[0]['req'],
+            depth: 0,
+          })
+          imported++
+          if (sampleSlugs.length < 10) sampleSlugs.push(String(existingDoc.slug || row.slug))
+        } catch (updateErr) {
+          const msg = (updateErr as Error).message || ''
+          if (/Content/i.test(msg)) {
+            // Same Content fallback as create path: minimal-body Lexical doc.
+            const blurb = (article.parts[0]?.blurb_db || row.plainTitle || '').trim()
+            updateData.content = {
+              root: {
+                type: 'root', format: '', indent: 0, version: 1, direction: 'ltr',
+                children: [{
+                  type: 'paragraph', format: '', indent: 0, version: 1, direction: 'ltr',
+                  textFormat: 0, textStyle: '',
+                  children: blurb
+                    ? [{ type: 'text', format: 0, mode: 'normal', style: '', text: blurb, detail: 0, version: 1 }]
+                    : [],
+                }],
+              },
+            }
+            await payload.update({
+              collection: 'articles',
+              id: existingId,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              data: updateData as any,
+              req: { context: { legacyImport: true } } as Parameters<typeof payload.update>[0]['req'],
+              depth: 0,
+            })
+            imported++
+          } else {
+            throw updateErr
+          }
+        }
       } else {
         // Retry on slug collision by appending the legacy article ID. Date-prefixed
         // slugs already prevent cross-decade collisions; only same-day same-headline

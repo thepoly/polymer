@@ -50,7 +50,8 @@ VALUES
   ('20260424_020000_add_device_tokens', 25, NOW(), NOW()),
   ('20260428_000000_add_media_image_sizes', 26, NOW(), NOW()),
   ('20260506_000000_add_articles_legacy_archive', 27, NOW(), NOW()),
-  ('20260506_010000_add_articles_legacy_id_and_category', 27, NOW(), NOW())
+  ('20260506_010000_add_articles_legacy_id_and_category', 27, NOW(), NOW()),
+  ('20260506_020000_add_articles_plain_content', 27, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1370,4 +1371,10 @@ ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_legacy_article_id" v
 ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_legacy_category" varchar;
 CREATE INDEX IF NOT EXISTS "articles_legacy_article_id_idx" ON "articles" ("legacy_article_id");
 CREATE INDEX IF NOT EXISTS "articles_legacy_source_legacy_article_id_idx" ON "articles" ("legacy_source", "legacy_article_id");
+
+-- 20260506_020000: Add plain_content (+ version shadow) to articles for body
+-- search. Populated by Articles.beforeChange hook (from the Lexical content
+-- document). Nullable until the legacy backfill completes.
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "plain_content" text;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_plain_content" text;
 SQL
