@@ -398,6 +398,14 @@ export interface Article {
    * Darkness of the bottom image fade (0–100). Default is 90.
    */
   gradientOpacity?: number | null;
+  /**
+   * Full URL or path to the original archived HTML for this article. Populated by the legacy import scripts; when set, the article page shows a "View on poly.rpi.edu" button.
+   */
+  legacyHtmlUrl?: string | null;
+  /**
+   * Origin of the legacy HTML. One of: 'polytechnic-online', 'wordpress', 'pipeline'.
+   */
+  legacySource?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -1008,6 +1016,8 @@ export interface ArticlesSelect<T extends boolean = true> {
   isFollytechnic?: T;
   isPhotofeature?: T;
   gradientOpacity?: T;
+  legacyHtmlUrl?: T;
+  legacySource?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

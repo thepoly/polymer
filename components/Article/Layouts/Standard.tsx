@@ -1,7 +1,7 @@
 
 import React from 'react';
 import Footer from '@/components/Footer';
-import { ArticleHeader, ArticleContent, ArticleDivider, ArticleRecommendations, ArticleStaffBios } from '@/components/Article';
+import { ArticleHeader, ArticleContent, ArticleDivider, ArticleRecommendations, ArticleStaffBios, LegacyArchiveLink } from '@/components/Article';
 import { Article } from '@/payload-types';
 
 export const StandardLayout = ({ article, content }: { article: Article, content?: Article['content'] }) => {
@@ -10,6 +10,7 @@ export const StandardLayout = ({ article, content }: { article: Article, content
     <main className={`min-h-screen overflow-x-hidden bg-bg-main pt-[64px] transition-colors duration-300${isFollytechnic ? ' follytechnic' : ''}`}>
       <article className="container mx-auto px-4 md:px-6 mt-8 md:mt-12">
         <ArticleHeader article={article} />
+        <LegacyArchiveLink article={article} />
         <ArticleContent content={content || article.content} />
         <ArticleDivider />
         <ArticleStaffBios article={article} />

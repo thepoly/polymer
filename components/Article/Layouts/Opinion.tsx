@@ -1,6 +1,6 @@
 import React from 'react';
 import Footer from '@/components/Footer';
-import { ArticleContent, ArticleDivider, ArticleRecommendations, ArticleStaffBios } from '@/components/Article';
+import { ArticleContent, ArticleDivider, ArticleRecommendations, ArticleStaffBios, LegacyArchiveLink } from '@/components/Article';
 import { OpinionArticleHeader } from '@/components/Opinion/OpinionArticleHeader';
 import { Article } from '@/payload-types';
 
@@ -10,6 +10,7 @@ export const OpinionLayout = ({ article, content }: { article: Article, content?
     <main className={`min-h-screen bg-bg-main pt-[64px] transition-colors duration-300${isFollytechnic ? ' follytechnic' : ''}`}>
       <article className="container mx-auto px-4 md:px-6 mt-8 md:mt-12">
         <OpinionArticleHeader article={article} />
+        <LegacyArchiveLink article={article} />
         <ArticleContent content={content || article.content} />
         <ArticleDivider />
         <ArticleStaffBios article={article} />
