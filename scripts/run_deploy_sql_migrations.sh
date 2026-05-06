@@ -49,7 +49,8 @@ VALUES
   ('20260424_010000_add_breaking_news', 24, NOW(), NOW()),
   ('20260424_020000_add_device_tokens', 25, NOW(), NOW()),
   ('20260428_000000_add_media_image_sizes', 26, NOW(), NOW()),
-  ('20260506_000000_add_articles_legacy_archive', 27, NOW(), NOW())
+  ('20260506_000000_add_articles_legacy_archive', 27, NOW(), NOW()),
+  ('20260506_010000_add_articles_legacy_id_and_category', 27, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1357,4 +1358,16 @@ ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "legacy_html_url" varchar;
 ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "legacy_source" varchar;
 ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_legacy_html_url" varchar;
 ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_legacy_source" varchar;
+
+-- 20260506_010000: Add legacy_article_id (indexed) + legacy_category to
+-- articles for the bulk legacy import. Idempotent upsert key is
+-- (legacy_source, legacy_article_id). legacy_category preserves the original
+-- source category for display + search; routing section stays in the existing
+-- 4-value enum.
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "legacy_article_id" varchar;
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "legacy_category" varchar;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_legacy_article_id" varchar;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_legacy_category" varchar;
+CREATE INDEX IF NOT EXISTS "articles_legacy_article_id_idx" ON "articles" ("legacy_article_id");
+CREATE INDEX IF NOT EXISTS "articles_legacy_source_legacy_article_id_idx" ON "articles" ("legacy_source", "legacy_article_id");
 SQL
