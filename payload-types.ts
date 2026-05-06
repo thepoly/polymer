@@ -406,6 +406,14 @@ export interface Article {
    * Origin of the legacy HTML. One of: 'polytechnic-online', 'wordpress', 'pipeline'.
    */
   legacySource?: string | null;
+  /**
+   * Stable identifier from the source system. Combined with legacySource, forms the upsert key for legacy imports.
+   */
+  legacyArticleId?: string | null;
+  /**
+   * Original category/section name from the source system. Preserved for display and search; does not affect routing.
+   */
+  legacyCategory?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -1018,6 +1026,8 @@ export interface ArticlesSelect<T extends boolean = true> {
   gradientOpacity?: T;
   legacyHtmlUrl?: T;
   legacySource?: T;
+  legacyArticleId?: T;
+  legacyCategory?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

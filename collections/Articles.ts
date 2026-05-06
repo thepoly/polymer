@@ -45,6 +45,10 @@ const Articles: CollectionConfig = {
   hooks: {
     afterChange: [
       ({ doc, previousDoc, req }) => {
+        // Bulk legacy import sets req.context.legacyImport=true so the 10K
+        // historical inserts don't trigger PostHog events or breaking-news pushes.
+        if ((req?.context as { legacyImport?: boolean } | undefined)?.legacyImport) return
+
         const isNowPublished = doc._status === 'published'
         const wasPublished = previousDoc?._status === 'published'
 
@@ -90,11 +94,14 @@ const Articles: CollectionConfig = {
     ],
     beforeChange: [
       ({ data, originalDoc, req }) => {
-        // LOGIC: If transitioning to 'published' via Payload's internal _status, set the publishedDate
+        const isLegacyImport = (req?.context as { legacyImport?: boolean } | undefined)?.legacyImport === true
+
+        // LOGIC: If transitioning to 'published' via Payload's internal _status, set the publishedDate.
+        // Skipped for legacy imports — the script supplies the historical date directly.
         const isNowPublished = data._status === 'published'
         const wasPublished = originalDoc?._status === 'published'
 
-        if (isNowPublished && !wasPublished) {
+        if (isNowPublished && !wasPublished && !isLegacyImport) {
           data.publishedDate = new Date().toISOString()
         }
 
@@ -376,6 +383,25 @@ const Articles: CollectionConfig = {
         if (value == null || value === '') return true
         const allowed = ['polytechnic-online', 'wordpress', 'pipeline']
         return allowed.includes(value) || `legacySource must be one of: ${allowed.join(', ')}`
+      },
+    },
+    {
+      name: 'legacyArticleId',
+      type: 'text',
+      label: 'Legacy Article ID',
+      admin: {
+        position: 'sidebar',
+        description: 'Stable identifier from the source system. Combined with legacySource, forms the upsert key for legacy imports.',
+      },
+      index: true,
+    },
+    {
+      name: 'legacyCategory',
+      type: 'text',
+      label: 'Legacy Category',
+      admin: {
+        position: 'sidebar',
+        description: 'Original category/section name from the source system. Preserved for display and search; does not affect routing.',
       },
     },
   ],
