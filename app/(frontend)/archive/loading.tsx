@@ -27,7 +27,7 @@ export default function ArchiveLoading() {
                 <span className="text-[#b7bcc6] dark:text-[#b7bcc6]">2001&ndash;2026</span>
               </h1>
               <p className="mt-3 font-copy text-[16px] sm:text-[17px] leading-[1.4] text-text-muted">
-                Browse the entire online history of <em>The Polytechnic</em>
+                Browse the entire online history of <em>The Poly</em>
               </p>
             </div>
 
