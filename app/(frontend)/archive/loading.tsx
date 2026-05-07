@@ -59,12 +59,6 @@ export default function ArchiveLoading() {
                 />
               </svg>
 
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
-                <p className="text-[15px] sm:text-[16px] text-text-muted">
-                  Loading the time machine
-                </p>
-              </div>
-
               <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-bg-main to-transparent" />
               <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-bg-main to-transparent" />
             </div>
