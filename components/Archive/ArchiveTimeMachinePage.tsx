@@ -657,7 +657,7 @@ export default function ArchiveTimeMachinePage({
                   href={FOLSOM_ARCHIVE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="absolute left-0 top-[118px] z-20 -translate-x-full pr-4 font-meta text-[12px] font-semibold tracking-[0.02em] text-[#d6001c]"
+                  className="absolute left-0 top-1/2 z-20 -translate-y-1/2 -translate-x-full pr-2 max-w-[200px] text-right font-meta text-[12px] font-semibold leading-tight tracking-[0.02em] text-[#d6001c]"
                   style={{ marginLeft: `${timelineData.offsets[0]}px` }}
                 >
                   You can access our archives pre-{earliestArchiveYear} at The RPI Libraries Digital Archive.
