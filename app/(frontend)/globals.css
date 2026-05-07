@@ -517,3 +517,35 @@ html.standalone-pwa body::after {
     grid-template-rows: auto auto;
   }
 }
+
+/* ── /archive page-load loader (Next.js loading.tsx fallback) ──
+   Same rainbow-wave aesthetic as the search-bar underline.
+   Defined here (rather than inline in the loading.tsx server
+   component) because React 19's RSC streaming can flake on
+   inline <style>{...}</style> blocks. */
+@keyframes archive-loading-wave-travel {
+  from { transform: translateX(-600px); }
+  to   { transform: translateX(0px); }
+}
+@keyframes archive-loading-rainbow-hue {
+  from { filter: hue-rotate(0deg); }
+  to   { filter: hue-rotate(360deg); }
+}
+@keyframes archive-loading-row-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+.archive-loading-wave {
+  animation:
+    archive-loading-wave-travel 0.6s linear infinite,
+    archive-loading-rainbow-hue 4s linear infinite;
+  will-change: transform, filter;
+}
+.archive-loading-row {
+  animation: archive-loading-row-pulse 1.4s ease-in-out infinite;
+  will-change: opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .archive-loading-wave { animation-duration: 4s, 12s; }
+  .archive-loading-row { animation: none; opacity: 0.7; }
+}
