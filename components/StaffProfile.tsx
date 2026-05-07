@@ -234,8 +234,8 @@ export function StaffProfile({
       <div className="flex flex-col md:flex-row gap-12 items-start">
         {/* Left Column: Photo & Basic Info */}
         <div className="w-full md:w-[28%] flex-shrink-0">
-          <div className="relative w-full max-w-[320px] mx-auto md:mx-0 aspect-[4/5] mb-4 md:mb-6 rounded-sm overflow-hidden bg-gray-100 dark:bg-zinc-800 shadow-sm transition-colors">
-            {headshot?.url ? (
+          {headshot?.url && (
+            <div className="relative w-full max-w-[320px] mx-auto md:mx-0 aspect-[4/5] mb-4 md:mb-6 rounded-sm overflow-hidden bg-gray-100 dark:bg-zinc-800 shadow-sm transition-colors">
               <Image
                 src={headshot.url}
                 alt={headshot.title || `${user.firstName} ${user.lastName}`}
@@ -243,14 +243,8 @@ export function StaffProfile({
                 className="object-cover"
                 priority
               />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-200 dark:bg-zinc-800 text-text-muted transition-colors">
-                <span className="text-6xl font-display">
-                  {user.firstName[0]}{user.lastName[0]}
-                </span>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
           
           <div className="text-center md:text-left">
               <h1 className="font-meta text-3xl font-semibold mb-3 tracking-tight">

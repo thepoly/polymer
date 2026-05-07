@@ -64,9 +64,14 @@ export const Users: CollectionConfig = {
         }
 
         if (data?.retired === true && originalDoc?.retired !== true) {
+          // On retirement: scramble the password (account becomes unusable)
+          // AND clear the headshot — retired staff don't keep their photo
+          // attached, both as a courtesy to alumni and to keep the staff
+          // page focused on currently-active people.
           return {
             ...data,
             password: randomBytes(48).toString('base64'),
+            headshot: null,
           }
         }
 

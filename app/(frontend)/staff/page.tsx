@@ -144,23 +144,19 @@ function StaffPortrait({
   user: StaffUser
   className?: string
 }) {
+  // Hide the portrait container entirely if there's no photo. Better than a
+  // silhouette placeholder that reads as "missing data" — the user's name
+  // and role still render in the surrounding card.
+  if (!user.headshot?.url) return null
   return (
     <div className={`relative bg-gray-100 dark:bg-zinc-800 overflow-hidden transition-colors ${className}`}>
-      {user.headshot?.url ? (
-        <Image
-          src={user.headshot.url}
-          alt={user.headshot.title || `${user.firstName} ${user.lastName}`}
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-zinc-800 text-text-muted transition-colors">
-          <svg className="w-12 h-12 opacity-50" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-          </svg>
-        </div>
-      )}
+      <Image
+        src={user.headshot.url}
+        alt={user.headshot.title || `${user.firstName} ${user.lastName}`}
+        fill
+        className="object-cover"
+        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+      />
     </div>
   )
 }
