@@ -128,6 +128,7 @@ import { performance } from 'node:perf_hooks'
 
 import { getPayload, type Payload } from 'payload'
 import { Pool } from 'pg'
+import { LegacyMediaResolver, resolveImagesInLexicalTree } from './legacy-import/media-resolver.ts'
 import config from '../payload.config.ts'
 
 import { loadWpDataset, type WpPostRow } from './legacy-import/wordpress/wp-data.ts'
@@ -501,6 +502,7 @@ async function main() {
   // published_date pin) — skip both in pure dry-run.
   let payload: Payload | null = null
   let pgPool: Pool | null = null
+  let mediaResolver: LegacyMediaResolver | null = null
   if (!flags.dryRun) {
     payload = await getPayload({ config })
     const dbUrl = process.env.DATABASE_URL
@@ -509,6 +511,7 @@ async function main() {
       process.exit(1)
     }
     pgPool = new Pool({ connectionString: dbUrl })
+    mediaResolver = new LegacyMediaResolver(pgPool)
   }
 
   let imported = 0
@@ -534,6 +537,11 @@ async function main() {
         continue
       }
       built = buildArticle(entry, wpRow, flags.mirrorRoot)
+      if (built && mediaResolver) {
+        // Swap legacy-image-placeholder nodes for real upload nodes referencing
+        // media rows (created on demand). Done in-place on built.data.content.
+        await resolveImagesInLexicalTree(built.data.content, mediaResolver)
+      }
       if (!built) {
         failed++
         failures.push({ wpId: entry.wp_id, reason: 'build returned null' })

@@ -223,12 +223,24 @@ export function blankParagraph(): LexicalNode {
 export function htmlToLexicalBlocks(html: string): LexicalNode[] {
   const tokens = tokenize(html)
 
+  // Mixed block list: paragraphs (LexicalNode[][]) plus inline-block nodes
+  // (image placeholders) get added to `blocks` at the right index. The
+  // currently-in-progress paragraph is the last element of `paragraphs`.
+  const blocks: LexicalNode[] = []
   const paragraphs: LexicalNode[][] = [[]]
   let format: TextFormat = 0
   const linkStack: string[] = []
 
   function currentChildren(): LexicalNode[] {
     return paragraphs[paragraphs.length - 1]
+  }
+
+  function flushParagraph(): void {
+    const children = currentChildren()
+    if (children.length > 0) {
+      blocks.push(makeParagraph(children))
+    }
+    paragraphs[paragraphs.length - 1] = []
   }
 
   function pushText(raw: string) {
@@ -297,8 +309,15 @@ export function htmlToLexicalBlocks(html: string): LexicalNode[] {
           const rewritten = rewriteImageSrc(src)
           const alt = tok.attrs.alt || ''
           if (rewritten) {
-            const marker = `[image: ${alt || rewritten}]`
-            pushText(marker)
+            // Emit a block-level placeholder. The importer's post-processing
+            // pass swaps these for real upload nodes referencing media rows.
+            flushParagraph()
+            blocks.push({
+              type: 'legacy-image-placeholder',
+              src: rewritten,
+              alt,
+              version: 1,
+            } as LexicalNode)
           }
           break
         }
@@ -368,7 +387,8 @@ export function htmlToLexicalBlocks(html: string): LexicalNode[] {
     }
   }
 
-  const blocks: LexicalNode[] = []
+  // Flush any in-progress paragraph residue (and any earlier paragraphs that
+  // weren't already pushed to blocks via flushParagraph from an inline img).
   for (const children of paragraphs) {
     if (children.length === 0) continue
     blocks.push(makeParagraph(children))
