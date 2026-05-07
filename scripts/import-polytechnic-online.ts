@@ -43,6 +43,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { getPayload } from 'payload'
+import { Pool } from 'pg'
 import config from '../payload.config'
 
 import type { LegacyArticleEntry, LegacyManifest } from './legacy-import/poly-online/types'
@@ -54,6 +55,7 @@ import {
   buildTitleEditorState,
   plainTitleFrom,
 } from './legacy-import/poly-online/html-to-lexical'
+import { LegacyMediaResolver, resolveImagesInLexicalTree } from './legacy-import/media-resolver'
 
 // ===== CLI parsing =====
 
@@ -171,7 +173,49 @@ function readBodyForPart(entry: LegacyArticleEntry): string | null {
   }
   const body = extractBodyHtml(raw)
   if (!body) return null
-  return stripSkipToNav(body)
+  // Article images sometimes sit between the byline-hr and the body's <font
+  // size='-1'> block, so they aren't inside the body slice. Pull those out
+  // and prepend them so the html-to-lexical converter sees them.
+  const leading = extractLeadingImages(raw)
+  const combined = leading ? `${leading}${body}` : body
+  return stripSkipToNav(combined)
+}
+
+/**
+ * Find <img> tags that appear between the byline `<hr>` (the second
+ * `hr_black.gif width='504'` marker) and the article body's `<font size='-1'>`
+ * opening. Returns a string of one or more `<img>` HTML tags, or empty.
+ */
+function extractLeadingImages(raw: string): string {
+  const bodyOpenRe = /<font\s+size=['"]-1['"]\s+face=['"]Verdana,\s*Arial,\s*Helvetica,\s*sans-serif['"]\s*>|<font\s+face=['"]Verdana,\s*Arial,\s*Helvetica,\s*sans-serif['"]\s+size=['"]-1['"]\s*>/gi
+  bodyOpenRe.lastIndex = 0
+  let bodyOpenMatch: RegExpExecArray | null
+  let lastBodyOpen = -1
+  while ((bodyOpenMatch = bodyOpenRe.exec(raw)) !== null) {
+    lastBodyOpen = bodyOpenMatch.index
+  }
+  if (lastBodyOpen < 0) return ''
+
+  const hrRe = /<img\s+[^>]*src=['"]hr_black\.gif['"][^>]*width=['"]504['"][^>]*>/gi
+  let lastHr = -1
+  let hrMatch: RegExpExecArray | null
+  hrRe.lastIndex = 0
+  while ((hrMatch = hrRe.exec(raw)) !== null) {
+    if (hrMatch.index >= lastBodyOpen) break
+    lastHr = hrMatch.index + hrMatch[0].length
+  }
+  if (lastHr < 0) return ''
+
+  const gap = raw.slice(lastHr, lastBodyOpen)
+  const imgRe = /<img\s+[^>]*src=['"]([^'"]+)['"][^>]*>/gi
+  const out: string[] = []
+  let m: RegExpExecArray | null
+  while ((m = imgRe.exec(gap)) !== null) {
+    const src = m[1]
+    if (!src.includes('/') && /\.gif$/i.test(src)) continue
+    out.push(m[0])
+  }
+  return out.join('')
 }
 
 // ===== Row build =====
@@ -279,6 +323,20 @@ async function main() {
   // ===== Boot Payload =====
   const payload = await getPayload({ config })
 
+  // Raw pg pool used by the media resolver to look up / insert media rows
+  // referenced by inline body images. Skipped on dry-run.
+  let pgPool: Pool | null = null
+  let mediaResolver: LegacyMediaResolver | null = null
+  if (!flags.dryRun) {
+    const dbUrl = process.env.DATABASE_URL
+    if (!dbUrl) {
+      console.error('[poly-online] DATABASE_URL not set; required for non-dry-run mode')
+      process.exit(1)
+    }
+    pgPool = new Pool({ connectionString: dbUrl })
+    mediaResolver = new LegacyMediaResolver(pgPool)
+  }
+
   let imported = 0
   let skipped = 0
   let failed = 0
@@ -290,6 +348,9 @@ async function main() {
     let row: BuiltRow
     try {
       row = buildRow(article)
+      if (mediaResolver) {
+        await resolveImagesInLexicalTree(row.data.content, mediaResolver)
+      }
     } catch (err) {
       failed++
       console.error(
@@ -504,11 +565,15 @@ async function main() {
   const elapsedSec = ((Date.now() - startedAt) / 1000).toFixed(1)
   console.log('')
   console.log(`[poly-online] done in ${elapsedSec}s — ${imported} imported, ${skipped} skipped, ${failed} failed (of ${total})`)
+  if (mediaResolver) {
+    console.log(`[poly-online] media rows touched: ${mediaResolver.size()}`)
+  }
   if (sampleSlugs.length > 0) {
     console.log('[poly-online] sample slugs:')
     for (const s of sampleSlugs) console.log(`  - ${s}`)
   }
 
+  if (pgPool) await pgPool.end().catch(() => {})
   process.exit(0)
 }
 

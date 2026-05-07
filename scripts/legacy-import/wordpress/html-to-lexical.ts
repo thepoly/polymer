@@ -305,17 +305,19 @@ export function convertHtmlToLexical(rawHtml: string, opts: HtmlToLexicalOptions
         const rewritten = opts.rewriteImageSrc ? opts.rewriteImageSrc(src) : src
         if (!rewritten) continue
         const alt = tok.attrs.alt || ''
-        // Render as a paragraph containing a link to the image with the alt
-        // text (or the filename) as visible content. This is a deliberate
-        // degraded representation: full Upload nodes require Media rows we
-        // don't have for the legacy corpus.
+        // Emit a block-level placeholder. The importer's post-processing
+        // pass swaps these for real upload nodes referencing media rows.
         flushInline()
-        const label = alt.trim() || basename(rewritten) || 'image'
-        const linkNode = makeLink(rewritten, [makeTextNode(label, FMT_ITALIC)])
+        const placeholder: LexNode = {
+          type: 'legacy-image-placeholder',
+          src: rewritten,
+          alt,
+          version: 1,
+        }
         if (blockStack.length > 0) {
-          blockStack[blockStack.length - 1].targetChildren.push(makeParagraph([linkNode]))
+          blockStack[blockStack.length - 1].targetChildren.push(placeholder)
         } else {
-          root.push(makeParagraph([linkNode]))
+          root.push(placeholder)
         }
         continue
       }
@@ -472,10 +474,6 @@ function VOID(name: string): boolean {
   return name === 'br' || name === 'img' || name === 'hr' || name === 'meta' || name === 'link' || name === 'input' || name === 'source'
 }
 
-function basename(url: string): string {
-  const m = url.match(/\/([^/?#]+)(?:[?#]|$)/)
-  return m ? m[1] : ''
-}
 
 function trimEmptyEdges(nodes: LexNode[]): void {
   const isEmpty = (n: LexNode): boolean => {
