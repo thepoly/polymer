@@ -60,11 +60,31 @@ function toArchiveUrl(rawPath: string | undefined): string | null {
 // Strip "<i>The Polytechnic</i>"-style trailing publication credit from a
 // byline. WP postmeta consistently formats as "Name/<i>The Polytechnic</i>"
 // or "Name/The Polytechnic"; we want just "Name".
+//
+// Uses indexOf scanning + a fixpoint loop instead of a single regex so the
+// CodeQL `incomplete-multi-character-sanitization` rule is satisfied — a
+// single `replace(/<[^>]+>/g, '')` pass can leave a leading `<` if the input
+// has unbalanced angle brackets.
+function stripTags(input: string): string {
+  let s = input
+  for (;;) {
+    const open = s.indexOf('<')
+    if (open === -1) break
+    const close = s.indexOf('>', open + 1)
+    if (close === -1) {
+      // Unterminated tag — drop everything from `<` onward.
+      s = s.slice(0, open)
+      break
+    }
+    s = s.slice(0, open) + s.slice(close + 1)
+  }
+  return s
+}
+
 function cleanByline(raw: string | undefined): string | null {
   if (!raw) return null
   let v = decodeEntities(raw).trim()
-  // Drop trailing "/The Polytechnic" (with or without italic markup).
-  v = v.replace(/<[^>]+>/g, '').trim()
+  v = stripTags(v).trim()
   v = v.replace(/\s*\/\s*The Polytechnic\s*$/i, '').trim()
   v = v.replace(/\s*-\s*The Polytechnic\s*$/i, '').trim()
   return v || null
