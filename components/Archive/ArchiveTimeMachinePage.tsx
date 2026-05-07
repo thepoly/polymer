@@ -10,7 +10,6 @@ import type { Article } from "@/components/FrontPage/types";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import { useTheme } from "@/components/ThemeProvider";
 import { resolveArchiveDateQuery } from "@/lib/archiveDateQuery";
-import { LoadingWave } from "@/components/LoadingWave";
 
 const monthFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -282,11 +281,6 @@ export default function ArchiveTimeMachinePage({
   const [articlesByDate, setArticlesByDate] = useState<Record<string, Article[]>>(
     safeInitialDate ? { [safeInitialDate]: initialArticles } : {},
   );
-  // Dates we've tried to fetch and failed (kept separate so we don't show
-  // the loading bar forever for a 500). Successful fetches land in
-  // articlesByDate even when the array is empty, so absence-from-both means
-  // a fetch is in flight.
-  const [failedDates, setFailedDates] = useState<Set<string>>(() => new Set());
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
   const [dragPreviewDate, setDragPreviewDate] = useState<string | null>(null);
   const [dateInput, setDateInput] = useState(initialQuery ?? "");
@@ -382,9 +376,8 @@ export default function ArchiveTimeMachinePage({
     }
 
     const controller = new AbortController();
-    const fetchDate = selectedDate;
 
-    fetch(`/api/archive/day?date=${encodeURIComponent(fetchDate)}`, {
+    fetch(`/api/archive/day?date=${encodeURIComponent(selectedDate)}`, {
       signal: controller.signal,
     })
       .then(async (response) => {
@@ -396,19 +389,15 @@ export default function ArchiveTimeMachinePage({
       })
       .then((payload) => {
         setArticlesByDate((current) => (
-          current[fetchDate] ? current : { ...current, [fetchDate]: payload.articles }
+          current[selectedDate] ? current : { ...current, [selectedDate]: payload.articles }
         ));
       })
       .catch((error) => {
         if ((error as Error).name !== "AbortError") {
           console.error("[archive] Failed to fetch date", error);
-          setFailedDates((prev) => {
-            if (prev.has(fetchDate)) return prev;
-            const next = new Set(prev);
-            next.add(fetchDate);
-            return next;
-          });
         }
+      })
+      .finally(() => {
       });
 
     return () => controller.abort();
@@ -899,33 +888,6 @@ export default function ArchiveTimeMachinePage({
           )}
         </div>
 
-        {/* Rainbow wave loading bar — same effect as the search-bar
-            underline. Active while a fetch for this date is in flight
-            (i.e. we haven't yet stashed the result and haven't recorded
-            a failure). */}
-        {(() => {
-          const isLoading =
-            !!selectedDate
-            && !articlesByDate[selectedDate]
-            && !failedDates.has(selectedDate);
-          return (
-            <>
-              <LoadingWave
-                active={isLoading}
-                id={`archive-${selectedDate}`}
-                className="mb-2"
-              />
-              {isLoading && articles.length === 0 ? (
-                <div className="rounded-[24px] border border-dashed border-black/10 px-6 py-14 text-center dark:border-white/10">
-                  <p className="font-meta text-[13px] uppercase tracking-[0.14em] text-text-muted">
-                    Loading articles…
-                  </p>
-                </div>
-              ) : null}
-            </>
-          );
-        })()}
-
         {articles.length > 0 ? (
           <div className="divide-y divide-black/0">
             {articles.map((article) => (
@@ -933,16 +895,11 @@ export default function ArchiveTimeMachinePage({
             ))}
           </div>
         ) : (
-          // Only show the empty state once the fetch has actually settled
-          // (article list is now in articlesByDate as []). While fetching,
-          // the loading state above is the visible UI.
-          articlesByDate[selectedDate] !== undefined && (
-            <div className="rounded-[24px] border border-dashed border-black/15 px-6 py-14 text-center dark:border-white/15">
-              <p className="font-meta text-[13px] uppercase tracking-[0.14em] text-text-muted">
-                No published articles for this date.
-              </p>
-            </div>
-          )
+          <div className="rounded-[24px] border border-dashed border-black/15 px-6 py-14 text-center dark:border-white/15">
+            <p className="font-meta text-[13px] uppercase tracking-[0.14em] text-text-muted">
+              No published articles for this date.
+            </p>
+          </div>
         )}
       </div>
     </section>
