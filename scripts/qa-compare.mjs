@@ -43,8 +43,11 @@ function decodeEntities(s) {
 }
 
 function stripInlineTags(html) {
-  const noTags = html.replace(/<[^>]*>/g, '')
-  return decodeEntities(noTags).replace(/\s+/g, ' ').trim()
+  // Loop to fixpoint so `<scr<script>ipt>` is fully stripped.
+  let s = html
+  let prev
+  do { prev = s; s = s.replace(/<[^>]*>/g, '') } while (s !== prev)
+  return decodeEntities(s).replace(/\s+/g, ' ').trim()
 }
 
 // ─── MIRROR EXTRACTORS ────────────────────────────────────────────────────

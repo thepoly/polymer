@@ -147,9 +147,12 @@ export function sliceEntryContent(html: string): string | null {
 function stripInlineTags(html: string): string {
   // Drop tags entirely (they're inline emphasis/links inside a
   // single-paragraph header element). Keep their text content.
-  const noTags = html.replace(/<[^>]*>/g, '')
-  // Collapse whitespace and decode entities.
-  return decodeEntities(noTags).replace(/\s+/g, ' ').trim()
+  // Loop to fixpoint so a malformed `<scr<script>ipt>` doesn't leave
+  // residue after a single pass.
+  let s = html
+  let prev: string
+  do { prev = s; s = s.replace(/<[^>]*>/g, '') } while (s !== prev)
+  return decodeEntities(s).replace(/\s+/g, ' ').trim()
 }
 
 /** Extract the entry-subdeck heading text, or null if absent/empty. */
@@ -303,8 +306,11 @@ export function isGenericByline(name: string): boolean {
  */
 export function cleanHumanName(raw: string): string {
   if (!raw) return ''
-  const noTags = raw.replace(/<[^>]*>/g, '')
-  return noTags.replace(/\s+/g, ' ').trim()
+  // Loop to fixpoint so any nested-tag input is fully stripped.
+  let s = raw
+  let prev: string
+  do { prev = s; s = s.replace(/<[^>]*>/g, '') } while (s !== prev)
+  return s.replace(/\s+/g, ' ').trim()
 }
 
 function splitAndCleanAuthors(raw: string): string[] {

@@ -307,8 +307,12 @@ type BuiltArticle = {
 function cleanPlainTitle(raw: string): string {
   if (!raw) return ''
   const decoded = decodeEntities(raw)
-  const stripped = decoded.replace(/<[^>]*>/g, '')
-  return stripped.replace(/\s+/g, ' ').trim()
+  // Loop until fixpoint so a malformed `<scr<script>ipt>` doesn't leave a
+  // residue after a single pass. (CodeQL flags single-pass tag stripping.)
+  let s = decoded
+  let prev: string
+  do { prev = s; s = s.replace(/<[^>]*>/g, '') } while (s !== prev)
+  return s.replace(/\s+/g, ' ').trim()
 }
 
 function gmtToIso(gmt: string): string | null {
