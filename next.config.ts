@@ -70,6 +70,15 @@ const nextConfig: NextConfig = {
         destination: '/newsroom/:path*',
         permanent: false,
       },
+      {
+        // Browsers auto-fetch /favicon.ico when no <link rel="icon"> is in
+        // the <head>. Polymer ships an SVG favicon, so serve the SVG for
+        // legacy ico requests too. Also covers static archive HTML pages
+        // (which have no favicon link tag of their own).
+        source: '/favicon.ico',
+        destination: '/dynamicPfavicon.svg',
+        permanent: true,
+      },
     ];
   },
   async rewrites() {

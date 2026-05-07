@@ -18,14 +18,17 @@ export default function ArchiveLoading() {
     <main className="min-h-screen bg-bg-main transition-colors duration-300">
       <Header />
       <section className="mx-auto max-w-[1280px] px-4 pb-16 pt-6 md:px-6 xl:px-[30px]">
-        <div className="mb-10 pb-6">
+        <div className="hidden md:block mb-10 pb-6">
           <div className="flex flex-col gap-4">
             <div>
               <h1 className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[36px] sm:text-[48px] md:text-[56px] lg:text-[65px] transition-colors">
                 <span className="text-[#D6001C] dark:text-[#ff5f74]">Archives</span>{' '}
                 <span className="text-[#b7d7f5] dark:text-[#b7d7f5]">[Beta]</span>{' '}
-                <span className="text-[#b7bcc6] dark:text-[#b7bcc6]">2001&ndash;2025</span>
+                <span className="text-[#b7bcc6] dark:text-[#b7bcc6]">2001&ndash;2026</span>
               </h1>
+              <p className="mt-3 font-copy text-[16px] sm:text-[17px] leading-[1.4] text-text-muted">
+                Browse the entire online history of <em>The Polytechnic</em>
+              </p>
             </div>
 
             {/* Rainbow wave under the masthead — replaces the timeline silhouette
@@ -58,12 +61,6 @@ export default function ArchiveLoading() {
                   fill="none"
                 />
               </svg>
-
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
-                <p className="text-[15px] sm:text-[16px] text-text-muted">
-                  Loading the time machine
-                </p>
-              </div>
 
               <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-bg-main to-transparent" />
               <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-bg-main to-transparent" />

@@ -10,7 +10,6 @@ import type { Article } from "@/components/FrontPage/types";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import { useTheme } from "@/components/ThemeProvider";
 import { resolveArchiveDateQuery } from "@/lib/archiveDateQuery";
-import { LoadingWave } from "@/components/LoadingWave";
 
 const monthFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
@@ -286,7 +285,6 @@ export default function ArchiveTimeMachinePage({
   // the loading bar forever for a 500). Successful fetches land in
   // articlesByDate even when the array is empty, so absence-from-both means
   // a fetch is in flight.
-  const [failedDates, setFailedDates] = useState<Set<string>>(() => new Set());
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
   const [dragPreviewDate, setDragPreviewDate] = useState<string | null>(null);
   const [dateInput, setDateInput] = useState(initialQuery ?? "");
@@ -402,12 +400,6 @@ export default function ArchiveTimeMachinePage({
       .catch((error) => {
         if ((error as Error).name !== "AbortError") {
           console.error("[archive] Failed to fetch date", error);
-          setFailedDates((prev) => {
-            if (prev.has(fetchDate)) return prev;
-            const next = new Set(prev);
-            next.add(fetchDate);
-            return next;
-          });
         }
       });
 
@@ -665,7 +657,7 @@ export default function ArchiveTimeMachinePage({
                   href={FOLSOM_ARCHIVE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="absolute left-0 top-[118px] z-20 -translate-x-full pr-4 font-meta text-[12px] font-semibold tracking-[0.02em] text-[#d6001c]"
+                  className="absolute left-0 top-1/2 z-20 -translate-y-1/2 -translate-x-full pr-2 max-w-[200px] text-right font-meta text-[12px] font-semibold leading-tight tracking-[0.02em] text-[#d6001c]"
                   style={{ marginLeft: `${timelineData.offsets[0]}px` }}
                 >
                   You can access our archives pre-{earliestArchiveYear} at The RPI Libraries Digital Archive.
@@ -808,7 +800,10 @@ export default function ArchiveTimeMachinePage({
 
   return (
     <section className="mx-auto max-w-[1280px] px-4 pb-16 pt-6 md:px-6 xl:px-[30px]">
-      <div className="mb-10 pb-6">
+      {/* Headline + timeline scrubber: hidden on mobile because the
+          time-machine is dense and doesn't work well on a small screen.
+          Mobile users get the date input + article list. */}
+      <div className="hidden md:block mb-10 pb-6">
         <div className="flex flex-col gap-4">
           <div>
             <h1 className="font-meta font-bold uppercase tracking-[0.02em] leading-[0.82] text-[36px] sm:text-[48px] md:text-[56px] lg:text-[65px] transition-colors">
@@ -816,6 +811,9 @@ export default function ArchiveTimeMachinePage({
               <span className="text-[#b7d7f5] dark:text-[#b7d7f5]">[Beta]</span>{" "}
               <span className="text-[#b7bcc6] dark:text-[#b7bcc6]">{archiveYearRange}</span>
             </h1>
+            <p className="mt-3 font-copy text-[16px] sm:text-[17px] leading-[1.4] text-text-muted">
+              Browse the entire online history of <em>The Polytechnic</em>
+            </p>
           </div>
           <div className="min-w-0">
             {timelineBar}
@@ -825,7 +823,7 @@ export default function ArchiveTimeMachinePage({
 
       <div>
         <div className="mb-8">
-          <p className="font-meta text-[15px] leading-[1.55] text-text-main">
+          <p className="hidden md:block font-meta text-[15px] leading-[1.55] text-text-main">
             Click a dot in the timeline, drag the timeline, or use the nav buttons above to browse the archives. If you are looking for a particular article and know the title or author, use our search bar <span className="text-[#1f4fbf] dark:text-[#7fb2ff]">above</span>. Or, if you have a specific date in mind, type it <span className="text-[#0f6bdc] dark:text-[#8ac7ff]">below</span> in any format.
           </p>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -898,33 +896,6 @@ export default function ArchiveTimeMachinePage({
             )
           )}
         </div>
-
-        {/* Rainbow wave loading bar — same effect as the search-bar
-            underline. Active while a fetch for this date is in flight
-            (i.e. we haven't yet stashed the result and haven't recorded
-            a failure). */}
-        {(() => {
-          const isLoading =
-            !!selectedDate
-            && !articlesByDate[selectedDate]
-            && !failedDates.has(selectedDate);
-          return (
-            <>
-              <LoadingWave
-                active={isLoading}
-                id={`archive-${selectedDate}`}
-                className="mb-2"
-              />
-              {isLoading && articles.length === 0 ? (
-                <div className="rounded-[24px] border border-dashed border-black/10 px-6 py-14 text-center dark:border-white/10">
-                  <p className="font-meta text-[13px] uppercase tracking-[0.14em] text-text-muted">
-                    Loading articles…
-                  </p>
-                </div>
-              ) : null}
-            </>
-          );
-        })()}
 
         {articles.length > 0 ? (
           <div className="divide-y divide-black/0">
