@@ -6,9 +6,18 @@ type Props = {
   className?: string;
 };
 
+const MONTH_YEAR_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
 export const LegacyArchiveLink: React.FC<Props> = ({ article, className = '' }) => {
   const url = article.legacyHtmlUrl;
   if (!url) return null;
+
+  const dateStr = article.publishedDate || article.createdAt;
+  const monthYear = dateStr ? MONTH_YEAR_FORMATTER.format(new Date(dateStr)) : '';
 
   return (
     <div className={`max-w-[680px] mx-auto mt-8 mb-4 ${className}`}>
@@ -18,7 +27,10 @@ export const LegacyArchiveLink: React.FC<Props> = ({ article, className = '' }) 
         rel="noopener noreferrer"
         className="group inline-flex items-center gap-2 rounded-full border border-rule px-4 py-2 font-meta text-sm text-text-main transition-colors hover:border-text-main"
       >
-        <span>View this article as it originally appeared on poly.rpi.edu</span>
+        <span>
+          View this article as it originally appeared on poly.rpi.edu
+          {monthYear ? ` in ${monthYear}` : ''}
+        </span>
         <svg
           aria-hidden="true"
           viewBox="0 0 16 16"
