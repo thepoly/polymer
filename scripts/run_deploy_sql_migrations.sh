@@ -51,7 +51,9 @@ VALUES
   ('20260428_000000_add_media_image_sizes', 26, NOW(), NOW()),
   ('20260506_000000_add_articles_legacy_archive', 27, NOW(), NOW()),
   ('20260506_010000_add_articles_legacy_id_and_category', 27, NOW(), NOW()),
-  ('20260506_020000_add_articles_plain_content', 27, NOW(), NOW())
+  ('20260506_020000_add_articles_plain_content', 27, NOW(), NOW()),
+  ('20260507_000000_add_articles_previous_slug', 28, NOW(), NOW()),
+  ('20260507_010000_add_legacy_shortlinks', 28, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1377,4 +1379,19 @@ CREATE INDEX IF NOT EXISTS "articles_legacy_source_legacy_article_id_idx" ON "ar
 -- document). Nullable until the legacy backfill completes.
 ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "plain_content" text;
 ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_plain_content" text;
+
+-- 20260507_000000: Track a previous slug so renames (e.g. legacy slug
+-- regen) can 301-redirect old polymer URLs to the new ones.
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "previous_slug" varchar;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_previous_slug" varchar;
+CREATE INDEX IF NOT EXISTS "articles_previous_slug_idx" ON "articles" ("previous_slug");
+
+-- 20260507_010000: Lookup table for the 12,872 5-char WordPress shortlinks
+-- (pluginSL_shorturl). Middleware 301s /<code> to target_url.
+CREATE TABLE IF NOT EXISTS "legacy_shortlinks" (
+  "short_code" varchar PRIMARY KEY,
+  "target_url" varchar NOT NULL,
+  "hit_count" integer NOT NULL DEFAULT 0,
+  "created_at" timestamp(3) with time zone NOT NULL DEFAULT NOW()
+);
 SQL

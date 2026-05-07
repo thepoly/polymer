@@ -11,20 +11,24 @@ const ARTICLE_URL_RE = /^\/([a-z]+)\/(\d{4})\/(\d{2})\/([a-z0-9][a-z0-9-]*)\/?$/
 // Old WordPress permalink shape from the 2009-2019 era. Years restricted
 // to 2009-2019 so we don't accidentally swallow other paths.
 const LEGACY_WP_URL_RE = /^\/(20(?:0[9]|1[0-9]))\/(\d{2})\/(\d{2})\/([a-z0-9][a-z0-9_-]*)\/?$/
-// 5-digit ID URL shape from the WP-era pluginSL_shorturl plugin. Articles
-// from 2013-2014 link to documents via these short codes.
-const LEGACY_WP_SHORTLINK_RE = /^\/(\d{5})\/?$/
+// 5-char ID URL shape from the WP-era `pluginSL_shorturl` plugin. The
+// codes are 5-digit numeric *or* 5-char alphanumeric (case-sensitive).
+// Resolved against the `legacy_shortlinks` lookup table at request time.
+const LEGACY_WP_SHORTLINK_RE = /^\/([A-Za-z0-9]{5})\/?$/
 const VALID_SECTIONS = new Set(['news', 'sports', 'features', 'opinion'])
 
 /**
- * 33 shortlinks recovered from the legacy WordPress `pluginSL_shorturl` table.
- * Most of these point at student-senate document portals (still up at
- * docs.studentsenate.rpi.edu) or external services (Google Docs, Eventbrite,
- * etc.). Some chain to old `poly.rpi.edu/YYYY/...` URLs that the
- * LEGACY_WP_URL_RE branch then redirects to their new polymer URL.
+ * Hand-curated overrides for the WordPress `pluginSL_shorturl` map. Anything
+ * not present here falls through to the `legacy_shortlinks` table (5,014
+ * rows backfilled from the source plugin). Kept for two reasons:
  *
- * Source: `pluginSL_shorturl` table in
- * /home/red/poly/recon/archives/wordpress/db/wordpress-archive-2026-05-06.sql.gz
+ *   1. Documents are now hosted off-site (docs.studentsenate.rpi.edu, etc.);
+ *      the override map keeps those redirect targets explicit and reviewable.
+ *   2. A few codes have been edited at runtime over the years (e.g. NASA's
+ *      mission_pages URL was renamed) and we want our pin to win.
+ *
+ * The DB-backed table can be regenerated from the dump via
+ * `scripts/legacy-import/backfill-legacy-shortlinks.ts`.
  */
 const WP_LEGACY_SHORTLINKS: Record<string, string> = {
   '06735': 'http://poly.rpi.edu/2013/03/06/pss_breaking_the_third_wall/',
@@ -68,6 +72,34 @@ const CACHE_TTL_MS = 60_000
 
 type RedirectEntry = { to: string | null; expiresAt: number }
 const legacyRedirectCache = new Map<string, RedirectEntry>()
+const previousSlugRedirectCache = new Map<string, RedirectEntry>()
+const shortlinkRedirectCache = new Map<string, RedirectEntry>()
+
+/**
+ * Look up the destination URL for a 5-char WP shortlink. Pulls from the
+ * `legacy_shortlinks` table backfilled from the `pluginSL_shorturl` plugin.
+ *
+ * No Payload collection wraps this table — the rows aren't editorial — so
+ * we go through the raw `pg.Pool` exposed by the postgres db adapter.
+ */
+async function lookupShortlinkRedirect(code: string): Promise<string | null> {
+  const cached = shortlinkRedirectCache.get(code)
+  const now = Date.now()
+  if (cached && cached.expiresAt > now) return cached.to
+
+  const payload = await getPayload({ config: payloadConfig })
+  const pool = (payload.db as unknown as { pool?: import('pg').Pool }).pool
+  let to: string | null = null
+  if (pool) {
+    const r = await pool.query<{ target_url: string }>(
+      'SELECT target_url FROM legacy_shortlinks WHERE short_code = $1 LIMIT 1',
+      [code],
+    )
+    to = r.rows[0]?.target_url ?? null
+  }
+  shortlinkRedirectCache.set(code, { to, expiresAt: now + CACHE_TTL_MS })
+  return to
+}
 
 async function isArticleGone(section: string, slug: string): Promise<boolean> {
   if (!VALID_SECTIONS.has(section)) return false
@@ -98,6 +130,49 @@ async function isArticleGone(section: string, slug: string): Promise<boolean> {
   const gone = Boolean(article && article._status !== 'published')
   statusCache.set(key, { gone, expiresAt: now + CACHE_TTL_MS })
   return gone
+}
+
+/**
+ * Look up the canonical URL for an article whose slug was renamed. Returns
+ * the new URL when `previous_slug` matches; null otherwise. Used by the 301
+ * redirect fallback in the article-URL branch when the live `slug` lookup
+ * fails.
+ */
+async function lookupPreviousSlugRedirect(
+  section: string,
+  oldSlug: string,
+): Promise<string | null> {
+  const cacheKey = `${section}:${oldSlug}`
+  const cached = previousSlugRedirectCache.get(cacheKey)
+  const now = Date.now()
+  if (cached && cached.expiresAt > now) return cached.to
+
+  const payload = await getPayload({ config: payloadConfig })
+  const result = await payload.find({
+    collection: 'articles',
+    where: {
+      and: [
+        { previousSlug: { equals: oldSlug } },
+        { section: { equals: section } },
+        { _status: { equals: 'published' } },
+      ],
+    },
+    limit: 1,
+    depth: 0,
+    select: { slug: true, section: true, publishedDate: true },
+  })
+  const doc = result.docs[0] as
+    | { slug?: string; section?: string; publishedDate?: string }
+    | undefined
+  let to: string | null = null
+  if (doc?.slug && doc?.section && doc?.publishedDate) {
+    const dt = new Date(doc.publishedDate)
+    const yy = dt.getUTCFullYear().toString()
+    const mm = String(dt.getUTCMonth() + 1).padStart(2, '0')
+    to = `/${doc.section}/${yy}/${mm}/${doc.slug}`
+  }
+  previousSlugRedirectCache.set(cacheKey, { to, expiresAt: now + CACHE_TTL_MS })
+  return to
 }
 
 /**
@@ -142,12 +217,26 @@ async function lookupLegacyWpRedirect(
 }
 
 export async function middleware(req: NextRequest) {
-  // Legacy WP shortlink (5-digit IDs from pluginSL_shorturl) → original URL.
+  // Legacy WP shortlink (5-char IDs from pluginSL_shorturl) → target URL.
+  // The hand-curated `WP_LEGACY_SHORTLINKS` map wins; otherwise we look up
+  // the DB-backed `legacy_shortlinks` table.
   const shortMatch = req.nextUrl.pathname.match(LEGACY_WP_SHORTLINK_RE)
   if (shortMatch) {
-    const target = WP_LEGACY_SHORTLINKS[shortMatch[1]]
-    if (target) {
-      return NextResponse.redirect(target, 301)
+    const code = shortMatch[1]
+    const override = WP_LEGACY_SHORTLINKS[code]
+    if (override) {
+      return NextResponse.redirect(override, 301)
+    }
+    try {
+      const target = await lookupShortlinkRedirect(code)
+      if (target) {
+        // External (absolute) targets pass through; relative paths get
+        // resolved against the request origin.
+        const url = /^https?:\/\//i.test(target) ? target : new URL(target, req.url).toString()
+        return NextResponse.redirect(url, 301)
+      }
+    } catch {
+      // Fall through — let the request 404 normally if lookup fails.
     }
   }
 
@@ -171,6 +260,15 @@ export async function middleware(req: NextRequest) {
   const [, section, , , slug] = match
 
   try {
+    // Renamed-slug 301: if no row has `slug=$slug` but one has
+    // `previous_slug=$slug`, redirect to the new canonical URL. This kicks in
+    // for the legacy slug-cleanup pass (post_name `_`-stripping) and any
+    // future editor-driven rename.
+    const renamedTo = await lookupPreviousSlugRedirect(section, slug)
+    if (renamedTo) {
+      return NextResponse.redirect(new URL(renamedTo, req.url), 301)
+    }
+
     if (await isArticleGone(section, slug)) {
       // 410 Gone tells search engines the URL is permanently removed so they
       // de-index faster than they would from a bare 404.
