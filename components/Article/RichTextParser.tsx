@@ -137,6 +137,13 @@ const serialize = (nodes: LexicalNode[], pCount: number, isRoot: boolean): { chi
         const caption = fields?.caption as string | undefined;
         const creditUser = (fields?.credit as User | null | undefined) || (media.photographer && typeof media.photographer === 'object' ? media.photographer as User : null);
         const writeInPhotographer = (media as unknown as Record<string, unknown>).writeInPhotographer as string | null | undefined;
+        // Legacy-archive media (rows whose `url` resolves via `source_url`,
+        // i.e. served by polymer's archive nginx on :8080 rather than out of
+        // Payload's media dir) cannot be fetched by Next.js's image optimizer:
+        // the optimizer makes a loopback request to its own server, but
+        // /archive/* is served by a different upstream. Render those raw so
+        // the browser fetches them through the proxy directly.
+        const isLegacyArchive = typeof media.url === 'string' && media.url.startsWith('/archive/');
         return (
           <div
             key={index}
@@ -151,6 +158,7 @@ const serialize = (nodes: LexicalNode[], pCount: number, isRoot: boolean): { chi
                 height={media.height || 800}
                 sizes="(max-width: 768px) 100vw, 680px"
                 loading="lazy"
+                unoptimized={isLegacyArchive}
                 className="w-full h-auto"
               />
             </div>
