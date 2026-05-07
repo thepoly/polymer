@@ -8,11 +8,17 @@ import payloadConfig from '@/payload.config'
 export const runtime = 'nodejs'
 
 const ARTICLE_URL_RE = /^\/([a-z]+)\/(\d{4})\/(\d{2})\/([a-z0-9][a-z0-9-]*)\/?$/
+// Old WordPress permalink shape from the 2009-2019 era. Years restricted
+// to 2009-2019 so we don't accidentally swallow other paths.
+const LEGACY_WP_URL_RE = /^\/(20(?:0[9]|1[0-9]))\/(\d{2})\/(\d{2})\/([a-z0-9][a-z0-9_-]*)\/?$/
 const VALID_SECTIONS = new Set(['news', 'sports', 'features', 'opinion'])
 
 type CacheEntry = { gone: boolean; expiresAt: number }
 const statusCache = new Map<string, CacheEntry>()
 const CACHE_TTL_MS = 60_000
+
+type RedirectEntry = { to: string | null; expiresAt: number }
+const legacyRedirectCache = new Map<string, RedirectEntry>()
 
 async function isArticleGone(section: string, slug: string): Promise<boolean> {
   if (!VALID_SECTIONS.has(section)) return false
@@ -45,7 +51,62 @@ async function isArticleGone(section: string, slug: string): Promise<boolean> {
   return gone
 }
 
+/**
+ * Look up the polymer URL for an old WordPress permalink shape
+ * `/{year}/{month}/{day}/{slug}/`. Returns the new URL or null if no match.
+ */
+async function lookupLegacyWpRedirect(
+  year: string,
+  month: string,
+  day: string,
+  wpSlug: string,
+): Promise<string | null> {
+  const cacheKey = `${year}/${month}/${day}/${wpSlug}`
+  const cached = legacyRedirectCache.get(cacheKey)
+  const now = Date.now()
+  if (cached && cached.expiresAt > now) return cached.to
+
+  const legacyHtmlUrl = `/archive/wordpress/mirror/${year}/${month}/${day}/${wpSlug}/`
+  const payload = await getPayload({ config: payloadConfig })
+  const result = await payload.find({
+    collection: 'articles',
+    where: {
+      and: [
+        { legacyHtmlUrl: { equals: legacyHtmlUrl } },
+        { _status: { equals: 'published' } },
+      ],
+    },
+    limit: 1,
+    depth: 0,
+    select: { slug: true, section: true, publishedDate: true },
+  })
+  const doc = result.docs[0] as { slug?: string; section?: string; publishedDate?: string } | undefined
+  let to: string | null = null
+  if (doc?.slug && doc?.section && doc?.publishedDate) {
+    const dt = new Date(doc.publishedDate)
+    const yy = dt.getUTCFullYear().toString()
+    const mm = String(dt.getUTCMonth() + 1).padStart(2, '0')
+    to = `/${doc.section}/${yy}/${mm}/${doc.slug}`
+  }
+  legacyRedirectCache.set(cacheKey, { to, expiresAt: now + CACHE_TTL_MS })
+  return to
+}
+
 export async function middleware(req: NextRequest) {
+  // Old WP permalink → new polymer URL (preserves SEO from the 2009-2019 era).
+  const wpMatch = req.nextUrl.pathname.match(LEGACY_WP_URL_RE)
+  if (wpMatch) {
+    const [, y, m, d, slug] = wpMatch
+    try {
+      const to = await lookupLegacyWpRedirect(y, m, d, slug)
+      if (to) {
+        return NextResponse.redirect(new URL(to, req.url), 301)
+      }
+    } catch {
+      // Fall through on lookup error — the request will 404 normally.
+    }
+  }
+
   const match = req.nextUrl.pathname.match(ARTICLE_URL_RE)
   if (!match) return NextResponse.next()
 
