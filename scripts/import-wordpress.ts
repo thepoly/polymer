@@ -144,8 +144,13 @@ import {
   plainTextTitle,
   type LexicalDoc,
 } from './legacy-import/wordpress/html-to-lexical.ts'
+import { decodeEntities } from './legacy-import/wordpress/html-tokenizer.ts'
 import { rewriteAssetUrl } from './legacy-import/wordpress/image-rewriter.ts'
-import { readEntryContentFromMirror } from './legacy-import/wordpress/mirror-extractor.ts'
+import {
+  cleanHumanName,
+  extractMirrorFields,
+  isGenericByline,
+} from './legacy-import/wordpress/mirror-extractor.ts'
 import { buildImportSlug, buildLegacyHtmlUrl } from './legacy-import/wordpress/slug.ts'
 
 // ─── default paths ──────────────────────────────────────────────────────────
@@ -262,6 +267,7 @@ type BuiltArticle = {
     section: PolymerSection
     title: LexicalDoc
     plainTitle: string
+    subdeck: string | null
     kicker: string | null
     content: LexicalDoc
     writeInAuthors: { name: string }[]
@@ -279,9 +285,30 @@ type BuiltArticle = {
     postType: string
     postStatus: string
     contentSource: 'mirror' | 'sql' | 'excerpt' | 'title-fallback' | 'empty'
+    authorSource: 'mirror' | 'wp_users' | 'none'
     plainTextLen: number
     categoryNames: string[]
   }
+}
+
+/**
+ * Clean a raw WP `post_title` (or manifest title) into the form we want
+ * stored as `plainTitle`:
+ *
+ *   1. Decode HTML entities (`&rsquo;`, `&amp;`, etc.).
+ *   2. Strip inline HTML tags (`<i>Oblivion</i>` -> `Oblivion`).
+ *   3. Collapse runs of whitespace and trim.
+ *
+ * Used for both `plainTitle` and the text node inside the Lexical title doc.
+ * (We intentionally lose italics/bold formatting in the title — Polymer's
+ * collection schema gives titles a Lexical doc but no styling is preserved
+ * across the import; the article body is where rich formatting lives.)
+ */
+function cleanPlainTitle(raw: string): string {
+  if (!raw) return ''
+  const decoded = decodeEntities(raw)
+  const stripped = decoded.replace(/<[^>]*>/g, '')
+  return stripped.replace(/\s+/g, ' ').trim()
 }
 
 function gmtToIso(gmt: string): string | null {
@@ -319,15 +346,15 @@ function buildArticle(
   wpRow: WpPostRow,
   mirrorRoot: string,
 ): BuiltArticle | null {
+  // Pull body, subdeck, and byline from the mirror in a single read.
+  const mirror = extractMirrorFields(mirrorRoot, entry.html_path)
+
   // Source the body HTML.
   let html: string | null = null
   let contentSource: BuiltArticle['diag']['contentSource'] = 'sql'
-  if (entry.html_path) {
-    const fromMirror = readEntryContentFromMirror(mirrorRoot, entry.html_path)
-    if (fromMirror && fromMirror.trim()) {
-      html = fromMirror
-      contentSource = 'mirror'
-    }
+  if (mirror.entryContent && mirror.entryContent.trim()) {
+    html = mirror.entryContent
+    contentSource = 'mirror'
   }
   if (!html) {
     html = wpRow.postContent || ''
@@ -366,9 +393,30 @@ function buildArticle(
     }
   }
 
-  // Title.
-  const headline = (wpRow.postTitle || entry.title || '').trim() || '(untitled)'
+  // Title. Decode HTML entities (`&rsquo;`, `&amp;`, `&hellip;`, etc.), strip
+  // any inline HTML tags (some titles still carry literal `<i>...</i>` from
+  // the WP source), and collapse whitespace before building the Lexical title
+  // node. Both manifest's `entry.title` and `wpRow.postTitle` are stored
+  // encoded-and-tagged in the WP source — leaving either path raw produced
+  // plain_title rows like `"<i>Oblivion</i> entertains with action, beauty"`
+  // or `"About  Poly  Press Pass"` (double spaces left from the tag-stripping
+  // the WP theme did at render time).
+  //
+  // For ~11 articles WP `post_title` is empty entirely (letters to the editor,
+  // elections notices). We fall back to the mirror's `<div class="kicker">`
+  // text ("Letter to the Editor", "Editorial Board Elections Notice", …) as
+  // a meaningful human label rather than emitting "(untitled)".
+  const rawHeadline = (wpRow.postTitle || entry.title || '').trim()
+  let headline = cleanPlainTitle(rawHeadline)
+  if (!headline && mirror.kicker) {
+    headline = cleanPlainTitle(mirror.kicker)
+  }
+  if (!headline) headline = '(untitled)'
   const titleDoc = plainTextTitle(headline)
+
+  // Subdeck. Comes from the mirror's `<h3 class="entry-subdeck">` element.
+  // The extractor already decodes entities and strips inline tags.
+  const subdeck = mirror.subdeck && mirror.subdeck.trim() ? mirror.subdeck.trim() : null
 
   // Section / kicker / legacyCategory.
   const { section, kicker } = deriveSectionAndKicker(wpRow.categoryNames)
@@ -384,10 +432,33 @@ function buildArticle(
     _status = 'draft'
   }
 
-  // Author.
+  // Author. Prefer the byline parsed from the mirror page (the real reporter
+  // name lives there). Fall back to wp_users.display_name when the mirror
+  // produced no byline OR only generic placeholders. The mirror-extractor
+  // strips position suffixes ("Staff Reporter", etc.) and rejects generic
+  // names like "The Poly" / "admin" / "wordpress" — leaving an empty array
+  // signals that we should use the wp_users path.
+  //
+  // The wp_users fallback ALSO has to reject generics: virtually every old WP
+  // post has `post_author=1` (the generic "The Poly" account), so naively
+  // taking display_name produces ~500 articles bylined "The Poly". Filter
+  // those through the same generic-name set; if that yields nothing, leave
+  // the writeInAuthors array empty so the UI degrades gracefully (the
+  // `legacyHtmlUrl` chip on the article page still surfaces the source).
   const writeInAuthors: { name: string }[] = []
-  const authorName = (wpRow.authorDisplayName || '').trim()
-  if (authorName) writeInAuthors.push({ name: authorName })
+  let authorSource: BuiltArticle['diag']['authorSource'] = 'none'
+  if (mirror.bylineAuthors.length > 0) {
+    for (const name of mirror.bylineAuthors) {
+      writeInAuthors.push({ name })
+    }
+    authorSource = 'mirror'
+  } else {
+    const fallbackAuthor = cleanHumanName(decodeEntities((wpRow.authorDisplayName || '').trim()))
+    if (fallbackAuthor && !isGenericByline(fallbackAuthor)) {
+      writeInAuthors.push({ name: fallbackAuthor })
+      authorSource = 'wp_users'
+    }
+  }
 
   // Slug. Use the WP post_name when present, fall back to the manifest slug
   // or the headline.
@@ -399,10 +470,14 @@ function buildArticle(
     base: baseSlug,
   })
 
+  // Fall back to post_date_gmt for the legacy URL date components when the
+  // manifest entry lacks year/month/day (a few drafts/oddly-shaped posts have
+  // null in those fields). Without this fallback we produced URLs like
+  // `/archive/wordpress/mirror/undefined/undefined/undefined/(untitled)/`.
   const legacyHtmlUrl = buildLegacyHtmlUrl({
-    year: entry.year,
-    month: entry.month,
-    day: entry.day,
+    year: entry.year || (wpRow.postDateGmt || '').slice(0, 4),
+    month: entry.month || (wpRow.postDateGmt || '').slice(5, 7),
+    day: entry.day || (wpRow.postDateGmt || '').slice(8, 10),
     slug: entry.slug || baseSlug,
   })
 
@@ -411,6 +486,7 @@ function buildArticle(
       section,
       title: titleDoc,
       plainTitle: headline,
+      subdeck,
       kicker,
       content,
       writeInAuthors,
@@ -434,6 +510,7 @@ function buildArticle(
       postType: wpRow.postType,
       postStatus: wpRow.postStatus,
       contentSource,
+      authorSource,
       plainTextLen: plainTextBody.length,
       categoryNames: wpRow.categoryNames,
     },
@@ -520,6 +597,7 @@ async function main() {
   let dryShown = 0
   const sectionCounts: Record<PolymerSection, number> = { news: 0, sports: 0, features: 0, opinion: 0 }
   const statusCounts: Record<'published' | 'draft', number> = { published: 0, draft: 0 }
+  const authorSourceCounts: Record<'mirror' | 'wp_users' | 'none', number> = { mirror: 0, wp_users: 0, none: 0 }
   const sampleSlugs: string[] = []
   const failures: { wpId: number; reason: string }[] = []
   const oddities: string[] = []
@@ -550,9 +628,17 @@ async function main() {
       // Diagnostics aggregation.
       sectionCounts[built.data.section]++
       statusCounts[built.data._status]++
+      authorSourceCounts[built.diag.authorSource]++
       if (sampleSlugs.length < 10) sampleSlugs.push(built.data.slug)
-      if (!wpRow.authorDisplayName) {
-        oddities.push(`wp_id=${entry.wp_id} has no author display_name (author user id ${wpRow.authorId})`)
+      if (built.diag.authorSource === 'wp_users') {
+        // Surface fallback cases — mirror byline missing or only generic.
+        if (oddities.length < 200) {
+          oddities.push(
+            `wp_id=${entry.wp_id} fell back to wp_users author "${wpRow.authorDisplayName || '?'}" (no usable mirror byline)`,
+          )
+        }
+      } else if (built.diag.authorSource === 'none') {
+        oddities.push(`wp_id=${entry.wp_id} has no author at all (mirror missing, wp_users empty)`)
       }
       if (!wpRow.categoryNames.length && entry.post_type === 'post') {
         oddities.push(`wp_id=${entry.wp_id} has no category — defaulted to features`)
@@ -587,13 +673,21 @@ async function main() {
         continue
       }
       if (existingId !== null && flags.update) {
-        // --update mode: rewrite content/plainTitle/legacyHtmlUrl/legacyCategory
-        // on the existing row without touching slug or status. Hook will
-        // re-derive plainContent from the updated content.
+        // --update mode: rewrite title/content/plainTitle/subdeck/
+        // writeInAuthors/legacyHtmlUrl/legacyCategory on the existing row
+        // without touching slug or status. We pass `title` as well as
+        // `plainTitle` because the Articles beforeChange hook overwrites
+        // plainTitle from getPlainText(title) — if we didn't ship a fresh
+        // title doc, the hook would re-encode plainTitle from the stale
+        // (entity-encoded) row. Hook will re-derive plainContent from the
+        // updated content.
         try {
           const updateData: Record<string, unknown> = {
+            title: built.data.title,
             content: built.data.content,
             plainTitle: built.data.plainTitle,
+            subdeck: built.data.subdeck,
+            writeInAuthors: built.data.writeInAuthors,
             legacyHtmlUrl: built.data.legacyHtmlUrl,
             legacyCategory: built.data.legacyCategory,
             legacySource: built.data.legacySource,
@@ -613,8 +707,9 @@ async function main() {
           const msg = updateErr instanceof Error ? updateErr.message : String(updateErr)
           if (/Content/i.test(msg)) {
             // Same Content fallback as create: minimal-body Lexical doc.
-            const fallbackText = (entry.title || '').trim()
+            const fallbackText = decodeEntities((entry.title || '').trim())
             const updateData: Record<string, unknown> = {
+              title: built.data.title,
               content: {
                 root: {
                   type: 'root', format: '', indent: 0, version: 1, direction: 'ltr',
@@ -628,6 +723,8 @@ async function main() {
                 },
               },
               plainTitle: built.data.plainTitle,
+              subdeck: built.data.subdeck,
+              writeInAuthors: built.data.writeInAuthors,
               legacyHtmlUrl: built.data.legacyHtmlUrl,
               legacyCategory: built.data.legacyCategory,
             }
@@ -682,7 +779,7 @@ async function main() {
           if (attempt < 2 && /Content/i.test(msg)) {
             // Replace body with a single empty paragraph; the legacyHtmlUrl chip
             // still surfaces the original HTML to readers.
-            const fallbackText = (entry.title || '').trim()
+            const fallbackText = decodeEntities((entry.title || '').trim())
             ;(insertData as any).content = {
               root: {
                 type: 'root',
@@ -755,6 +852,10 @@ async function main() {
       `features=${sectionCounts.features} opinion=${sectionCounts.opinion}`,
   )
   console.log(`[wp]   _status:    published=${statusCounts.published} draft=${statusCounts.draft}`)
+  console.log(
+    `[wp]   author src: mirror=${authorSourceCounts.mirror} wp_users=${authorSourceCounts.wp_users} ` +
+      `none=${authorSourceCounts.none}`,
+  )
   if (sampleSlugs.length) {
     console.log(`[wp]   sample slugs: ${sampleSlugs.slice(0, 5).join(', ')}`)
   }
