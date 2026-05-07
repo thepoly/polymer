@@ -422,6 +422,16 @@ const Articles: CollectionConfig = {
         description: 'Original category/section name from the source system. Preserved for display and search; does not affect routing.',
       },
     },
+    {
+      name: 'previousSlug',
+      type: 'text',
+      label: 'Previous Slug',
+      index: true,
+      admin: {
+        position: 'sidebar',
+        description: 'Old slug retained for 301 redirects after a rename. The middleware redirects requests for this slug to the current one.',
+      },
+    },
   ],
 }
 

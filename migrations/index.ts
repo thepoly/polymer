@@ -42,6 +42,8 @@ import * as migration_20260428_100000_add_audio_transcription from './20260428_1
 import * as migration_20260506_000000_add_articles_legacy_archive from './20260506_000000_add_articles_legacy_archive';
 import * as migration_20260506_010000_add_articles_legacy_id_and_category from './20260506_010000_add_articles_legacy_id_and_category';
 import * as migration_20260506_020000_add_articles_plain_content from './20260506_020000_add_articles_plain_content';
+import * as migration_20260507_000000_add_articles_previous_slug from './20260507_000000_add_articles_previous_slug';
+import * as migration_20260507_010000_add_legacy_shortlinks from './20260507_010000_add_legacy_shortlinks';
 
 export const migrations = [
   {
@@ -263,5 +265,15 @@ export const migrations = [
     up: migration_20260506_020000_add_articles_plain_content.up,
     down: migration_20260506_020000_add_articles_plain_content.down,
     name: '20260506_020000_add_articles_plain_content',
+  },
+  {
+    up: migration_20260507_000000_add_articles_previous_slug.up,
+    down: migration_20260507_000000_add_articles_previous_slug.down,
+    name: '20260507_000000_add_articles_previous_slug',
+  },
+  {
+    up: migration_20260507_010000_add_legacy_shortlinks.up,
+    down: migration_20260507_010000_add_legacy_shortlinks.down,
+    name: '20260507_010000_add_legacy_shortlinks',
   },
 ];
