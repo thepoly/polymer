@@ -211,7 +211,7 @@ The deploy workflow:
 10. Rolls back to the previous release automatically if verification fails
 11. Prunes old releases (keeps the 5 most recent)
 
-Because `main` is deployment-sensitive, treat it as a release branch rather than a scratch branch. See `CLAUDE.md` for the full operations runbook (host setup, PM2 ownership rules, incident guardrails).
+Because `main` is deployment-sensitive, treat it as a release branch rather than a scratch branch. See `CLAUDE.md` for the full operations runbook (host setup, PM2 ownership rules, incident guardrails)..
 
 ## Android app
 
