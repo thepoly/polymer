@@ -24,6 +24,7 @@ export default async function About() {
             <p className="leading-8">
                 <i>The Poly</i> meets twice a week in RU 3324 on Sunday at 1 pm, and on Monday at 6 pm. Everyone is welcome to attend. 
                 Meeting times are subject to change, and we will notify as such on our Discord server.
+            </p>
         </div>
       </div>
   </main>);
