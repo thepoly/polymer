@@ -6,6 +6,12 @@ import Footer from '@/components/Footer';
 import SectionPage from '@/components/SectionPage';
 import OpinionSectionPage from '@/components/Opinion/OpinionSectionPage';
 import NewsSectionPage from '@/components/News/NewsSectionPage';
+import {
+  COLUMN_COUNT,
+  DEFAULT_NEWS_LAYOUT_CONTENT,
+  NEWS_LAYOUT_CAPACITY,
+  type NewsLayoutContent,
+} from '@/components/News/newsLayout';
 import FeaturesSectionPage, { type FeaturesEvent, type SpotlightPhoto } from '@/components/Features/FeaturesSectionPage';
 import { Article as PayloadArticle, Media } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
@@ -17,10 +23,6 @@ import type { Metadata } from 'next';
 import { getSectionSeoDescription, getSeo } from '@/lib/getSeo';
 
 export const revalidate = 60;
-
-// Slots the news layout can place (columns + "More in News"). The page prefers
-// recent stories but backfills to this many so no column comes up empty.
-const NEWS_LAYOUT_CAPACITY = 26;
 
 type Args = {
   params: Promise<{
@@ -282,53 +284,118 @@ export default async function SectionPageRoute({ params }: Args) {
     }
   }
 
-  // Fetch news pinned articles — they lead the section page's centre column
-  let newsPinnedArticles: ComponentArticle[] = [];
+  // Fetch the curated news layout (News Layout editor). Every slot is optional:
+  // whatever is left empty is auto-filled from recent news by the page itself.
+  let newsLayoutContent: NewsLayoutContent = DEFAULT_NEWS_LAYOUT_CONTENT;
   if (isNews) {
+    type NewsLayoutShape = {
+      topStory?: (number | null)[];
+      studentGovLabel?: string;
+      studentGov?: (number | null)[];
+      studentGovImages?: boolean[];
+      columns?: Array<{ label?: string; articles?: (number | null)[]; images?: boolean[] }>;
+      bottomLabel?: string;
+      bottom?: (number | null)[];
+    };
+
+    let layoutJson: NewsLayoutShape | undefined;
     try {
       const layoutResponse = await payload.find({
-        collection: 'layout',
+        collection: 'news-page-layout',
         limit: 1,
         depth: 0,
-        select: { sectionLayouts: true },
+        select: { layout: true },
       });
-      const layoutDoc = layoutResponse.docs[0] as { sectionLayouts?: Record<string, { pinnedArticles?: number[] }> } | undefined;
-      const pinnedIds = (layoutDoc?.sectionLayouts?.news?.pinnedArticles || []).filter(Boolean);
-
-      if (pinnedIds.length > 0) {
-        const pinnedResponse = await payload.find({
-          collection: 'articles',
-          where: {
-            and: [
-              { id: { in: pinnedIds } },
-              { _status: { equals: 'published' } },
-            ],
-          },
-          limit: pinnedIds.length,
-          depth: 1,
-          select: {
-            title: true,
-            slug: true,
-            subdeck: true,
-            featuredImage: true,
-            section: true,
-            kicker: true,
-            publishedDate: true,
-            createdAt: true,
-            authors: true,
-            writeInAuthors: true,
-            isFollytechnic: true,
-          },
-        });
-        const pinnedMap = new Map(pinnedResponse.docs.map((a) => [a.id, formatArticle(a)]));
-        // Keep the editor's pin order
-        newsPinnedArticles = pinnedIds
-          .map((id) => pinnedMap.get(id) ?? null)
-          .filter((a): a is ComponentArticle => a !== null);
+      const doc = layoutResponse.docs[0] as Record<string, unknown> | undefined;
+      if (doc?.layout && typeof doc.layout === 'object') {
+        layoutJson = doc.layout as NewsLayoutShape;
       }
     } catch {
-      // Layout may not exist yet
+      // Table may not exist yet
     }
+
+    // Legacy fallback: the single news pin from the homepage layout editor
+    let legacyPinnedId: number | null = null;
+    if (!layoutJson?.topStory?.[0]) {
+      try {
+        const homeLayout = await payload.find({
+          collection: 'layout',
+          limit: 1,
+          depth: 0,
+          select: { sectionLayouts: true },
+        });
+        const layoutDoc = homeLayout.docs[0] as { sectionLayouts?: Record<string, { pinnedArticles?: number[] }> } | undefined;
+        legacyPinnedId = layoutDoc?.sectionLayouts?.news?.pinnedArticles?.[0] ?? null;
+      } catch {
+        // Layout may not exist yet
+      }
+    }
+
+    // Resolve every curated ID in one query
+    const curatedIds = new Set<number>();
+    const collect = (ids: (number | null)[] | undefined) => {
+      for (const id of ids || []) if (id) curatedIds.add(id);
+    };
+    collect(layoutJson?.topStory);
+    collect(layoutJson?.studentGov);
+    collect(layoutJson?.bottom);
+    for (const col of layoutJson?.columns || []) collect(col.articles);
+    if (legacyPinnedId) curatedIds.add(legacyPinnedId);
+
+    const curatedMap = new Map<number, ComponentArticle>();
+    if (curatedIds.size > 0) {
+      const curatedResponse = await payload.find({
+        collection: 'articles',
+        where: {
+          and: [
+            { id: { in: Array.from(curatedIds) } },
+            { _status: { equals: 'published' } },
+          ],
+        },
+        limit: curatedIds.size,
+        depth: 1,
+        select: {
+          title: true,
+          slug: true,
+          subdeck: true,
+          featuredImage: true,
+          section: true,
+          kicker: true,
+          publishedDate: true,
+          createdAt: true,
+          authors: true,
+          writeInAuthors: true,
+          isFollytechnic: true,
+        },
+      });
+      for (const doc of curatedResponse.docs) {
+        const formatted = formatArticle(doc);
+        if (formatted) curatedMap.set(doc.id, formatted);
+      }
+    }
+
+    // Keep the editor's slot order; drop slots whose article was unpublished
+    const resolve = (ids: (number | null)[] | undefined): ComponentArticle[] =>
+      (ids || [])
+        .map((id) => (id ? curatedMap.get(id) ?? null : null))
+        .filter((a): a is ComponentArticle => a !== null);
+
+    const topStoryId = layoutJson?.topStory?.[0] ?? legacyPinnedId;
+    const defaultColumns = DEFAULT_NEWS_LAYOUT_CONTENT.columns;
+
+    newsLayoutContent = {
+      topStory: topStoryId ? curatedMap.get(topStoryId) ?? null : null,
+      topRowLabel: layoutJson?.studentGovLabel || DEFAULT_NEWS_LAYOUT_CONTENT.topRowLabel,
+      topRow: resolve(layoutJson?.studentGov),
+      topRowImages: layoutJson?.studentGovImages || [],
+      columns: Array.from({ length: COLUMN_COUNT }, (_, i) => ({
+        label: layoutJson?.columns?.[i]?.label || defaultColumns[i].label,
+        articles: resolve(layoutJson?.columns?.[i]?.articles),
+        images: layoutJson?.columns?.[i]?.images || [],
+      })),
+      bottomLabel: layoutJson?.bottomLabel || DEFAULT_NEWS_LAYOUT_CONTENT.bottomLabel,
+      bottom: resolve(layoutJson?.bottom),
+    };
   }
 
   // Fetch grouped opinion articles for bottom sections
@@ -511,7 +578,7 @@ export default async function SectionPageRoute({ params }: Args) {
         <NewsSectionPage
           title={sectionTitle}
           articles={formattedArticles}
-          pinnedArticles={newsPinnedArticles}
+          layout={newsLayoutContent}
           hasOlderArticles={hasOlderNewsArticles}
         />
       ) : (

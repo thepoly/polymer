@@ -7,7 +7,14 @@ import { getArticleUrl } from "@/utils/getArticleUrl";
 import type { Article as ComponentArticle } from "@/components/FrontPage/types";
 import { Byline } from "@/components/FrontPage/Byline";
 import { AnimatedLine } from "@/components/Opinion/RainbowDivider";
-import { newsCategories } from "./newsCategories";
+import {
+  BOTTOM_SLOTS,
+  COLUMN_COUNT,
+  COLUMN_SLOTS,
+  DEFAULT_NEWS_LAYOUT_CONTENT,
+  TOP_ROW_SLOTS,
+  type NewsLayoutContent,
+} from "./newsLayout";
 
 /* ── Layout constants — shared with the Features page ── */
 
@@ -15,12 +22,11 @@ const PAGE_SIDE_PADDING = "clamp(16px, 3vw, 30px)";
 const COLUMN_GAP = "clamp(16px, 2vw, 24px)";
 const SECTION_RULE_GAP = "clamp(18px, 3vw, 24px)";
 const SECTION_RULE_INSET = 7;
-const LOWER_SECTION_EXTRA_TOP_SPACE = 8;
 
 const NEWS_CONTACT_MAILTO =
   "mailto:news@poly.rpi.edu,eic@poly.rpi.edu?subject=News%2C%20Request%2FComment";
 
-/* ── Article card — optionally shows image ── */
+/* ── Article card ── */
 
 function NewsCard({
   article,
@@ -29,6 +35,7 @@ function NewsCard({
   large = false,
   showExcerpt = false,
   hideDate = false,
+  compact = false,
 }: {
   article: ComponentArticle;
   withImage?: boolean;
@@ -36,6 +43,7 @@ function NewsCard({
   large?: boolean;
   showExcerpt?: boolean;
   hideDate?: boolean;
+  compact?: boolean;
 }) {
   return (
     <TransitionLink href={getArticleUrl(article)} className="group block mb-5">
@@ -51,8 +59,8 @@ function NewsCard({
             className="object-cover"
             sizes={
               large
-                ? "(max-width: 640px) 100vw, 50vw"
-                : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                ? "(max-width: 640px) 100vw, 55vw"
+                : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             }
             priority={priority}
           />
@@ -65,7 +73,7 @@ function NewsCard({
       )}
       <h3
         className="font-copy font-medium leading-[1.12] text-text-main transition-colors group-hover:text-accent"
-        style={{ fontSize: large ? 34 : 20 }}
+        style={{ fontSize: large ? 38 : compact ? 19 : 20 }}
       >
         {article.richTitle || article.title}
       </h3>
@@ -76,7 +84,7 @@ function NewsCard({
         className="mt-2 text-[13px]"
       />
       {showExcerpt && article.excerpt && (
-        <p className="mt-0.5 font-meta text-[15px] font-medium leading-[1.5] text-text-main line-clamp-4">
+        <p className="mt-1 font-meta text-[15px] font-medium leading-[1.5] text-text-main line-clamp-4">
           {article.excerpt}
         </p>
       )}
@@ -84,25 +92,14 @@ function NewsCard({
   );
 }
 
-/* ── Category heading with the accent rule above it (Row 1) ── */
+/* ── Headings ── */
 
-function ColumnHeading({ title }: { title: string }) {
+function AccentHeading({ title }: { title: string }) {
   return (
-    <div
-      style={{
-        borderTop: "2px solid var(--accent-color)",
-        paddingTop: 4,
-        marginBottom: 16,
-      }}
-    >
+    <div style={{ borderTop: "2px solid var(--accent-color)", paddingTop: 4, marginBottom: 16 }}>
       <h2
         className="font-meta uppercase text-accent dark:text-white"
-        style={{
-          fontSize: 17,
-          letterSpacing: "0.08em",
-          fontWeight: 500,
-          margin: "0 0 2px",
-        }}
+        style={{ fontSize: 17, letterSpacing: "0.08em", fontWeight: 500, margin: "0 0 2px" }}
       >
         {title}
       </h2>
@@ -110,7 +107,16 @@ function ColumnHeading({ title }: { title: string }) {
   );
 }
 
-/* ── Mobile section header ── */
+function ColumnHeading({ title }: { title: string }) {
+  return (
+    <h2
+      className="font-meta uppercase tracking-[0.04em] text-text-main text-center"
+      style={{ fontSize: 24, fontWeight: 500, marginTop: 0, marginBottom: 16 }}
+    >
+      {title}
+    </h2>
+  );
+}
 
 function MobileSectionHeader({ title, href }: { title: string; href?: string }) {
   const heading = href ? (
@@ -136,16 +142,12 @@ function MobileSectionHeader({ title, href }: { title: string; href?: string }) 
 
 function MobileNewsList({
   articles,
-  largeFirst = false,
-  showExcerptFirst = false,
+  imageFlags,
   hideDates = false,
-  priorityFirst = false,
 }: {
   articles: ComponentArticle[];
-  largeFirst?: boolean;
-  showExcerptFirst?: boolean;
+  imageFlags?: boolean[];
   hideDates?: boolean;
-  priorityFirst?: boolean;
 }) {
   return (
     <div className="flex flex-col">
@@ -153,11 +155,8 @@ function MobileNewsList({
         <div key={article.id} className={i > 0 ? "mt-10" : ""}>
           <NewsCard
             article={article}
-            withImage={Boolean(article.image)}
-            large={largeFirst && i === 0}
-            showExcerpt={showExcerptFirst && i === 0}
+            withImage={imageFlags ? Boolean(imageFlags[i]) : Boolean(article.image)}
             hideDate={hideDates}
-            priority={priorityFirst && i === 0}
           />
         </div>
       ))}
@@ -165,11 +164,11 @@ function MobileNewsList({
   );
 }
 
-/* ── News tip callout (sits where Features puts its event CTA) ── */
+/* ── News tip callout ── */
 
 function TipCallout() {
   return (
-    <div className="py-8 border-y border-rule text-center" style={{ marginBottom: 30 }}>
+    <div className="py-6 border-y border-rule text-center">
       <p
         className="font-meta uppercase tracking-[0.04em] text-text-main"
         style={{ fontSize: 19, fontWeight: 500 }}
@@ -184,7 +183,7 @@ function TipCallout() {
   );
 }
 
-/* ── Empty state — masthead, heading and links still render around it ── */
+/* ── Empty state ── */
 
 function EmptyState() {
   return (
@@ -209,112 +208,58 @@ function EmptyState() {
 
 /* ── Main Page ── */
 
-type Bucket = { label: string | null; items: ComponentArticle[] };
-
 export default function NewsSectionPage({
   title,
   articles,
-  pinnedArticles = [],
+  layout = DEFAULT_NEWS_LAYOUT_CONTENT,
   hasOlderArticles = false,
 }: {
   title: string;
   articles: ComponentArticle[];
-  pinnedArticles?: ComponentArticle[];
+  layout?: NewsLayoutContent;
   hasOlderArticles?: boolean;
 }) {
-  const buckets = useMemo(() => {
-    const pinnedIds = new Set(pinnedArticles.map((a) => String(a.id)));
+  // Curated slots come first; every remaining slot fills from recent news so the
+  // page is never half-empty, whatever the editor has (or has not) pinned.
+  const filled = useMemo(() => {
+    const curatedIds = new Set<string>();
+    const note = (a: ComponentArticle | null) => {
+      if (a) curatedIds.add(String(a.id));
+    };
+    note(layout.topStory);
+    layout.topRow.forEach(note);
+    layout.columns.forEach((col) => col.articles.forEach(note));
+    layout.bottom.forEach(note);
 
-    // Pins lead the page; everything else backs the columns in date order.
-    const pool: ComponentArticle[] = [
-      ...pinnedArticles.slice(4),
-      ...articles.filter((a) => !pinnedIds.has(String(a.id))),
-    ];
-
+    const pool = articles.filter((a) => !curatedIds.has(String(a.id)));
     const takeNext = (count: number): ComponentArticle[] => pool.splice(0, count);
 
-    // A category column takes its own kickers first, then tops up from the pool so
-    // it is never left half-empty. With no matches at all it drops its heading and
-    // simply carries more news, rather than labelling unrelated stories.
-    const takeCategory = (key: keyof typeof newsCategories, count: number): Bucket => {
-      const { label, kickers } = newsCategories[key];
-      const items: ComponentArticle[] = [];
-
-      for (let i = 0; i < pool.length && items.length < count; i += 1) {
-        if (pool[i].kicker && (kickers as readonly string[]).includes(pool[i].kicker as string)) {
-          items.push(pool.splice(i, 1)[0]);
-          i -= 1;
-        }
-      }
-
-      const matched = items.length > 0;
-      items.push(...takeNext(count - items.length));
-
-      return { label: matched ? label : null, items };
+    // Fill a region: curated entries in order, then the newest unused stories.
+    const fill = (curated: ComponentArticle[], slots: number): ComponentArticle[] => {
+      const result = curated.slice(0, slots);
+      if (result.length < slots) result.push(...takeNext(slots - result.length));
+      return result;
     };
 
-    // Middle column leads with the curated pins, topped up from the pool.
-    const lead = [...pinnedArticles.slice(0, 4)];
-    if (lead.length < 4) lead.push(...takeNext(4 - lead.length));
+    const topStory = layout.topStory ?? takeNext(1)[0] ?? null;
+    const topRow = fill(layout.topRow, TOP_ROW_SLOTS);
+    const columns = layout.columns.slice(0, COLUMN_COUNT).map((col) => ({
+      label: col.label,
+      images: col.images,
+      articles: fill(col.articles, COLUMN_SLOTS),
+    }));
+    const bottom = fill(layout.bottom, BOTTOM_SLOTS);
 
-    const studentGov = takeCategory("studentGov", 3);
-    const campusInfrastructure = takeCategory("campusInfrastructure", 5);
-    const interviews = takeCategory("interviews", 3);
-    const pressReleases = takeCategory("pressReleases", 3);
-    const otherNews = takeNext(3);
-    const more = takeNext(5);
+    return { topStory, topRow, columns, bottom };
+  }, [articles, layout]);
 
-    return {
-      lead,
-      studentGov,
-      campusInfrastructure,
-      interviews,
-      pressReleases,
-      otherNews,
-      more,
-    };
-  }, [articles, pinnedArticles]);
-
-  const {
-    lead,
-    studentGov,
-    campusInfrastructure,
-    interviews,
-    pressReleases,
-    otherNews,
-    more,
-  } = buckets;
-
-  const hasArticles = articles.length > 0 || pinnedArticles.length > 0;
-  const hasLowerRow =
-    interviews.items.length > 0 || otherNews.length > 0 || pressReleases.items.length > 0;
+  const { topStory, topRow, columns, bottom } = filled;
+  const hasArticles = Boolean(topStory) || topRow.length > 0 || columns.some((c) => c.articles.length > 0);
+  const visibleColumns = columns.filter((c) => c.articles.length > 0);
 
   const sectionColumnStyle = {
     borderRight: "1px solid var(--rule-color)",
     paddingRight: COLUMN_GAP,
-  } as const;
-
-  const getSectionBreakRuleStyle = (insetLeft = 0, insetRight = 0) =>
-    ({
-      borderTop: "1px solid var(--text-main, #1a1a1a)",
-      marginTop: `calc(${SECTION_RULE_GAP} + ${LOWER_SECTION_EXTRA_TOP_SPACE}px)`,
-      marginLeft: insetLeft,
-      marginRight: insetRight,
-    }) as const;
-
-  const getSectionHeadingWrapStyle = (insetLeft = 0, insetRight = 0) =>
-    ({
-      marginLeft: insetLeft,
-      marginRight: insetRight,
-      paddingTop: SECTION_RULE_GAP,
-    }) as const;
-
-  const lowerHeadingClass = "font-meta uppercase tracking-[0.04em] text-text-main text-center";
-  const lowerHeadingStyle = {
-    fontSize: 28,
-    fontWeight: 500,
-    marginTop: 0,
-    marginBottom: 16,
   } as const;
 
   return (
@@ -356,320 +301,182 @@ export default function NewsSectionPage({
         <>
           {/* ── Mobile / tablet: stacked, desktop reading order ── */}
           <div className="lg:hidden">
-            {lead.length > 0 && (
-              <MobileNewsList articles={lead} largeFirst showExcerptFirst priorityFirst />
-            )}
+            {topStory && <NewsCard article={topStory} withImage large showExcerpt priority />}
 
-            {studentGov.items.length > 0 && (
+            {topRow.length > 0 && (
               <div className="mt-12">
-                {studentGov.label && <MobileSectionHeader title={studentGov.label} />}
-                <MobileNewsList articles={studentGov.items} hideDates />
+                <MobileSectionHeader title={layout.topRowLabel} />
+                <MobileNewsList articles={topRow} imageFlags={layout.topRowImages} hideDates />
               </div>
             )}
 
-            {campusInfrastructure.items.length > 0 && (
-              <div className="mt-12">
-                {campusInfrastructure.label && (
-                  <MobileSectionHeader title={campusInfrastructure.label} />
-                )}
-                <MobileNewsList articles={campusInfrastructure.items} />
+            {visibleColumns.map((column, i) => (
+              <div className="mt-12" key={`m-col-${i}`}>
+                <MobileSectionHeader title={column.label} />
+                <MobileNewsList articles={column.articles} imageFlags={column.images} />
               </div>
-            )}
+            ))}
 
-            {interviews.items.length > 0 && (
-              <div className="mt-12">
-                {interviews.label && <MobileSectionHeader title={interviews.label} />}
-                <MobileNewsList articles={interviews.items} hideDates />
-              </div>
-            )}
-
-            {otherNews.length > 0 && (
-              <div className="mt-12">
-                <MobileSectionHeader title={newsCategories.otherNews.label} />
-                <MobileNewsList articles={otherNews} />
-              </div>
-            )}
-
-            {pressReleases.items.length > 0 && (
-              <div className="mt-12">
-                {pressReleases.label && <MobileSectionHeader title={pressReleases.label} />}
-                <MobileNewsList articles={pressReleases.items} />
-              </div>
-            )}
-
-            {(more.length > 0 || hasOlderArticles) && (
-              <div className="mt-12">
-                <MobileSectionHeader title="More in News" href="/news/more-in-news" />
-                <MobileNewsList articles={more} />
-              </div>
-            )}
-          </div>
-
-          {/* Single grid — vertical rules run continuously, horizontal rule breaks at intersections */}
-          <div
-            className="hidden lg:grid"
-            style={{
-              gridTemplateColumns: "240px 1fr 320px",
-              gap: `0 ${COLUMN_GAP}`,
-            }}
-          >
-            {/* ══ Row 1 ══ */}
-
-            {/* ── Left column: Student Government ── */}
-            <div style={sectionColumnStyle}>
-              {studentGov.label && <ColumnHeading title={studentGov.label} />}
-              {studentGov.items[0] && (
-                <NewsCard
-                  article={studentGov.items[0]}
-                  withImage={Boolean(studentGov.items[0].image)}
-                  priority
-                  hideDate
-                />
-              )}
-              {studentGov.items[1] && (
-                <NewsCard
-                  article={studentGov.items[1]}
-                  withImage={Boolean(studentGov.items[1].image)}
-                  hideDate
-                />
-              )}
-
+            <div className="mt-12">
               <TipCallout />
-
-              {studentGov.items[2] && (
-                <NewsCard
-                  article={studentGov.items[2]}
-                  withImage={Boolean(studentGov.items[2].image)}
-                  hideDate
-                />
-              )}
             </div>
 
-            {/* ── Middle column: lead story ── */}
-            <div style={sectionColumnStyle}>
-              {lead[0] && <NewsCard article={lead[0]} withImage large priority showExcerpt />}
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "0 20px",
-                }}
-              >
-                {lead[1] && <NewsCard article={lead[1]} withImage />}
-                {lead[2] && <NewsCard article={lead[2]} withImage />}
+            {(bottom.length > 0 || hasOlderArticles) && (
+              <div className="mt-12">
+                <MobileSectionHeader title={layout.bottomLabel} href="/news/more-in-news" />
+                <MobileNewsList articles={bottom} />
               </div>
-
-              {/* Wide article: text left, image right */}
-              {lead[3] && (
-                <TransitionLink
-                  href={getArticleUrl(lead[3])}
-                  className="group"
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 24,
-                    alignItems: "start",
-                    marginTop: 8,
-                  }}
-                >
-                  <div>
-                    {lead[3].kicker && (
-                      <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] block mb-1.5">
-                        {lead[3].kicker}
-                      </span>
-                    )}
-                    <h2
-                      className="font-copy font-medium leading-[1.12] text-text-main transition-colors group-hover:text-accent"
-                      style={{ fontSize: 28 }}
-                    >
-                      {lead[3].richTitle || lead[3].title}
-                    </h2>
-                    <Byline
-                      author={lead[3].author}
-                      date={lead[3].date}
-                      variant="features"
-                      className="mt-2 text-[13px]"
-                    />
-                    {lead[3].excerpt && (
-                      <p className="mt-2 font-meta text-[15px] font-medium leading-[1.5] text-text-muted line-clamp-3">
-                        {lead[3].excerpt}
-                      </p>
-                    )}
-                  </div>
-                  {lead[3].image && (
-                    <div className="relative overflow-hidden" style={{ aspectRatio: "3/2" }}>
-                      <Image
-                        src={lead[3].image}
-                        alt={lead[3].imageTitle || ""}
-                        fill
-                        className="object-cover"
-                        sizes="40vw"
-                      />
-                    </div>
-                  )}
-                </TransitionLink>
-              )}
-            </div>
-
-            {/* ── Right column: Campus Infrastructure ── */}
-            <div>
-              {campusInfrastructure.label && (
-                <ColumnHeading title={campusInfrastructure.label} />
-              )}
-              {campusInfrastructure.items.map((article, i) => (
-                <NewsCard
-                  key={article.id}
-                  article={article}
-                  withImage={i === 0 && Boolean(article.image)}
-                />
-              ))}
-            </div>
-
-            {/* ══ Row 2 — borderTop per cell draws the horizontal rule with gaps at the vertical intersections ══ */}
-
-            {hasLowerRow && (
-              <>
-                {/* ── Left column: Interviews ── */}
-                <div style={sectionColumnStyle}>
-                  <div style={getSectionBreakRuleStyle(0, SECTION_RULE_INSET)} />
-                  {interviews.items.length > 0 && (
-                    <>
-                      {interviews.label && (
-                        <div style={getSectionHeadingWrapStyle(0, SECTION_RULE_INSET)}>
-                          <h2 className={lowerHeadingClass} style={lowerHeadingStyle}>
-                            {interviews.label}
-                          </h2>
-                        </div>
-                      )}
-                      <div style={interviews.label ? undefined : { paddingTop: SECTION_RULE_GAP }}>
-                        {interviews.items.map((article) => (
-                          <NewsCard
-                            key={article.id}
-                            article={article}
-                            withImage={Boolean(article.image)}
-                            hideDate
-                          />
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* ── Middle column: Other News ── */}
-                <div style={sectionColumnStyle}>
-                  <div style={getSectionBreakRuleStyle(SECTION_RULE_INSET, SECTION_RULE_INSET)} />
-                  {otherNews.length > 0 && (
-                    <div style={{ paddingTop: SECTION_RULE_GAP }}>
-                      <h2 className={lowerHeadingClass} style={lowerHeadingStyle}>
-                        {newsCategories.otherNews.label}
-                      </h2>
-                      {otherNews[0] && <NewsCard article={otherNews[0]} withImage large showExcerpt />}
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr",
-                          gap: "0 20px",
-                        }}
-                      >
-                        {otherNews[1] && <NewsCard article={otherNews[1]} withImage />}
-                        {otherNews[2] && <NewsCard article={otherNews[2]} withImage />}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* ── Right column: Press Releases ── */}
-                <div>
-                  <div style={getSectionBreakRuleStyle(SECTION_RULE_INSET, 0)} />
-                  {pressReleases.items.length > 0 && (
-                    <>
-                      {pressReleases.label && (
-                        <div style={getSectionHeadingWrapStyle(SECTION_RULE_INSET, 0)}>
-                          <h2 className={lowerHeadingClass} style={lowerHeadingStyle}>
-                            {pressReleases.label}
-                          </h2>
-                        </div>
-                      )}
-                      <div
-                        style={pressReleases.label ? undefined : { paddingTop: SECTION_RULE_GAP }}
-                      >
-                        {pressReleases.items.map((article) => (
-                          <NewsCard
-                            key={article.id}
-                            article={article}
-                            withImage={Boolean(article.image)}
-                          />
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </>
             )}
           </div>
 
-          {/* ── More in News ── */}
-          {(more.length > 0 || hasOlderArticles) && (
-            <div className="mt-14 hidden lg:block">
-              <AnimatedLine
-                id="news-more"
-                delay={0}
-                duration={300}
-                style={{ marginTop: SECTION_RULE_GAP, marginBottom: 8 }}
-              />
-              <div className="flex items-baseline justify-between mb-4">
-                <h2
-                  className="font-meta uppercase tracking-[0.04em] text-text-main"
-                  style={{ fontSize: 28, fontWeight: 500 }}
-                >
-                  More in News
-                </h2>
-                <TransitionLink
-                  href="/news/more-in-news"
-                  className="font-meta text-[14px] uppercase tracking-[0.08em] text-accent hover:underline transition-colors"
-                >
-                  More &rarr;
-                </TransitionLink>
+          {/* ── Desktop ── */}
+          <div className="hidden lg:block">
+            {/* Top row: pinned Top Story on the left, a row of curated articles beside it */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1.15fr) minmax(0, 1fr)",
+                gap: `0 ${COLUMN_GAP}`,
+              }}
+            >
+              <div style={topRow.length > 0 ? sectionColumnStyle : undefined}>
+                {topStory && <NewsCard article={topStory} withImage large priority showExcerpt />}
               </div>
+
+              {topRow.length > 0 && (
+                <div>
+                  <AccentHeading title={layout.topRowLabel} />
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: `repeat(${Math.min(topRow.length, TOP_ROW_SLOTS)}, minmax(0, 1fr))`,
+                      gap: `0 ${COLUMN_GAP}`,
+                    }}
+                  >
+                    {topRow.map((article, i) => (
+                      <NewsCard
+                        key={article.id}
+                        article={article}
+                        withImage={Boolean(layout.topRowImages[i]) && Boolean(article.image)}
+                        compact
+                        hideDate
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-2">
+                    <TipCallout />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Rule under the top row */}
+            {visibleColumns.length > 0 && (
+              <div
+                style={{
+                  borderTop: "1px solid var(--text-main, #1a1a1a)",
+                  marginTop: SECTION_RULE_GAP,
+                  marginBottom: SECTION_RULE_GAP,
+                }}
+              />
+            )}
+
+            {/* Three renamable columns */}
+            {visibleColumns.length > 0 && (
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(5, 1fr)",
-                  gap: 24,
+                  gridTemplateColumns: `repeat(${visibleColumns.length}, minmax(0, 1fr))`,
+                  gap: `0 ${COLUMN_GAP}`,
                 }}
               >
-                {more.map((article) => (
-                  <TransitionLink
-                    key={article.id}
-                    href={getArticleUrl(article)}
-                    className="group block"
+                {visibleColumns.map((column, i) => (
+                  <div
+                    key={`col-${i}`}
+                    style={i < visibleColumns.length - 1 ? sectionColumnStyle : undefined}
                   >
-                    {article.image && (
-                      <div className="relative overflow-hidden mb-3" style={{ aspectRatio: "3/2" }}>
-                        <Image
-                          src={article.image}
-                          alt={article.imageTitle || ""}
-                          fill
-                          className="object-cover"
-                          sizes="20vw"
-                        />
-                      </div>
-                    )}
-                    {article.kicker && (
-                      <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] block mb-1.5">
-                        {article.kicker}
-                      </span>
-                    )}
-                    <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors group-hover:text-accent">
-                      {article.richTitle || article.title}
-                    </h3>
-                    <Byline author={article.author} variant="features" className="mt-2 text-[13px]" />
-                  </TransitionLink>
+                    <div
+                      style={{
+                        marginRight: i < visibleColumns.length - 1 ? SECTION_RULE_INSET : 0,
+                        marginLeft: i > 0 ? SECTION_RULE_INSET : 0,
+                      }}
+                    >
+                      <ColumnHeading title={column.label} />
+                    </div>
+                    {column.articles.map((article, j) => (
+                      <NewsCard
+                        key={article.id}
+                        article={article}
+                        withImage={Boolean(column.images[j]) && Boolean(article.image)}
+                      />
+                    ))}
+                  </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+
+            {/* Bottom strip — the free drag area from the editor */}
+            {(bottom.length > 0 || hasOlderArticles) && (
+              <div className="mt-12">
+                <AnimatedLine
+                  id="news-more"
+                  delay={0}
+                  duration={300}
+                  style={{ marginTop: SECTION_RULE_GAP, marginBottom: 8 }}
+                />
+                <div className="flex items-baseline justify-between mb-4">
+                  <h2
+                    className="font-meta uppercase tracking-[0.04em] text-text-main"
+                    style={{ fontSize: 28, fontWeight: 500 }}
+                  >
+                    {layout.bottomLabel}
+                  </h2>
+                  <TransitionLink
+                    href="/news/more-in-news"
+                    className="font-meta text-[14px] uppercase tracking-[0.08em] text-accent hover:underline transition-colors"
+                  >
+                    More &rarr;
+                  </TransitionLink>
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: `repeat(${BOTTOM_SLOTS}, minmax(0, 1fr))`,
+                    gap: 24,
+                  }}
+                >
+                  {bottom.map((article) => (
+                    <TransitionLink
+                      key={article.id}
+                      href={getArticleUrl(article)}
+                      className="group block"
+                    >
+                      {article.image && (
+                        <div className="relative overflow-hidden mb-3" style={{ aspectRatio: "3/2" }}>
+                          <Image
+                            src={article.image}
+                            alt={article.imageTitle || ""}
+                            fill
+                            className="object-cover"
+                            sizes="20vw"
+                          />
+                        </div>
+                      )}
+                      {article.kicker && (
+                        <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] block mb-1.5">
+                          {article.kicker}
+                        </span>
+                      )}
+                      <h3 className="font-copy font-medium leading-[1.12] text-[24px] text-text-main transition-colors group-hover:text-accent">
+                        {article.richTitle || article.title}
+                      </h3>
+                      <Byline author={article.author} variant="features" className="mt-2 text-[13px]" />
+                    </TransitionLink>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>

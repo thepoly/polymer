@@ -28,6 +28,7 @@ import { SlugField as SlugField_d66ddfc75b0270bf9636e30c2125444d } from '../../.
 import { LayoutEditor as LayoutEditor_70d9e2a438fb0ccc6fcdf841a44849c6 } from '@/components/Dashboard/LayoutEditor'
 import { OpinionLayoutEditor as OpinionLayoutEditor_3bb87213e86dff82b05745c669248a71 } from '@/components/Dashboard/OpinionLayoutEditor'
 import { FeaturesLayoutEditor as FeaturesLayoutEditor_4a48329e978179877a0d50f880212653 } from '@/components/Dashboard/FeaturesLayoutEditor'
+import { NewsLayoutEditor as NewsLayoutEditor_7346d059463d93735e9b56f2884b6999 } from '@/components/Dashboard/NewsLayoutEditor'
 import { default as default_e6bcfd597e0807c552c64ab5fb3b3d9e } from '@/components/Transcribe/PanelRedirect'
 import { ThemeColorField as ThemeColorField_083666974322f0a8b2244e62c210f3ce } from '@/components/admin/ThemeColorField'
 import { Icon as Icon_6823e23e6721eed83ef38d632cfc3284 } from '@/components/Dashboard/Icon'
@@ -67,6 +68,7 @@ export const importMap = {
   "@/components/Dashboard/LayoutEditor#LayoutEditor": LayoutEditor_70d9e2a438fb0ccc6fcdf841a44849c6,
   "@/components/Dashboard/OpinionLayoutEditor#OpinionLayoutEditor": OpinionLayoutEditor_3bb87213e86dff82b05745c669248a71,
   "@/components/Dashboard/FeaturesLayoutEditor#FeaturesLayoutEditor": FeaturesLayoutEditor_4a48329e978179877a0d50f880212653,
+  "@/components/Dashboard/NewsLayoutEditor#NewsLayoutEditor": NewsLayoutEditor_7346d059463d93735e9b56f2884b6999,
   "@/components/Transcribe/PanelRedirect#default": default_e6bcfd597e0807c552c64ab5fb3b3d9e,
   "@/components/admin/ThemeColorField#ThemeColorField": ThemeColorField_083666974322f0a8b2244e62c210f3ce,
   "@/components/Dashboard/Icon#Icon": Icon_6823e23e6721eed83ef38d632cfc3284,

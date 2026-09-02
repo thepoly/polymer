@@ -44,6 +44,7 @@ import * as migration_20260506_010000_add_articles_legacy_id_and_category from '
 import * as migration_20260506_020000_add_articles_plain_content from './20260506_020000_add_articles_plain_content';
 import * as migration_20260507_000000_add_articles_previous_slug from './20260507_000000_add_articles_previous_slug';
 import * as migration_20260507_010000_add_legacy_shortlinks from './20260507_010000_add_legacy_shortlinks';
+import * as migration_20260902_000000_add_news_page_layout from './20260902_000000_add_news_page_layout';
 
 export const migrations = [
   {
@@ -275,5 +276,10 @@ export const migrations = [
     up: migration_20260507_010000_add_legacy_shortlinks.up,
     down: migration_20260507_010000_add_legacy_shortlinks.down,
     name: '20260507_010000_add_legacy_shortlinks',
+  },
+  {
+    up: migration_20260902_000000_add_news_page_layout.up,
+    down: migration_20260902_000000_add_news_page_layout.down,
+    name: '20260902_000000_add_news_page_layout',
   },
 ];

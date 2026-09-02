@@ -53,7 +53,8 @@ VALUES
   ('20260506_010000_add_articles_legacy_id_and_category', 27, NOW(), NOW()),
   ('20260506_020000_add_articles_plain_content', 27, NOW(), NOW()),
   ('20260507_000000_add_articles_previous_slug', 28, NOW(), NOW()),
-  ('20260507_010000_add_legacy_shortlinks', 28, NOW(), NOW())
+  ('20260507_010000_add_legacy_shortlinks', 28, NOW(), NOW()),
+  ('20260902_000000_add_news_page_layout', 29, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -305,6 +306,24 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_features_page_layout_id_idx"
   ON "payload_locked_documents_rels" ("features_page_layout_id");
+
+-- 20260902: Add news_page_layout table
+CREATE TABLE IF NOT EXISTS "news_page_layout" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "name" varchar NOT NULL DEFAULT 'News Layout',
+  "layout" jsonb,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "news_page_layout_created_at_idx" ON "news_page_layout" USING btree ("created_at");
+ALTER TABLE "payload_locked_documents_rels" ADD COLUMN IF NOT EXISTS "news_page_layout_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_news_page_layout_fk"
+    FOREIGN KEY ("news_page_layout_id") REFERENCES "public"."news_page_layout"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_news_page_layout_id_idx"
+  ON "payload_locked_documents_rels" ("news_page_layout_id");
 
 -- 20260331: Add is_photofeature and gradient_opacity to articles
 ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "is_photofeature" boolean DEFAULT false;

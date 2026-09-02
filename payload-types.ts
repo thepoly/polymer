@@ -76,6 +76,7 @@ export interface Config {
     layout: Layout;
     'opinion-page-layout': OpinionPageLayout;
     'features-page-layout': FeaturesPageLayout;
+    'news-page-layout': NewsPageLayout;
     'staff-page-layout': StaffPageLayout;
     submissions: Submission;
     'event-submissions': EventSubmission;
@@ -99,6 +100,7 @@ export interface Config {
     layout: LayoutSelect<false> | LayoutSelect<true>;
     'opinion-page-layout': OpinionPageLayoutSelect<false> | OpinionPageLayoutSelect<true>;
     'features-page-layout': FeaturesPageLayoutSelect<false> | FeaturesPageLayoutSelect<true>;
+    'news-page-layout': NewsPageLayoutSelect<false> | NewsPageLayoutSelect<true>;
     'staff-page-layout': StaffPageLayoutSelect<false> | StaffPageLayoutSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
     'event-submissions': EventSubmissionsSelect<false> | EventSubmissionsSelect<true>;
@@ -418,6 +420,10 @@ export interface Article {
    * Original category/section name from the source system. Preserved for display and search; does not affect routing.
    */
   legacyCategory?: string | null;
+  /**
+   * Old slug retained for 301 redirects after a rename. The middleware redirects requests for this slug to the current one.
+   */
+  previousSlug?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -583,6 +589,25 @@ export interface OpinionPageLayout {
  * via the `definition` "features-page-layout".
  */
 export interface FeaturesPageLayout {
+  id: number;
+  name: string;
+  layout?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "news-page-layout".
+ */
+export interface NewsPageLayout {
   id: number;
   name: string;
   layout?:
@@ -822,6 +847,10 @@ export interface PayloadLockedDocument {
         value: number | FeaturesPageLayout;
       } | null)
     | ({
+        relationTo: 'news-page-layout';
+        value: number | NewsPageLayout;
+      } | null)
+    | ({
         relationTo: 'staff-page-layout';
         value: number | StaffPageLayout;
       } | null)
@@ -1033,6 +1062,7 @@ export interface ArticlesSelect<T extends boolean = true> {
   legacySource?: T;
   legacyArticleId?: T;
   legacyCategory?: T;
+  previousSlug?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -1128,6 +1158,16 @@ export interface OpinionPageLayoutSelect<T extends boolean = true> {
  * via the `definition` "features-page-layout_select".
  */
 export interface FeaturesPageLayoutSelect<T extends boolean = true> {
+  name?: T;
+  layout?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "news-page-layout_select".
+ */
+export interface NewsPageLayoutSelect<T extends boolean = true> {
   name?: T;
   layout?: T;
   updatedAt?: T;
