@@ -18,6 +18,10 @@ import { getSectionSeoDescription, getSeo } from '@/lib/getSeo';
 
 export const revalidate = 60;
 
+// Slots the news layout can place (columns + "More in News"). The page prefers
+// recent stories but backfills to this many so no column comes up empty.
+const NEWS_LAYOUT_CAPACITY = 26;
+
 type Args = {
   params: Promise<{
     section: string;
@@ -56,14 +60,20 @@ export default async function SectionPageRoute({ params }: Args) {
   }
 
   const renderPlaceholder = (message: string) => (
-    <main className="min-h-screen bg-bg-main transition-colors duration-300">
+    <main className="min-h-screen bg-bg-main transition-colors duration-300 flex flex-col">
       <Header />
-      <div className="container mx-auto px-4 py-20 text-center">
-        <h1 className="font-meta text-4xl font-bold mb-4 uppercase tracking-[0.08em] text-[#d6001c]">
+      <div className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-16 md:px-[30px]">
+        <h1
+          className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[44px] sm:text-[52px] lg:text-[60px]"
+          style={{ fontWeight: 400, lineHeight: 1 }}
+        >
           {section}
         </h1>
-        <p className="text-text-muted font-copy">{message}</p>
+        <div className="mt-8 border-y border-rule py-16 text-center">
+          <p className="font-copy text-[22px] leading-[1.3] text-text-main">{message}</p>
+        </div>
       </div>
+      <Footer />
     </main>
   );
 
@@ -87,11 +97,6 @@ export default async function SectionPageRoute({ params }: Args) {
       _status: {
         equals: 'published',
       },
-      ...(isNews && {
-        publishedDate: {
-          greater_than_equal: eightWeeksAgo.toISOString(),
-        },
-      }),
     },
     sort: '-publishedDate',
     limit: isNews ? 200 : 30,
@@ -115,11 +120,28 @@ export default async function SectionPageRoute({ params }: Args) {
 
   const articles = articlesResponse.docs;
 
-  if (articles.length === 0) {
+  if (articles.length === 0 && !isNews) {
     return renderPlaceholder('No articles found in this section yet.');
   }
 
-  const formattedArticles = articles.map((a) => formatArticle(a)).filter(Boolean) as ComponentArticle[];
+  const allFormattedArticles = articles.map((a) => formatArticle(a)).filter(Boolean) as ComponentArticle[];
+
+  // News prefers the last eight weeks, but backfills with older stories rather
+  // than leaving the section page empty over breaks.
+  let formattedArticles = allFormattedArticles;
+  let hasOlderNewsArticles = false;
+  if (isNews) {
+    const recent = allFormattedArticles.filter((a) => {
+      const iso = a.publishedDate || a.isoDate;
+      return Boolean(iso) && new Date(iso as string) >= eightWeeksAgo;
+    });
+    formattedArticles =
+      recent.length >= NEWS_LAYOUT_CAPACITY
+        ? recent
+        : allFormattedArticles.slice(0, Math.max(NEWS_LAYOUT_CAPACITY, recent.length));
+    hasOlderNewsArticles = allFormattedArticles.length > formattedArticles.length;
+  }
+
   const sectionTitle = section.charAt(0).toUpperCase() + section.slice(1);
 
   const breadcrumbJsonLd = {
@@ -260,11 +282,9 @@ export default async function SectionPageRoute({ params }: Args) {
     }
   }
 
-  // Fetch news pinned article and grouped articles for bottom sections
-  let newsPinnedArticle: ComponentArticle | null = null;
-  const newsGroupedArticles: Record<string, ComponentArticle[]> = {};
+  // Fetch news pinned articles — they lead the section page's centre column
+  let newsPinnedArticles: ComponentArticle[] = [];
   if (isNews) {
-    // Fetch pinned article from layout's sectionLayouts
     try {
       const layoutResponse = await payload.find({
         collection: 'layout',
@@ -273,19 +293,18 @@ export default async function SectionPageRoute({ params }: Args) {
         select: { sectionLayouts: true },
       });
       const layoutDoc = layoutResponse.docs[0] as { sectionLayouts?: Record<string, { pinnedArticles?: number[] }> } | undefined;
-      const newsConfig = layoutDoc?.sectionLayouts?.news;
-      const pinnedIds = newsConfig?.pinnedArticles || [];
+      const pinnedIds = (layoutDoc?.sectionLayouts?.news?.pinnedArticles || []).filter(Boolean);
 
       if (pinnedIds.length > 0) {
         const pinnedResponse = await payload.find({
           collection: 'articles',
           where: {
             and: [
-              { id: { equals: pinnedIds[0] } },
+              { id: { in: pinnedIds } },
               { _status: { equals: 'published' } },
             ],
           },
-          limit: 1,
+          limit: pinnedIds.length,
           depth: 1,
           select: {
             title: true,
@@ -297,47 +316,19 @@ export default async function SectionPageRoute({ params }: Args) {
             publishedDate: true,
             createdAt: true,
             authors: true,
+            writeInAuthors: true,
+            isFollytechnic: true,
           },
         });
-        if (pinnedResponse.docs[0]) {
-          newsPinnedArticle = formatArticle(pinnedResponse.docs[0]);
-        }
+        const pinnedMap = new Map(pinnedResponse.docs.map((a) => [a.id, formatArticle(a)]));
+        // Keep the editor's pin order
+        newsPinnedArticles = pinnedIds
+          .map((id) => pinnedMap.get(id) ?? null)
+          .filter((a): a is ComponentArticle => a !== null);
       }
     } catch {
       // Layout may not exist yet
     }
-
-    // Build grouped articles for bottom sections, excluding anything shown in columns
-    // Replicate the same column logic as NewsSectionPage to know what's already shown
-    const columnShownIds = new Set<string | number>();
-    if (newsPinnedArticle) columnShownIds.add(newsPinnedArticle.id);
-    for (const a of formattedArticles) {
-      if (a.kicker === 'Student Senate' || a.kicker === 'Executive Board' ||
-          a.kicker === 'Campus Infrastructure' || a.kicker === 'Press Release' ||
-          a.kicker === 'Interview' || a.kicker === 'Town Hall' || a.kicker === 'GM Week 2026') {
-        columnShownIds.add(a.id);
-      }
-    }
-
-    // Interviews group — exclude articles already in columns
-    newsGroupedArticles.interviews = formattedArticles.filter(
-      (a) => !columnShownIds.has(a.id) && a.kicker === 'Interview'
-    ).slice(0, 5);
-
-    // Student Government group — exclude articles already in columns
-    newsGroupedArticles.studentGov = formattedArticles.filter(
-      (a) => !columnShownIds.has(a.id) && (a.kicker === 'Student Senate' || a.kicker === 'Executive Board')
-    ).slice(0, 5);
-
-    // Other: articles not shown in columns or other bottom groups
-    const bottomShownIds = new Set<string | number>([
-      ...columnShownIds,
-      ...newsGroupedArticles.interviews.map((a) => a.id),
-      ...newsGroupedArticles.studentGov.map((a) => a.id),
-    ]);
-    newsGroupedArticles.other = formattedArticles.filter(
-      (a) => !bottomShownIds.has(a.id)
-    ).slice(0, 5);
   }
 
   // Fetch grouped opinion articles for bottom sections
@@ -520,8 +511,8 @@ export default async function SectionPageRoute({ params }: Args) {
         <NewsSectionPage
           title={sectionTitle}
           articles={formattedArticles}
-          pinnedArticle={newsPinnedArticle}
-          groupedArticles={newsGroupedArticles}
+          pinnedArticles={newsPinnedArticles}
+          hasOlderArticles={hasOlderNewsArticles}
         />
       ) : (
         <SectionPage title={sectionTitle} articles={formattedArticles} />
