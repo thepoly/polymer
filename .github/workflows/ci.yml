@@ -38,10 +38,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      # Version comes from the "packageManager" field in package.json. Setting
+      # it here as well makes action-setup fail with "Multiple versions of pnpm
+      # specified" whenever the two differ.
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
