@@ -53,7 +53,8 @@ VALUES
   ('20260506_010000_add_articles_legacy_id_and_category', 27, NOW(), NOW()),
   ('20260506_020000_add_articles_plain_content', 27, NOW(), NOW()),
   ('20260507_000000_add_articles_previous_slug', 28, NOW(), NOW()),
-  ('20260507_010000_add_legacy_shortlinks', 28, NOW(), NOW())
+  ('20260507_010000_add_legacy_shortlinks', 28, NOW(), NOW()),
+  ('20260906_000000_fix_schema_drift', 29, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1394,4 +1395,51 @@ CREATE TABLE IF NOT EXISTS "legacy_shortlinks" (
   "hit_count" integer NOT NULL DEFAULT 0,
   "created_at" timestamp(3) with time zone NOT NULL DEFAULT NOW()
 );
+
+-- 20260906_000000: Backfill five columns that existed in the collection
+-- definitions but were never added by a migration (they reached this database
+-- via dev-mode `db.push` before migrations were introduced). Fresh environments
+-- built purely from `migrations/` were missing them and failed every query
+-- against the affected tables. Expected to be a no-op in production.
+--
+-- `updates.author` note: 20260420_000000 assumed this relationship would live
+-- in `live_articles_rels` under path "updates.author". Payload actually stores
+-- single-target, non-hasMany relationships as a scalar `<field>_id` column on
+-- the array's own table.
+ALTER TABLE "layout" ADD COLUMN IF NOT EXISTS "grid" jsonb;
+ALTER TABLE "opinion_page_layout" ADD COLUMN IF NOT EXISTS "layout" jsonb;
+
+ALTER TABLE "live_articles_updates" ADD COLUMN IF NOT EXISTS "author_id" integer;
+ALTER TABLE "_live_articles_v_version_updates" ADD COLUMN IF NOT EXISTS "author_id" integer;
+
+DO $$ BEGIN
+  ALTER TABLE "live_articles_updates" ADD CONSTRAINT "live_articles_updates_author_id_users_id_fk"
+    FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE "_live_articles_v_version_updates" ADD CONSTRAINT "_live_articles_v_version_updates_author_id_users_id_fk"
+    FOREIGN KEY ("author_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE INDEX IF NOT EXISTS "live_articles_updates_author_idx"
+  ON "live_articles_updates" USING btree ("author_id");
+CREATE INDEX IF NOT EXISTS "_live_articles_v_version_updates_author_idx"
+  ON "_live_articles_v_version_updates" USING btree ("author_id");
+
+ALTER TABLE "payload_locked_documents_rels"
+  ADD COLUMN IF NOT EXISTS "opinion_page_layout_id" integer;
+
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels"
+    ADD CONSTRAINT "payload_locked_documents_rels_opinion_page_layout_fk"
+    FOREIGN KEY ("opinion_page_layout_id") REFERENCES "public"."opinion_page_layout"("id")
+    ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_opinion_page_layout_id_idx"
+  ON "payload_locked_documents_rels" ("opinion_page_layout_id");
 SQL
