@@ -296,6 +296,11 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
               </span>
           </div>
         </div>
+        {liveEntries && liveEntries.length > 0 && (
+          <div className="safe-area-mobile-header-x mx-auto max-w-[1280px] border-b border-black dark:border-[#DDDDDD]">
+            <LiveStrip entries={liveEntries} />
+          </div>
+        )}
       </header>
 
       <MobileMenuDrawer

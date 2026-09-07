@@ -193,6 +193,43 @@ export default async function Home() {
         updates?: Array<{ timestamp?: string | null }> | null;
         hero?: number | string | LiveMedia | null;
       };
+  const toLiveStripEntry = (entry: {
+    id: string | number;
+    slug: string;
+    section: string;
+    publishedDate?: string | null;
+    updatedAt?: string | null;
+    updates?: Array<{ timestamp?: string | null }> | null;
+    hero?: number | string | LiveMedia | null;
+  }): LiveArticleStripEntry => {
+    const timestamps = (entry.updates ?? [])
+      .map((u) => (u?.timestamp ? new Date(u.timestamp).getTime() : NaN))
+      .filter((t) => !Number.isNaN(t));
+    const lastUpdateMs = timestamps.length > 0 ? Math.max(...timestamps) : NaN;
+    const fallbackMs = entry.publishedDate
+      ? new Date(entry.publishedDate).getTime()
+      : entry.updatedAt
+        ? new Date(entry.updatedAt).getTime()
+        : NaN;
+    const latestMs = Number.isNaN(lastUpdateMs) ? fallbackMs : lastUpdateMs;
+    const lastUpdatedLabel = Number.isNaN(latestMs)
+      ? undefined
+      : formatRelativeTime(new Date(latestMs));
+    const hero =
+      entry.hero && typeof entry.hero === "object"
+        ? (entry.hero as LiveMedia)
+        : null;
+    const imageUrl =
+      hero?.sizes?.card?.url || hero?.url || undefined;
+    return {
+      id: String(entry.id),
+      slug: entry.slug,
+      section: entry.section,
+      lastUpdatedLabel,
+      imageUrl: imageUrl ?? undefined,
+    };
+  };
+
   const rawLiveArticles = (layout?.liveArticles ?? []) as LiveArticleRelationEntry[];
   const liveStripEntries: LiveArticleStripEntry[] = rawLiveArticles
     .filter(
@@ -212,40 +249,51 @@ export default async function Home() {
         typeof entry.slug === "string" &&
         typeof entry.section === "string",
     )
-    .map((entry) => {
-      const timestamps = (entry.updates ?? [])
-        .map((u) => (u?.timestamp ? new Date(u.timestamp).getTime() : NaN))
-        .filter((t) => !Number.isNaN(t));
-      const lastUpdateMs = timestamps.length > 0 ? Math.max(...timestamps) : NaN;
-      const fallbackMs = entry.publishedDate
-        ? new Date(entry.publishedDate).getTime()
-        : entry.updatedAt
-          ? new Date(entry.updatedAt).getTime()
-          : NaN;
-      const latestMs = Number.isNaN(lastUpdateMs) ? fallbackMs : lastUpdateMs;
-      const lastUpdatedLabel = Number.isNaN(latestMs)
-        ? undefined
-        : formatRelativeTime(new Date(latestMs));
-      const hero =
-        entry.hero && typeof entry.hero === "object"
-          ? (entry.hero as LiveMedia)
-          : null;
-      const imageUrl =
-        hero?.sizes?.card?.url || hero?.url || undefined;
-      return {
-        id: String(entry.id),
-        slug: entry.slug,
-        section: entry.section,
-        lastUpdatedLabel,
-        imageUrl: imageUrl ?? undefined,
-      };
-    });
+    .map(toLiveStripEntry);
+
+  // The layout's `liveArticles` list is editor-curated and is frequently left
+  // empty, which used to leave live blogs with no entry point anywhere on the
+  // site. When nothing is curated, fall back to the most recently updated
+  // published live articles so the homepage strip is always a way in.
+  let liveStripEntriesResolved = liveStripEntries;
+  if (liveStripEntriesResolved.length === 0) {
+    try {
+      const recentLive = await payload.find({
+        collection: 'live-articles',
+        limit: 4,
+        depth: 1,
+        sort: '-updatedAt',
+        where: { _status: { equals: 'published' } },
+      });
+      liveStripEntriesResolved = (recentLive.docs as unknown as LiveArticleRelationEntry[])
+        .filter(
+          (
+            entry,
+          ): entry is {
+            id: string | number;
+            slug: string;
+            section: string;
+            publishedDate?: string | null;
+            updatedAt?: string | null;
+            updates?: Array<{ timestamp?: string | null }> | null;
+            hero?: number | string | LiveMedia | null;
+          } =>
+            typeof entry === "object" &&
+            entry !== null &&
+            typeof entry.slug === "string" &&
+            typeof entry.section === "string",
+        )
+        .map(toLiveStripEntry);
+    } catch (err) {
+      console.error("[home] live-articles fallback query failed:", err);
+    }
+  }
 
   if (!layout) {
     return (
       <main className="min-h-screen flex flex-col bg-bg-main transition-colors duration-300">
         <ArticleScrollBar />
-        <Header liveEntries={liveStripEntries} />
+        <Header liveEntries={liveStripEntriesResolved} />
         <div className="flex flex-col items-center justify-center flex-1 px-4 text-center">
           <h1 className="font-display text-[28px] md:text-[36px] font-bold text-text-main mb-3">We&apos;ll be right back</h1>
           <p className="font-copy text-[15px] md:text-[17px] text-text-muted max-w-md">The Polytechnic is currently under maintenance. Please check back shortly.</p>
@@ -552,7 +600,7 @@ export default async function Home() {
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }} />
           <ArticleScrollBar />
-        <Header liveEntries={liveStripEntries} />
+        <Header liveEntries={liveStripEntriesResolved} />
           <GeminiHomepage
             lead={lead}
             leftStack={leftStack}
@@ -584,7 +632,7 @@ export default async function Home() {
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }} />
         <ArticleScrollBar />
-        <Header liveEntries={liveStripEntries} />
+        <Header liveEntries={liveStripEntriesResolved} />
         <div className="w-full bg-bg-main text-text-main transition-colors duration-300">
           <div className="mx-auto max-w-[1280px] px-4 pb-14 md:px-6 xl:px-[30px]">
             <div data-frontpage-top className="pt-5 md:pt-7">
@@ -610,7 +658,7 @@ export default async function Home() {
     return (
       <main className="min-h-screen flex flex-col bg-bg-main transition-colors duration-300">
         <ArticleScrollBar />
-        <Header liveEntries={liveStripEntries} />
+        <Header liveEntries={liveStripEntriesResolved} />
         <div className="flex flex-col items-center justify-center flex-1 px-4 text-center">
           <h1 className="font-display text-[28px] md:text-[36px] font-bold text-text-main mb-3">We&apos;ll be right back</h1>
           <p className="font-copy text-[15px] md:text-[17px] text-text-muted max-w-md">The Polytechnic is currently under maintenance. Please check back shortly.</p>
@@ -692,7 +740,7 @@ export default async function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }} />
       <ArticleScrollBar />
-        <Header liveEntries={liveStripEntries} />
+        <Header liveEntries={liveStripEntriesResolved} />
       <FrontPage
         topStories={topStories}
         layoutName={layout.skeleton === 'taurus' ? 'taurus' : 'aries'}
