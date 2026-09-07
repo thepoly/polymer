@@ -176,6 +176,27 @@ const LiveArticles: CollectionConfig = {
       },
     },
     {
+      // The real section taxonomy, mirroring Articles.section. Distinct from
+      // `section` above, which is a free-text topic label for the homepage
+      // strip. This drives the short scroll header and the "Continue Reading"
+      // recommendations on the live article page.
+      name: 'siteSection',
+      type: 'select',
+      required: true,
+      defaultValue: 'news',
+      label: 'Site Section',
+      options: [
+        { label: 'News', value: 'news' },
+        { label: 'Sports', value: 'sports' },
+        { label: 'Features', value: 'features' },
+        { label: 'Opinion', value: 'opinion' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description: 'Which section of the site this live blog belongs to. Drives the section header and related-stories block.',
+      },
+    },
+    {
       name: 'hero',
       type: 'upload',
       relationTo: 'media',

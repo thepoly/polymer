@@ -6,6 +6,9 @@ import { getPayload, type CollectionSlug } from 'payload';
 import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical';
 import config from '@/payload.config';
 import Footer from '@/components/Footer';
+import ArticleScrollBar from '@/components/ArticleScrollBar';
+import { ArticleRecommendations } from '@/components/Article/ArticleRecommendations';
+import type { Article } from '@/payload-types';
 import { ArticleDivider } from '@/components/Article/ArticleDivider';
 import { SerializeLexical, type LexicalNode } from '@/components/Article/RichTextParser';
 import { extractTextFromLexical, renderLexicalHeadline } from '@/utils/formatArticle';
@@ -45,6 +48,7 @@ type LiveArticle = {
   plainTitle: string;
   slug: string;
   section: string;
+  siteSection: Article['section'];
   hero: { url: string; alt?: string; width?: number; height?: number; caption?: string };
   summary?: LiveArticleSummaryItem[];
   updates: LiveArticleUpdate[];
@@ -165,8 +169,16 @@ export default async function LiveArticlePage({ params }: Args) {
   const latest = latestTimestamp(article);
   const hasSummary = Array.isArray(article.summary) && article.summary.length > 0;
 
+  const siteSection = article.siteSection ?? 'news';
+
   return (
-    <main className="min-h-screen overflow-x-hidden bg-bg-main pt-[64px] transition-colors duration-300">
+    <>
+      <ArticleScrollBar
+        title={article.plainTitle}
+        richTitle={renderLexicalHeadline(article.title)}
+        section={siteSection}
+      />
+      <main className="min-h-screen overflow-x-hidden bg-bg-main pt-[64px] transition-colors duration-300">
       <article className="container mx-auto px-4 md:px-6 mt-8 md:mt-12">
         <div className="flex flex-col gap-6 mb-8" style={{ paddingTop: '40px' }}>
           {/* Meta row: LIVE badge + relative updated time */}
@@ -260,6 +272,8 @@ export default async function LiveArticlePage({ params }: Args) {
         </section>
       </article>
 
+      <ArticleRecommendations currentArticle={{ section: siteSection }} />
+
       <Footer />
 
       {/*
@@ -270,6 +284,7 @@ export default async function LiveArticlePage({ params }: Args) {
       <style>{`
         .live-summary-body p { display: inline; margin: 0; font-size: inherit; line-height: inherit; }
       `}</style>
-    </main>
+      </main>
+    </>
   );
 }

@@ -54,7 +54,8 @@ VALUES
   ('20260506_020000_add_articles_plain_content', 27, NOW(), NOW()),
   ('20260507_000000_add_articles_previous_slug', 28, NOW(), NOW()),
   ('20260507_010000_add_legacy_shortlinks', 28, NOW(), NOW()),
-  ('20260906_000000_fix_schema_drift', 29, NOW(), NOW())
+  ('20260906_000000_fix_schema_drift', 29, NOW(), NOW()),
+  ('20260906_010000_add_live_articles_site_section', 30, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1442,4 +1443,29 @@ END $$;
 
 CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_opinion_page_layout_id_idx"
   ON "payload_locked_documents_rels" ("opinion_page_layout_id");
+
+-- 20260906_010000_add_live_articles_site_section
+-- `live_articles.section` is a free-text topic label for the homepage strip;
+-- `site_section` is the real section taxonomy, needed so live article pages can
+-- render the short scroll header and the section recommendations block.
+DO $$ BEGIN
+  CREATE TYPE "public"."enum_live_articles_site_section" AS ENUM('news', 'sports', 'features', 'opinion');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "public"."enum__live_articles_v_version_site_section" AS ENUM('news', 'sports', 'features', 'opinion');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+ALTER TABLE "live_articles"
+  ADD COLUMN IF NOT EXISTS "site_section" "enum_live_articles_site_section" DEFAULT 'news';
+ALTER TABLE "_live_articles_v"
+  ADD COLUMN IF NOT EXISTS "version_site_section" "enum__live_articles_v_version_site_section" DEFAULT 'news';
+
+UPDATE "live_articles" SET "site_section" = 'news' WHERE "site_section" IS NULL;
+UPDATE "_live_articles_v" SET "version_site_section" = 'news' WHERE "version_site_section" IS NULL;
+
+CREATE INDEX IF NOT EXISTS "live_articles_site_section_idx"
+  ON "live_articles" USING btree ("site_section");
 SQL
