@@ -418,6 +418,10 @@ export interface Article {
    * Original category/section name from the source system. Preserved for display and search; does not affect routing.
    */
   legacyCategory?: string | null;
+  /**
+   * Old slug retained for 301 redirects after a rename. The middleware redirects requests for this slug to the current one.
+   */
+  previousSlug?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -1033,6 +1037,7 @@ export interface ArticlesSelect<T extends boolean = true> {
   legacySource?: T;
   legacyArticleId?: T;
   legacyCategory?: T;
+  previousSlug?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
