@@ -43,7 +43,7 @@ import * as migration_20260506_000000_add_articles_legacy_archive from './202605
 import * as migration_20260506_010000_add_articles_legacy_id_and_category from './20260506_010000_add_articles_legacy_id_and_category';
 import * as migration_20260506_020000_add_articles_plain_content from './20260506_020000_add_articles_plain_content';
 import * as migration_20260507_000000_add_articles_previous_slug from './20260507_000000_add_articles_previous_slug';
-import * as migration_20260507_010000_add_legacy_shortlinks from './20260507_010000_add_legacy_shortlinks';
+import * as migration_20260507_010000_add_legacy_shortlinks from './20260507_010000_add_legacy_shortlinks'
 import * as migration_20260906_000000_fix_schema_drift from './20260906_000000_fix_schema_drift'
 import * as migration_20260906_010000_add_live_articles_site_section from './20260906_010000_add_live_articles_site_section'
 
