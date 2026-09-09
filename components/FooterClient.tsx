@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
 import { toRoman } from "@/lib/toRoman";
+import { getVersionLabel } from "@/lib/version";
 
 export default function FooterClient({ volume, edition }: { volume?: number | null; edition?: number | null }) {
   const { isDarkMode, logoSrcs } = useTheme();
@@ -75,6 +76,9 @@ export default function FooterClient({ volume, edition }: { volume?: number | nu
           <Link href="/copyright" className="font-copy text-[11px] text-text-muted text-center leading-relaxed underline underline-offset-2 hover:text-accent transition-colors">
             &copy; {new Date().getFullYear()} <i>The Rensselaer Polytechnic</i>. All rights reserved.
           </Link>
+          <span className="font-meta text-[10px] uppercase tracking-[0.12em] text-text-muted opacity-60">
+            {getVersionLabel()}
+          </span>
         </div>
       </div>
     </footer>

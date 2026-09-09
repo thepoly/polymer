@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { APIError } from 'payload'
 import { lexicalEditor, BoldFeature, ItalicFeature } from '@payloadcms/richtext-lexical'
 import { getPostHogClient } from '../lib/posthog-server'
 import { getPlainText } from '../utils/getPlainText'
@@ -94,6 +95,59 @@ const Articles: CollectionConfig = {
       },
     ],
     beforeChange: [
+      /**
+       * Photo features only: refuse to publish until the lead image has a
+       * focal point.
+       *
+       * The photofeature hero fills the reader's viewport with `object-cover`,
+       * so it always throws away part of the photo. `utils/focalPoint.ts` uses
+       * media.focalX / focalY to decide which part survives; with no focal
+       * point the crop falls back to dead centre and takes faces first.
+       *
+       * Payload writes 50/50 for any upload whose point has never been moved,
+       * so "untouched" and "deliberately centred" look identical in the data.
+       * That is what `focalPointAcknowledged` is for — an editor who genuinely
+       * wants centre framing says so once, rather than being unable to publish.
+       *
+       * Nothing here applies to a normal article: every path returns early
+       * unless isPhotofeature is set.
+       */
+      async ({ data, originalDoc, req }) => {
+        const isLegacyImport = (req?.context as { legacyImport?: boolean } | undefined)?.legacyImport === true
+        if (isLegacyImport) return data
+        if (data._status !== 'published') return data
+
+        const isPhotofeature = data.isPhotofeature ?? originalDoc?.isPhotofeature
+        if (!isPhotofeature) return data
+        if (data.focalPointAcknowledged === true) return data
+
+        const relationId = (value: unknown): number | null => {
+          if (typeof value === 'number') return value
+          if (value && typeof value === 'object' && 'id' in value && typeof value.id === 'number') return value.id
+          return null
+        }
+
+        const mediaId = relationId(data.featuredImage) ?? relationId(originalDoc?.featuredImage)
+        // No lead image is a separate problem; there is nothing to frame.
+        if (mediaId === null) return data
+
+        const media = await req.payload.findByID({ collection: 'media', id: mediaId, depth: 0 })
+        const focalX = media?.focalX
+        const focalY = media?.focalY
+        const untouched =
+          (focalX == null && focalY == null) || (Number(focalX) === 50 && Number(focalY) === 50)
+
+        if (!untouched) return data
+
+        const imageName = media?.title || media?.filename || `Media #${mediaId}`
+        throw new APIError(
+          `This photo feature can't be published yet: its lead image has no focal point.\n\n` +
+            `The photo feature hero crops to fill the whole screen. Without a focal point it crops from the middle, which is what cuts people's heads off on tall and narrow screens.\n\n` +
+            `To fix it: open Media, find "${imageName}", drag the focal-point marker onto the subject's face, and save. Then publish this article again.\n\n` +
+            `If centre framing really is right for this photo, tick "Centre framing is intentional" in the sidebar and publish again.`,
+          400,
+        )
+      },
       ({ data, originalDoc, req }) => {
         const isLegacyImport = (req?.context as { legacyImport?: boolean } | undefined)?.legacyImport === true
 
@@ -366,6 +420,18 @@ const Articles: CollectionConfig = {
       admin: {
         position: 'sidebar',
         description: 'Use the full-screen photo feature layout. Only available for single-author articles.',
+      },
+    },
+    {
+      name: 'focalPointAcknowledged',
+      type: 'checkbox',
+      label: 'Centre framing is intentional',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description:
+          "Photo feature heroes crop to fill the screen, so the lead image needs a focal point or faces get cut off. Set one in Media. Tick this only if centre framing really is correct for this photo.",
+        condition: (data: Record<string, unknown>) => Boolean(data?.isPhotofeature),
       },
     },
     {

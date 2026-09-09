@@ -399,6 +399,10 @@ export interface Article {
    */
   isPhotofeature?: boolean | null;
   /**
+   * Photo feature heroes crop to fill the screen, so the lead image needs a focal point or faces get cut off. Set one in Media. Tick this only if centre framing really is correct for this photo.
+   */
+  focalPointAcknowledged?: boolean | null;
+  /**
    * Darkness of the bottom image fade (0–100). Default is 90.
    */
   gradientOpacity?: number | null;
@@ -1032,6 +1036,7 @@ export interface ArticlesSelect<T extends boolean = true> {
   breakingNews?: T;
   isFollytechnic?: T;
   isPhotofeature?: T;
+  focalPointAcknowledged?: T;
   gradientOpacity?: T;
   legacyHtmlUrl?: T;
   legacySource?: T;

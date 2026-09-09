@@ -54,7 +54,8 @@ VALUES
   ('20260506_020000_add_articles_plain_content', 27, NOW(), NOW()),
   ('20260507_000000_add_articles_previous_slug', 28, NOW(), NOW()),
   ('20260507_010000_add_legacy_shortlinks', 28, NOW(), NOW()),
-  ('20260906_000000_fix_schema_drift', 29, NOW(), NOW())
+  ('20260906_000000_fix_schema_drift', 29, NOW(), NOW()),
+  ('20260909_000000_add_focal_point_acknowledged', 30, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1442,4 +1443,15 @@ END $$;
 
 CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_opinion_page_layout_id_idx"
   ON "payload_locked_documents_rels" ("opinion_page_layout_id");
+
+-- 20260909_000000: Photo features refuse to publish unless their lead image
+-- has a focal point, because the hero crops to fill the viewport and a centre
+-- crop takes faces first. Payload writes 50/50 for any upload whose focal
+-- point was never moved, so "untouched" cannot be told apart from
+-- "deliberately centred" — this column is how an editor says centre framing is
+-- intended, so that check cannot deadlock them. Defaulted, so no backfill.
+ALTER TABLE "articles"
+  ADD COLUMN IF NOT EXISTS "focal_point_acknowledged" boolean DEFAULT false;
+ALTER TABLE "_articles_v"
+  ADD COLUMN IF NOT EXISTS "version_focal_point_acknowledged" boolean DEFAULT false;
 SQL

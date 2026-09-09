@@ -86,16 +86,69 @@ function getArticlePhotoIds(article: StaffPortfolioArticleLookup): number[] {
   return [...photoIds];
 }
 
+/**
+ * How far back the inline-image scan is willing to walk. Inline uploads live
+ * inside the lexical `content` JSON, which is not queryable, so resolving them
+ * means reading article bodies. Without a bound, a photographer whose photos
+ * were never used inline makes this read every published article — thousands,
+ * once the legacy archive is counted — on every render of their profile.
+ *
+ * 20 pages of 50 covers the most recent 1,000 articles. A photo older than
+ * that simply renders without a link to its article, which is a far better
+ * outcome than a profile page that takes seconds to respond.
+ */
+const MAX_INLINE_SCAN_PAGES = 20;
+
 export async function getPhotoArticleMap(photoIds: number[], payload?: Payload): Promise<Record<number, string>> {
   if (photoIds.length === 0) return {};
 
   const payloadClient = payload || await getPayload({ config });
   const unresolvedPhotoIds = new Set(photoIds);
   const photoToArticleMap: Record<number, string> = {};
+
+  // Most portfolio photos are an article's featured image, and that is an
+  // indexed relationship — ask for exactly those articles instead of reading
+  // every article body looking for them. Deliberately does not select
+  // `content`: this pass has no need for it, and it is by far the heaviest
+  // column on the table.
+  const featured = await payloadClient.find({
+    collection: 'articles',
+    where: {
+      and: [
+        { _status: { equals: 'published' } },
+        { featuredImage: { in: photoIds } },
+      ],
+    },
+    sort: '-publishedDate',
+    limit: Math.max(photoIds.length, 50),
+    depth: 0,
+    select: {
+      slug: true,
+      section: true,
+      publishedDate: true,
+      createdAt: true,
+      featuredImage: true,
+    },
+  });
+
+  for (const article of featured.docs as StaffPortfolioArticleLookup[]) {
+    const href = getArticleUrl(article);
+    if (!href || href === '#') continue;
+
+    const featuredImageId = getMediaRelationId(article.featuredImage);
+    if (featuredImageId === null || !unresolvedPhotoIds.has(featuredImageId)) continue;
+
+    photoToArticleMap[featuredImageId] = href;
+    unresolvedPhotoIds.delete(featuredImageId);
+  }
+
+  // Anything still unresolved was only ever used inline, so it needs the scan.
+  if (unresolvedPhotoIds.size === 0) return photoToArticleMap;
+
   let page = 1;
   let hasNextPage = true;
 
-  while (hasNextPage && unresolvedPhotoIds.size > 0) {
+  while (hasNextPage && unresolvedPhotoIds.size > 0 && page <= MAX_INLINE_SCAN_PAGES) {
     const relatedArticles = await payloadClient.find({
       collection: 'articles',
       where: {
@@ -106,7 +159,9 @@ export async function getPhotoArticleMap(photoIds: number[], payload?: Payload):
       sort: '-publishedDate',
       page,
       limit: 50,
-      depth: 1,
+      // depth 0: only relationship ids are needed, so there is no reason to
+      // join and hydrate the media row behind every article's featured image.
+      depth: 0,
       select: {
         slug: true,
         section: true,
