@@ -31,7 +31,7 @@ type PublicArticleUser = {
   firstName: string;
   lastName: string;
   slug?: string | null;
-  headshot?: { url?: string | null } | null;
+  headshot?: { url?: string | null; focalX?: number | null; focalY?: number | null } | null;
   bio?: {
     root?: {
       children?: LexicalNode[];
@@ -57,6 +57,10 @@ type PublicArticleMedia = {
   height?: number | null;
   photographer?: PublicArticleUser | null;
   writeInPhotographer?: string | null;
+  // Needed by the photofeature hero: it crops to the viewport, and the focal
+  // point is what decides which part of the photo survives that crop.
+  focalX?: number | null;
+  focalY?: number | null;
 };
 
 const toPublicArticleUser = (user: User): PublicArticleUser => ({
@@ -64,7 +68,10 @@ const toPublicArticleUser = (user: User): PublicArticleUser => ({
   firstName: user.firstName,
   lastName: user.lastName,
   slug: user.slug,
-  headshot: typeof user.headshot === 'object' && user.headshot ? { url: user.headshot.url } : null,
+  headshot:
+    typeof user.headshot === 'object' && user.headshot
+      ? { url: user.headshot.url, focalX: user.headshot.focalX, focalY: user.headshot.focalY }
+      : null,
   bio: user.bio
     ? {
         root: {
@@ -95,6 +102,8 @@ const toPublicArticleMedia = (media: Article['featuredImage']): PublicArticleMed
     height: media.height,
     photographer,
     writeInPhotographer: (media as unknown as Record<string, unknown>).writeInPhotographer as string | null | undefined,
+    focalX: media.focalX,
+    focalY: media.focalY,
   };
 };
 

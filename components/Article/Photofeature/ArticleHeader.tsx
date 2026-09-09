@@ -9,6 +9,7 @@ import { Article, Media, User } from '@/payload-types';
 import { MobileMenuDrawer } from '@/components/MobileMenuDrawer';
 import SearchOverlay from '@/components/SearchOverlay';
 import { useTheme } from '@/components/ThemeProvider';
+import { focalObjectPosition } from '@/utils/focalPoint';
 
 type Props = {
   article: Article;
@@ -49,6 +50,10 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
               alt={featuredImage.title || ""}
               fill
               className="object-cover opacity-90"
+              // h-screen crops this photo hard on tall viewports; the focal
+              // point decides which part survives instead of cropping evenly
+              // from both edges and taking the subject's head first.
+              style={{ objectPosition: focalObjectPosition(featuredImage) }}
               sizes="100vw"
               priority
             />
@@ -122,6 +127,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                           alt={`${user.firstName} ${user.lastName}`}
                           fill
                           className="object-cover"
+                          style={{ objectPosition: focalObjectPosition(headshot) }}
                         />
                       </Link>
                     );
@@ -131,7 +137,13 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                     if (!photo?.url) return null;
                     return (
                       <div key={`write-in-${i}`} className="relative w-7 h-7 rounded-full overflow-hidden bg-gray-800 border-2 border-white z-10">
-                        <Image src={photo.url} alt={writeIn.name} fill className="object-cover" />
+                        <Image
+                          src={photo.url}
+                          alt={writeIn.name}
+                          fill
+                          className="object-cover"
+                          style={{ objectPosition: focalObjectPosition(photo) }}
+                        />
                       </div>
                     );
                   })}
