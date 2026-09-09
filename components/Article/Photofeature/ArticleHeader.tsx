@@ -1,7 +1,7 @@
 'use client';
 import { renderLexicalHeadline } from '@/utils/formatArticle';
 
-import React, { useState } from 'react';
+import React, { Fragment, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Menu, Search } from 'lucide-react';
@@ -10,6 +10,7 @@ import { MobileMenuDrawer } from '@/components/MobileMenuDrawer';
 import SearchOverlay from '@/components/SearchOverlay';
 import { useTheme } from '@/components/ThemeProvider';
 import { focalObjectPosition } from '@/utils/focalPoint';
+import { resolveCredit } from '@/components/Article/PhotoCaption';
 
 type Props = {
   article: Article;
@@ -20,8 +21,11 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { isDarkMode, toggleDarkMode, logoSrcs } = useTheme();
   const featuredImage = article.featuredImage as Media | null;
-  const photographer = featuredImage?.photographer && typeof featuredImage.photographer === 'object' ? featuredImage.photographer as User : null;
-  const writeInPhotographer = featuredImage ? ((featuredImage as unknown as Record<string, unknown>).writeInPhotographer as string | null | undefined) : null;
+  // Same precedence galleries use: explicit credit, then the media record's
+  // photographer, then its write-in name.
+  const { staff: creditStaff, writeIn: writeInPhotographer } = featuredImage
+    ? resolveCredit({ image: featuredImage })
+    : { staff: [] as User[], writeIn: null };
   const gradientOpacity = (article as unknown as Record<string, unknown>).gradientOpacity as number | null | undefined;
   const gradientStyle = gradientOpacity != null
     ? {
@@ -199,12 +203,24 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         </div>
 
         {/* Photo Credit (z-20, bottom-right) */}
-        {(photographer || writeInPhotographer) && (
-          <div className="absolute bottom-3 right-4 z-20 pointer-events-none">
-            <p className="font-meta text-[11px] italic text-white/50">
-              {photographer
-                ? `${photographer.firstName} ${photographer.lastName}/The Polytechnic`
-                : writeInPhotographer}
+        {(creditStaff.length > 0 || writeInPhotographer) && (
+          <div className="absolute bottom-3 right-4 z-20">
+            {/* Matches the gallery credit treatment, but fixed white: the hero
+                always carries a dark bottom gradient, so there is nothing to
+                sample and nothing that would ever call for black. */}
+            <p className="font-meta text-[12px] italic text-white opacity-80 [text-shadow:0_1px_3px_rgb(0_0_0/0.55)]">
+              {creditStaff.map((user, i) => (
+                <Fragment key={user.id}>
+                  {i > 0 ? ', ' : ''}
+                  <Link
+                    href={`/staff/${user.slug || user.id}`}
+                    className="pointer-events-auto hover:opacity-80 transition-opacity"
+                  >
+                    {user.firstName} {user.lastName}
+                  </Link>
+                </Fragment>
+              ))}
+              {creditStaff.length > 0 ? '/The Polytechnic' : writeInPhotographer}
             </p>
           </div>
         )}

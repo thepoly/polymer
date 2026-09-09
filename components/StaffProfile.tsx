@@ -335,15 +335,25 @@ export function StaffProfile({
                 <div key={columnIndex} className="flex flex-col gap-2 md:gap-3">
                   {column.map((photo) => {
                     const href = loadedPhotoToArticleMap[photo.id];
+                    const src = photo.thumbnailURL || photo.sizes?.card?.url || photo.sizes?.gallery?.url || photo.url!;
+                    // Legacy-archive rows resolve to /archive/*, which is served
+                    // by a different upstream than this app. Next's image
+                    // optimizer fetches through its own loopback and cannot
+                    // reach it, so those requests hang or fail — and a
+                    // prolific photographer's grid is mostly archive photos,
+                    // which is what makes the page feel dead. Same guard
+                    // RichTextParser already applies to inline uploads.
+                    const isLegacyArchive = typeof src === 'string' && src.startsWith('/archive/');
                     const imageNode = (
                       <Image
-                        src={photo.thumbnailURL || photo.sizes?.card?.url || photo.sizes?.gallery?.url || photo.url!}
+                        src={src}
                         alt={photo.title || ""}
                         width={photo.sizes?.card?.width || photo.sizes?.gallery?.width || photo.width || 1200}
                         height={photo.sizes?.card?.height || photo.sizes?.gallery?.height || photo.height || 800}
                         sizes={`(max-width: 768px) 100vw, ${Math.round(100 / portfolioColumnCount)}vw`}
                         quality={60}
                         loading="lazy"
+                        unoptimized={isLegacyArchive}
                         className="w-full h-auto"
                       />
                     );

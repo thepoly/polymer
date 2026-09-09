@@ -45,6 +45,7 @@ import * as migration_20260506_020000_add_articles_plain_content from './2026050
 import * as migration_20260507_000000_add_articles_previous_slug from './20260507_000000_add_articles_previous_slug';
 import * as migration_20260507_010000_add_legacy_shortlinks from './20260507_010000_add_legacy_shortlinks';
 import * as migration_20260906_000000_fix_schema_drift from './20260906_000000_fix_schema_drift'
+import * as migration_20260909_000000_add_focal_point_acknowledged from './20260909_000000_add_focal_point_acknowledged'
 
 export const migrations = [
   {
@@ -281,5 +282,10 @@ export const migrations = [
     up: migration_20260906_000000_fix_schema_drift.up,
     down: migration_20260906_000000_fix_schema_drift.down,
     name: '20260906_000000_fix_schema_drift',
+  },
+  {
+    up: migration_20260909_000000_add_focal_point_acknowledged.up,
+    down: migration_20260909_000000_add_focal_point_acknowledged.down,
+    name: '20260909_000000_add_focal_point_acknowledged',
   },
 ];
