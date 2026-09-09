@@ -457,6 +457,10 @@ export interface LiveArticle {
    * Short topic label shown on the homepage strip (e.g. "Labor Department", "Election Night").
    */
   section: string;
+  /**
+   * Which section of the site this live blog belongs to. Drives the section header and related-stories block.
+   */
+  siteSection: 'news' | 'sports' | 'features' | 'opinion';
   hero: number | Media;
   summary?:
     | {
@@ -1052,6 +1056,7 @@ export interface LiveArticlesSelect<T extends boolean = true> {
   plainTitle?: T;
   slug?: T;
   section?: T;
+  siteSection?: T;
   hero?: T;
   summary?:
     | T

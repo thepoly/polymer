@@ -9,8 +9,20 @@ import { opinionTypeLabels } from '@/components/Opinion/opinionTypeLabels';
 import { Article, Media, User } from '@/payload-types';
 import { getArticleUrl } from '@/utils/getArticleUrl';
 
+/**
+ * The minimum shape this block needs. `Article` satisfies it structurally, and
+ * live articles (a separate collection) can pass their own section + id so the
+ * "Continue Reading" block works on /live pages too.
+ */
+export type RecommendationContext = {
+  id?: number;
+  section: Article['section'];
+  kicker?: string | null;
+  opinionType?: Article['opinionType'];
+};
+
 type Props = {
-  currentArticle: Article;
+  currentArticle: RecommendationContext;
 };
 
 const sectionLabels: Record<Article['section'], string> = {
@@ -61,7 +73,7 @@ type RecommendationArticle = {
   opinionType?: string | null;
 };
 
-const getOpinionType = (article: RecommendationArticle | Article) =>
+const getOpinionType = (article: RecommendationArticle | Article | RecommendationContext) =>
   (article as unknown as Record<string, unknown>).opinionType as string | undefined;
 
 const getFeaturedImage = (value: RecommendationArticle['featuredImage'] | Media | number | null | undefined): RecommendationImage | null => {
@@ -127,7 +139,7 @@ const getHeadlineClasses = (article: RecommendationArticle, variant: 'lead' | 'l
   return `${base} text-text-main transition-colors ${sectionStyles}`;
 };
 
-const prioritizeRecommendations = (articles: RecommendationArticle[], currentArticle: Article) => {
+const prioritizeRecommendations = (articles: RecommendationArticle[], currentArticle: RecommendationContext) => {
   if (currentArticle.section !== 'opinion') return articles;
 
   const currentOpinionType = getOpinionType(currentArticle);
@@ -183,7 +195,11 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
       and: [
         { _status: { equals: 'published' } },
         { section: { equals: currentArticle.section } },
-        { id: { not_equals: currentArticle.id } },
+        // Live articles live in a different collection, so there is no
+        // articles row to exclude when this block renders on a /live page.
+        ...(currentArticle.id === undefined
+          ? []
+          : [{ id: { not_equals: currentArticle.id } }]),
       ],
     },
     sort: '-publishedDate',
