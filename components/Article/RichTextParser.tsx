@@ -5,6 +5,7 @@ import escapeHTML from 'escape-html';
 import { Media, User } from '@/payload-types';
 import { PhotoGallery } from './PhotoGallery';
 import { Carousel } from './Carousel';
+import type { CreditedImage } from './PhotoCaption';
 
 export type LexicalNode = {
   type: string;
@@ -204,7 +205,7 @@ const serialize = (nodes: LexicalNode[], pCount: number, isRoot: boolean): { chi
         );
 
       case 'block': {
-        const blockFields = node.fields as { blockType: string; images?: { image: Media | number; caption?: string | null }[] } | undefined;
+        const blockFields = node.fields as { blockType: string; images?: CreditedImage[] } | undefined;
         if (!blockFields) return null;
         if (blockFields.blockType === 'photo_gallery') {
           return <PhotoGallery key={index} images={blockFields.images || []} />;
