@@ -1,7 +1,8 @@
 # Focal point for photofeature images
 
-**Status:** brainstorm — nothing implemented. Opened to pick an approach before
-writing code.
+**Status:** decided and implemented — **option A**. The analysis below is kept
+as the record of why, and options B–D remain the shortlist if A proves
+insufficient.
 
 **Problem:** the photofeature hero crops to the viewport and cuts people's
 heads off.
@@ -103,35 +104,57 @@ ratio so it never crops as aggressively.
 - **Catch:** crude, but it is strictly better than `50% 50%` for news photos
   and costs nothing. Worth taking regardless of what else we pick.
 
-## Recommendation
+## What was implemented
 
-**A, with D as the fallback, and B only if it turns out we need it.**
+Option A. `utils/focalPoint.ts` turns an upload's focal point into a CSS
+`object-position`, and the photofeature header applies it to every photo it
+crops — the hero, author headshots, and write-in author photos. No migration:
+the columns already existed.
 
-Reading `media.focalX`/`focalY` is free — no migration, no new field, no
-editor training, and it fixes every surface that crops an image, not just the
-hero. Where a photo has no focal point set, fall back to a top-biased default
-rather than dead centre.
+One thing had to be unblocked first. The article route sanitises media through
+a field whitelist (`toPublicArticleMedia`, and `toPublicArticleUser` for
+headshots) before handing it to the client component, and that whitelist
+dropped `focalX`/`focalY`. Reading the stored focal point was necessary but
+not sufficient — the value has to survive the trip to the component, so both
+sanitisers now carry it.
 
-I would not add the article-level override until an editor actually hits a
-case where the photofeature needs different framing from the image's own
-focal point. It is easy to add later; the migration is four nullable columns
-and `gradientOpacity` shows exactly how.
+Verified end to end against a real photofeature by moving the focal point in
+the database and watching the crop follow:
 
-I would skip C. Automatic cropping that cannot be corrected is how you get a
-headline photo centred on a lamppost.
+| stored focal point | rendered |
+| --- | --- |
+| `null` / never set | `50% 50%` |
+| `62 / 18` | `62% 18%` |
+| `12 / 8` | `12% 8%` |
+| `150 / -20` | `100% 0%` (clamped) |
 
-## Open questions
+## Deliberately not done
+
+**The top-biased fallback (option D) was left out.** Payload writes `50/50` for
+any upload whose point has never been moved, so an untouched image is
+indistinguishable from a deliberately centred one. Applying a bias would
+silently override editors who meant centre, and it cannot be scoped to only
+the untouched images.
+
+The consequence is worth stating plainly: **every image in the database
+currently sits at `50/50`, so this changes nothing on screen until an editor
+drags a focal point.** It makes the fix possible and puts the control in
+editors' hands; it does not retroactively re-frame existing photofeatures.
+
+If we would rather have unattended photos improve immediately, changing the
+default in `focalObjectPosition` is a one-line change — but it is a product
+decision about overriding editor intent, not a technical one.
+
+## Still open
 
 1. **Is the focal-point selector actually visible in the Media admin?** The
-   config enables it by default and the columns exist, but I have not clicked
-   through the UI to confirm the control renders. Worth verifying before
-   committing to option A.
-2. **How many existing images have a non-default focal point?** If the answer
-   is zero, option A fixes nothing until editors start setting them — which
-   makes the option D default the thing actually doing the work on day one.
-3. **Should this apply beyond the photofeature hero?** The same `object-cover`
-   crop happens in section cards and the homepage. The ask was photofeature
-   only, but option A would improve all of them for free.
-4. **What is the right fallback?** `35%` is a guess. If we have a sample of
-   heroes that currently crop badly, we could pick a number that fixes most
-   of them.
+   config enables it by default, `Media` never disables it, and every row
+   carries a written `50/50`, which is Payload's upload pipeline populating
+   the default — strong evidence the control is live. Not clicked through.
+2. **Should this extend beyond photofeatures?** The same `object-cover` crop
+   happens in section cards and on the homepage. The ask was photofeature
+   only, and that is what this does, but the helper is generic and those
+   surfaces would benefit for free.
+3. **Does an article-level override (option B) turn out to be needed?** Only
+   if a photofeature wants different framing from the image's own focal
+   point. Four nullable columns in both migration paths when that day comes.
