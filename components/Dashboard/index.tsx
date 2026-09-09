@@ -3,12 +3,13 @@ import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { headers } from 'next/headers'
 import { Greeting } from './Greeting.tsx'
-import { NewsroomMovedNotice } from './NewsroomMovedNotice.tsx'
+import { VersionSplash } from './VersionSplash.tsx'
 import { SidebarNewArticle } from '@/components/Dashboard/SidebarNewArticle.tsx'
 import { SearchBar } from './SearchBar.tsx'
 import { Todos } from './Todos/index.tsx'
 import './styles.css' // We will add a simple CSS file for layout
 import { User, Media, JobTitle } from '@/payload-types'
+import { APP_VERSION, getReleaseNotes, getVersionName } from '@/lib/version'
 
 const VERSION_CHART_COLORS = ['#0f62fe', '#16a34a', '#f97316', '#d6001c', '#7c3aed', '#0891b2', '#eab308', '#ec4899']
 
@@ -39,16 +40,18 @@ const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: strin
     id: authUser.id,
     depth: 1,
   }) : null
-  const shouldShowNewsroomMoveNotice =
-    ((user as (User & { latestVersion?: string | null }) | null)?.latestVersion || '0.0.0') !==
-    '1.0.0'
+  // Anyone who has not acknowledged the running version gets the splash, so a
+  // release only has to bump package.json to re-announce itself.
+  const acknowledgedVersion =
+    (user as (User & { latestVersion?: string | null }) | null)?.latestVersion || '0.0.0'
+  const shouldShowVersionSplash = Boolean(user) && acknowledgedVersion !== APP_VERSION
   const isAdmin = Boolean(user?.roles?.includes('admin'))
 
   const { search } = await searchParams
   const rawSearchQuery = Array.isArray(search) ? search[0] : search
   const searchQuery = rawSearchQuery?.trim() || ''
 
-  let versionChartData: { version: string; count: number; color: string }[] = []
+  let versionChartData: { version: string; label: string; count: number; color: string }[] = []
   let totalActiveUsers = 0
 
   if (isAdmin) {
@@ -86,6 +89,10 @@ const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: strin
       )
       .map(([version, count], index) => ({
         version,
+        // Named majors read as '1.1.0 "Indigo"' in the legend; unnamed ones
+        // (including the 0.0.0 bucket for staff who have never signed in since
+        // version tracking began) just show the number.
+        label: getVersionName(version) ? `${version} \u201c${getVersionName(version)}\u201d` : version,
         count,
         color: VERSION_CHART_COLORS[index % VERSION_CHART_COLORS.length],
       }))
@@ -187,7 +194,12 @@ const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: strin
 
   return (
     <div className="dashboard-container">
-      <NewsroomMovedNotice shouldShow={shouldShowNewsroomMoveNotice} />
+      <VersionSplash
+        shouldShow={shouldShowVersionSplash}
+        version={APP_VERSION}
+        versionName={getVersionName()}
+        releaseNotes={getReleaseNotes()}
+      />
       <SidebarNewArticle />
       {/* Header Section: Greeting (includes Profile Picture & New Article Button) */}
       <div className="dashboard-header">
@@ -215,7 +227,7 @@ const Dashboard = async ({ searchParams }: { searchParams: Promise<{ [key: strin
                     className="dashboard-version-chart-swatch"
                     style={{ backgroundColor: item.color }}
                   />
-                  <span className="dashboard-version-chart-version">{item.version}</span>
+                  <span className="dashboard-version-chart-version">{item.label}</span>
                   <span className="dashboard-version-chart-count">
                     {item.count} user{item.count === 1 ? '' : 's'}
                   </span>
