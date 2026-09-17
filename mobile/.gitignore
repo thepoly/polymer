@@ -17,6 +17,7 @@ android/gradle/wrapper/dists/
 
 # Firebase config (provide via CI secret or copy from placeholder)
 android/app/google-services.json
+ios/App/App/GoogleService-Info.plist
 
 # Signing material — never commit
 android/app/release.keystore

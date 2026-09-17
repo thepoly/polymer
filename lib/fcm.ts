@@ -144,6 +144,9 @@ async function sendOne(
       },
       data: notification.data,
       android: { priority: 'high' as const },
+      // FCM relays `notification` to iOS as an APNs alert, but it arrives
+      // silently unless the aps payload asks for a sound.
+      apns: { payload: { aps: { sound: 'default' } } },
     },
   }
   try {

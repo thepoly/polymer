@@ -15,6 +15,8 @@ on:
     branches: [ "main" ]
     paths:
       - "mobile/**"
+      # iOS-only changes shouldn't cut an Android release.
+      - "!mobile/ios/**"
       - ".github/workflows/android-build.yml"
     tags:
       - "v*.*.*-android"
@@ -103,9 +105,12 @@ jobs:
       - name: Install root dependencies
         run: pnpm install --frozen-lockfile
 
+      # --ignore-workspace: the repo-root pnpm-workspace.yaml otherwise makes
+      # this install the root project and leaves mobile/node_modules empty,
+      # which fails the `npx cap sync` step below.
       - name: Install mobile dependencies
         working-directory: mobile
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-workspace
 
       - name: Write google-services.json
         env:

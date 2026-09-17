@@ -1,0 +1,92 @@
+name: iOS Build
+
+# Compile check for the Capacitor iOS shell: builds the App target for the
+# iOS Simulator without code signing, so changes under mobile/ surface Swift,
+# Xcode project, and Swift Package resolution breakage without anyone opening
+# Xcode. There is no release lane yet; TestFlight uploads need an Apple
+# Developer team plus signing secrets. See mobile/README.md.
+
+on:
+  pull_request:
+    paths:
+      - "mobile/**"
+      - "!mobile/android/**"
+      - ".github/workflows/ios-build.yml"
+  push:
+    branches: [ "main" ]
+    paths:
+      - "mobile/**"
+      - "!mobile/android/**"
+      - ".github/workflows/ios-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build for iOS Simulator
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Version comes from the "packageManager" field in package.json.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: mobile/pnpm-lock.yaml
+
+      # --ignore-workspace: the repo-root pnpm-workspace.yaml otherwise makes
+      # this install the root project instead of mobile/.
+      - name: Install mobile dependencies
+        working-directory: mobile
+        run: pnpm install --frozen-lockfile --ignore-workspace
+
+      - name: Write GoogleService-Info.plist (if provided)
+        env:
+          GOOGLE_SERVICE_INFO_PLIST_BASE64: ${{ secrets.GOOGLE_SERVICE_INFO_PLIST_BASE64 }}
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${GOOGLE_SERVICE_INFO_PLIST_BASE64:-}" ]]; then
+            echo "Using GOOGLE_SERVICE_INFO_PLIST_BASE64 secret"
+            echo "${GOOGLE_SERVICE_INFO_PLIST_BASE64}" | base64 --decode > mobile/ios/App/App/GoogleService-Info.plist
+          else
+            echo "Secret not set; building with push registration disabled"
+          fi
+
+      - name: Sync Capacitor to iOS
+        working-directory: mobile
+        run: npx cap sync ios
+
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: mobile/ios/App/build/SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('mobile/ios/App/CapApp-SPM/Package.swift', 'mobile/ios/App/App.xcodeproj/project.pbxproj', 'mobile/ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: |
+            spm-${{ runner.os }}-
+
+      - name: Build (iOS Simulator, unsigned)
+        working-directory: mobile/ios/App
+        run: |
+          set -euo pipefail
+
+          xcodebuild -version
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build

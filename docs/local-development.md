@@ -9,7 +9,8 @@ How to get a working dev loop, plus the gotchas we keep tripping on.
 - PostgreSQL 14+ (CI uses 16; either works locally)
 
 > Note: `mobile/` is excluded from the root `tsconfig.json` and has its own
-> `package.json`. You don't need the Android SDK to work on the web app.
+> `package.json`. You don't need the Android SDK or Xcode to work on the web
+> app.
 
 ## First-time setup
 
@@ -121,12 +122,15 @@ archive side just becomes empty.
 is sending. Both sides read the same env var; restart the dev server after
 editing `.env`.
 
-### Android emulator can't reach the dev server
+### Android emulator or iOS Simulator can't reach the dev server
 
-The Capacitor shell points at `poly.rpi.edu` by default. To test against a
+The Capacitor shells point at `poly.rpi.edu` by default. To test against a
 local backend, edit `mobile/capacitor.config.ts` server.url to your
 LAN-accessible host (e.g. `http://10.0.2.2:3000` for the standard Android
-emulator).
+emulator; the iOS Simulator shares the Mac's network, so
+`http://localhost:3000` works there), then re-run `npx cap sync`. Plain
+`http://` also needs `cleartext: true` on Android and an App Transport
+Security exception on iOS.
 
 ### "duplicate key value" during migration
 
