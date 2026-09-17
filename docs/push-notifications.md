@@ -1,16 +1,17 @@
 # Push Notifications
 
-Breaking-news pushes from Payload to the Android app, end to end.
+Breaking-news pushes from Payload to the Android and iOS apps, end to end.
 
 ## Components
 
 ```
-Android app  ──► POST /api/push/register   (saves token in `device-tokens`)
+Android / iOS app ──► POST /api/push/register   (saves token in `device-tokens`)
 Article publish (breakingNews=true)
-             ──► Articles.afterChange      (article hook)
-             ──► POST /api/push/send       (with x-internal-secret)
-             ──► lib/fcm.ts → FCM HTTP v1  (fan-out to all device-tokens)
-                                  └──► Android device shows notification
+                  ──► Articles.afterChange      (article hook)
+                  ──► POST /api/push/send       (with x-internal-secret)
+                  ──► lib/fcm.ts → FCM HTTP v1  (fan-out to all device-tokens)
+                                       ├──► Android device shows notification
+                                       └──► APNs ──► iPhone shows notification
 ```
 
 | Piece | File |
@@ -20,7 +21,8 @@ Article publish (breakingNews=true)
 | Internal fan-out endpoint | [`app/api/push/send/route.ts`](../app/api/push/send/route.ts) |
 | FCM v1 client | [`lib/fcm.ts`](../lib/fcm.ts) |
 | Article publish hook | [`collections/Articles.ts`](../collections/Articles.ts) (`hooks.afterChange`) |
-| Android registration code | [`mobile/`](../mobile/) (Capacitor + a small Java/Kotlin plugin) |
+| Android registration code | [`PushRegistration.java`](../mobile/android/app/src/main/java/edu/rpi/poly/PushRegistration.java) (JS bootstrap for `@capacitor/push-notifications`) |
+| iOS registration code | [`PushRegistration.swift`](../mobile/ios/App/App/PushRegistration.swift) (same bootstrap, plus the APNs → FCM token swap) |
 
 ## Required secrets
 
@@ -41,9 +43,14 @@ credentials.
 
 ## Registration flow
 
-1. The Android app obtains its FCM registration token via the Capacitor
-   FCM plugin.
-2. It POSTs to `/api/push/register` with `{ token, platform: 'android' }`.
+1. The app obtains its FCM registration token via
+   `@capacitor/push-notifications`. On iOS the plugin natively yields an
+   APNs device token, so the app hands that to Firebase Messaging and
+   reports the resulting FCM token instead; both platforms therefore store
+   FCM tokens and share one send path. (Delivering to iOS requires an APNs
+   auth key uploaded to the Firebase project; see `mobile/README.md`.)
+2. It POSTs to `/api/push/register` with
+   `{ token, platform: 'android' | 'ios' }`.
 3. The endpoint validates length (`MAX_TOKEN_LENGTH = 4096`), throttles
    re-registrations (in-memory `recentTokens` map, `RATE_LIMIT_WINDOW_MS
    = 60_000`), and upserts into `device-tokens`.
@@ -67,6 +74,9 @@ credentials.
    `device-tokens` rows, and calls `sendFcmToTokens` from `lib/fcm.ts`.
 5. `lib/fcm.ts` mints an OAuth bearer from the service account, posts
    the FCM v1 message in chunks, and reports back per-token failures.
+   Each message carries `android.priority: high` and an
+   `apns.payload.aps.sound` so iOS alerts aren't silent; each platform
+   ignores the other's block.
    Tokens that come back as `UNREGISTERED` should be removed from
    `device-tokens` (TODO if not yet wired).
 
@@ -105,9 +115,10 @@ but the path is exercised.
   caller in `Articles.afterChange` and the endpoint together. There's
   only one caller in the codebase; CI typecheck will catch most
   mismatches but JSON body shape is checked at runtime.
-- For multi-platform support, add an iOS branch to `device-tokens.platform`
-  and a APNs-or-FCM dispatch in `lib/fcm.ts`. The platform column is
-  already enum-bounded to `android | ios`.
+- iOS goes through FCM too, so `lib/fcm.ts` doesn't branch on
+  `device-tokens.platform`. The column records which app registered the
+  token (`android | ios`), which is useful for debugging and per-platform
+  cleanup.
 
 ## Incident playbook
 
@@ -117,6 +128,11 @@ but the path is exercised.
 - **All sends fail with `401` from FCM.** The service account JSON is
   invalid or the Firebase project ID doesn't match the package name
   (`edu.rpi.poly`). Regenerate the service account and rotate the env var.
+- **Android gets pushes but iPhones don't.** Check that the Firebase
+  project has an APNs auth key under Project settings → Cloud Messaging →
+  Apple app configuration, and that the iOS build bundled
+  `GoogleService-Info.plist` (Xcode prints a build warning when it's
+  missing, and the app then registers no token).
 - **Tokens accumulate forever.** Until token cleanup is wired,
   `device-tokens` grows monotonically. Manually prune rows older than ~6
   months (`DELETE FROM device_tokens WHERE last_seen_at < NOW() -

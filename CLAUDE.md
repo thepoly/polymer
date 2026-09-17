@@ -4,7 +4,7 @@ This document is the canonical project + operations reference for Claude Code in
 
 ## Project Overview
 
-Polymer is The Polytechnic's web platform (public newspaper site + Payload CMS admin) built on Next.js + Payload + PostgreSQL, with a Capacitor Android shell that wraps the production site and receives FCM breaking-news pushes.
+Polymer is The Polytechnic's web platform (public newspaper site + Payload CMS admin) built on Next.js + Payload + PostgreSQL, with Capacitor Android and iOS shells that wrap the production site and receive FCM breaking-news pushes.
 
 **This project is live in production with a real production database. Exercise caution with schema changes, migrations, and any destructive operations.**
 
@@ -30,10 +30,10 @@ For deeper architectural context, see [`docs/`](docs/) (architecture, data model
 - `components/`: UI + article layout + dashboard components
 - `lib/`: server helpers (PostHog, FCM, theme, archive query, weather, homepage slot resolution)
 - `migrations/`: Payload-format TypeScript migrations registered via `migrations/index.ts`
-- `mobile/`: Capacitor Android shell (separate `package.json`)
+- `mobile/`: Capacitor Android + iOS shells (separate `package.json`; install with `pnpm install --ignore-workspace`)
 - `scripts/`: deploy/runtime scripts (`run_deploy_sql_migrations.sh`, `deploy-smoke.mjs`, `generate-env.js`)
 - `middleware.ts`: returns `410 Gone` for matching article URLs whose row is unpublished
-- `.github/workflows/`: CI, production deploy, and Android release workflows
+- `.github/workflows/`: CI, production deploy, Android release, and iOS simulator build workflows
 
 ## Core Behavior
 
@@ -60,7 +60,7 @@ Collections:
 - `submissions`: public op-ed / letter submissions (anonymous create, staff triage)
 - `event-submissions`: public event submissions for the calendar
 - `logos`: branded section logos and homepage assets
-- `device-tokens`: registered Android FCM tokens (anonymous create via `/api/push/register`, admin-only read/delete)
+- `device-tokens`: registered Android and iOS FCM tokens (anonymous create via `/api/push/register`, admin-only read/delete)
 
 Globals:
 
@@ -211,9 +211,9 @@ Mixing PM2 users creates split daemons/process lists and inconsistent runtime ow
 
 ## Push Notifications (Breaking News)
 
-- registration: `POST /api/push/register` (Android client; in-memory rate limit + token de-dupe)
+- registration: `POST /api/push/register` (Android + iOS clients; in-memory rate limit + token de-dupe)
 - fan-out: `POST /api/push/send` (internal; requires `x-internal-secret` matching `INTERNAL_PUSH_SECRET`)
-- transport: FCM HTTP v1 via `lib/fcm.ts` using `FCM_SERVICE_ACCOUNT_JSON`
+- transport: FCM HTTP v1 via `lib/fcm.ts` using `FCM_SERVICE_ACCOUNT_JSON`; iOS devices register FCM tokens too (APNs → FCM swap in the app), so there is no separate APNs sender
 - trigger: `Articles.afterChange` when an article transitions to published with `breakingNews=true`
 - if `INTERNAL_PUSH_SECRET` or `FCM_SERVICE_ACCOUNT_JSON` is unset, the fan-out becomes a no-op so dev/CI is unaffected
 

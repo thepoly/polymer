@@ -17,6 +17,9 @@ importers:
       '@capacitor/core':
         specifier: ^6.2.0
         version: 6.2.1
+      '@capacitor/ios':
+        specifier: ^6.2.0
+        version: 6.2.1(@capacitor/core@6.2.1)
       '@capacitor/push-notifications':
         specifier: ^6.0.4
         version: 6.0.5(@capacitor/core@6.2.1)
@@ -29,10 +32,10 @@ importers:
     devDependencies:
       '@capacitor/assets':
         specifier: ^3.0.5
-        version: 3.0.5(@types/node@25.6.0)(typescript@5.9.3)
+        version: 3.0.5(@types/node@25.6.0)(supports-color@5.5.0)(typescript@5.9.3)
       '@capacitor/cli':
         specifier: ^6.2.0
-        version: 6.2.1
+        version: 6.2.1(supports-color@5.5.0)
       typescript:
         specifier: ^5.6.3
         version: 5.9.3
@@ -74,6 +77,11 @@ packages:
 
   '@capacitor/core@6.2.1':
     resolution: {integrity: sha512-urZwxa7hVE/BnA18oCFAdizXPse6fCKanQyEqpmz6cBJ2vObwMpyJDG5jBeoSsgocS9+Ax+9vb4ducWJn0y2qQ==}
+
+  '@capacitor/ios@6.2.1':
+    resolution: {integrity: sha512-tbMlQdQjxe1wyaBvYVU1yTojKJjgluZQsJkALuJxv/6F8QTw5b6vd7X785O/O7cMpIAZfUWo/vtAHzFkRV+kXw==}
+    peerDependencies:
+      '@capacitor/core': ^6.2.0
 
   '@capacitor/push-notifications@6.0.5':
     resolution: {integrity: sha512-CsRmb0cnZd9Uwx24ym4My5fNKrQvwI4D51aMEph5pUZy+LAjp6q0y4NJe8DEgwaVdAqVLbb4rqn75AZ4WSiFYg==}
@@ -238,6 +246,7 @@ packages:
   '@xmldom/xmldom@0.8.13':
     resolution: {integrity: sha512-KRYzxepc14G/CEpEGc3Yn+JKaAeT63smlDr+vjB8jRfgTBBI9wRj/nkQEO+ucV8p8I9bfKLWp37uHgFrbntPvw==}
     engines: {node: '>=10.0.0'}
+    deprecated: this version has critical issues, please update to the latest version
 
   JSONStream@1.3.5:
     resolution: {integrity: sha512-E+iruNOY8VV9s4JEbe1aNEm6MiszPRr/UfcHMz0TQh1BXSxHK+ASV1R6W4HpjBhSeS+54PIsAMCBmwD06LLsqQ==}
@@ -465,10 +474,12 @@ packages:
   conventional-changelog-atom@2.0.8:
     resolution: {integrity: sha512-xo6v46icsFTK3bb7dY/8m2qvc8sZemRgdqLb/bjpBsH2UyOS8rKNTgcb5025Hri6IpANPApbXMg15QLb1LJpBw==}
     engines: {node: '>=10'}
+    deprecated: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
 
   conventional-changelog-codemirror@2.0.8:
     resolution: {integrity: sha512-z5DAsn3uj1Vfp7po3gpt2Boc+Bdwmw2++ZHa5Ak9k0UKsYAO5mH1UBTN0qSCuJZREIhX6WU4E1p3IW2oRCNzQw==}
     engines: {node: '>=10'}
+    deprecated: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
 
   conventional-changelog-conventionalcommits@4.6.3:
     resolution: {integrity: sha512-LTTQV4fwOM4oLPad317V/QNQ1FY4Hju5qeBIM1uTHbrnCE+Eg4CdRZ3gO2pUeR+tzWdp80M2j3qFFEDWVqOV4g==}
@@ -477,26 +488,32 @@ packages:
   conventional-changelog-core@4.2.4:
     resolution: {integrity: sha512-gDVS+zVJHE2v4SLc6B0sLsPiloR0ygU7HaDW14aNJE1v4SlqJPILPl/aJC7YdtRE4CybBf8gDwObBvKha8Xlyg==}
     engines: {node: '>=10'}
+    deprecated: Deprecated and no longer maintained. Please use conventional-changelog instead.
 
   conventional-changelog-ember@2.0.9:
     resolution: {integrity: sha512-ulzIReoZEvZCBDhcNYfDIsLTHzYHc7awh+eI44ZtV5cx6LVxLlVtEmcO+2/kGIHGtw+qVabJYjdI5cJOQgXh1A==}
     engines: {node: '>=10'}
+    deprecated: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
 
   conventional-changelog-eslint@3.0.9:
     resolution: {integrity: sha512-6NpUCMgU8qmWmyAMSZO5NrRd7rTgErjrm4VASam2u5jrZS0n38V7Y9CzTtLT2qwz5xEChDR4BduoWIr8TfwvXA==}
     engines: {node: '>=10'}
+    deprecated: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
 
   conventional-changelog-express@2.0.6:
     resolution: {integrity: sha512-SDez2f3iVJw6V563O3pRtNwXtQaSmEfTCaTBPCqn0oG0mfkq0rX4hHBq5P7De2MncoRixrALj3u3oQsNK+Q0pQ==}
     engines: {node: '>=10'}
+    deprecated: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
 
   conventional-changelog-jquery@3.0.11:
     resolution: {integrity: sha512-x8AWz5/Td55F7+o/9LQ6cQIPwrCjfJQ5Zmfqi8thwUEKHstEn4kTIofXub7plf1xvFA2TqhZlq7fy5OmV6BOMw==}
     engines: {node: '>=10'}
+    deprecated: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
 
   conventional-changelog-jshint@2.0.9:
     resolution: {integrity: sha512-wMLdaIzq6TNnMHMy31hql02OEQ8nCQfExw1SE0hYL5KvU+JCTuPaDO+7JiogGT2gJAxiUGATdtYYfh+nT+6riA==}
     engines: {node: '>=10'}
+    deprecated: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
 
   conventional-changelog-preset-loader@2.3.4:
     resolution: {integrity: sha512-GEKRWkrSAZeTq5+YjUZOYxdHq+ci4dNwHvpaBC3+ENalzFWuCWa9EZXSuZBpkr72sMdKB+1fyDV4takK1Lf58g==}
@@ -731,7 +748,7 @@ packages:
   git-raw-commits@2.0.11:
     resolution: {integrity: sha512-VnctFhw+xfj8Va1xtfEqCUD2XDrbAPSJx+hSrE5K7fGdjZruW7XV+QOrN7LF/RJyvspRiD2I0asWsxFp0ya26A==}
     engines: {node: '>=10'}
-    deprecated: This package is no longer maintained. For the JavaScript API, please use @conventional-changelog/git-client instead.
+    deprecated: Deprecated and no longer maintained. Use @conventional-changelog/git-client instead.
     hasBin: true
 
   git-remote-origin-url@2.0.0:
@@ -741,7 +758,7 @@ packages:
   git-semver-tags@4.1.1:
     resolution: {integrity: sha512-OWyMt5zBe7xFs8vglMmhM9lRQzCWL3WjHtxNNfJTMngGym7pC1kh8sP6jevfydJ6LP3ZvGxfb6ABYgPUM0mtsA==}
     engines: {node: '>=10'}
-    deprecated: This package is no longer maintained. For the JavaScript API, please use @conventional-changelog/git-client instead.
+    deprecated: Deprecated and no longer maintained. Use @conventional-changelog/git-client instead.
     hasBin: true
 
   gitconfiglocal@1.0.0:
@@ -1554,6 +1571,7 @@ packages:
 
   uuid@7.0.3:
     resolution: {integrity: sha512-DPSke0pXhTZgoF/d+WSt2QaKMCFSfx7QegxEWT+JOuHF5aWrKEn0G+ztjuJg/gG8/ItK+rbPCD/yNv8yyih6Cg==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   v8-compile-cache-lib@3.0.1:
@@ -1681,14 +1699,14 @@ snapshots:
     dependencies:
       '@capacitor/core': 6.2.1
 
-  '@capacitor/assets@3.0.5(@types/node@25.6.0)(typescript@5.9.3)':
+  '@capacitor/assets@3.0.5(@types/node@25.6.0)(supports-color@5.5.0)(typescript@5.9.3)':
     dependencies:
-      '@capacitor/cli': 5.7.8
-      '@ionic/utils-array': 2.1.6
-      '@ionic/utils-fs': 3.1.7
-      '@trapezedev/project': 7.1.3(@types/node@25.6.0)(typescript@5.9.3)
+      '@capacitor/cli': 5.7.8(supports-color@5.5.0)
+      '@ionic/utils-array': 2.1.6(supports-color@5.5.0)
+      '@ionic/utils-fs': 3.1.7(supports-color@5.5.0)
+      '@trapezedev/project': 7.1.3(@types/node@25.6.0)(supports-color@5.5.0)(typescript@5.9.3)
       commander: 8.3.0
-      debug: 4.3.4
+      debug: 4.3.4(supports-color@5.5.0)
       fs-extra: 10.1.0
       node-fetch: 2.7.0
       node-html-parser: 5.4.2
@@ -1706,17 +1724,17 @@ snapshots:
       - supports-color
       - typescript
 
-  '@capacitor/cli@5.7.8':
+  '@capacitor/cli@5.7.8(supports-color@5.5.0)':
     dependencies:
-      '@ionic/cli-framework-output': 2.2.8
-      '@ionic/utils-fs': 3.1.7
-      '@ionic/utils-subprocess': 2.1.14
-      '@ionic/utils-terminal': 2.3.5
+      '@ionic/cli-framework-output': 2.2.8(supports-color@5.5.0)
+      '@ionic/utils-fs': 3.1.7(supports-color@5.5.0)
+      '@ionic/utils-subprocess': 2.1.14(supports-color@5.5.0)
+      '@ionic/utils-terminal': 2.3.5(supports-color@5.5.0)
       commander: 9.5.0
-      debug: 4.3.4
+      debug: 4.3.4(supports-color@5.5.0)
       env-paths: 2.2.1
       kleur: 4.1.5
-      native-run: 2.0.3
+      native-run: 2.0.3(supports-color@5.5.0)
       open: 8.4.2
       plist: 3.1.0
       prompts: 2.4.2
@@ -1728,17 +1746,17 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@capacitor/cli@6.2.1':
+  '@capacitor/cli@6.2.1(supports-color@5.5.0)':
     dependencies:
-      '@ionic/cli-framework-output': 2.2.8
-      '@ionic/utils-fs': 3.1.7
-      '@ionic/utils-subprocess': 2.1.11
-      '@ionic/utils-terminal': 2.3.5
+      '@ionic/cli-framework-output': 2.2.8(supports-color@5.5.0)
+      '@ionic/utils-fs': 3.1.7(supports-color@5.5.0)
+      '@ionic/utils-subprocess': 2.1.11(supports-color@5.5.0)
+      '@ionic/utils-terminal': 2.3.5(supports-color@5.5.0)
       commander: 9.5.0
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@5.5.0)
       env-paths: 2.2.1
       kleur: 4.1.5
-      native-run: 2.0.3
+      native-run: 2.0.3(supports-color@5.5.0)
       open: 8.4.2
       plist: 3.1.0
       prompts: 2.4.2
@@ -1753,6 +1771,10 @@ snapshots:
   '@capacitor/core@6.2.1':
     dependencies:
       tslib: 2.8.1
+
+  '@capacitor/ios@6.2.1(@capacitor/core@6.2.1)':
+    dependencies:
+      '@capacitor/core': 6.2.1
 
   '@capacitor/push-notifications@6.0.5(@capacitor/core@6.2.1)':
     dependencies:
@@ -1772,126 +1794,126 @@ snapshots:
 
   '@hutson/parse-repository-url@3.0.2': {}
 
-  '@ionic/cli-framework-output@2.2.8':
+  '@ionic/cli-framework-output@2.2.8(supports-color@5.5.0)':
     dependencies:
-      '@ionic/utils-terminal': 2.3.5
-      debug: 4.4.3
+      '@ionic/utils-terminal': 2.3.5(supports-color@5.5.0)
+      debug: 4.4.3(supports-color@5.5.0)
       tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/utils-array@2.1.5':
+  '@ionic/utils-array@2.1.5(supports-color@5.5.0)':
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@5.5.0)
       tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/utils-array@2.1.6':
+  '@ionic/utils-array@2.1.6(supports-color@5.5.0)':
     dependencies:
-      debug: 4.3.4
+      debug: 4.3.4(supports-color@5.5.0)
       tslib: 2.6.2
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/utils-fs@3.1.6':
+  '@ionic/utils-fs@3.1.6(supports-color@5.5.0)':
     dependencies:
       '@types/fs-extra': 8.1.5
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@5.5.0)
       fs-extra: 9.1.0
       tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/utils-fs@3.1.7':
+  '@ionic/utils-fs@3.1.7(supports-color@5.5.0)':
     dependencies:
       '@types/fs-extra': 8.1.5
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@5.5.0)
       fs-extra: 9.1.0
       tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/utils-object@2.1.5':
+  '@ionic/utils-object@2.1.5(supports-color@5.5.0)':
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@5.5.0)
       tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/utils-object@2.1.6':
+  '@ionic/utils-object@2.1.6(supports-color@5.5.0)':
     dependencies:
-      debug: 4.3.4
+      debug: 4.3.4(supports-color@5.5.0)
       tslib: 2.6.2
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/utils-process@2.1.10':
+  '@ionic/utils-process@2.1.10(supports-color@5.5.0)':
     dependencies:
-      '@ionic/utils-object': 2.1.5
-      '@ionic/utils-terminal': 2.3.3
-      debug: 4.4.3
+      '@ionic/utils-object': 2.1.5(supports-color@5.5.0)
+      '@ionic/utils-terminal': 2.3.3(supports-color@5.5.0)
+      debug: 4.4.3(supports-color@5.5.0)
       signal-exit: 3.0.7
       tree-kill: 1.2.2
       tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/utils-process@2.1.11':
+  '@ionic/utils-process@2.1.11(supports-color@5.5.0)':
     dependencies:
-      '@ionic/utils-object': 2.1.6
-      '@ionic/utils-terminal': 2.3.4
-      debug: 4.3.4
+      '@ionic/utils-object': 2.1.6(supports-color@5.5.0)
+      '@ionic/utils-terminal': 2.3.4(supports-color@5.5.0)
+      debug: 4.3.4(supports-color@5.5.0)
       signal-exit: 3.0.7
       tree-kill: 1.2.2
       tslib: 2.6.2
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/utils-stream@3.1.5':
+  '@ionic/utils-stream@3.1.5(supports-color@5.5.0)':
     dependencies:
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@5.5.0)
       tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/utils-stream@3.1.6':
+  '@ionic/utils-stream@3.1.6(supports-color@5.5.0)':
     dependencies:
-      debug: 4.3.4
+      debug: 4.3.4(supports-color@5.5.0)
       tslib: 2.6.2
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/utils-subprocess@2.1.11':
+  '@ionic/utils-subprocess@2.1.11(supports-color@5.5.0)':
     dependencies:
-      '@ionic/utils-array': 2.1.5
-      '@ionic/utils-fs': 3.1.6
-      '@ionic/utils-process': 2.1.10
-      '@ionic/utils-stream': 3.1.5
-      '@ionic/utils-terminal': 2.3.3
+      '@ionic/utils-array': 2.1.5(supports-color@5.5.0)
+      '@ionic/utils-fs': 3.1.6(supports-color@5.5.0)
+      '@ionic/utils-process': 2.1.10(supports-color@5.5.0)
+      '@ionic/utils-stream': 3.1.5(supports-color@5.5.0)
+      '@ionic/utils-terminal': 2.3.3(supports-color@5.5.0)
       cross-spawn: 7.0.6
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@5.5.0)
       tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/utils-subprocess@2.1.14':
+  '@ionic/utils-subprocess@2.1.14(supports-color@5.5.0)':
     dependencies:
-      '@ionic/utils-array': 2.1.6
-      '@ionic/utils-fs': 3.1.7
-      '@ionic/utils-process': 2.1.11
-      '@ionic/utils-stream': 3.1.6
-      '@ionic/utils-terminal': 2.3.4
+      '@ionic/utils-array': 2.1.6(supports-color@5.5.0)
+      '@ionic/utils-fs': 3.1.7(supports-color@5.5.0)
+      '@ionic/utils-process': 2.1.11(supports-color@5.5.0)
+      '@ionic/utils-stream': 3.1.6(supports-color@5.5.0)
+      '@ionic/utils-terminal': 2.3.4(supports-color@5.5.0)
       cross-spawn: 7.0.6
-      debug: 4.3.4
+      debug: 4.3.4(supports-color@5.5.0)
       tslib: 2.6.2
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/utils-terminal@2.3.3':
+  '@ionic/utils-terminal@2.3.3(supports-color@5.5.0)':
     dependencies:
       '@types/slice-ansi': 4.0.0
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@5.5.0)
       signal-exit: 3.0.7
       slice-ansi: 4.0.0
       string-width: 4.2.3
@@ -1902,10 +1924,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/utils-terminal@2.3.4':
+  '@ionic/utils-terminal@2.3.4(supports-color@5.5.0)':
     dependencies:
       '@types/slice-ansi': 4.0.0
-      debug: 4.3.4
+      debug: 4.3.4(supports-color@5.5.0)
       signal-exit: 3.0.7
       slice-ansi: 4.0.0
       string-width: 4.2.3
@@ -1916,10 +1938,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@ionic/utils-terminal@2.3.5':
+  '@ionic/utils-terminal@2.3.5(supports-color@5.5.0)':
     dependencies:
       '@types/slice-ansi': 4.0.0
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@5.5.0)
       signal-exit: 3.0.7
       slice-ansi: 4.0.0
       string-width: 4.2.3
@@ -1964,10 +1986,10 @@ snapshots:
 
   '@trapezedev/gradle-parse@7.1.3': {}
 
-  '@trapezedev/project@7.1.3(@types/node@25.6.0)(typescript@5.9.3)':
+  '@trapezedev/project@7.1.3(@types/node@25.6.0)(supports-color@5.5.0)(typescript@5.9.3)':
     dependencies:
-      '@ionic/utils-fs': 3.1.7
-      '@ionic/utils-subprocess': 2.1.14
+      '@ionic/utils-fs': 3.1.7(supports-color@5.5.0)
+      '@ionic/utils-subprocess': 2.1.14(supports-color@5.5.0)
       '@prettier/plugin-xml': 2.2.0
       '@trapezedev/gradle-parse': 7.1.3
       '@xmldom/xmldom': 0.7.13
@@ -2350,13 +2372,17 @@ snapshots:
 
   dateformat@3.0.3: {}
 
-  debug@4.3.4:
+  debug@4.3.4(supports-color@5.5.0):
     dependencies:
       ms: 2.1.2
+    optionalDependencies:
+      supports-color: 5.5.0
 
-  debug@4.4.3:
+  debug@4.4.3(supports-color@5.5.0):
     dependencies:
       ms: 2.1.3
+    optionalDependencies:
+      supports-color: 5.5.0
 
   decamelize-keys@1.1.1:
     dependencies:
@@ -2805,12 +2831,12 @@ snapshots:
 
   napi-build-utils@2.0.0: {}
 
-  native-run@2.0.3:
+  native-run@2.0.3(supports-color@5.5.0):
     dependencies:
-      '@ionic/utils-fs': 3.1.7
-      '@ionic/utils-terminal': 2.3.5
+      '@ionic/utils-fs': 3.1.7(supports-color@5.5.0)
+      '@ionic/utils-terminal': 2.3.5(supports-color@5.5.0)
       bplist-parser: 0.3.2
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@5.5.0)
       elementtree: 0.1.7
       ini: 4.1.3
       plist: 3.1.0

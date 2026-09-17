@@ -2,19 +2,24 @@
   "name": "the-poly-mobile",
   "version": "0.0.0",
   "private": true,
-  "description": "Capacitor Android shell for The Polytechnic (poly.rpi.edu).",
+  "description": "Capacitor Android and iOS shells for The Polytechnic (poly.rpi.edu).",
   "scripts": {
     "sync": "cap sync android",
     "open": "cap open android",
     "run:android": "cap run android",
+    "sync:ios": "cap sync ios",
+    "open:ios": "cap open ios",
+    "run:ios": "cap run ios",
     "assets": "capacitor-assets generate --android",
     "build:debug": "cd android && ./gradlew assembleDebug",
-    "build:release": "cd android && ./gradlew assembleRelease"
+    "build:release": "cd android && ./gradlew assembleRelease",
+    "build:ios": "cd ios/App && xcodebuild -project App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.0",
     "@capacitor/app": "^6.0.2",
     "@capacitor/core": "^6.2.0",
+    "@capacitor/ios": "^6.2.0",
     "@capacitor/push-notifications": "^6.0.4",
     "@capacitor/splash-screen": "^6.0.3",
     "@capacitor/status-bar": "^6.0.2"

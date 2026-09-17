@@ -20,7 +20,7 @@ It talks to two PostgreSQL databases:
 
 A self-hosted PostHog instance (`t.poly.rpi.edu`) receives privacy-filtered
 analytics; FCM HTTP v1 is the transport for breaking-news pushes to the
-Android app.
+Android and iOS apps.
 
 ```
                 ┌─────────────────────────────────────────────────┐
@@ -147,4 +147,5 @@ internal HTTP call back into the app, which CodeQL flagged as SSRF.
 | PM2 runtime | [`ecosystem.config.cjs`](../ecosystem.config.cjs) |
 | CI | [`.github/workflows/ci.yml`](../.github/workflows/ci.yml) |
 | Deploy | [`.github/workflows/deploy.yml`](../.github/workflows/deploy.yml) |
-| Android | [`mobile/`](../mobile/) |
+| Android | [`mobile/android/`](../mobile/android/) |
+| iOS | [`mobile/ios/`](../mobile/ios/), [`.github/workflows/ios-build.yml`](../.github/workflows/ios-build.yml) |

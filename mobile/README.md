@@ -1,11 +1,13 @@
-# mobile — "The Poly" Android app
+# mobile — "The Poly" Android and iOS apps
 
-Capacitor-based Android WebView shell for [poly.rpi.edu](https://poly.rpi.edu).
-The app is a thin native wrapper around the production website, plus a push
-notifications plugin for breaking-news alerts.
+Capacitor-based WebView shells for [poly.rpi.edu](https://poly.rpi.edu), one
+per platform. Each app is a thin native wrapper around the production
+website, plus a push notifications plugin for breaking-news alerts.
 
 The authoritative design doc lives at
 [`docs/superpowers/specs/2026-04-24-capacitor-android-app-design.md`](../docs/superpowers/specs/2026-04-24-capacitor-android-app-design.md).
+The iOS app follows the same design; its platform notes are in the
+[iOS](#ios) section below.
 
 ## Layout
 
@@ -18,6 +20,7 @@ mobile/
 │   ├── generate-icons.sh         # re-renders resources/*.png from resources/*.svg
 │   └── sync-version.mjs          # writes versionName/versionCode into android/app/build.gradle
 ├── android/                      # generated Capacitor Android project
+├── ios/                          # Capacitor iOS project (Swift Package Manager, no CocoaPods)
 ├── capacitor.config.ts           # appId, appName, server.url
 └── package.json                  # Capacitor 6 deps
 ```
@@ -29,6 +32,8 @@ mobile/
 - Android SDK (Platform 34 + Build Tools 34+)
 - ImageMagick and `rsvg-convert` if you plan to regenerate the icon/splash source art
 
+iOS prerequisites are listed under [iOS](#ios).
+
 ## Local development
 
 Install everything (repo root and `mobile/`), then sync and run:
@@ -38,7 +43,9 @@ Install everything (repo root and `mobile/`), then sync and run:
 pnpm install
 
 cd mobile
-pnpm install
+# --ignore-workspace: the repo-root pnpm-workspace.yaml otherwise makes this
+# install the root project and leave mobile/node_modules empty.
+pnpm install --ignore-workspace
 npx cap sync android
 
 # open Android Studio
@@ -164,9 +171,151 @@ Set `ANDROID_KEYSTORE_PATH` if the keystore lives somewhere other than
   hosted on production with the release keystore's SHA-256 fingerprint. Do
   that after the first signed release.
 
+## iOS
+
+The iOS app lives in `ios/`. It shares the Android app's plumbing (same
+site, theme bridge, push flow) but uses native iOS chrome and gestures
+where Android relies on the website's own UI:
+
+| Android (`android/app/src/main/`) | iOS (`ios/App/App/`) |
+| --- | --- |
+| `MainActivity.java`: red splash until the page is ready; system bars follow `window.PolyTheme.setDark` | `MainViewController.swift`: logo launch view with the same readiness timings; status bar and tab bar follow the same `PolyTheme` bridge |
+| The site's web bottom nav | `SiteTabBarController.swift`: native tab bar (Liquid Glass on iOS 26+) |
+| Off-site links open in the browser | `ExternalLinksPlugin.swift`: in-app Safari sheet |
+| System back button | Edge swipe back/forward through history, plus pull to refresh |
+| `PushRegistration.java`: JS bootstrap for `@capacitor/push-notifications` | `PushRegistration.swift`: same bootstrap (`platform: 'ios'`) plus the APNs → FCM token swap |
+| App Links intent filter for `poly.rpi.edu` | Associated Domains entitlement (`applinks:poly.rpi.edu`), routed by `SceneDelegate.swift` |
+| `google-services.json` (gitignored) | `GoogleService-Info.plist` (gitignored) |
+
+Native dependencies come from Swift Package Manager. `npx cap sync ios`
+regenerates `ios/App/CapApp-SPM/Package.swift` from the installed Capacitor
+plugins, and the Xcode project pulls `FirebaseCore` + `FirebaseMessaging`
+from `firebase-ios-sdk`. There is no Podfile.
+
+### Prerequisites
+
+- macOS with Xcode 16.3 or newer (Firebase's Swift package needs Swift 6.1).
+  App Store and TestFlight uploads need whichever Xcode Apple currently
+  requires.
+- An iOS Simulator runtime (Xcode → Settings → Components).
+- Node 20+ and pnpm 10.
+
+### Local development
+
+```bash
+cd mobile
+pnpm install --ignore-workspace
+npx cap sync ios      # writes capacitor.config.json into the app, regenerates CapApp-SPM
+npx cap open ios      # opens App.xcodeproj; pick a simulator and press Run
+```
+
+Or build from the command line (this is what `.github/workflows/ios-build.yml`
+runs, also available as `pnpm build:ios`):
+
+```bash
+cd mobile/ios/App
+xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+  -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+  -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+```
+
+Simulator builds need no Apple Developer account. Physical devices do: the
+app uses the Push Notifications and Associated Domains capabilities, which
+free personal teams can't sign. Pick the team under the App target →
+Signing & Capabilities.
+
+### Firebase setup (iOS)
+
+Use the same Firebase project as Android:
+
+1. **Add an iOS app** in Firebase → Project settings with bundle ID
+   `edu.rpi.poly`.
+2. **Download `GoogleService-Info.plist`** to
+   `mobile/ios/App/App/GoogleService-Info.plist`. A build phase copies it into
+   the app bundle when it exists. Without it, the app still runs, push
+   registration is disabled, and Xcode prints a build warning.
+   - For CI: `base64 -i GoogleService-Info.plist | pbcopy`, then paste into
+     the GitHub secret `GOOGLE_SERVICE_INFO_PLIST_BASE64`.
+3. **Upload an APNs auth key.** Create a key with the Apple Push
+   Notifications service enabled (Apple Developer → Certificates, IDs &
+   Profiles → Keys), then upload the `.p8` under Firebase → Project
+   settings → Cloud Messaging → Apple app configuration with its key ID and
+   your team ID. The same key covers development and production builds.
+4. **No backend changes.** The app registers an FCM token (not the raw APNs
+   token) with `platform: 'ios'`, so `/api/push/send` → `lib/fcm.ts` reaches
+   iPhones through the existing `FCM_SERVICE_ACCOUNT_JSON`.
+
+### How it works
+
+- **Launch.** `LaunchScreen.storyboard` shows the red "p" on the site's
+  background color (white, or #0A0A0A in dark mode), the way iOS apps
+  launch, rather than Android's full-bleed red. The SplashScreen plugin skips
+  its iOS launch splash when `launchShowDuration` is 0 (the value the Android
+  flow relies on), so `MainViewController` keeps an identical view over the
+  web view until `document.readyState === 'complete'` plus 350 ms, with an
+  8 s backstop and a 250 ms fade, matching `MainActivity`. The tab bar is
+  already live underneath.
+- **Tab bar (iPhone).** Home, News, Features, Opinion, and Sports are native
+  tabs over the one web view. Tapping a tab navigates client-side by
+  clicking the site's own Next.js link for that section (falling back to a
+  page load). Articles opened from a tab stay in that tab, each tab
+  remembers its last page, and re-tapping the selected tab returns to the
+  section front, then scrolls to the top. On iOS 26+ the bar minimizes while
+  scrolling down. The app hides the site's web bottom nav with an injected
+  stylesheet keyed to `nav[aria-label="Primary"]`, so keep that selector in
+  mind when changing `components/BottomNav.tsx`. iPad keeps the site's own
+  desktop navigation.
+- **Safe areas and theme.** `SiteHostViewController` pins the web view below
+  the status bar, the same place Android's WebView starts, because the
+  site's fixed article header (`ArticleScrollBar`) has no top safe-area
+  padding. An injected rule also drops the extra 0.75rem the mobile header
+  (`header.safe-area-top`) adds above the logo. The web view still runs under
+  the home indicator and tab bar, whose height reaches the page as
+  `env(safe-area-inset-bottom)` (`ios.contentInset: 'never'`). The status bar
+  strip, status bar glyphs, and tab bar follow `window.PolyTheme.setDark`,
+  which `ThemeProvider` already calls for Android, falling back to the
+  `theme` cookie and then the system appearance.
+- **Gestures.** Rubber-band scrolling and pull to refresh are back on
+  (Capacitor disables bouncing). Edge swipes move back and forward through
+  history; an injected capture-phase touch listener keeps touches that start
+  at the left edge away from the site's swipe-to-open menu drawer.
+- **Links.** Off-site links open in an in-app Safari sheet
+  (`ExternalLinksPlugin`, via Capacitor's `shouldOverrideLoad` hook).
+  Same-site links that request a new window load in place.
+- **Push.** The bootstrap script runs at document end on every page load:
+  it requests permission, POSTs the token to `/api/push/register`, and sends
+  notification taps to `data.articleUrl`. `FirebaseAppDelegateProxyEnabled`
+  is off, so `AppDelegate` hands the APNs token to Firebase Messaging
+  explicitly.
+- **Lifecycle.** Scene-based (`SceneDelegate` builds the window), which
+  recent iOS SDKs require for apps to launch.
+
+### Known limitations
+
+- **Universal links** need
+  `https://poly.rpi.edu/.well-known/apple-app-site-association` to list
+  `<TEAM_ID>.edu.rpi.poly` before iOS opens site links in the app. The
+  entitlement and the in-app routing are already in place.
+- **No release pipeline yet.** `ios-build.yml` only compiles for the
+  simulator. TestFlight and App Store uploads need an Apple Developer
+  Program team, an App Store Connect app record, and signing secrets,
+  analogous to the Android keystore secrets.
+- **Versioning.** `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` are set
+  by hand in the Xcode project until there's a release lane.
+- **Deprecated FCM token API.** Firebase 12.18 deprecated
+  `Messaging.token(completion:)` in favor of installation-ID registration.
+  The app still uses the token API (one build warning) because
+  `lib/fcm.ts` and the Android app address devices by registration token.
+  Moving to installation IDs means changing the backend send path for both
+  platforms.
+- **Offline mode:** none, same as Android. If poly.rpi.edu is unreachable,
+  the web view stays blank after the splash backstop.
+
 ## References
 
 - Design spec: [`docs/superpowers/specs/2026-04-24-capacitor-android-app-design.md`](../docs/superpowers/specs/2026-04-24-capacitor-android-app-design.md)
-- Capacitor: https://capacitorjs.com/docs/android
+- Capacitor: https://capacitorjs.com/docs/android, https://capacitorjs.com/docs/ios
+- Capacitor + Swift Package Manager: https://capacitorjs.com/docs/ios/spm
+- Firebase Cloud Messaging on Apple platforms: https://firebase.google.com/docs/cloud-messaging/ios/client
 - Adaptive icons: https://developer.android.com/develop/ui/views/launch/icon_design_adaptive
 - Themed icons (monochrome): https://developer.android.com/develop/ui/views/launch/icon_design_adaptive#monochromatic_app_icons

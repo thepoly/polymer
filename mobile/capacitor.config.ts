@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 /**
- * Capacitor configuration for "The Poly" Android shell.
+ * Capacitor configuration for "The Poly" Android and iOS shells.
  *
  * The app loads the production site directly via `server.url`, so `webDir`
  * is only a formal requirement and points at a tiny placeholder bundle.
@@ -19,6 +19,12 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
   },
+  ios: {
+    // The native container already places the web view below the status
+    // bar, and the page handles the bottom safe area itself
+    // (env(safe-area-inset-bottom)), so UIKit shouldn't inset it again.
+    contentInset: 'never',
+  },
   plugins: {
     SplashScreen: {
       // The splash is dismissed from MainActivity once the WebView reports
@@ -27,6 +33,10 @@ const config: CapacitorConfig = {
       // on a fixed timer and flashing unstyled / half-hydrated content.
       // A hard backstop in MainActivity guarantees dismissal if the page
       // never reports ready (e.g. broken network).
+      //
+      // On iOS the plugin skips its launch splash when launchShowDuration is
+      // 0, so MainViewController.swift holds an equivalent red overlay with
+      // the same readiness poll, settle delay, backstop, and fade.
       launchShowDuration: 0,
       launchAutoHide: false,
       launchFadeOutDuration: 250,
