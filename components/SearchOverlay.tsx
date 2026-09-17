@@ -276,6 +276,66 @@ function formatRetryCountdown(totalSeconds: number): string {
   return `${mins}:${String(secs).padStart(2, "0")}`;
 }
 
+type SearchStreamEvent = {
+  articles?: Article[];
+  order?: (number | string)[];
+  totalResults?: number;
+  totalPages?: number;
+  partial?: boolean;
+  done?: boolean;
+  error?: string;
+};
+
+async function searchRequestError(res: Response): Promise<SearchRequestError> {
+  let errorMessage = "Search request failed";
+  try {
+    const body = (await res.json()) as { error?: string };
+    if (typeof body.error === "string" && body.error.trim()) errorMessage = body.error.trim();
+  } catch {
+    // Keep fallback message.
+  }
+  const retryAfterRaw = res.headers.get("Retry-After") ?? res.headers.get("retry-after");
+  const retryAfterParsed = retryAfterRaw ? Number.parseInt(retryAfterRaw, 10) : NaN;
+  const error = new Error(errorMessage) as SearchRequestError;
+  error.status = res.status;
+  if (Number.isFinite(retryAfterParsed) && retryAfterParsed > 0) error.retryAfterSeconds = retryAfterParsed;
+  return error;
+}
+
+// Reads the NDJSON search stream, handing over each batch of results as it lands.
+async function streamSearchResults(
+  q: string,
+  page: number,
+  filters: SearchFilters,
+  signal: AbortSignal,
+  onEvent: (event: SearchStreamEvent) => void,
+): Promise<void> {
+  const params = appendSearchFilters(new URLSearchParams({
+    q,
+    page: String(page),
+    pageSize: String(DEFAULT_SEARCH_PAGE_SIZE),
+    stream: "1",
+  }), filters);
+  const res = await fetch(`/api/search?${params.toString()}`, { signal });
+  if (!res.ok || !res.body) throw await searchRequestError(res);
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let newline = buffer.indexOf("\n");
+    while (newline !== -1) {
+      const line = buffer.slice(0, newline).trim();
+      buffer = buffer.slice(newline + 1);
+      if (line) onEvent(JSON.parse(line) as SearchStreamEvent);
+      newline = buffer.indexOf("\n");
+    }
+  }
+}
+
 async function fetchSearchResults(
   q: string,
   page: number,
@@ -290,27 +350,7 @@ async function fetchSearchResults(
   }), filters);
   if (headlineOnly) params.set("part", "headline");
   const res = await fetch(`/api/search?${params.toString()}`, { signal });
-  if (!res.ok) {
-    let errorMessage = "Search request failed";
-    try {
-      const body = (await res.json()) as { error?: string };
-      if (typeof body.error === "string" && body.error.trim()) {
-        errorMessage = body.error.trim();
-      }
-    } catch {
-      // Keep fallback message.
-    }
-
-    const retryAfterRaw = res.headers.get("Retry-After") ?? res.headers.get("retry-after");
-    const retryAfterParsed = retryAfterRaw ? Number.parseInt(retryAfterRaw, 10) : NaN;
-
-    const error = new Error(errorMessage) as SearchRequestError;
-    error.status = res.status;
-    if (Number.isFinite(retryAfterParsed) && retryAfterParsed > 0) {
-      error.retryAfterSeconds = retryAfterParsed;
-    }
-    throw error;
-  }
+  if (!res.ok) throw await searchRequestError(res);
   return res.json() as Promise<SearchResponse>;
 }
 
@@ -359,6 +399,8 @@ export default function SearchOverlay({
   const [isVisible, setIsVisible] = useState(isPage || !!restored);
   const [isClosing, setIsClosing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const rowTopsRef = useRef(new Map<string, number>());
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -529,6 +571,31 @@ export default function SearchOverlay({
     if (window.location.pathname !== "/search") window.history.pushState(null, "", searchPageHref(query, filters));
   };
 
+  // When a later batch re-orders the list, slide rows from where they were to where
+  // they now are instead of letting them jump.
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) {
+      rowTopsRef.current = new Map();
+      return;
+    }
+    const previous = rowTopsRef.current;
+    const tops = new Map<string, number>();
+    list.querySelectorAll<HTMLElement>("[data-search-result]").forEach((row) => {
+      const id = row.dataset.searchResult ?? "";
+      const top = row.offsetTop;
+      tops.set(id, top);
+      const before = previous.get(id);
+      if (animateResults && before !== undefined && before !== top && typeof row.animate === "function") {
+        row.animate(
+          [{ transform: `translateY(${before - top}px)` }, { transform: "translateY(0)" }],
+          { duration: 260, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+        );
+      }
+    });
+    rowTopsRef.current = tops;
+  }, [articles, animateResults]);
+
   // Land at the saved scroll position when restored, and save state on the way out.
   useLayoutEffect(() => {
     if (restored && containerRef.current) containerRef.current.scrollTop = restored.scrollTop;
@@ -621,38 +688,50 @@ export default function SearchOverlay({
     setSpellCorrection(null);
 
     try {
-      // Headline matches skip the slow body scan, so show them while the full
-      // search (headline matches first, then body mentions) finishes.
-      const fullRequest = fetchSearchResults(q, pageIndex + 1, activeFilters, controller.signal);
-      let fullArrived = false;
-      let shownCount = 0;
-      fullRequest.then(() => { fullArrived = true; }, () => {});
-      fetchSearchResults(q, pageIndex + 1, activeFilters, controller.signal, true).then((headlineData) => {
-        if (fullArrived || controller.signal.aborted || headlineData.articles.length === 0) return;
-        shownCount = headlineData.articles.length;
-        setArticles(headlineData.articles);
-        setSearched(true);
-        animateCount(headlineData.totalResults);
-      }, () => {});
+      // Results arrive in batches: the quick headline matches first, then the full
+      // scan's page, which re-orders the list as later matches displace earlier ones.
+      const byId = new Map<string, Article>();
+      let shown = 0;
+      let finalTotal = 0;
+      let finalPages = 0;
+      let streamError: string | null = null;
 
-      const primaryData = await fullRequest;
+      await streamSearchResults(q, pageIndex + 1, activeFilters, controller.signal, (event) => {
+        if (event.error) {
+          streamError = event.error;
+          return;
+        }
+        event.articles?.forEach((article) => byId.set(String(article.id), article));
+        if (event.order) {
+          const next = event.order
+            .map((id) => byId.get(String(id)))
+            .filter((article): article is Article => !!article);
+          setStaggerFrom(shown);
+          shown = next.length;
+          setArticles(next);
+          setSearched(true);
+        }
+        if (typeof event.totalResults === "number") {
+          animateCount(event.totalResults);
+          if (!event.partial) finalTotal = event.totalResults;
+        }
+        if (typeof event.totalPages === "number") finalPages = event.totalPages;
+      });
 
-      setStaggerFrom(shownCount);
-      setArticles(primaryData.articles);
-      setTotalResults(primaryData.totalResults);
-      setTotalPages(primaryData.totalPages);
-      if (primaryData.page - 1 !== pageIndex) setPage(Math.max(0, primaryData.page - 1));
-      animateCount(primaryData.totalResults);
+      if (streamError) throw new Error(streamError);
+
+      setTotalResults(finalTotal);
+      setTotalPages(finalPages);
       posthog.capture("search_performed", {
         query: q,
-        total_results: primaryData.totalResults,
+        total_results: finalTotal,
         page: pageIndex + 1,
         section: activeFilters.section ?? "all",
         range: activeFilters.range,
         sort: activeFilters.sort,
         source: isPage ? "page" : "overlay",
       });
-      const needsSpellcheck = pageIndex === 0 && primaryData.totalResults === 0;
+      const needsSpellcheck = pageIndex === 0 && finalTotal === 0;
       if (!needsSpellcheck) resultsKeyRef.current = resultsKey;
       setRateLimitError(null);
       setRateLimitUntil(null);
@@ -677,7 +756,7 @@ export default function SearchOverlay({
 
           setSpellCorrection({
             originalQuery: q,
-            originalResults: primaryData.totalResults,
+            originalResults: finalTotal,
             suggestedQuery: spellcheckData.suggestion,
             suggestedResults: suggestedData.totalResults,
           });
@@ -1151,12 +1230,13 @@ export default function SearchOverlay({
         {searched && displayArticles.length > 0 && (() => {
         return (
           <div className="mt-8">
-            <div className="flex flex-col">
+            <div ref={listRef} className="flex flex-col">
                 {displayArticles.map((article, index) => {
                   const delay = Math.min(Math.max(0, index - staggerFrom), 10) * RESULT_STAGGER_MS;
                   return (
                     <TransitionLink
                       key={article.id}
+                      data-search-result={article.id}
                       href={article.externalUrl ?? getArticleUrl(article)}
                       data-analytics-context={isPage ? "search-page" : "search-overlay"}
                       onClick={(e) => {

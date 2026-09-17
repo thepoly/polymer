@@ -31,6 +31,39 @@ hyphen/space variants match each other. From `route.ts`:
 Implemented in `queryForms` (top of `route.ts`). The expansion runs
 against both corpora.
 
+## Streaming results
+
+The search UI ([`components/SearchOverlay.tsx`](../components/SearchOverlay.tsx))
+calls `/api/search?...&stream=1`, which returns NDJSON — one JSON object
+per line — instead of a single response:
+
+1. A count from the **headline pass** (`plainTitle`, `subdeck`, `kicker`,
+   `writeInAuthors.name`). Those short columns scan in ~0.3s where the
+   body scan takes seconds.
+2. Batches of those headline matches (`STREAM_BATCH` at a time), each
+   with the page `order` so far, so rows render as they arrive.
+3. The **full page** once the body scan lands: `order` for the whole
+   page (newest first, body mentions included), the articles the client
+   doesn't have yet, `totalResults`, `totalPages` and `done: true`.
+
+Later matches displace earlier ones in the list, and the count climbs as
+each batch lands. The client keeps articles by id and renders whatever
+`order` says, so a re-order costs no extra requests.
+
+`X-Accel-Buffering: no` is required on the response — without it nginx
+buffers the whole stream and it arrives as one chunk. Next flushes each
+chunk through its gzip middleware on its own.
+
+Without `stream=1` the endpoint returns the plain JSON page it always
+did (used by the 404 page's search box and the spellcheck retry).
+
+## Filters
+
+`section`, `range` (`any`/`week`/`month`/`year`) and `sort`
+(`newest`/`oldest`) narrow the query; they're parsed by
+`parseSearchFilters` in [`utils/search.ts`](../utils/search.ts), kept in
+the `/search` URL, and ignored when unrecognized.
+
 ## Sanitization & limits
 
 [`utils/search.ts`](../utils/search.ts) provides:
@@ -46,10 +79,10 @@ against both corpora.
 `route.ts` calls `checkRateLimit` from
 [`utils/rateLimit.ts`](../utils/rateLimit.ts) with:
 
-- `SEARCH_RATE_LIMIT = 40`
+- `SEARCH_RATE_LIMIT = 80`
 - `SEARCH_RATE_LIMIT_WINDOW_MS = 10_000`
 
-That's 40 requests per 10s per client IP, in-memory per process. It's a
+That's 80 requests per 10s per client IP, in-memory per process. It's a
 best-effort limit, not a security boundary — abuse traffic should be
 filtered upstream (CDN/WAF) for anything serious.
 
