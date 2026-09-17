@@ -158,14 +158,14 @@ function InlineSelect({
   label,
   value,
   options,
-  rainbow,
+  sweep,
   onChange,
 }: {
   label: string;
   value: string;
   options: { value: string; label: string }[];
-  // Rainbow while searching, lingering a second before fading back to normal.
-  rainbow: boolean;
+  // The rainbow sweeps diagonally across the word once the search settles.
+  sweep: boolean;
   onChange: (value: string) => void;
 }) {
   const text = (options.find((option) => option.value === value) ?? options[0]).label;
@@ -174,15 +174,19 @@ function InlineSelect({
       {text}
       <span
         aria-hidden="true"
-        className="search-rainbow-text pointer-events-none absolute inset-0 select-none"
-        style={{ opacity: rainbow ? 1 : 0, transition: `opacity 0.8s ease-out ${rainbow ? "0s" : "1s"}` }}
+        className="search-sweep-text pointer-events-none absolute inset-0 select-none"
+        style={{ opacity: sweep ? 1 : 0, transition: `opacity ${sweep ? "0.35s" : "0.5s"} ease-in-out` }}
       >
         {text}
       </span>
       <select
         aria-label={label}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => {
+          onChange(e.target.value);
+          // Otherwise the select keeps focus and the word stays accent-colored.
+          e.target.blur();
+        }}
         className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0"
       >
         {options.map((option) => (
@@ -412,6 +416,9 @@ export default function SearchOverlay({
   const resultsKeyRef = useRef<string | null>(restored?.resultsKey ?? null);
   // Restored results are already current, so the first fetch for them is skipped.
   const restoredKeyRef = useRef<string | null>(restored && !restored.isLoading ? restored.resultsKey : null);
+  const waveRanRef = useRef(false);
+  // A filter change gets the wave bar only; the words stay put.
+  const filterChangeRef = useRef(false);
 
   // Spell check
   const [spellCorrection, setSpellCorrection] = useState<SpellCorrectionState | null>(restored?.spellCorrection ?? null);
@@ -430,7 +437,29 @@ export default function SearchOverlay({
   // 3: cursor starts blinking, input is live
 
   const showTypingOverlay = query.length === 0 && stage >= 1 && stage < 3;
+  const [settleSweep, setSettleSweep] = useState(false);
   const showWave = (isWaveTypingActive || isLoading) && stage >= 2;
+
+  // The filter words catch the rainbow half a second after the wave stops.
+  useEffect(() => {
+    if (showWave) {
+      waveRanRef.current = true;
+      setSettleSweep(false);
+      return;
+    }
+    if (!waveRanRef.current) return;
+    waveRanRef.current = false;
+    if (filterChangeRef.current) {
+      filterChangeRef.current = false;
+      return;
+    }
+    const start = setTimeout(() => setSettleSweep(true), 500);
+    const stop = setTimeout(() => setSettleSweep(false), 1350);
+    return () => {
+      clearTimeout(start);
+      clearTimeout(stop);
+    };
+  }, [showWave]);
 
   const clearWaveTypingTimer = useCallback(() => {
     if (waveTypingTimerRef.current) {
@@ -480,6 +509,7 @@ export default function SearchOverlay({
     if (normalized.length > MAX_SEARCH_QUERY_LENGTH) {
       triggerCharacterLimitNotice();
     }
+    filterChangeRef.current = false;
     setQuery(normalized.slice(0, MAX_SEARCH_QUERY_LENGTH));
     setPage(0);
   };
@@ -487,6 +517,7 @@ export default function SearchOverlay({
   const updateFilters = (patch: Partial<SearchFilters>) => {
     const next = { ...filters, ...patch };
     if (next.section === filters.section && next.range === filters.range && next.sort === filters.sort) return;
+    filterChangeRef.current = true;
     setFilters(next);
     setPage(0);
   };
@@ -863,7 +894,7 @@ export default function SearchOverlay({
       .catch(() => setArchiveSubtitle(null));
   }, [restored]);
 
-  // Lock body scroll and handle Esc
+  // Lock body scroll and close on Escape.
   useEffect(() => {
     document.body.style.overflow = "hidden";
 
@@ -896,10 +927,6 @@ export default function SearchOverlay({
       ref={containerRef}
       data-search-overlay
       className={`fixed inset-0 z-[100] overflow-y-auto bg-bg-main/88 backdrop-blur-sm transition-opacity ease-out${forceDarkMode ? ' dark' : ''}`}
-      onClick={(e) => {
-        const target = e.target as HTMLElement;
-        if (!target.closest("input, select, a, button, [data-search-area]")) handleClose();
-      }}
       style={{
         ...(forceDarkMode ? {
           '--background': '#0a0a0a',
@@ -960,17 +987,24 @@ export default function SearchOverlay({
           from { transform: scaleX(0); }
           to   { transform: scaleX(1); }
         }
-        @keyframes rainbowTextShift {
-          to { background-position: 200% 0; }
+        @keyframes searchSweep {
+          from { background-position: 130% -30%; }
+          to   { background-position: -30% 130%; }
         }
-        .search-rainbow-text {
-          background-image: linear-gradient(90deg, #ff4040, #ff9900, #ffee00, #44dd44, #4488ff, #cc44ff, #ff4040);
-          background-size: 200% 100%;
+        /* The header wave's own colors, set from the theme by ThemeStyle. */
+        .search-sweep-text {
+          background-image: linear-gradient(225deg,
+            var(--wave-color-1) 0%,
+            var(--wave-color-2) 30%,
+            var(--wave-color-3) 50%,
+            var(--wave-color-2) 70%,
+            var(--wave-color-1) 100%);
+          background-size: 150% 150%;
           -webkit-background-clip: text;
           background-clip: text;
           -webkit-text-fill-color: transparent;
           color: transparent;
-          animation: rainbowTextShift 1.5s linear infinite;
+          animation: searchSweep 2s linear infinite;
         }
         @keyframes rainbowLetterFlash {
           0% { color: #f4a6a6; }
@@ -990,6 +1024,28 @@ export default function SearchOverlay({
         }
       `}</style>
 
+      {/* Close control, pinned to the screen (outside the transformed column). */}
+      <div
+        className="fixed right-3 top-[calc(var(--safe-area-top)+0.25rem)] z-20 flex items-center gap-2 md:right-6"
+        style={{
+          opacity: stage >= 2 ? 1 : 0,
+          transform: stage >= 2 ? "translateY(0)" : "translateY(-20px)",
+          transition: "opacity 0.3s ease-out, transform 0.3s ease-out",
+        }}
+      >
+        <span className="pointer-events-none hidden select-none rounded border border-text-muted/40 px-1.5 py-[1px] font-meta text-[10px] uppercase tracking-[0.1em] text-text-muted md:inline-block">
+          esc
+        </span>
+        <button
+          onClick={handleClose}
+          className="flex h-10 w-10 cursor-pointer items-center justify-center transition-opacity hover:opacity-70 md:h-12 md:w-12"
+          style={{ color: "#D6001C" }}
+          aria-label="Close search"
+        >
+          <X className="h-6 w-6 md:h-8 md:w-8" strokeWidth={2.25} />
+        </button>
+      </div>
+
       <div
         className="relative mx-auto max-w-[1280px] px-4 pb-16 pt-3 transition-[opacity,transform] ease-out md:px-6 md:pt-6 xl:px-[30px]"
         style={{
@@ -998,19 +1054,6 @@ export default function SearchOverlay({
           transitionDuration: `${OVERLAY_TRANSITION_MS}ms`,
         }}
       >
-        {/* X button */}
-        <button
-          onClick={handleClose}
-          className="fixed top-[calc(var(--safe-area-top)-0.15rem)] right-3 z-20 flex h-7 w-7 cursor-pointer items-center justify-center text-text-muted/70 transition-colors hover:text-accent md:absolute md:top-[0.45rem] md:right-6 md:h-10 md:w-10 xl:right-[30px]"
-          style={{
-            opacity: stage >= 2 ? 1 : 0,
-            transform: stage >= 2 ? "translateY(0)" : "translateY(-20px)",
-            transition: "opacity 0.3s ease-out, transform 0.3s ease-out",
-          }}
-          aria-label="Close search"
-        >
-          <X className="h-3.5 w-3.5 md:h-5 md:w-5" />
-        </button>
 
         <div data-search-area className="relative flex items-center">
           {/* Bottom line / loading wave */}
@@ -1186,7 +1229,7 @@ export default function SearchOverlay({
                   Showing{" "}
                   <InlineSelect
                     label="Section"
-                    rainbow={showWave}
+                    sweep={settleSweep && !showWave}
                     value={filters.section ?? ""}
                     options={SECTION_FILTERS}
                     onChange={(section) => updateFilters({ section: (section || null) as SearchFilters["section"] })}
@@ -1194,14 +1237,14 @@ export default function SearchOverlay({
                   from{" "}
                   <InlineSelect
                     label="Date"
-                    rainbow={showWave}
+                    sweep={settleSweep && !showWave}
                     value={filters.range}
                     options={RANGE_FILTERS}
                     onChange={(range) => updateFilters({ range: range as SearchFilters["range"] })}
                   />,{" "}
                   <InlineSelect
                     label="Sort"
-                    rainbow={showWave}
+                    sweep={settleSweep && !showWave}
                     value={filters.sort}
                     options={SORT_FILTERS}
                     onChange={(sort) => updateFilters({ sort: sort as SearchFilters["sort"] })}

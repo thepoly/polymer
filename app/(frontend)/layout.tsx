@@ -158,7 +158,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className={isDarkMode ? "dark" : ""}>
       <head>
-        <ThemeStyle lightMode={siteTheme.lightMode} darkMode={siteTheme.darkMode} />
+        <ThemeStyle lightMode={siteTheme.lightMode} darkMode={siteTheme.darkMode} headerAnimation={siteTheme.headerAnimation} />
         <link
           rel="preload"
           href="/fonts/raleway/Raleway-Variable.ttf"

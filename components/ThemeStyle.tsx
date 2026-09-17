@@ -1,8 +1,9 @@
-import type { ThemeColors } from '@/lib/getTheme'
+import type { HeaderAnimationConfig, ThemeColors } from '@/lib/getTheme'
 
 type Props = {
   lightMode: ThemeColors
   darkMode: ThemeColors
+  headerAnimation: HeaderAnimationConfig
 }
 
 // Allow only valid CSS color values: hex, rgb(), rgba(), hsl(), hsla(), named colors.
@@ -42,10 +43,25 @@ function colorVars(colors: ThemeColors): string {
   return lines.join('\n')
 }
 
-export default function ThemeStyle({ lightMode, darkMode }: Props) {
+// The header wave's colors, so other effects (like the search filters) can match it.
+function waveVars(animation: HeaderAnimationConfig): string {
+  return ([
+    ['--wave-color-1', animation.waveColor1],
+    ['--wave-color-2', animation.waveColor2],
+    ['--wave-color-3', animation.waveColor3],
+  ] as const)
+    .map(([prop, val]) => {
+      const safe = sanitizeCssColor(val)
+      return safe ? `  ${prop}: ${safe};` : null
+    })
+    .filter(Boolean)
+    .join('\n')
+}
+
+export default function ThemeStyle({ lightMode, darkMode, headerAnimation }: Props) {
   // Use html:root (higher specificity than :root alone) so this always wins
   // over the bare :root block in globals.css regardless of stylesheet load order.
-  const css = `html:root {\n${colorVars(lightMode)}\n}\nhtml.dark:root {\n${colorVars(darkMode)}\n}`
+  const css = `html:root {\n${colorVars(lightMode)}\n${waveVars(headerAnimation)}\n}\nhtml.dark:root {\n${colorVars(darkMode)}\n}`
   // Values are sanitized above — only valid CSS color syntax passes through.
   // eslint-disable-next-line react/no-danger
   return <style dangerouslySetInnerHTML={{ __html: css }} />
