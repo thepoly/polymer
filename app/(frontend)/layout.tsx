@@ -12,6 +12,7 @@ import configPromise from "@/payload.config";
 import { User } from "@/payload-types";
 import ThemeStyle from "@/components/ThemeStyle";
 import BottomNav from "@/components/BottomNav";
+import SearchOverlayHost from "@/components/SearchOverlayHost";
 import { getTheme } from "@/lib/getTheme";
 import { getSeo } from "@/lib/getSeo";
 
@@ -179,7 +180,10 @@ export default async function RootLayout({
         <ThemeProvider initialDarkMode={isDarkMode} logoSrcs={siteTheme.logoSrcs}>
           <SiteAnalytics user={analyticsUser} />
           <WebVitals />
-          <HeaderTransitionProvider>{children}</HeaderTransitionProvider>
+          <HeaderTransitionProvider>
+            {children}
+            <SearchOverlayHost />
+          </HeaderTransitionProvider>
           <BottomNav />
         </ThemeProvider>
       </body>

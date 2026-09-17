@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Moon, Search, Sun } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
-import SearchOverlay from '@/components/SearchOverlay';
+import { openSearchOverlay } from '@/components/SearchOverlayHost';
 import posthog from 'posthog-js';
 
 type Props = {
@@ -108,7 +108,6 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
   const [visible, setVisible] = useState(!isHome && !hideUntilScroll);
   const [atTop, setAtTop] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { isDarkMode, toggleDarkMode, logoSrcs } = useTheme();
@@ -299,7 +298,7 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
 
           {isHome ? (
             <button
-              onClick={() => setSearchOpen(true)}
+              onClick={() => openSearchOverlay()}
               className={`flex h-9 w-9 cursor-pointer items-center justify-center rounded-full transition-colors shrink-0 ${
                 isDarkMode
                   ? 'text-text-main hover:bg-white/10'
@@ -353,7 +352,6 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
           )}
         </div>
       </div>
-      {isHome && searchOpen && <SearchOverlay onClose={() => setSearchOpen(false)} />}
     </div>
   );
 }

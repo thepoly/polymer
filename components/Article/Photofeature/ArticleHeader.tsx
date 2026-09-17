@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Menu, Search } from 'lucide-react';
 import { Article, Media, User } from '@/payload-types';
 import { MobileMenuDrawer } from '@/components/MobileMenuDrawer';
-import SearchOverlay from '@/components/SearchOverlay';
+import { openSearchOverlay } from '@/components/SearchOverlayHost';
 import { useTheme } from '@/components/ThemeProvider';
 import { focalObjectPosition } from '@/utils/focalPoint';
 import { resolveCredit } from '@/components/Article/PhotoCaption';
@@ -18,7 +18,6 @@ type Props = {
 
 export const ArticleHeader: React.FC<Props> = ({ article }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { isDarkMode, toggleDarkMode, logoSrcs } = useTheme();
   const featuredImage = article.featuredImage as Media | null;
   // Same precedence galleries use: explicit credit, then the media record's
@@ -98,7 +97,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
           {/* Right: Search */}
           <div className="flex items-center justify-end">
             <button
-              onClick={() => setIsSearchOpen(true)}
+              onClick={() => openSearchOverlay({ forceDark: true })}
               className="flex h-9 w-9 items-center justify-center text-white hover:opacity-80 transition-opacity"
               aria-label="Search"
             >
@@ -238,11 +237,9 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         }}
         isDarkMode={isDarkMode}
         onThemeToggle={toggleDarkMode}
-        onSearchOpen={() => { setIsMenuOpen(false); setIsSearchOpen(true); }}
+        onSearchOpen={() => { setIsMenuOpen(false); openSearchOverlay({ forceDark: true }); }}
         className=""
       />
-
-      {isSearchOpen && <SearchOverlay onClose={() => setIsSearchOpen(false)} forceDark />}
     </>
   );
 };
