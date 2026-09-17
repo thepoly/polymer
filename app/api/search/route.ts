@@ -15,7 +15,7 @@ import {
 } from "@/utils/search";
 import { checkRateLimit } from "@/utils/rateLimit";
 
-const SEARCH_RATE_LIMIT = 80; // each overlay search sends two requests (headline + full)
+const SEARCH_RATE_LIMIT = 80; // typing fires a search per pause; headroom for shared campus IPs
 const SEARCH_RATE_LIMIT_WINDOW_MS = 10_000;
 
 // Generate alternate separator forms of the query so "anti-discrimination",
@@ -99,39 +99,130 @@ async function articlesByIds(payload: Payload, ids: number[]): Promise<Article[]
     .filter((a): a is Article => !!a);
 }
 
-// Headline matches come first, then articles that only mention the query in the
-// body, each newest (or oldest) first. `headlineOnly` skips the slow body scan so
-// the client can show the first results while the full search finishes.
+function searchConditions(queryFormsLower: string[], filters: SearchFilters) {
+  const base: Where[] = [{ _status: { equals: "published" } }];
+  if (filters.section) base.push({ section: { equals: filters.section } });
+  const since = searchRangeStart(filters.range);
+  if (since) base.push({ publishedDate: { greater_than_equal: since.toISOString() } });
+  return {
+    // Short fields only: fast enough to show while the body scan is still running.
+    headlineWhere: { and: [...base, matchAny(HEADLINE_FIELDS, queryFormsLower)] } as Where,
+    allWhere: { and: [...base, matchAny([...HEADLINE_FIELDS, ...BODY_FIELDS], queryFormsLower)] } as Where,
+    sort: filters.sort === "oldest" ? "publishedDate" : "-publishedDate",
+  };
+}
+
 async function searchPayload(
   queryFormsLower: string[],
   page: number,
   pageSize: number,
   filters: SearchFilters,
-  headlineOnly: boolean,
 ) {
   const payload = await getPayload({ config });
-  const base: Where[] = [{ _status: { equals: "published" } }];
-  if (filters.section) base.push({ section: { equals: filters.section } });
-  const since = searchRangeStart(filters.range);
-  if (since) base.push({ publishedDate: { greater_than_equal: since.toISOString() } });
-  const sort = filters.sort === "oldest" ? "publishedDate" : "-publishedDate";
-
-  const headlineWhere: Where = { and: [...base, matchAny(HEADLINE_FIELDS, queryFormsLower)] };
-  const bodyWhere: Where = { and: [...base, matchAny(BODY_FIELDS, queryFormsLower)] };
-  const [headlineIds, bodyIds] = await Promise.all([
-    matchingIds(payload, headlineWhere, sort),
-    headlineOnly ? Promise.resolve([]) : matchingIds(payload, bodyWhere, sort),
-  ]);
-  const headlineSet = new Set(headlineIds);
-  const ids = [...headlineIds, ...bodyIds.filter((id) => !headlineSet.has(id))];
-
-  const offset = (page - 1) * pageSize;
-  return {
-    articles: await articlesByIds(payload, ids.slice(offset, offset + pageSize)),
-    totalDocs: ids.length,
-    totalPages: Math.ceil(ids.length / pageSize),
+  const { allWhere, sort } = searchConditions(queryFormsLower, filters);
+  const result = await payload.find({
+    collection: "articles",
+    where: allWhere,
+    sort,
+    limit: pageSize,
     page,
+    depth: 1,
+    select: articleSearchSelect,
+  });
+
+  return {
+    articles: result.docs
+      .map((doc) => formatArticle(doc as unknown as Parameters<typeof formatArticle>[0], { absoluteDate: true }))
+      .filter((a): a is Article => a !== null),
+    totalDocs: result.totalDocs,
+    totalPages: result.totalPages,
+    page: result.page ?? page,
   };
+}
+
+// Streams the search as it runs: headline matches (title, subdeck, kicker, write-in
+// authors) come back in small batches within a few hundred ms, then the full scan's
+// page — body mentions included, newest first — replaces them, so later matches
+// displace earlier ones in the list and the count climbs as it goes.
+const STREAM_BATCH = 5;
+
+type SearchStreamEvent = {
+  articles?: Article[];
+  order?: number[];
+  totalResults?: number;
+  totalPages?: number;
+  partial?: boolean;
+  done?: boolean;
+  error?: string;
+};
+
+function streamSearch(
+  queryFormsLower: string[],
+  page: number,
+  pageSize: number,
+  filters: SearchFilters,
+): Response {
+  const encoder = new TextEncoder();
+  const offset = (page - 1) * pageSize;
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (event: SearchStreamEvent) => {
+        try {
+          controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+        } catch {
+          // Reader went away (new keystroke aborted this search).
+        }
+      };
+      try {
+        const payload = await getPayload({ config });
+        const { headlineWhere, allWhere, sort } = searchConditions(queryFormsLower, filters);
+        const allIdsPromise = matchingIds(payload, allWhere, sort);
+        allIdsPromise.catch(() => {});
+
+        const sent = new Set<number>();
+        const order: number[] = [];
+        const sendBatch = async (ids: number[]) => {
+          const fresh = ids.filter((id) => !sent.has(id));
+          fresh.forEach((id) => sent.add(id));
+          order.push(...ids);
+          send({ articles: await articlesByIds(payload, fresh), order: [...order] });
+        };
+
+        const headlineIds = await matchingIds(payload, headlineWhere, sort);
+        send({ totalResults: headlineIds.length, partial: true });
+        const headlinePage = headlineIds.slice(offset, offset + pageSize);
+        for (let i = 0; i < headlinePage.length; i += STREAM_BATCH) {
+          await sendBatch(headlinePage.slice(i, i + STREAM_BATCH));
+        }
+
+        const allIds = await allIdsPromise;
+        const finalPage = allIds.slice(offset, offset + pageSize);
+        order.length = 0;
+        order.push(...finalPage);
+        send({
+          articles: await articlesByIds(payload, finalPage.filter((id) => !sent.has(id))),
+          order: finalPage,
+          totalResults: allIds.length,
+          totalPages: Math.ceil(allIds.length / pageSize),
+          done: true,
+        });
+      } catch {
+        send({ error: "Search failed. Please try again.", done: true });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-store",
+      // Tell nginx not to buffer, or the batches arrive as one chunk.
+      "X-Accel-Buffering": "no",
+    },
+  });
 }
 
 export async function GET(request: NextRequest) {
@@ -158,7 +249,6 @@ export async function GET(request: NextRequest) {
   const page = parseSearchPage(request.nextUrl.searchParams.get("page"));
   const pageSize = parseSearchPageSize(request.nextUrl.searchParams.get("pageSize"));
   const filters = parseSearchFilters(request.nextUrl.searchParams);
-  const headlineOnly = request.nextUrl.searchParams.get("part") === "headline";
 
   if (!q) {
     return Response.json({
@@ -174,8 +264,12 @@ export async function GET(request: NextRequest) {
   const forms = queryForms(q);
   const queryFormsLower = forms.map((form) => form.toLowerCase()).filter((form) => form.length > 0);
 
+  if (request.nextUrl.searchParams.get("stream") === "1") {
+    return streamSearch(queryFormsLower, page, pageSize, filters);
+  }
+
   try {
-    const result = await searchPayload(queryFormsLower, page, pageSize, filters, headlineOnly);
+    const result = await searchPayload(queryFormsLower, page, pageSize, filters);
 
     return Response.json({
       articles: result.articles,
@@ -184,7 +278,6 @@ export async function GET(request: NextRequest) {
       query: q,
       totalPages: result.totalPages,
       totalResults: result.totalDocs,
-      partial: headlineOnly,
     });
   } catch {
     return Response.json({
