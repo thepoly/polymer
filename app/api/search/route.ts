@@ -6,13 +6,16 @@ import { formatArticle } from "@/utils/formatArticle";
 import { Article } from "@/components/FrontPage/types";
 import {
   DEFAULT_SEARCH_PAGE_SIZE,
+  parseSearchFilters,
   parseSearchPage,
   parseSearchPageSize,
   sanitizeSearchQuery,
+  searchRangeStart,
+  type SearchFilters,
 } from "@/utils/search";
 import { checkRateLimit } from "@/utils/rateLimit";
 
-const SEARCH_RATE_LIMIT = 40;
+const SEARCH_RATE_LIMIT = 80; // each overlay search sends two requests (headline + full)
 const SEARCH_RATE_LIMIT_WINDOW_MS = 10_000;
 
 // Generate alternate separator forms of the query so "anti-discrimination",
@@ -42,58 +45,92 @@ type PayloadSearchArticle = {
   _status?: string | null;
 };
 
-async function searchPayload(queryFormsLower: string[], page: number, pageSize: number) {
-  const payload = await getPayload({ config });
-  const articleSearchSelect = {
-    title: true,
-    plainTitle: true,
-    slug: true,
-    subdeck: true,
-    featuredImage: true,
-    section: true,
-    kicker: true,
-    publishedDate: true,
-    createdAt: true,
-    authors: true,
-    writeInAuthors: true,
-    isFollytechnic: true,
-  } as const;
+const articleSearchSelect = {
+  title: true,
+  plainTitle: true,
+  slug: true,
+  subdeck: true,
+  featuredImage: true,
+  section: true,
+  kicker: true,
+  publishedDate: true,
+  createdAt: true,
+  authors: true,
+  writeInAuthors: true,
+  isFollytechnic: true,
+} as const;
 
-  // Build OR conditions: match any query form in plainTitle, subdeck, or kicker
-  // (title is a richText field; plainTitle is the auto-derived plain-text version used for search)
-  const orConditions: Where[] = [];
-  for (const form of queryFormsLower) {
-    orConditions.push({ plainTitle: { like: form } });
-    orConditions.push({ subdeck: { like: form } });
-    orConditions.push({ kicker: { like: form } });
-    orConditions.push({ 'writeInAuthors.name': { like: form } });
-    orConditions.push({ plainContent: { like: form } });
-  }
+// Short fields scan fast, so these matches come back first (title is a richText
+// field; plainTitle is the auto-derived plain-text version used for search).
+const HEADLINE_FIELDS = ["plainTitle", "subdeck", "kicker", "writeInAuthors.name"];
+const BODY_FIELDS = ["plainContent"];
 
+function matchAny(fields: string[], queryFormsLower: string[]): Where {
+  return { or: queryFormsLower.flatMap((form) => fields.map((field) => ({ [field]: { like: form } }))) };
+}
+
+type Payload = Awaited<ReturnType<typeof getPayload>>;
+
+async function matchingIds(payload: Payload, where: Where, sort: string): Promise<number[]> {
   const result = await payload.find({
     collection: "articles",
-    where: {
-      and: [
-        { _status: { equals: "published" } },
-        { or: orConditions },
-      ],
-    },
-    sort: "-publishedDate",
-    limit: pageSize,
-    page,
+    where,
+    sort,
+    pagination: false,
+    depth: 0,
+    select: { publishedDate: true },
+  });
+  return result.docs.map((doc) => doc.id);
+}
+
+async function articlesByIds(payload: Payload, ids: number[]): Promise<Article[]> {
+  if (ids.length === 0) return [];
+  const result = await payload.find({
+    collection: "articles",
+    where: { id: { in: ids } },
+    pagination: false,
     depth: 1,
     select: articleSearchSelect,
   });
+  const docsById = new Map(result.docs.map((doc) => [doc.id, doc]));
+  return ids
+    .map((id) => docsById.get(id))
+    .map((doc) => doc && formatArticle(doc as unknown as Parameters<typeof formatArticle>[0], { absoluteDate: true }))
+    .filter((a): a is Article => !!a);
+}
 
-  const articles = result.docs
-    .map((doc) => formatArticle(doc as unknown as Parameters<typeof formatArticle>[0], { absoluteDate: true }))
-    .filter((a): a is Article => a !== null);
+// Headline matches come first, then articles that only mention the query in the
+// body, each newest (or oldest) first. `headlineOnly` skips the slow body scan so
+// the client can show the first results while the full search finishes.
+async function searchPayload(
+  queryFormsLower: string[],
+  page: number,
+  pageSize: number,
+  filters: SearchFilters,
+  headlineOnly: boolean,
+) {
+  const payload = await getPayload({ config });
+  const base: Where[] = [{ _status: { equals: "published" } }];
+  if (filters.section) base.push({ section: { equals: filters.section } });
+  const since = searchRangeStart(filters.range);
+  if (since) base.push({ publishedDate: { greater_than_equal: since.toISOString() } });
+  const sort = filters.sort === "oldest" ? "publishedDate" : "-publishedDate";
 
+  const headlineWhere: Where = { and: [...base, matchAny(HEADLINE_FIELDS, queryFormsLower)] };
+  const bodyWhere: Where = { and: [...base, matchAny(BODY_FIELDS, queryFormsLower)] };
+  const [headlineIds, bodyIds] = await Promise.all([
+    matchingIds(payload, headlineWhere, sort),
+    headlineOnly ? Promise.resolve([]) : matchingIds(payload, bodyWhere, sort),
+  ]);
+  const headlineSet = new Set(headlineIds);
+  const ids = [...headlineIds, ...bodyIds.filter((id) => !headlineSet.has(id))];
+
+  const offset = (page - 1) * pageSize;
   return {
-    articles,
-    totalDocs: result.totalDocs,
-    totalPages: result.totalPages,
-    page: result.page ?? page,
+    articles: await articlesByIds(payload, ids.slice(offset, offset + pageSize)),
+    totalDocs: ids.length,
+    totalPages: Math.ceil(ids.length / pageSize),
+    page,
   };
 }
 
@@ -120,6 +157,8 @@ export async function GET(request: NextRequest) {
   const q = sanitizeSearchQuery(request.nextUrl.searchParams.get("q"));
   const page = parseSearchPage(request.nextUrl.searchParams.get("page"));
   const pageSize = parseSearchPageSize(request.nextUrl.searchParams.get("pageSize"));
+  const filters = parseSearchFilters(request.nextUrl.searchParams);
+  const headlineOnly = request.nextUrl.searchParams.get("part") === "headline";
 
   if (!q) {
     return Response.json({
@@ -136,7 +175,7 @@ export async function GET(request: NextRequest) {
   const queryFormsLower = forms.map((form) => form.toLowerCase()).filter((form) => form.length > 0);
 
   try {
-    const result = await searchPayload(queryFormsLower, page, pageSize);
+    const result = await searchPayload(queryFormsLower, page, pageSize, filters, headlineOnly);
 
     return Response.json({
       articles: result.articles,
@@ -145,6 +184,7 @@ export async function GET(request: NextRequest) {
       query: q,
       totalPages: result.totalPages,
       totalResults: result.totalDocs,
+      partial: headlineOnly,
     });
   } catch {
     return Response.json({

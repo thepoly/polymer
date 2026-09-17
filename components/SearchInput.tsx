@@ -654,22 +654,21 @@ export default function SearchInput({
           <div className="mt-8">
             <div className="flex flex-col divide-y divide-rule">
               {articles.map((article) => (
-                <div key={article.id} className="py-4 first:pt-0">
-                  <TransitionLink
-                    href={article.externalUrl ?? getArticleUrl(article)}
-                    className="flex flex-col group cursor-pointer"
-                    data-analytics-context="search-inline"
-                    onClick={() => posthog.capture("search_result_clicked", { query, article_title: article.title, article_section: article.section })}
-                  >
-                    <h3 className={`font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors mb-1 [overflow-wrap:anywhere] break-words font-copy text-[22px] md:text-[24px] ${article.section === "opinion" ? "font-light" : ""} ${article.section === "news" ? "text-[23px] md:text-[25px]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[23px] md:text-[25px]" : ""}`}>
-                      {article.title}
-                    </h3>
-                    <Byline author={article.author} date={article.date} />
-                    <p className="font-meta font-normal text-black dark:text-white text-[13px] leading-[1.38] mt-1.5 line-clamp-3 transition-colors [overflow-wrap:anywhere] break-words">
-                      {article.excerpt}
-                    </p>
-                  </TransitionLink>
-                </div>
+                <TransitionLink
+                  key={article.id}
+                  href={article.externalUrl ?? getArticleUrl(article)}
+                  className="flex flex-col group cursor-pointer py-4 first:pt-0"
+                  data-analytics-context="search-inline"
+                  onClick={() => posthog.capture("search_result_clicked", { query, article_title: article.title, article_section: article.section })}
+                >
+                  <h3 className={`font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors mb-1 [overflow-wrap:anywhere] break-words font-copy text-[22px] md:text-[24px] ${article.section === "opinion" ? "font-light" : ""} ${article.section === "news" ? "text-[23px] md:text-[25px]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[23px] md:text-[25px]" : ""}`}>
+                    {article.title}
+                  </h3>
+                  <Byline author={article.author} date={article.date} />
+                  <p className="font-meta font-normal text-black dark:text-white text-[13px] leading-[1.38] mt-1.5 line-clamp-3 transition-colors [overflow-wrap:anywhere] break-words">
+                    {article.excerpt}
+                  </p>
+                </TransitionLink>
               ))}
             </div>
             {totalPages > 1 && (
@@ -677,7 +676,7 @@ export default function SearchInput({
                 <button
                   onClick={() => setPage((p) => Math.max(0, p - 1))}
                   disabled={page === 0}
-                  className="disabled:opacity-30 hover:text-accent transition-colors"
+                  className="cursor-pointer disabled:cursor-default disabled:opacity-30 hover:text-accent transition-colors"
                 >
                   ← Prev
                 </button>
@@ -685,7 +684,7 @@ export default function SearchInput({
                 <button
                   onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={page === totalPages - 1}
-                  className="disabled:opacity-30 hover:text-accent transition-colors"
+                  className="cursor-pointer disabled:cursor-default disabled:opacity-30 hover:text-accent transition-colors"
                 >
                   Next →
                 </button>

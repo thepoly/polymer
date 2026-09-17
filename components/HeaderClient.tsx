@@ -6,7 +6,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, Cloudy, Menu, Moon, Search, Sun, Wind, X } from "lucide-react";
-import SearchOverlay, { SearchOverlayTrigger } from "@/components/SearchOverlay";
+import { SearchOverlayTrigger } from "@/components/SearchOverlay";
+import { openSearchOverlay } from "@/components/SearchOverlayHost";
 import { MobileMenuDrawer, primaryNavItems, secondaryNavItems, isExternalHref } from "@/components/MobileMenuDrawer";
 import { useHeaderTransition } from "@/components/HeaderTransitionProvider";
 import {
@@ -92,7 +93,6 @@ function pickWeatherIcon(forecast: string): React.ComponentType<{ className?: st
 
 export default function Header({ compact = false, mobileTight = false, logoSrcs, headerAnimation = DEFAULT_HEADER_ANIMATION, volume, edition, liveEntries, weather }: { compact?: boolean; mobileTight?: boolean; logoSrcs?: HeaderLogoSrcs; headerAnimation?: HeaderAnimationConfig; volume?: number | null; edition?: number | null; liveEntries?: LiveArticleStripEntry[]; weather?: HeaderWeather }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSearchOverlayOpen, setIsSearchOverlayOpen] = useState(false);
   const [showDarkModePrompt, setShowDarkModePrompt] = useState(false);
   const currentDate = useCurrentDate();
   const { animationKey, phase, isAnimating, navigateImmediately, triggerTransition, suckDurationMs, shootDurationMs } = useHeaderTransition();
@@ -113,10 +113,6 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
   const waveFleet = generateWaveFleet(waveCount);
   const shootWrapPathLength = wrapAround ? (logoOutlineRightX - logoOutlineLeftX) + (logoBaselineY - logoOutlineTopY) * 2 : 0;
   const shootWrapPathD = wrapAround ? `M ${logoOutlineRightX} ${logoBaselineY} V ${logoOutlineTopY} H ${logoOutlineLeftX} V ${logoBaselineY}` : '';
-
-  const openSearchOverlay = () => {
-    setIsSearchOverlayOpen(true);
-  };
 
   const prefetchLink = (href: string) => {
     if (!href.startsWith("/")) return;
@@ -226,7 +222,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
               />
             </Link>
             <div className="flex justify-end">
-              <button onClick={openSearchOverlay} className="relative -top-[2px] flex h-9 w-9 items-center justify-center text-text-main">
+              <button onClick={() => openSearchOverlay()} className="relative -top-[2px] flex h-9 w-9 items-center justify-center text-text-main">
                 <span className="relative block h-5 w-5">
                   <Search className="absolute inset-0 m-auto h-4 w-4" />
                 </span>
@@ -351,7 +347,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                 )}
               </div>
               
-              <SearchOverlayTrigger onClick={openSearchOverlay} />
+              <SearchOverlayTrigger onClick={() => openSearchOverlay()} />
 
             </div>
           </div>
@@ -586,7 +582,6 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
       </header>
 
       {/* <MaraudersFootsteps /> */}
-      {isSearchOverlayOpen && <SearchOverlay onClose={() => setIsSearchOverlayOpen(false)} />}
     </>
   );
 }

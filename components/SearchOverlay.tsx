@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { Article } from "@/components/FrontPage/types";
 import { Byline } from "@/components/FrontPage/Byline";
@@ -10,9 +10,13 @@ import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import { useTheme } from "@/components/ThemeProvider";
 import {
+  DEFAULT_SEARCH_FILTERS,
   DEFAULT_SEARCH_PAGE_SIZE,
   MAX_SEARCH_QUERY_LENGTH,
+  appendSearchFilters,
+  parseSearchFilters,
   sanitizeSearchQuery,
+  type SearchFilters,
 } from "@/utils/search";
 import { parseArchiveDateQuery } from "@/lib/archiveDateQuery";
 import posthog from "posthog-js";
@@ -55,6 +59,139 @@ type SpellCorrectionState = {
   suggestedQuery: string;
   suggestedResults: number;
 };
+
+type SearchSnapshot = {
+  query: string;
+  articles: Article[];
+  displayCount: number;
+  searched: boolean;
+  hasSearchedOnce: boolean;
+  isLoading: boolean;
+  archiveSubtitle: string | null;
+  page: number;
+  totalResults: number;
+  totalPages: number;
+  spellCorrection: SpellCorrectionState | null;
+  filters: SearchFilters;
+  resultsKey: string | null;
+  scrollTop: number;
+  forceDark: boolean;
+};
+
+// Search state saved when an overlay unmounts (keyed by its /search URL), so coming
+// back to that URL restores the same results and scroll position.
+const searchSnapshots = new Map<string, SearchSnapshot>();
+
+const SECTION_FILTERS = [
+  { value: "", label: "every section" },
+  { value: "news", label: "News" },
+  { value: "features", label: "Features" },
+  { value: "opinion", label: "Opinion" },
+  { value: "sports", label: "Sports" },
+];
+const RANGE_FILTERS = [
+  { value: "any", label: "all time" },
+  { value: "week", label: "the past week" },
+  { value: "month", label: "the past month" },
+  { value: "year", label: "the past year" },
+];
+const SORT_FILTERS = [
+  { value: "newest", label: "newest first" },
+  { value: "oldest", label: "oldest first" },
+];
+
+function searchPageHref(query: string, filters: SearchFilters) {
+  const params = new URLSearchParams();
+  const q = sanitizeSearchQuery(query);
+  if (q) params.set("q", q);
+  const search = appendSearchFilters(params, filters).toString();
+  return search ? `/search?${search}` : "/search";
+}
+
+const resultsKeyFor = (query: string, page: number, filters: SearchFilters) =>
+  `${searchPageHref(query, filters)}|${page}`;
+
+const TYPE_MS_PER_CHAR = 2;
+const TYPE_OUT_MS = 1200;
+const RESULT_STAGGER_MS = 30;
+
+// Types the sentence out a character at a time using staggered CSS delays, so the
+// layout never reflows. Components (like InlineSelect) appear as one unit. Only the
+// first appearance types; after that it's plain text, so later edits don't flicker.
+function TypeOut({ children, enabled }: { children: React.ReactNode; enabled: boolean }) {
+  const [typing, setTyping] = useState(enabled);
+  useEffect(() => {
+    if (!typing) return;
+    const timer = setTimeout(() => setTyping(false), TYPE_OUT_MS);
+    return () => clearTimeout(timer);
+  }, [typing]);
+
+  let index = 0;
+  const walk = (node: React.ReactNode): React.ReactNode => {
+    if (typeof node === "string" || typeof node === "number") {
+      if (!typing) return node;
+      return Array.from(String(node), (char, i) => (
+        <span key={i} className="search-type-char" style={{ animationDelay: `${index++ * TYPE_MS_PER_CHAR}ms` }}>
+          {char}
+        </span>
+      ));
+    }
+    if (Array.isArray(node)) {
+      return node.map((child, i) => <React.Fragment key={i}>{walk(child)}</React.Fragment>);
+    }
+    if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
+      if (typeof node.type === "string" || node.type === React.Fragment) {
+        return React.cloneElement(node, undefined, walk(node.props.children));
+      }
+      const delay = index * TYPE_MS_PER_CHAR;
+      index += 8;
+      return typing ? <span className="search-type-char" style={{ animationDelay: `${delay}ms` }}>{node}</span> : <span>{node}</span>;
+    }
+    return node;
+  };
+  return <>{walk(children)}</>;
+}
+
+// A word in the status sentence that opens the native picker (the select is
+// invisible and stretched over the word, so the text sets the width).
+function InlineSelect({
+  label,
+  value,
+  options,
+  rainbow,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  // Rainbow while searching, lingering a second before fading back to normal.
+  rainbow: boolean;
+  onChange: (value: string) => void;
+}) {
+  const text = (options.find((option) => option.value === value) ?? options[0]).label;
+  return (
+    <span className="relative inline-block whitespace-nowrap text-text-main underline decoration-dotted underline-offset-[3px] transition-colors focus-within:text-accent hover:text-accent">
+      {text}
+      <span
+        aria-hidden="true"
+        className="search-rainbow-text pointer-events-none absolute inset-0 select-none"
+        style={{ opacity: rainbow ? 1 : 0, transition: `opacity 0.8s ease-out ${rainbow ? "0s" : "1s"}` }}
+      >
+        {text}
+      </span>
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="absolute inset-0 h-full w-full cursor-pointer appearance-none opacity-0"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>{option.label}</option>
+        ))}
+      </select>
+    </span>
+  );
+}
 
 export function SearchBarTrigger({
   onClick,
@@ -142,13 +279,16 @@ function formatRetryCountdown(totalSeconds: number): string {
 async function fetchSearchResults(
   q: string,
   page: number,
+  filters: SearchFilters,
   signal: AbortSignal,
+  headlineOnly = false,
 ): Promise<SearchResponse> {
-  const params = new URLSearchParams({
+  const params = appendSearchFilters(new URLSearchParams({
     q,
     page: String(page),
     pageSize: String(DEFAULT_SEARCH_PAGE_SIZE),
-  });
+  }), filters);
+  if (headlineOnly) params.set("part", "headline");
   const res = await fetch(`/api/search?${params.toString()}`, { signal });
   if (!res.ok) {
     let errorMessage = "Search request failed";
@@ -174,25 +314,51 @@ async function fetchSearchResults(
   return res.json() as Promise<SearchResponse>;
 }
 
-export default function SearchOverlay({ onClose, forceDark = false }: { onClose: () => void; forceDark?: boolean }) {
+export default function SearchOverlay({
+  onClose,
+  forceDark = false,
+  variant = "overlay",
+}: {
+  onClose?: () => void;
+  forceDark?: boolean;
+  // "page" is the /search route itself (direct visits and refreshes).
+  variant?: "overlay" | "page";
+}) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const isPage = variant === "page";
+  // The overlay sits at /search?q= (over the page it was opened on) after Enter or
+  // a result click, and when back/forward returns there.
+  const atSearchUrl = isPage || pathname === "/search";
+  const [initialQuery] = useState(() => (atSearchUrl ? sanitizeSearchQuery(searchParams.get("q")) : ""));
+  const [initialFilters] = useState(() => (atSearchUrl ? parseSearchFilters(searchParams) : DEFAULT_SEARCH_FILTERS));
+  const [restored] = useState(() =>
+    atSearchUrl ? searchSnapshots.get(searchPageHref(initialQuery, initialFilters)) ?? null : null,
+  );
   const { isDarkMode: themeDarkMode, logoSrcs } = useTheme();
-  const isDarkMode = forceDark || themeDarkMode;
+  const forceDarkMode = forceDark || !!restored?.forceDark;
+  const isDarkMode = forceDarkMode || themeDarkMode;
   const logoSrc = isDarkMode ? logoSrcs.mobileDark : logoSrcs.mobileLight;
-  const [query, setQuery] = useState("");
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [displayCount, setDisplayCount] = useState(0);
-  const displayCountRef = useRef(0);
-  const [searched, setSearched] = useState(false);
-  const hasSearchedOnceRef = useRef(false);
-  const [hasSearchedOnce, setHasSearchedOnce] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [archiveSubtitle, setArchiveSubtitle] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
-  const [totalResults, setTotalResults] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
+  const [query, setQuery] = useState(restored?.query ?? initialQuery);
+  const [articles, setArticles] = useState<Article[]>(restored?.articles ?? []);
+  const [displayCount, setDisplayCount] = useState(restored?.displayCount ?? 0);
+  const displayCountRef = useRef(restored?.displayCount ?? 0);
+  const [searched, setSearched] = useState(restored?.searched ?? false);
+  const hasSearchedOnceRef = useRef(restored?.hasSearchedOnce ?? false);
+  const [hasSearchedOnce, setHasSearchedOnce] = useState(restored?.hasSearchedOnce ?? false);
+  const [isLoading, setIsLoading] = useState(restored?.isLoading ?? false);
+  const [hasFinishedSearch, setHasFinishedSearch] = useState(!!restored);
+  const [archiveSubtitle, setArchiveSubtitle] = useState<string | null>(restored?.archiveSubtitle ?? null);
+  const [page, setPage] = useState(restored?.page ?? 0);
+  const [animateResults, setAnimateResults] = useState(!restored);
+  const [staggerFrom, setStaggerFrom] = useState(0);
+  const [filters, setFilters] = useState<SearchFilters>(restored?.filters ?? initialFilters);
+  const [totalResults, setTotalResults] = useState(restored?.totalResults ?? 0);
+  const [totalPages, setTotalPages] = useState(restored?.totalPages ?? 0);
+  const [isVisible, setIsVisible] = useState(isPage || !!restored);
   const [isClosing, setIsClosing] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
@@ -200,9 +366,13 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const waveTypingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Query|page the displayed results fully belong to (null while stale or loading).
+  const resultsKeyRef = useRef<string | null>(restored?.resultsKey ?? null);
+  // Restored results are already current, so the first fetch for them is skipped.
+  const restoredKeyRef = useRef<string | null>(restored && !restored.isLoading ? restored.resultsKey : null);
 
   // Spell check
-  const [spellCorrection, setSpellCorrection] = useState<SpellCorrectionState | null>(null);
+  const [spellCorrection, setSpellCorrection] = useState<SpellCorrectionState | null>(restored?.spellCorrection ?? null);
   const [rateLimitError, setRateLimitError] = useState<string | null>(null);
   const [rateLimitUntil, setRateLimitUntil] = useState<number | null>(null);
   const [rateLimitSecondsRemaining, setRateLimitSecondsRemaining] = useState(0);
@@ -211,7 +381,7 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
   const characterLimitHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const characterLimitResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [stage, setStage] = useState(0);
+  const [stage, setStage] = useState(restored ? 3 : 0);
   // 0: blank (overlay fading in)
   // 1: "Search..." typing out
   // 2: line extends + logo fades in + X drops in
@@ -272,6 +442,13 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
     setPage(0);
   };
 
+  const updateFilters = (patch: Partial<SearchFilters>) => {
+    const next = { ...filters, ...patch };
+    if (next.section === filters.section && next.range === filters.range && next.sort === filters.sort) return;
+    setFilters(next);
+    setPage(0);
+  };
+
   const updateCursor = useCallback(() => {
     const input = inputRef.current;
     const cursor = cursorRef.current;
@@ -297,20 +474,79 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
 
   const closingRef = useRef(false);
   const handleClose = useCallback(() => {
+    if (isPage) {
+      if (window.history.length > 1) router.back();
+      else router.push("/");
+      return;
+    }
     if (closingRef.current) return;
     closingRef.current = true;
     setIsClosing(true);
     setIsVisible(false);
-    closeTimerRef.current = setTimeout(onClose, OVERLAY_TRANSITION_MS);
-  }, [onClose]);
+    closeTimerRef.current = setTimeout(() => {
+      onClose?.();
+      // Closing search at /search?q= returns to the page underneath.
+      if (window.location.pathname === "/search") window.history.back();
+    }, OVERLAY_TRANSITION_MS);
+  }, [isPage, onClose, router]);
 
   useEffect(() => {
+    if (isPage || restored) return;
     const frame = window.requestAnimationFrame(() => {
       setIsVisible(true);
       inputRef.current?.focus();
     });
     return () => window.cancelAnimationFrame(frame);
-  }, []);
+  }, [isPage, restored]);
+
+  const saveSnapshot = () => {
+    searchSnapshots.set(searchPageHref(query, filters), {
+      query,
+      articles,
+      displayCount,
+      searched,
+      hasSearchedOnce,
+      isLoading,
+      archiveSubtitle,
+      page,
+      totalResults,
+      totalPages,
+      spellCorrection,
+      filters,
+      resultsKey: resultsKeyRef.current,
+      scrollTop: containerRef.current?.scrollTop ?? 0,
+      forceDark: forceDarkMode,
+    });
+  };
+  const saveSnapshotRef = useRef(saveSnapshot);
+  useLayoutEffect(() => {
+    saveSnapshotRef.current = saveSnapshot;
+  });
+
+  // Put /search?q= in history without leaving the page underneath, so back from a
+  // clicked article returns to this search.
+  const pushSearchUrl = () => {
+    if (window.location.pathname !== "/search") window.history.pushState(null, "", searchPageHref(query, filters));
+  };
+
+  // Land at the saved scroll position when restored, and save state on the way out.
+  useLayoutEffect(() => {
+    if (restored && containerRef.current) containerRef.current.scrollTop = restored.scrollTop;
+    return () => saveSnapshotRef.current();
+  }, [restored]);
+
+  // At /search, keep ?q= in step with the input so history lands on this query.
+  useEffect(() => {
+    if (!atSearchUrl) return;
+    const timer = setTimeout(() => {
+      // Compare parsed URLs: the browser re-encodes some characters (e.g. ').
+      const next = new URL(searchPageHref(query, filters), window.location.origin);
+      if (next.pathname + next.search !== window.location.pathname + window.location.search) {
+        window.history.replaceState(null, "", next.pathname + next.search);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [atSearchUrl, filters, query]);
 
   // Smooth count-up: accumulate the real total, then animate toward it
   const targetCountRef = useRef(0);
@@ -335,12 +571,19 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
 
   const animateCount = useCallback((target: number) => {
     targetCountRef.current = target;
+    if (target < displayCountRef.current) {
+      displayCountRef.current = target;
+      setDisplayCount(target);
+      return;
+    }
     startCountAnimation();
   }, [startCountAnimation]);
 
-  const fetchResults = useCallback(async (rawQuery: string, pageIndex: number) => {
+  const fetchResults = useCallback(async (rawQuery: string, pageIndex: number, activeFilters: SearchFilters) => {
     abortRef.current?.abort();
+    resultsKeyRef.current = null;
     const q = sanitizeSearchQuery(rawQuery);
+    const resultsKey = resultsKeyFor(q, pageIndex, activeFilters);
 
     if (!q) {
       setArticles([]);
@@ -358,21 +601,43 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
     }
 
     if (parseArchiveDateQuery(q)) {
-      router.push(`/archive?date=${encodeURIComponent(q)}&source=search-overlay`);
+      const archiveHref = `/archive?date=${encodeURIComponent(q)}&source=search-overlay`;
+      // Replace on /search so back doesn't bounce into the redirect again.
+      if (isPage || window.location.pathname === "/search") router.replace(archiveHref);
+      else router.push(archiveHref);
       return;
     }
 
     const controller = new AbortController();
     abortRef.current = controller;
+    setAnimateResults(true);
+    setStaggerFrom(0);
     setIsLoading(true);
     setSearched(false);
+    if (!hasSearchedOnceRef.current) {
+      hasSearchedOnceRef.current = true;
+      setHasSearchedOnce(true);
+    }
     setSpellCorrection(null);
-    setDisplayCount(0);
-    displayCountRef.current = 0;
 
     try {
-      const primaryData = await fetchSearchResults(q, pageIndex + 1, controller.signal);
+      // Headline matches skip the slow body scan, so show them while the full
+      // search (headline matches first, then body mentions) finishes.
+      const fullRequest = fetchSearchResults(q, pageIndex + 1, activeFilters, controller.signal);
+      let fullArrived = false;
+      let shownCount = 0;
+      fullRequest.then(() => { fullArrived = true; }, () => {});
+      fetchSearchResults(q, pageIndex + 1, activeFilters, controller.signal, true).then((headlineData) => {
+        if (fullArrived || controller.signal.aborted || headlineData.articles.length === 0) return;
+        shownCount = headlineData.articles.length;
+        setArticles(headlineData.articles);
+        setSearched(true);
+        animateCount(headlineData.totalResults);
+      }, () => {});
 
+      const primaryData = await fullRequest;
+
+      setStaggerFrom(shownCount);
       setArticles(primaryData.articles);
       setTotalResults(primaryData.totalResults);
       setTotalPages(primaryData.totalPages);
@@ -382,20 +647,22 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
         query: q,
         total_results: primaryData.totalResults,
         page: pageIndex + 1,
-        source: "overlay",
+        section: activeFilters.section ?? "all",
+        range: activeFilters.range,
+        sort: activeFilters.sort,
+        source: isPage ? "page" : "overlay",
       });
+      const needsSpellcheck = pageIndex === 0 && primaryData.totalResults === 0;
+      if (!needsSpellcheck) resultsKeyRef.current = resultsKey;
       setRateLimitError(null);
       setRateLimitUntil(null);
       setRateLimitSecondsRemaining(0);
       setSearched(true);
-      if (!hasSearchedOnceRef.current) {
-        hasSearchedOnceRef.current = true;
-        setHasSearchedOnce(true);
-      }
+      setHasFinishedSearch(true);
       setIsLoading(false);
 
       // Spellcheck fallback only applies when the original query has zero results.
-      if (pageIndex === 0 && primaryData.totalResults === 0) {
+      if (needsSpellcheck) {
         try {
           const spellRes = await fetch(
             `/api/search/spellcheck?q=${encodeURIComponent(q)}`,
@@ -406,7 +673,7 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
           if (!spellcheckData.suggestion || spellcheckData.suggestion.toLowerCase() === q.toLowerCase()) return;
 
           // Re-search with corrected query
-          const suggestedData = await fetchSearchResults(spellcheckData.suggestion, 1, controller.signal);
+          const suggestedData = await fetchSearchResults(spellcheckData.suggestion, 1, activeFilters, controller.signal);
 
           setSpellCorrection({
             originalQuery: q,
@@ -422,7 +689,9 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
             animateCount(suggestedData.totalResults);
             setPage(0);
           }
-        } catch {}
+        } catch {} finally {
+          if (!controller.signal.aborted) resultsKeyRef.current = resultsKey;
+        }
       }
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return;
@@ -440,13 +709,15 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
       }
       setIsLoading(false);
     }
-  }, [animateCount, router]);
+  }, [animateCount, isPage, router]);
 
   useEffect(() => {
     if (rateLimitUntil && rateLimitUntil > Date.now()) return;
-    const timer = setTimeout(() => fetchResults(query, page), 250);
+    if (restoredKeyRef.current === resultsKeyFor(query, page, filters)) return;
+    restoredKeyRef.current = null;
+    const timer = setTimeout(() => fetchResults(query, page, filters), 250);
     return () => clearTimeout(timer);
-  }, [query, page, fetchResults, rateLimitUntil]);
+  }, [query, page, filters, fetchResults, rateLimitUntil]);
 
   useEffect(() => {
     if (!rateLimitUntil) return;
@@ -493,6 +764,7 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
 
   // Animation sequence — starts immediately, no dead time
   useEffect(() => {
+    if (restored) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
     timers.push(setTimeout(() => { if (!closingRef.current) setStage(1); }, 0));
     timers.push(setTimeout(() => { if (!closingRef.current) setStage(2); }, 550));
@@ -501,15 +773,16 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
       setStage(3);
     }, 900));
     return () => timers.forEach(clearTimeout);
-  }, []);
+  }, [restored]);
 
   // Fetch archive subtitle on mount
   useEffect(() => {
+    if (restored?.archiveSubtitle) return;
     fetch("/api/search/archive-date")
       .then((r) => r.ok ? r.json() : Promise.reject())
       .then((data: { subtitle: string }) => setArchiveSubtitle(data.subtitle))
       .catch(() => setArchiveSubtitle(null));
-  }, []);
+  }, [restored]);
 
   // Lock body scroll and handle Esc
   useEffect(() => {
@@ -541,13 +814,15 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
 
   return (
     <div
-      className={`fixed inset-0 z-[100] overflow-y-auto bg-bg-main/88 backdrop-blur-sm transition-opacity ease-out${forceDark ? ' dark' : ''}`}
+      ref={containerRef}
+      data-search-overlay
+      className={`fixed inset-0 z-[100] overflow-y-auto bg-bg-main/88 backdrop-blur-sm transition-opacity ease-out${forceDarkMode ? ' dark' : ''}`}
       onClick={(e) => {
         const target = e.target as HTMLElement;
-        if (!target.closest("input, a, button, [data-search-area]")) handleClose();
+        if (!target.closest("input, select, a, button, [data-search-area]")) handleClose();
       }}
       style={{
-        ...(forceDark ? {
+        ...(forceDarkMode ? {
           '--background': '#0a0a0a',
           '--foreground': '#e8e8e8',
           '--foreground-muted': '#c8ced6',
@@ -591,6 +866,33 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
           from { filter: hue-rotate(0deg); }
           to   { filter: hue-rotate(360deg); }
         }
+        @keyframes searchTypeChar {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        .search-type-char {
+          animation: searchTypeChar 60ms ease-out both;
+        }
+        @keyframes searchResultIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes searchRuleExtend {
+          from { transform: scaleX(0); }
+          to   { transform: scaleX(1); }
+        }
+        @keyframes rainbowTextShift {
+          to { background-position: 200% 0; }
+        }
+        .search-rainbow-text {
+          background-image: linear-gradient(90deg, #ff4040, #ff9900, #ffee00, #44dd44, #4488ff, #cc44ff, #ff4040);
+          background-size: 200% 100%;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          color: transparent;
+          animation: rainbowTextShift 1.5s linear infinite;
+        }
         @keyframes rainbowLetterFlash {
           0% { color: #f4a6a6; }
           16% { color: #f6c7a1; }
@@ -620,7 +922,7 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
         {/* X button */}
         <button
           onClick={handleClose}
-          className="fixed top-[calc(var(--safe-area-top)-0.15rem)] right-3 z-20 flex h-7 w-7 items-center justify-center text-text-muted/70 transition-colors hover:text-accent md:absolute md:top-[0.45rem] md:right-6 md:h-10 md:w-10 xl:right-[30px]"
+          className="fixed top-[calc(var(--safe-area-top)-0.15rem)] right-3 z-20 flex h-7 w-7 cursor-pointer items-center justify-center text-text-muted/70 transition-colors hover:text-accent md:absolute md:top-[0.45rem] md:right-6 md:h-10 md:w-10 xl:right-[30px]"
           style={{
             opacity: stage >= 2 ? 1 : 0,
             transform: stage >= 2 ? "translateY(0)" : "translateY(-20px)",
@@ -702,6 +1004,11 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
             onClick={() => updateCursor()}
             onFocus={() => updateCursor()}
             onScroll={() => updateCursor()}
+            onKeyDown={(e) => {
+              if (isPage || e.key !== "Enter" || e.nativeEvent.isComposing) return;
+              e.preventDefault();
+              pushSearchUrl();
+            }}
             placeholder={stage >= 3 ? "Search..." : ""}
             className="search-caret w-full bg-transparent py-2 pl-3 pr-36 font-meta text-xl md:text-3xl font-bold placeholder:text-text-muted/60 dark:placeholder:text-white/85 outline-none text-text-main"
           />
@@ -762,38 +1069,68 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
 
             {hasSearchedOnce && (
               <p
-                className={`${rateLimitError && rateLimitSecondsRemaining > 0 ? "mt-2" : "mt-1"} font-meta text-[12px] text-text-muted`}
-                style={{ animation: "textFadeIn 0.3s ease-out forwards" }}
+                className={`${rateLimitError && rateLimitSecondsRemaining > 0 ? "mt-2" : "mt-1"} font-meta text-[15px] text-text-muted`}
               >
-                {isLoading ? (
-                  <>
-                    Searching... <span className="text-accent font-bold">{displayCount}</span> result{displayCount !== 1 ? "s" : ""} found so far.{" "}
-                  </>
-                ) : searched ? (
-                  spellCorrection ? (
-                    spellCorrection.suggestedResults > 0 ? (
-                      <>
-                        We found <span className="text-accent font-bold">{spellCorrection.originalResults}</span> result{spellCorrection.originalResults !== 1 ? "s" : ""} for{" "}
-                        <span className="text-red-500 font-bold">&lsquo;{spellCorrection.originalQuery}&rsquo;</span>. However, we did find{" "}
-                        <span className="text-accent font-bold">{spellCorrection.suggestedResults}</span> result{spellCorrection.suggestedResults !== 1 ? "s" : ""} that matched{" "}
-                        <span className="text-red-500 font-bold">&lsquo;{spellCorrection.suggestedQuery}&rsquo;</span>, if that&apos;s what you meant.{" "}
-                      </>
+                <TypeOut enabled={!restored}>
+                  {isLoading && !hasFinishedSearch ? (
+                    <>
+                      Searching... <span className="text-accent font-bold">{displayCount}</span> result{displayCount !== 1 ? "s" : ""} found so far.{" "}
+                    </>
+                  ) : isLoading ? (
+                    // Later searches keep this sentence while loading so the line doesn't
+                    // jump on every keystroke; the rainbow words show it's working.
+                    <>
+                      We found <span className="text-accent font-bold">{displayCount}</span> result{displayCount !== 1 ? "s" : ""} that matched your query.{" "}
+                    </>
+                  ) : searched ? (
+                    spellCorrection ? (
+                      spellCorrection.suggestedResults > 0 ? (
+                        <>
+                          We found <span className="text-accent font-bold">{spellCorrection.originalResults}</span> result{spellCorrection.originalResults !== 1 ? "s" : ""} for{" "}
+                          <span className="text-red-500 font-bold">&lsquo;{spellCorrection.originalQuery}&rsquo;</span>. However, we did find{" "}
+                          <span className="text-accent font-bold">{spellCorrection.suggestedResults}</span> result{spellCorrection.suggestedResults !== 1 ? "s" : ""} that matched{" "}
+                          <span className="text-red-500 font-bold">&lsquo;{spellCorrection.suggestedQuery}&rsquo;</span>, if that&apos;s what you meant.{" "}
+                        </>
+                      ) : (
+                        <>
+                          We found <span className="text-accent font-bold">{spellCorrection.originalResults}</span> result{spellCorrection.originalResults !== 1 ? "s" : ""} for{" "}
+                          <span className="text-red-500 font-bold">&lsquo;{spellCorrection.originalQuery}&rsquo;</span>. We didn&apos;t find any results for{" "}
+                          <span className="text-red-500 font-bold">&lsquo;{spellCorrection.suggestedQuery}&rsquo;</span> either.{" "}
+                        </>
+                      )
                     ) : (
                       <>
-                        We found <span className="text-accent font-bold">{spellCorrection.originalResults}</span> result{spellCorrection.originalResults !== 1 ? "s" : ""} for{" "}
-                        <span className="text-red-500 font-bold">&lsquo;{spellCorrection.originalQuery}&rsquo;</span>. We didn&apos;t find any results for{" "}
-                        <span className="text-red-500 font-bold">&lsquo;{spellCorrection.suggestedQuery}&rsquo;</span> either.{" "}
+                        We found <span className="text-accent font-bold">{totalResults}</span> result{totalResults !== 1 ? "s" : ""} that matched your query.{" "}
                       </>
                     )
-                  ) : (
-                    <>
-                      We found <span className="text-accent font-bold">{totalResults}</span> result{totalResults !== 1 ? "s" : ""} that matched your query.{" "}
-                    </>
-                  )
-                ) : null}
-                <span className="hidden md:inline">
-                  Our search algorithm uses title, subtitle, kicker, author, and body matching.{archiveSubtitle ? ` ${archiveSubtitle}.` : " You are currently searching our online database, containing articles published after 2009."} You can access older articles in <a href="https://digitalassets.archives.rpi.edu/do/235be3d2-f018-48af-a413-b50e16dd6dc7" target="_blank" rel="noopener noreferrer" className="underline hover:text-accent">our archive at the Richard G. Folsom Library</a>.
-                </span>
+                  ) : null}
+                  Showing{" "}
+                  <InlineSelect
+                    label="Section"
+                    rainbow={showWave}
+                    value={filters.section ?? ""}
+                    options={SECTION_FILTERS}
+                    onChange={(section) => updateFilters({ section: (section || null) as SearchFilters["section"] })}
+                  />{" "}
+                  from{" "}
+                  <InlineSelect
+                    label="Date"
+                    rainbow={showWave}
+                    value={filters.range}
+                    options={RANGE_FILTERS}
+                    onChange={(range) => updateFilters({ range: range as SearchFilters["range"] })}
+                  />,{" "}
+                  <InlineSelect
+                    label="Sort"
+                    rainbow={showWave}
+                    value={filters.sort}
+                    options={SORT_FILTERS}
+                    onChange={(sort) => updateFilters({ sort: sort as SearchFilters["sort"] })}
+                  />.{" "}
+                  <span className="hidden md:inline">
+                    Our search algorithm uses title, subtitle, kicker, author, and body matching.{archiveSubtitle ? ` ${archiveSubtitle}.` : " You are currently searching our online database, containing articles published after 2009."} You can access older articles in <TransitionLink href="/archive" className="underline hover:text-accent">our online archives</TransitionLink> or <a href="https://digitalassets.archives.rpi.edu/do/235be3d2-f018-48af-a413-b50e16dd6dc7" target="_blank" rel="noopener noreferrer" className="underline hover:text-accent">our archive at the Richard G. Folsom Library</a>.
+                  </span>
+                </TypeOut>
               </p>
             )}
           </div>
@@ -814,14 +1151,23 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
         {searched && displayArticles.length > 0 && (() => {
         return (
           <div className="mt-8">
-            <div className="flex flex-col divide-y divide-rule">
-                {displayArticles.map((article) => (
-                  <div key={article.id} className="py-4 first:pt-0">
+            <div className="flex flex-col">
+                {displayArticles.map((article, index) => {
+                  const delay = Math.min(Math.max(0, index - staggerFrom), 10) * RESULT_STAGGER_MS;
+                  return (
                     <TransitionLink
+                      key={article.id}
                       href={article.externalUrl ?? getArticleUrl(article)}
-                      data-analytics-context="search-overlay"
-                      onClick={() => { posthog.capture("search_result_clicked", { query, article_title: article.title, article_section: article.section, source: "overlay" }); handleClose(); }}
-                      className="flex flex-col group cursor-pointer"
+                      data-analytics-context={isPage ? "search-page" : "search-overlay"}
+                      onClick={(e) => {
+                        posthog.capture("search_result_clicked", { query, article_title: article.title, article_section: article.section, source: isPage ? "page" : "overlay" });
+                        if (isPage) return;
+                        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) handleClose();
+                        // Leave /search?q= in history so back from the article returns here.
+                        else pushSearchUrl();
+                      }}
+                      className="relative flex flex-col group cursor-pointer py-4 first:pt-0"
+                      style={animateResults ? { animation: `searchResultIn 320ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms both` } : undefined}
                     >
                       <h3 className={`font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors mb-1 [overflow-wrap:anywhere] break-words font-copy text-[22px] md:text-[24px] ${article.section === "opinion" ? "font-light" : ""} ${article.section === "news" ? "text-[23px] md:text-[25px]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[23px] md:text-[25px]" : ""}`}>
                         {article.title}
@@ -830,16 +1176,23 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
                       <p className="font-meta font-normal text-black dark:text-white text-[13px] leading-[1.38] mt-1.5 line-clamp-3 transition-colors [overflow-wrap:anywhere] break-words">
                         {article.excerpt}
                       </p>
+                      {index < displayArticles.length - 1 && (
+                        <span
+                          aria-hidden="true"
+                          className="pointer-events-none absolute inset-x-0 bottom-0 h-px origin-left bg-rule"
+                          style={animateResults ? { animation: `searchRuleExtend 450ms cubic-bezier(0.4, 0, 0.2, 1) ${delay + 120}ms both` } : undefined}
+                        />
+                      )}
                     </TransitionLink>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               {totalPages > 1 && (
                 <div className="mt-6 flex items-center gap-4 font-meta text-[12px] text-text-muted">
                   <button
                     onClick={() => setPage((p) => Math.max(0, p - 1))}
                     disabled={page === 0}
-                    className="disabled:opacity-30 hover:text-accent transition-colors"
+                    className="cursor-pointer disabled:cursor-default disabled:opacity-30 hover:text-accent transition-colors"
                   >
                     ← Prev
                   </button>
@@ -847,7 +1200,7 @@ export default function SearchOverlay({ onClose, forceDark = false }: { onClose:
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                     disabled={page === totalPages - 1}
-                    className="disabled:opacity-30 hover:text-accent transition-colors"
+                    className="cursor-pointer disabled:cursor-default disabled:opacity-30 hover:text-accent transition-colors"
                   >
                     Next →
                   </button>

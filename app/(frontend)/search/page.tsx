@@ -1,8 +1,5 @@
-import React from 'react';
 import type { Metadata } from 'next';
-import Header from '@/components/Header';
-import SearchInput from '@/components/SearchInput';
-import { sanitizeSearchQuery } from '@/utils/search';
+import SearchOverlay from '@/components/SearchOverlay';
 import { getSeo } from '@/lib/getSeo';
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -16,20 +13,12 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-type Args = {
-  searchParams: Promise<{ q?: string }>;
-};
-
-export default async function SearchPage({ searchParams }: Args) {
-  const { q } = await searchParams;
-  const query = sanitizeSearchQuery(q);
-
+// The search overlay on a solid background. Reads ?q= itself so it can pick up
+// the overlay's results and scroll position (see SearchOverlay's handoff).
+export default function SearchPage() {
   return (
-    <main className="min-h-screen bg-bg-main transition-colors duration-300">
-      <Header compact />
-      <div className="mx-auto max-w-[1280px] px-4 md:px-6 pt-20 pb-16">
-        <SearchInput defaultValue={query} />
-      </div>
+    <main>
+      <SearchOverlay variant="page" />
     </main>
   );
 }
