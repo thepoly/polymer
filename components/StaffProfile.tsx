@@ -251,7 +251,14 @@ export function StaffProfile({
                   {user.firstName} {user.lastName}
               </h1>
               
-              {user.positions?.map((pos, i) => {
+              {[...(user.positions ?? [])]
+                .sort((a, b) => {
+                  const end = (p: { endDate?: string | null }) =>
+                    p.endDate ? new Date(p.endDate).getTime() : Number.POSITIVE_INFINITY;
+                  const start = (p: { startDate: string }) => new Date(p.startDate).getTime();
+                  return end(b) - end(a) || start(b) - start(a);
+                })
+                .map((pos, i) => {
                   const title = typeof pos.jobTitle === 'object' && pos.jobTitle ? pos.jobTitle.title : '';
                   if (!title) return null;
                   return (
