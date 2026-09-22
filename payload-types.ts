@@ -616,29 +616,33 @@ export interface StaffPageLayout {
    */
   name: string;
   /**
-   * Large featured slot in the top-left corner.
+   * Senior board, top row, center (Editor in Chief).
    */
   heroLeft?: (number | null) | User;
   /**
-   * Large featured slot in the top-right corner.
+   * Senior board, top row, left (Senior Managing Editor).
    */
   heroRight?: (number | null) | User;
   /**
-   * Lead slot in the lower-left column.
+   * Senior board, second row, first (Managing Editor).
    */
   columnLeftLead?: (number | null) | User;
   /**
-   * Support slot below the lower-left lead.
+   * Senior board, second row, second (Managing Editor).
    */
   columnLeftSupport?: (number | null) | User;
   /**
-   * Lead slot in the lower-right column.
+   * Senior board, second row, third (Contributing Editor).
    */
   columnRightLead?: (number | null) | User;
   /**
-   * Support slot below the lower-right lead.
+   * Senior board, second row, fourth (Contributing Editor).
    */
   columnRightSupport?: (number | null) | User;
+  /**
+   * Senior board, top row, right (Business Manager).
+   */
+  businessManager?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
 }
@@ -1155,6 +1159,7 @@ export interface StaffPageLayoutSelect<T extends boolean = true> {
   columnLeftSupport?: T;
   columnRightLead?: T;
   columnRightSupport?: T;
+  businessManager?: T;
   updatedAt?: T;
   createdAt?: T;
 }

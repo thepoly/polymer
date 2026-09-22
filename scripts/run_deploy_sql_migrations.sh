@@ -55,7 +55,8 @@ VALUES
   ('20260507_000000_add_articles_previous_slug', 28, NOW(), NOW()),
   ('20260507_010000_add_legacy_shortlinks', 28, NOW(), NOW()),
   ('20260906_000000_fix_schema_drift', 29, NOW(), NOW()),
-  ('20260909_000000_add_focal_point_acknowledged', 30, NOW(), NOW())
+  ('20260909_000000_add_focal_point_acknowledged', 30, NOW(), NOW()),
+  ('20260922_000000_add_staff_business_manager', 31, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1454,4 +1455,15 @@ ALTER TABLE "articles"
   ADD COLUMN IF NOT EXISTS "focal_point_acknowledged" boolean DEFAULT false;
 ALTER TABLE "_articles_v"
   ADD COLUMN IF NOT EXISTS "version_focal_point_acknowledged" boolean DEFAULT false;
+
+-- 20260922_000000: Business manager slot on the staff page senior board.
+-- Nullable, so existing layouts need no backfill.
+ALTER TABLE "staff_page_layout" ADD COLUMN IF NOT EXISTS "business_manager_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "staff_page_layout" ADD CONSTRAINT "staff_page_layout_business_manager_id_users_id_fk"
+    FOREIGN KEY ("business_manager_id") REFERENCES "public"."users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "staff_page_layout_business_manager_idx"
+  ON "staff_page_layout" USING btree ("business_manager_id");
 SQL

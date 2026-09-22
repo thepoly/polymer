@@ -37,19 +37,32 @@ type StaffUser = {
 
 type LayoutSlots = Pick<
   StaffPageLayout,
-  'heroLeft' | 'heroRight' | 'columnLeftLead' | 'columnLeftSupport' | 'columnRightLead' | 'columnRightSupport'
+  | 'heroLeft'
+  | 'heroRight'
+  | 'columnLeftLead'
+  | 'columnLeftSupport'
+  | 'columnRightLead'
+  | 'columnRightSupport'
+  | 'businessManager'
 >
 
 type SlotKey = keyof LayoutSlots
 
-const FEATURED_SLOT_ORDER: { key: SlotKey; reverse: boolean; compact: boolean }[] = [
-  { key: 'heroLeft', reverse: false, compact: false },
-  { key: 'heroRight', reverse: true, compact: false },
-  { key: 'columnLeftLead', reverse: false, compact: false },
-  { key: 'columnLeftSupport', reverse: false, compact: true },
-  { key: 'columnRightLead', reverse: true, compact: false },
-  { key: 'columnRightSupport', reverse: true, compact: true },
+// Senior board rows: EIC centered on top between the senior managing editor
+// and business manager; managing editors then contributing editors below.
+const BOARD_ROWS: SlotKey[][] = [
+  ['heroRight', 'heroLeft', 'businessManager'],
+  ['columnLeftLead', 'columnLeftSupport', 'columnRightLead', 'columnRightSupport'],
 ]
+
+const FEATURED_SLOT_ORDER: SlotKey[] = BOARD_ROWS.flat()
+
+// Board portraits take the width of one column in the staff grid below (2/3/4/6
+// columns with a 1rem gap), measured against the board's container, so they
+// match everyone else's while the cards keep their own spacing.
+const BOARD_PORTRAIT_WIDTH =
+  'w-[calc((100cqw-1rem)/2)] sm:w-[calc((100cqw-2rem)/3)] md:w-[calc((100cqw-3rem)/4)] lg:w-[calc((100cqw-5rem)/6)]'
+
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
@@ -161,51 +174,25 @@ function StaffPortrait({
   )
 }
 
-function FeaturedStaffCard({
-  user,
-  reverse,
-  compact,
-}: {
-  user: StaffUser
-  reverse: boolean
-  compact: boolean
-}) {
+function FeaturedStaffCard({ user }: { user: StaffUser }) {
   const title = getCurrentPositionTitle(user)
-  const gapClass = compact ? 'gap-4 sm:gap-5 md:gap-6' : 'gap-5 sm:gap-6 md:gap-8'
-  const portraitClass = compact 
-    ? 'w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 shrink-0 rounded-full z-10' 
-    : 'w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 shrink-0 rounded-full z-10'
-    
-  const tailClass = compact
-    ? (reverse ? 'right-full lg:right-auto lg:left-full w-[3rem] sm:w-[3.75rem] md:w-[4.5rem]' : 'right-full w-[3rem] sm:w-[3.75rem] md:w-[4.5rem]')
-    : (reverse ? 'right-full lg:right-auto lg:left-full w-[4.25rem] sm:w-[5rem] md:w-[6.5rem]' : 'right-full w-[4.25rem] sm:w-[5rem] md:w-[6.5rem]')
 
   return (
-    <Link
-      href={getProfileHref(user)}
-      className={`group flex items-center ${gapClass} ${reverse ? 'flex-row text-left lg:flex-row-reverse lg:text-right' : 'flex-row text-left'}`}
-    >
-      <StaffPortrait user={user} className={portraitClass} />
-      <div className={`min-w-0 flex flex-1 flex-col`}>
-        {title ? (
-          <p className={`font-meta font-semibold uppercase tracking-[0.06em] text-accent transition-colors ${compact ? 'text-[10px] sm:text-xs' : 'text-xs sm:text-sm mb-1'}`}>
-            {title}
-          </p>
-        ) : null}
-        <h2 className={`font-meta font-bold text-text-main transition-colors group-hover:text-accent ${compact ? 'text-base sm:text-lg md:text-xl lg:text-2xl' : 'text-lg sm:text-xl md:text-2xl lg:text-3xl'}`}>
-          {user.firstName} {user.lastName}
-        </h2>
-        
-        <div className={`relative w-full h-[3px] bg-black dark:bg-white transition-colors my-1.5 sm:my-2 z-0`}>
-          <div className={`absolute top-0 bottom-0 bg-black dark:bg-white transition-colors ${tailClass}`} />
-        </div>
-
-        {user.major ? (
-          <p className={`font-meta text-text-muted transition-colors ${compact ? 'text-sm sm:text-base' : 'text-base sm:text-lg md:text-xl'}`}>
-            {user.major}
-          </p>
-        ) : null}
-      </div>
+    <Link href={getProfileHref(user)} className="group flex flex-col items-center text-center">
+      <StaffPortrait user={user} className={`${BOARD_PORTRAIT_WIDTH} aspect-square shrink-0 rounded-full mb-4`} />
+      {title ? (
+        <p className="font-meta font-bold uppercase tracking-[0.06em] leading-tight text-accent transition-colors text-[11px] sm:text-[13px] md:text-[15px] mb-1.5">
+          {title}
+        </p>
+      ) : null}
+      <h2 className="font-meta font-bold leading-tight text-text-main transition-colors group-hover:text-accent text-lg sm:text-xl md:text-2xl">
+        {user.firstName} {user.lastName}
+      </h2>
+      {user.major ? (
+        <p className="font-meta text-text-muted transition-colors mt-1 text-sm sm:text-base">
+          {user.major}
+        </p>
+      ) : null}
     </Link>
   )
 }
@@ -283,11 +270,12 @@ export default async function StaffPage() {
     columnLeftSupport: layoutDoc?.columnLeftSupport ?? null,
     columnRightLead: layoutDoc?.columnRightLead ?? null,
     columnRightSupport: layoutDoc?.columnRightSupport ?? null,
+    businessManager: layoutDoc?.businessManager ?? null,
   }
 
   const selectedIds = [...new Set(
     FEATURED_SLOT_ORDER
-      .map(({ key }) => layoutSlots[key])
+      .map((key) => layoutSlots[key])
       .filter((value): value is number => typeof value === 'number'),
   )]
 
@@ -336,19 +324,14 @@ export default async function StaffPage() {
     }),
   )
 
-  const featuredUsers = FEATURED_SLOT_ORDER.map(({ key, reverse, compact }) => {
+  const featuredUsers = FEATURED_SLOT_ORDER.map((key) => {
     const selectedId = layoutSlots[key]
-    if (typeof selectedId !== 'number') {
-      return { key, reverse, compact, user: null }
-    }
-
     return {
       key,
-      reverse,
-      compact,
-      user: selectedUsersById.get(selectedId) || null,
+      user: typeof selectedId === 'number' ? selectedUsersById.get(selectedId) || null : null,
     }
   })
+  const featuredByKey = new Map(featuredUsers.map((entry) => [entry.key, entry.user]))
 
   const featuredUserIds = new Set(
     featuredUsers
@@ -364,9 +347,14 @@ export default async function StaffPage() {
     .filter((user) => !featuredUserIds.has(user.id))
     .sort(sortAlphabetically)
 
-  const topRow = featuredUsers.slice(0, 2)
-  const lowerLeft = featuredUsers.slice(2, 4)
-  const lowerRight = featuredUsers.slice(4, 6)
+  const boardRows = BOARD_ROWS
+    .map((row) =>
+      row.flatMap((key) => {
+        const user = featuredByKey.get(key)
+        return user ? [{ key, user }] : []
+      }),
+    )
+    .filter((row) => row.length > 0)
   const hasFeaturedUsers = featuredUsers.some((entry) => entry.user)
 
   return (
@@ -380,30 +368,16 @@ export default async function StaffPage() {
       <div className="w-full">
         {hasFeaturedUsers ? (
           <>
-            <div className="grid gap-10 lg:grid-cols-2 lg:gap-12 mb-10 items-start">
-              {topRow.map(({ key, reverse, compact, user }, index) => (
-                <div key={key} className={`min-h-[10rem] ${index === 1 ? 'lg:mt-16' : ''}`}>
-                  {user ? <FeaturedStaffCard user={user} reverse={reverse} compact={compact} /> : null}
+            <div className="@container mb-10 flex flex-col gap-10 md:gap-14">
+              {boardRows.map((row) => (
+                <div key={row[0].key} className="flex flex-wrap justify-center gap-x-6 gap-y-10 md:gap-x-10">
+                  {row.map(({ key, user }) => (
+                    <div key={key} className="w-[calc(50%-0.75rem)] sm:w-48 md:w-56">
+                      <FeaturedStaffCard user={user} />
+                    </div>
+                  ))}
                 </div>
               ))}
-            </div>
-
-            <div className="grid gap-10 lg:grid-cols-2 lg:gap-16 mb-10">
-              <div className="space-y-10 sm:space-y-14">
-                {lowerLeft.map(({ key, reverse, compact, user }) => (
-                  <div key={key} className={compact ? 'pl-0 sm:pl-12' : ''}>
-                    {user ? <FeaturedStaffCard user={user} reverse={reverse} compact={compact} /> : null}
-                  </div>
-                ))}
-              </div>
-
-              <div className="space-y-10 sm:space-y-14">
-                {lowerRight.map(({ key, reverse, compact, user }) => (
-                  <div key={key} className={compact ? 'pr-0 sm:pr-12' : ''}>
-                    {user ? <FeaturedStaffCard user={user} reverse={reverse} compact={compact} /> : null}
-                  </div>
-                ))}
-              </div>
             </div>
 
             <div className="my-10 border-t border-rule" />

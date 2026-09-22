@@ -43,7 +43,7 @@ const StaffPageLayout: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       admin: {
-        description: 'Large featured slot in the top-left corner.',
+        description: 'Senior board, top row, center (Editor in Chief).',
       },
     },
     {
@@ -51,7 +51,7 @@ const StaffPageLayout: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       admin: {
-        description: 'Large featured slot in the top-right corner.',
+        description: 'Senior board, top row, left (Senior Managing Editor).',
       },
     },
     {
@@ -59,7 +59,7 @@ const StaffPageLayout: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       admin: {
-        description: 'Lead slot in the lower-left column.',
+        description: 'Senior board, second row, first (Managing Editor).',
       },
     },
     {
@@ -67,7 +67,7 @@ const StaffPageLayout: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       admin: {
-        description: 'Support slot below the lower-left lead.',
+        description: 'Senior board, second row, second (Managing Editor).',
       },
     },
     {
@@ -75,7 +75,7 @@ const StaffPageLayout: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       admin: {
-        description: 'Lead slot in the lower-right column.',
+        description: 'Senior board, second row, third (Contributing Editor).',
       },
     },
     {
@@ -83,7 +83,15 @@ const StaffPageLayout: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       admin: {
-        description: 'Support slot below the lower-right lead.',
+        description: 'Senior board, second row, fourth (Contributing Editor).',
+      },
+    },
+    {
+      name: 'businessManager',
+      type: 'relationship',
+      relationTo: 'users',
+      admin: {
+        description: 'Senior board, top row, right (Business Manager).',
       },
     },
   ],
