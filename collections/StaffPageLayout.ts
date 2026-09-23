@@ -40,6 +40,7 @@ const StaffPageLayout: CollectionConfig = {
     },
     {
       name: 'heroLeft',
+      label: 'Editor in Chief',
       type: 'relationship',
       relationTo: 'users',
       admin: {
@@ -48,6 +49,7 @@ const StaffPageLayout: CollectionConfig = {
     },
     {
       name: 'heroRight',
+      label: 'Senior Managing Editor',
       type: 'relationship',
       relationTo: 'users',
       admin: {
@@ -56,42 +58,47 @@ const StaffPageLayout: CollectionConfig = {
     },
     {
       name: 'columnLeftLead',
+      label: 'Managing Editor 1',
       type: 'relationship',
       relationTo: 'users',
       admin: {
-        description: 'Senior board, second row, first (Managing Editor).',
+        description: 'Senior board, row of four. Managing editors always show on the left.',
       },
     },
     {
       name: 'columnLeftSupport',
+      label: 'Managing Editor 2',
       type: 'relationship',
       relationTo: 'users',
       admin: {
-        description: 'Senior board, second row, second (Managing Editor).',
+        description: 'Senior board, row of four. Managing editors always show on the left.',
       },
     },
     {
       name: 'columnRightLead',
+      label: 'Contributing Editor 1',
       type: 'relationship',
       relationTo: 'users',
       admin: {
-        description: 'Senior board, second row, third (Contributing Editor).',
+        description: 'Senior board, row of four. Contributing editors always show on the right.',
       },
     },
     {
       name: 'columnRightSupport',
+      label: 'Contributing Editor 2',
       type: 'relationship',
       relationTo: 'users',
       admin: {
-        description: 'Senior board, second row, fourth (Contributing Editor).',
+        description: 'Senior board, row of four. Contributing editors always show on the right.',
       },
     },
     {
       name: 'businessManager',
+      label: 'Business Manager',
       type: 'relationship',
       relationTo: 'users',
       admin: {
-        description: 'Senior board, top row, right (Business Manager).',
+        description: 'Senior board, top row, right. A business manager always shows in the top row.',
       },
     },
   ],

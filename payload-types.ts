@@ -624,23 +624,23 @@ export interface StaffPageLayout {
    */
   heroRight?: (number | null) | User;
   /**
-   * Senior board, second row, first (Managing Editor).
+   * Senior board, row of four. Managing editors always show on the left.
    */
   columnLeftLead?: (number | null) | User;
   /**
-   * Senior board, second row, second (Managing Editor).
+   * Senior board, row of four. Managing editors always show on the left.
    */
   columnLeftSupport?: (number | null) | User;
   /**
-   * Senior board, second row, third (Contributing Editor).
+   * Senior board, row of four. Contributing editors always show on the right.
    */
   columnRightLead?: (number | null) | User;
   /**
-   * Senior board, second row, fourth (Contributing Editor).
+   * Senior board, row of four. Contributing editors always show on the right.
    */
   columnRightSupport?: (number | null) | User;
   /**
-   * Senior board, top row, right (Business Manager).
+   * Senior board, top row, right. A business manager always shows in the top row.
    */
   businessManager?: (number | null) | User;
   updatedAt: string;

@@ -142,6 +142,24 @@ const getCurrentPositionTitle = (user: StaffUser): string => {
   return title || ''
 }
 
+// Board placement by current title, whichever slot someone was picked in:
+// top row is senior managing editor, editor in chief, business manager; the
+// row of four has managing editors on the left and contributing editors on
+// the right. Untitled or other titles keep their slot's row and position.
+const BOARD_TITLE_PLACEMENT: Record<string, { row: number; rank: number }> = {
+  'senior managing editor': { row: 0, rank: 0 },
+  'editor in chief': { row: 0, rank: 1 },
+  'business manager': { row: 0, rank: 2 },
+  'managing editor': { row: 1, rank: 0 },
+  'contributing editor': { row: 1, rank: 2 },
+}
+
+const getBoardPlacement = (user: StaffUser, slotRow: number, slotIndex: number) =>
+  BOARD_TITLE_PLACEMENT[getCurrentPositionTitle(user).toLowerCase()] ?? {
+    row: slotRow,
+    rank: slotRow === 0 ? slotIndex : 1,
+  }
+
 const getProfileHref = (user: StaffUser): string => `/staff/${user.slug || user.id}`
 
 const sortAlphabetically = (a: StaffUser, b: StaffUser): number => {
@@ -347,14 +365,15 @@ export default async function StaffPage() {
     .filter((user) => !featuredUserIds.has(user.id))
     .sort(sortAlphabetically)
 
-  const boardRows = BOARD_ROWS
-    .map((row) =>
-      row.flatMap((key) => {
-        const user = featuredByKey.get(key)
-        return user ? [{ key, user }] : []
-      }),
-    )
-    .filter((row) => row.length > 0)
+  const boardEntries = BOARD_ROWS.flatMap((row, slotRow) =>
+    row.flatMap((key, slotIndex) => {
+      const user = featuredByKey.get(key)
+      return user ? [{ key, user, ...getBoardPlacement(user, slotRow, slotIndex) }] : []
+    }),
+  )
+  const boardRows = BOARD_ROWS.map((_, rowIndex) =>
+    boardEntries.filter((entry) => entry.row === rowIndex).sort((a, b) => a.rank - b.rank),
+  ).filter((row) => row.length > 0)
   const hasFeaturedUsers = featuredUsers.some((entry) => entry.user)
 
   return (
