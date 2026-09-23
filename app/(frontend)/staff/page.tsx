@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getSeo } from '@/lib/getSeo'
-import type { StaffPageLayout, User } from '@/payload-types'
+import type { User } from '@/payload-types'
 
 export const revalidate = 60
 
@@ -35,27 +35,13 @@ type StaffUser = {
     | null
 }
 
-type LayoutSlots = Pick<
-  StaffPageLayout,
-  | 'heroLeft'
-  | 'heroRight'
-  | 'columnLeftLead'
-  | 'columnLeftSupport'
-  | 'columnRightLead'
-  | 'columnRightSupport'
-  | 'businessManager'
->
-
-type SlotKey = keyof LayoutSlots
-
-// Senior board rows: EIC centered on top between the senior managing editor
-// and business manager; managing editors then contributing editors below.
-const BOARD_ROWS: SlotKey[][] = [
-  ['heroRight', 'heroLeft', 'businessManager'],
-  ['columnLeftLead', 'columnLeftSupport', 'columnRightLead', 'columnRightSupport'],
+// Senior board, filled automatically from each active staffer's current title.
+// Top row: senior managing editor, editor in chief, business manager; below:
+// managing editors on the left, contributing editors on the right.
+const BOARD_ROWS: string[][] = [
+  ['senior managing editor', 'editor in chief', 'business manager'],
+  ['managing editor', 'contributing editor'],
 ]
-
-const FEATURED_SLOT_ORDER: SlotKey[] = BOARD_ROWS.flat()
 
 // Board portraits take the width of one column in the staff grid below (2/3/4/6
 // columns with a 1rem gap), measured against the board's container, so they
@@ -142,23 +128,14 @@ const getCurrentPositionTitle = (user: StaffUser): string => {
   return title || ''
 }
 
-// Board placement by current title, whichever slot someone was picked in:
-// top row is senior managing editor, editor in chief, business manager; the
-// row of four has managing editors on the left and contributing editors on
-// the right. Untitled or other titles keep their slot's row and position.
-const BOARD_TITLE_PLACEMENT: Record<string, { row: number; rank: number }> = {
-  'senior managing editor': { row: 0, rank: 0 },
-  'editor in chief': { row: 0, rank: 1 },
-  'business manager': { row: 0, rank: 2 },
-  'managing editor': { row: 1, rank: 0 },
-  'contributing editor': { row: 1, rank: 2 },
+// Title of a position still held (no end date), or '' if none. The board only
+// counts current roles, unlike the card subtitle, which falls back to the latest.
+const getOpenPositionTitle = (user: StaffUser): string => {
+  const open = (user.positions ?? [])
+    .filter((position) => !position.endDate)
+    .sort((a, b) => getTimestamp(b.startDate) - getTimestamp(a.startDate))[0]
+  return open?.jobTitle?.title?.trim() ?? ''
 }
-
-const getBoardPlacement = (user: StaffUser, slotRow: number, slotIndex: number) =>
-  BOARD_TITLE_PLACEMENT[getCurrentPositionTitle(user).toLowerCase()] ?? {
-    row: slotRow,
-    rank: slotRow === 0 ? slotIndex : 1,
-  }
 
 const getProfileHref = (user: StaffUser): string => `/staff/${user.slug || user.id}`
 
@@ -273,52 +250,6 @@ const getEmeritusYear = (user: StaffUser): string => {
 export default async function StaffPage() {
   const payload = await getPayload({ config })
 
-  const layoutResponse = await payload.find({
-    collection: 'staff-page-layout',
-    depth: 0,
-    limit: 1,
-    sort: '-updatedAt',
-  })
-
-  const layoutDoc = layoutResponse.docs[0] as StaffPageLayout | undefined
-  const layoutSlots: LayoutSlots = {
-    heroLeft: layoutDoc?.heroLeft ?? null,
-    heroRight: layoutDoc?.heroRight ?? null,
-    columnLeftLead: layoutDoc?.columnLeftLead ?? null,
-    columnLeftSupport: layoutDoc?.columnLeftSupport ?? null,
-    columnRightLead: layoutDoc?.columnRightLead ?? null,
-    columnRightSupport: layoutDoc?.columnRightSupport ?? null,
-    businessManager: layoutDoc?.businessManager ?? null,
-  }
-
-  const selectedIds = [...new Set(
-    FEATURED_SLOT_ORDER
-      .map((key) => layoutSlots[key])
-      .filter((value): value is number => typeof value === 'number'),
-  )]
-
-  const selectedUsersResponse = selectedIds.length > 0
-    ? await payload.find({
-        collection: 'users',
-        depth: 1,
-        limit: selectedIds.length,
-        where: {
-          id: {
-            in: selectedIds,
-          },
-        },
-        select: {
-          firstName: true,
-          lastName: true,
-          slug: true,
-          retired: true,
-          major: true,
-          headshot: true,
-          positions: true,
-        },
-      })
-    : { docs: [] }
-
   const allUsersResponse = await payload.find({
     collection: 'users',
     depth: 1,
@@ -335,46 +266,23 @@ export default async function StaffPage() {
     },
   })
 
-  const selectedUsersById = new Map(
-    selectedUsersResponse.docs.map((user) => {
-      const staffUser = toStaffUser(user)
-      return [staffUser.id, staffUser]
-    }),
-  )
-
-  const featuredUsers = FEATURED_SLOT_ORDER.map((key) => {
-    const selectedId = layoutSlots[key]
-    return {
-      key,
-      user: typeof selectedId === 'number' ? selectedUsersById.get(selectedId) || null : null,
-    }
-  })
-  const featuredByKey = new Map(featuredUsers.map((entry) => [entry.key, entry.user]))
-
-  const featuredUserIds = new Set(
-    featuredUsers
-      .map((entry) => entry.user?.id)
-      .filter((value): value is number => typeof value === 'number'),
-  )
-
   const users = allUsersResponse.docs.map((user) => toStaffUser(user))
   const activeUsers = users.filter((user) => !user.retired)
   const retiredUsers = users.filter((user) => user.retired)
 
-  const everyoneElse = activeUsers
-    .filter((user) => !featuredUserIds.has(user.id))
-    .sort(sortAlphabetically)
-
-  const boardEntries = BOARD_ROWS.flatMap((row, slotRow) =>
-    row.flatMap((key, slotIndex) => {
-      const user = featuredByKey.get(key)
-      return user ? [{ key, user, ...getBoardPlacement(user, slotRow, slotIndex) }] : []
-    }),
-  )
-  const boardRows = BOARD_ROWS.map((_, rowIndex) =>
-    boardEntries.filter((entry) => entry.row === rowIndex).sort((a, b) => a.rank - b.rank),
+  const boardRows = BOARD_ROWS.map((titles) =>
+    titles.flatMap((title) =>
+      activeUsers
+        .filter((user) => getOpenPositionTitle(user).toLowerCase() === title)
+        .sort(sortAlphabetically),
+    ),
   ).filter((row) => row.length > 0)
-  const hasFeaturedUsers = featuredUsers.some((entry) => entry.user)
+  const boardUserIds = new Set(boardRows.flat().map((user) => user.id))
+  const hasFeaturedUsers = boardRows.length > 0
+
+  const everyoneElse = activeUsers
+    .filter((user) => !boardUserIds.has(user.id))
+    .sort(sortAlphabetically)
 
   return (
     <>
@@ -389,9 +297,9 @@ export default async function StaffPage() {
           <>
             <div className="@container mb-10 flex flex-col gap-10 md:gap-14">
               {boardRows.map((row) => (
-                <div key={row[0].key} className="flex flex-wrap justify-center gap-x-6 gap-y-10 md:gap-x-10">
-                  {row.map(({ key, user }) => (
-                    <div key={key} className="w-[calc(50%-0.75rem)] sm:w-48 md:w-56">
+                <div key={row[0].id} className="flex flex-wrap justify-center gap-x-6 gap-y-10 md:gap-x-10">
+                  {row.map((user) => (
+                    <div key={user.id} className="w-[calc(50%-0.75rem)] sm:w-48 md:w-56">
                       <FeaturedStaffCard user={user} />
                     </div>
                   ))}

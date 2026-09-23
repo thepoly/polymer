@@ -9,6 +9,10 @@ const StaffPageLayout: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'updatedAt'],
+    // /staff now builds the senior board from staffers' current titles, so
+    // these picks no longer affect the page. Kept (hidden) so the table and
+    // its data stay intact.
+    hidden: true,
   },
   access: {
     read: () => true,
