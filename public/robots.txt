@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
+# Decorative substitute portraits used by a rare client-side easter egg on /staff.
+# The page always renders the real staff server-side; these files should never
+# surface in image search.
+Disallow: /easter-egg/
 
 Sitemap: https://poly.rpi.edu/sitemap.xml

@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import StaffBoard, { type BoardMember } from '@/components/StaffBoard'
 import { getSeo } from '@/lib/getSeo'
 import type { User } from '@/payload-types'
 
@@ -42,13 +43,6 @@ const BOARD_ROWS: string[][] = [
   ['senior managing editor', 'editor in chief', 'business manager'],
   ['managing editor', 'contributing editor'],
 ]
-
-// Board portraits take the width of one column in the staff grid below (2/3/4/6
-// columns with a 1rem gap), measured against the board's container, so they
-// match everyone else's while the cards keep their own spacing.
-const BOARD_PORTRAIT_WIDTH =
-  'w-[calc((100cqw-1rem)/2)] sm:w-[calc((100cqw-2rem)/3)] md:w-[calc((100cqw-3rem)/4)] lg:w-[calc((100cqw-5rem)/6)]'
-
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
@@ -169,27 +163,19 @@ function StaffPortrait({
   )
 }
 
-function FeaturedStaffCard({ user }: { user: StaffUser }) {
-  const title = getCurrentPositionTitle(user)
-
-  return (
-    <Link href={getProfileHref(user)} className="group flex flex-col items-center text-center">
-      <StaffPortrait user={user} className={`${BOARD_PORTRAIT_WIDTH} aspect-square shrink-0 rounded-full mb-4`} />
-      {title ? (
-        <p className="font-meta font-bold uppercase tracking-[0.06em] leading-tight text-accent transition-colors text-[11px] sm:text-[13px] md:text-[15px] mb-1.5">
-          {title}
-        </p>
-      ) : null}
-      <h2 className="font-meta font-bold leading-tight text-text-main transition-colors group-hover:text-accent text-lg sm:text-xl md:text-2xl">
-        {user.firstName} {user.lastName}
-      </h2>
-      {user.major ? (
-        <p className="font-meta text-text-muted transition-colors mt-1 text-sm sm:text-base">
-          {user.major}
-        </p>
-      ) : null}
-    </Link>
-  )
+// Flatten a staffer for the client-side board, which renders the portraits so a
+// rare, browser-only swap can stand in for them without touching this page's
+// cached HTML.
+function toBoardMember(user: StaffUser): BoardMember {
+  return {
+    id: user.id,
+    name: `${user.firstName} ${user.lastName}`,
+    title: getCurrentPositionTitle(user),
+    major: user.major,
+    href: getProfileHref(user),
+    headshotUrl: user.headshot?.url ?? null,
+    headshotAlt: user.headshot?.title ?? null,
+  }
 }
 
 function StaffGridCard({ user }: { user: StaffUser }) {
@@ -295,17 +281,7 @@ export default async function StaffPage() {
       <div className="w-full">
         {hasFeaturedUsers ? (
           <>
-            <div className="@container mb-10 flex flex-col gap-10 md:gap-14">
-              {boardRows.map((row) => (
-                <div key={row[0].id} className="flex flex-wrap justify-center gap-x-6 gap-y-10 md:gap-x-10">
-                  {row.map((user) => (
-                    <div key={user.id} className="w-[calc(50%-0.75rem)] sm:w-48 md:w-56">
-                      <FeaturedStaffCard user={user} />
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
+            <StaffBoard rows={boardRows.map((row) => row.map(toBoardMember))} />
 
             <div className="my-10 border-t border-rule" />
           </>
