@@ -11,10 +11,15 @@ export async function graphUser(req: Request) {
 
 export const unauthorized = () => NextResponse.json({ error: 'Sign in to the newsroom first.' }, { status: 401 })
 
+const MAX_BODY = 1_000_000 // a graph is a few KB; this is headroom, not a target
+const tooBig = () => Object.assign(new Error("That's too much data for one graph (1 MB limit)."), { status: 413 })
+
 /** Parses a JSON body, refusing anything bigger than a graph could reasonably be. */
 export async function jsonBody(req: Request): Promise<Record<string, unknown>> {
+  // Refuse on the declared size before buffering, then on the real size after.
+  if (Number(req.headers.get('content-length')) > MAX_BODY) throw tooBig()
   const text = await req.text()
-  if (text.length > 5_000_000) throw Object.assign(new Error("That's too much data for one graph."), { status: 413 })
+  if (text.length > MAX_BODY) throw tooBig()
   try {
     return text ? JSON.parse(text) : {}
   } catch {

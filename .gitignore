@@ -50,3 +50,6 @@ scripts/scraper/
 # worktrees
 .worktrees/
 .claude/worktrees/
+
+# Local graph editor files (lib/graph/store.ts)
+.graphs/

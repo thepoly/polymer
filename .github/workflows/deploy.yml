@@ -60,6 +60,7 @@ jobs:
             "NEXT_PUBLIC_POSTHOG_KEY=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}" \
             "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN=${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}" \
             "NEXT_PUBLIC_POSTHOG_HOST=${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}" \
+            "GRAPH_DIR=$SHARED_DIR/graphs" \
             > "$SHARED_DIR/.env"
 
           # Runtime may not use the same UNIX user as the deploy runner.

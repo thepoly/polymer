@@ -4,10 +4,11 @@ import campusCrime from './seed/campus-crime.json'
 import rareEarths from './seed/rare-earths.json'
 import sexualViolence from './seed/sexual-violence.json'
 
-// Graph files: <GRAPH_DIR>/<name>.json, where the name is a short slug. In production
-// `media` is the persistent /var/www/polymer-media, so graphs survive deploys.
+// Graph files: <GRAPH_DIR>/<name>.json, where the name is a short slug. Production sets
+// GRAPH_DIR to /var/www/polymer/shared/graphs, which persists across deploys. Never point
+// it inside /var/www/polymer-media: Payload serves every file under there publicly.
 
-export const GRAPH_DIR = process.env.GRAPH_DIR || path.join(process.cwd(), 'media', 'graphs')
+export const GRAPH_DIR = process.env.GRAPH_DIR || path.join(process.cwd(), '.graphs')
 
 // The editor starts with the graphs made before it was hosted.
 const SEED: Record<string, unknown> = {
