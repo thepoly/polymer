@@ -1,0 +1,22 @@
+{
+  "kicker": "Campus security",
+  "title": "Reported crimes and violations",
+  "dek": "",
+  "kind": "ring",
+  "centerLabel": "reports",
+  "combine": [
+    {
+      "name": "Theft, burglary and conduct referrals",
+      "color": "purple",
+      "items": [
+        ["Motor vehicle theft", 2],
+        ["Burglary", 10],
+        ["Liquor law referrals", 73],
+        ["Drug law referrals", 10]
+      ]
+    },
+    { "graph": "sexual-violence", "name": "Sexual violence, stalking and hazing" }
+  ],
+  "source": "",
+  "credit": ""
+}

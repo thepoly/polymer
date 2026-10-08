@@ -1,0 +1,17 @@
+{
+  "kicker": "Campus security",
+  "title": "Sexual violence, stalking and hazing",
+  "dek": "Reported offenses, by type.",
+  "color": "red",
+  "kind": "ring",
+  "centerLabel": "reports",
+  "items": [
+    ["Rape", 4],
+    ["Fondling", 2],
+    ["Stalking", 4],
+    ["Dating/domestic violence", 3],
+    ["Hazing", 1]
+  ],
+  "source": "",
+  "credit": ""
+}

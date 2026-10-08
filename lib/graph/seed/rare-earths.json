@@ -1,0 +1,18 @@
+{
+  "kicker": "Rare earths",
+  "title": "Reserves vs. output, 2025",
+  "dek": "",
+  "kind": "scatter",
+  "width": 7,
+  "frame": 0.5925,
+  "x": { "label": "Reported reserves (million tonnes)", "short": "Reserves", "unit": "million t" },
+  "y": { "label": ["2025 mine production", "(thousand tonnes)"], "short": "Output", "unit": "thousand t", "domain": [0.5, 500] },
+  "points": [
+    { "label": "China", "x": 44, "y": 270, "labelAt": "left" },
+    { "label": "Brazil", "x": 21, "y": 2, "noteAt": "left", "note": ["Brazil has more reported reserves", "than the U.S., but far less output."] },
+    { "label": "Australia", "x": 6.3, "y": 29 },
+    { "label": "United States", "x": 1.9, "y": 50, "highlight": true, "labelAt": "above" }
+  ],
+  "source": "",
+  "credit": ""
+}
