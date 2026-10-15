@@ -40,7 +40,7 @@ export default async function Contact() {
                 <li><b>Sunday, 1 pm:</b> Business and content meeting</li>
                 <li><b>Monday, 6 pm:</b> Copyediting hour</li>
             </ul>
-            <p className="mb-2.5 leading-8"> Everyone is welcome to attend. Times are subject to change. For finalized timings and virtual attendance options, please contact poly@rpi.edu.</p>
+            <p className="mb-2.5 leading-8"> Everyone is welcome to attend. Times are subject to change. For finalized timings and virtual attendance options, please contact editors@poly.rpi.edu.</p>
             <h1 className = {`mt-10 text-4xl font-serif mb-4 capitalize text-accent`}>
                     {"Editorial and Article Submissions"}
             </h1>
