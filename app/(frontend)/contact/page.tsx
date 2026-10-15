@@ -10,7 +10,6 @@ export default async function Contact() {
                 {"Contact"}
             </h1>
             <div className="space-y-2.5 leading-8">
-            <p>Email: <a href="mailto:poly@rpi.edu">poly@rpi.edu</a></p>
             <p>Instagram: <a href="https://www.instagram.com/rpipoly/">https://www.instagram.com/rpipoly/</a></p>
             <p>Twitter: <a href="https://x.com/RPIPoly">https://x.com/RPIPoly</a></p>
             <p>Facebook: <a href="https://www.facebook.com/thepolytechnic">https://www.facebook.com/thepolytechnic</a></p>
@@ -20,7 +19,6 @@ export default async function Contact() {
             </h1>
             <div className="space-y-2.5 leading-8">
             <p><b>General Correspondence</b> editors@poly.rpi.edu</p>
-            <p><b>Leads</b> leads@poly.rpi.edu</p>
             <p><b>News Section</b> news@poly.rpi.edu</p>
             <p><b>Editorial/Opinion Section</b> edop@poly.rpi.edu</p>
             <p><b>Features Section</b> features@poly.rpi.edu</p>
@@ -36,11 +34,11 @@ export default async function Contact() {
                 {"Meetings"}
             </h1>
             <p className="leading-8"> 
-                <i>The Poly</i> meets twice a week in RU 3510/3511:<br/>
+                <i>The Poly</i> meets twice a week in RU 3324:<br/>
             </p>
             <ul className="my-3 list-disc pl-6 leading-8">
                 <li><b>Sunday, 1 pm:</b> Business and content meeting</li>
-                <li><b>Monday, 6 pm:</b> Copy hour and Closing </li>
+                <li><b>Monday, 6 pm:</b> Copyediting hour</li>
             </ul>
             <p className="mb-2.5 leading-8"> Everyone is welcome to attend. Times are subject to change. For finalized timings and virtual attendance options, please contact poly@rpi.edu.</p>
             <h1 className = {`mt-10 text-4xl font-serif mb-4 capitalize text-accent`}>
