@@ -82,6 +82,19 @@ jobs:
           ln -sfn "$SHARED_DIR/.env" "$RELEASE_DIR/.env"
           ln -sfn "$MEDIA_DIR" "$RELEASE_DIR/media"
 
+      - name: Prepare Graph Storage
+        run: |
+          set -euo pipefail
+
+          # Graph files live outside the media directory (Payload serves everything in
+          # there publicly, and Turbopack trips on the media symlink while bundling).
+          # Releases before 2026-10-19 wrote them to media/graphs; carry those over once.
+          mkdir -p "$SHARED_DIR/graphs"
+          if [ -d "$MEDIA_DIR/graphs" ]; then
+            find "$MEDIA_DIR/graphs" -maxdepth 1 -name '*.json' -exec mv -n -t "$SHARED_DIR/graphs" {} +
+            rm -rf "$MEDIA_DIR/graphs"
+          fi
+
       - name: Backup Database
         env:
           DATABASE_URL: "${{ secrets.DATABASE_URL }}"
