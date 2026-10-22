@@ -100,7 +100,7 @@ Optional:
 - `NEXT_PUBLIC_POSTHOG_HOST` (defaults to `https://t.poly.rpi.edu`)
 - `INTERNAL_PUSH_SECRET` (required to actually fan out breaking-news pushes)
 - `FCM_SERVICE_ACCOUNT_JSON` (raw JSON, not base64 — required for FCM v1)
-- `PAYLOAD_DISABLE_PUSH=1` (disables Payload's dev-mode `db.push` schema sync)
+- `PAYLOAD_DISABLE_PUSH=1` (disables Payload's dev-mode `db.push` schema sync; keep it set locally, since the schema comes only from migrations and push will try to drop the retired `audio_*` tables; see `docs/local-development.md`)
 
 `pnpm install` runs `scripts/generate-env.js` to create `.env` if missing.
 
