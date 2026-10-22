@@ -47,3 +47,18 @@ fi
 
 echo "[dev-up] applying any pending payload migrations..."
 echo "y" | pnpm exec payload migrate
+
+# Migrations are the source of truth for schema. With push left on, Payload
+# reconciles the migrated DB against the collection config on boot, which
+# drops tables migrations still create (e.g. the retired audio_* tables) and
+# can crash or leave the DB half-changed. generate-env.js sets this for new
+# .env files; older or hand-written ones may be missing it.
+PUSH_FLAG="${PAYLOAD_DISABLE_PUSH:-}"
+if [ -z "$PUSH_FLAG" ] && [ -f .env ]; then
+  PUSH_FLAG=$(grep -E '^PAYLOAD_DISABLE_PUSH=' .env | head -1 | cut -d= -f2- || true)
+fi
+if [ "$PUSH_FLAG" != "1" ]; then
+  echo "[dev-up] WARNING: PAYLOAD_DISABLE_PUSH=1 is not set in .env." >&2
+  echo "[dev-up] Payload's dev schema push will run and can drop tables the migrations created." >&2
+  echo "[dev-up] Add PAYLOAD_DISABLE_PUSH=1 to .env. See docs/local-development.md." >&2
+fi

@@ -297,7 +297,9 @@ async function main() {
         featuredImage: heroId,
         // @ts-expect-error richText jsonb accepted directly by local API
         content: richTextDoc(a.paragraphs),
-        ...(a.isPhotofeature ? { isPhotofeature: true } : {}),
+        // Fixture images have no focal point set; centre framing is fine for
+        // placeholder data, and the publish guard rejects photo features without it.
+        ...(a.isPhotofeature ? { isPhotofeature: true, focalPointAcknowledged: true } : {}),
         _status: 'published',
       },
     })

@@ -106,6 +106,15 @@ So: every schema change touches **both** files.
   migration and try to run it twice.
 - **Test your `down`.** If you ever need to roll back, the script will
   run it. Don't leave it as `// TODO`.
+- **Removing a collection doesn't remove its tables.** Deleting a
+  collection from the config leaves its tables, enums and
+  `payload_locked_documents_rels` columns behind until a migration drops
+  them. Example: the `audio_*` / `transcripts` tables from the retired
+  transcription feature are kept in production on purpose. Payload ignores
+  these leftover tables, but dev-mode push will try to drop them, which is
+  one more reason to keep `PAYLOAD_DISABLE_PUSH=1` locally. Dropping them
+  for real is a separate migration in both paths, and the data should be
+  exported before it ships, since a merge to `main` deploys it.
 
 ## Reading the existing migrations
 
