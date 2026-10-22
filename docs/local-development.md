@@ -41,6 +41,24 @@ Open <http://localhost:3000> for the public site and
 <http://localhost:3000/admin> for the CMS. On a fresh database, Payload
 will prompt you to create the first admin user.
 
+## Placeholder data
+
+Seed scripts fill a local database with sample content. Both are safe to
+re-run; records that already exist are skipped.
+
+```bash
+# Staff users, fixture photos, articles in every section, homepage layout.
+# Log in with admin@dev.local / devpassword.
+pnpm db:seed
+
+# 24 more sports articles spread over the last two months (needs db:seed first)
+pnpm exec tsx --env-file=.env scripts/seed-sports.ts
+```
+
+`pnpm db:fresh` wipes the docker-compose database volume, then migrates and
+seeds whatever `DATABASE_URL` points to. It's meant for the docker setup;
+with a system Postgres it won't wipe anything, only migrate and seed it.
+
 ## Environment variables
 
 ### Required
