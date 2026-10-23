@@ -56,7 +56,10 @@ VALUES
   ('20260507_010000_add_legacy_shortlinks', 28, NOW(), NOW()),
   ('20260906_000000_fix_schema_drift', 29, NOW(), NOW()),
   ('20260909_000000_add_focal_point_acknowledged', 30, NOW(), NOW()),
-  ('20260922_000000_add_staff_business_manager', 31, NOW(), NOW())
+  ('20260922_000000_add_staff_business_manager', 31, NOW(), NOW()),
+  ('20261022_000000_add_sports_page_layout', 32, NOW(), NOW()),
+  ('20261022_010000_add_schools_and_game_result', 32, NOW(), NOW()),
+  ('20261022_020000_add_article_sport', 32, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1466,4 +1469,107 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 CREATE INDEX IF NOT EXISTS "staff_page_layout_business_manager_idx"
   ON "staff_page_layout" USING btree ("business_manager_id");
+
+-- 20261022_000000: Sports section page layout (editor-pinned slots + scoreboard,
+-- all stored in one JSON column, same as features_page_layout).
+CREATE TABLE IF NOT EXISTS "sports_page_layout" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "name" varchar NOT NULL DEFAULT 'Sports Layout',
+  "layout" jsonb,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "sports_page_layout_created_at_idx" ON "sports_page_layout" USING btree ("created_at");
+ALTER TABLE "payload_locked_documents_rels" ADD COLUMN IF NOT EXISTS "sports_page_layout_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_sports_page_layout_fk"
+    FOREIGN KEY ("sports_page_layout_id") REFERENCES "public"."sports_page_layout"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_sports_page_layout_id_idx"
+  ON "payload_locked_documents_rels" ("sports_page_layout_id");
+
+-- 20261022_010000: Schools (opponents with logos) + game-result fields on
+-- articles. All new columns are nullable; no backfill.
+CREATE TABLE IF NOT EXISTS "schools" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "name" varchar NOT NULL,
+  "short_name" varchar,
+  "conference" varchar,
+  "athletics_url" varchar,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "url" varchar,
+  "thumbnail_u_r_l" varchar,
+  "filename" varchar,
+  "mime_type" varchar,
+  "filesize" numeric,
+  "width" numeric,
+  "height" numeric,
+  "focal_x" numeric,
+  "focal_y" numeric
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "schools_name_idx" ON "schools" USING btree ("name");
+CREATE INDEX IF NOT EXISTS "schools_created_at_idx" ON "schools" USING btree ("created_at");
+CREATE UNIQUE INDEX IF NOT EXISTS "schools_filename_idx" ON "schools" USING btree ("filename");
+
+DO $$ BEGIN
+  CREATE TYPE "public"."enum_articles_home_away" AS ENUM('home', 'away', 'neutral');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE TYPE "public"."enum__articles_v_version_home_away" AS ENUM('home', 'away', 'neutral');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "opponent_id" integer;
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "home_away" "public"."enum_articles_home_away";
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "rpi_score" numeric;
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "opponent_score" numeric;
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "game_status" varchar;
+
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_opponent_id" integer;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_home_away" "public"."enum__articles_v_version_home_away";
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_rpi_score" numeric;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_opponent_score" numeric;
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_game_status" varchar;
+
+DO $$ BEGIN
+  ALTER TABLE "articles" ADD CONSTRAINT "articles_opponent_id_schools_id_fk"
+    FOREIGN KEY ("opponent_id") REFERENCES "public"."schools"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE "_articles_v" ADD CONSTRAINT "_articles_v_version_opponent_id_schools_id_fk"
+    FOREIGN KEY ("version_opponent_id") REFERENCES "public"."schools"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "articles_opponent_idx" ON "articles" USING btree ("opponent_id");
+CREATE INDEX IF NOT EXISTS "_articles_v_version_version_opponent_idx" ON "_articles_v" USING btree ("version_opponent_id");
+
+ALTER TABLE "payload_locked_documents_rels" ADD COLUMN IF NOT EXISTS "schools_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_schools_fk"
+    FOREIGN KEY ("schools_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_schools_id_idx"
+  ON "payload_locked_documents_rels" ("schools_id");
+
+-- 20261022_020000: sport on articles (sports section), for per-sport pages.
+-- Nullable; editors label existing articles over time.
+DO $$ BEGIN
+  CREATE TYPE "public"."enum_articles_sport" AS ENUM('mens-ice-hockey', 'womens-ice-hockey', 'mens-basketball', 'womens-basketball', 'football', 'mens-soccer', 'womens-soccer', 'mens-lacrosse', 'womens-lacrosse', 'baseball', 'softball', 'field-hockey', 'mens-swimming-and-diving', 'womens-swimming-and-diving', 'mens-track-and-field', 'womens-track-and-field', 'mens-cross-country', 'womens-cross-country', 'mens-tennis', 'womens-tennis', 'golf', 'club-sports', 'intramurals', 'general');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE TYPE "public"."enum__articles_v_version_sport" AS ENUM('mens-ice-hockey', 'womens-ice-hockey', 'mens-basketball', 'womens-basketball', 'football', 'mens-soccer', 'womens-soccer', 'mens-lacrosse', 'womens-lacrosse', 'baseball', 'softball', 'field-hockey', 'mens-swimming-and-diving', 'womens-swimming-and-diving', 'mens-track-and-field', 'womens-track-and-field', 'mens-cross-country', 'womens-cross-country', 'mens-tennis', 'womens-tennis', 'golf', 'club-sports', 'intramurals', 'general');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "sport" "public"."enum_articles_sport";
+ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_sport" "public"."enum__articles_v_version_sport";
+
+CREATE INDEX IF NOT EXISTS "articles_sport_idx" ON "articles" USING btree ("sport");
+CREATE INDEX IF NOT EXISTS "_articles_v_version_version_sport_idx" ON "_articles_v" USING btree ("version_sport");
 SQL

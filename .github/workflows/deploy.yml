@@ -183,6 +183,9 @@ jobs:
             -c "SELECT id FROM submissions LIMIT 0;" \
             -c "SELECT id FROM event_submissions LIMIT 0;" \
             -c "SELECT id FROM features_page_layout LIMIT 0;" \
+            -c "SELECT id FROM sports_page_layout LIMIT 0;" \
+            -c "SELECT id, short_name, athletics_url FROM schools LIMIT 0;" \
+            -c "SELECT opponent_id, home_away, rpi_score, opponent_score, game_status, sport FROM articles LIMIT 0;" \
             -c "SELECT id FROM staff_page_layout LIMIT 0;" \
             -c "SELECT id FROM theme LIMIT 0;" \
             -c "SELECT id FROM seo LIMIT 0;"

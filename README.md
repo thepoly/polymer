@@ -57,7 +57,7 @@ Collections:
 - `articles`: Draft/published stories with section, authors, featured media, subdeck, breaking-news flag, and rich text content
 - `live-articles`: Live-blog entries with append-only updates, surfaced on `/live`
 - `layout`: Curated homepage configuration — lead story, pinned slots, layout template, and volume/issue metadata
-- `opinion-page-layout`, `features-page-layout`, `staff-page-layout`: Per-section page composition
+- `opinion-page-layout`, `features-page-layout`, `sports-page-layout`, `staff-page-layout`: Per-section page composition
 - `users`: Staff accounts, roles, slug, headshot, bio, retired flag, and position history
 - `media`: Uploaded assets with alt text, caption, photographer attribution, and source URL
 - `job-titles`: Reusable staff titles for profile timelines

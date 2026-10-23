@@ -46,6 +46,7 @@ metadata.
 
 - `opinion-page-layout` — [`collections/OpinionPageLayout.ts`](../collections/OpinionPageLayout.ts)
 - `features-page-layout` — [`collections/FeaturesPageLayout.ts`](../collections/FeaturesPageLayout.ts)
+- `sports-page-layout` — [`collections/SportsPageLayout.ts`](../collections/SportsPageLayout.ts)
 - `staff-page-layout` — [`collections/StaffPageLayout.ts`](../collections/StaffPageLayout.ts)
 
 Each is the editor-curated composition for its section landing page.
@@ -92,6 +93,12 @@ Public event submissions for the calendar (`/api/submit-event`).
 ### `logos` — [`collections/Logos.ts`](../collections/Logos.ts)
 
 Branded section/homepage assets. Served via `/api/logos/file`.
+
+### `schools` — [`collections/Schools.ts`](../collections/Schools.ts)
+
+Opponents RPI teams play, each with its logo (upload collection, files in `MEDIA_DIR`, served via `/api/schools/file`). Seeded from RPI Athletics schedules (all sports, four seasons) by `pnpm db:seed:schools`, which reads `scripts/data/schools.json`; existing schools are left as editors set them, except that a missing logo or athletics link is filled in. Run it once on a new database (including production after the first deploy). RPI's own record (`Rensselaer Polytechnic Institute`) supplies the home side of the `/sports` scoreboard.
+
+Sports articles carry an optional `sport` (values in [`lib/sports.ts`](../lib/sports.ts), matching RPI Athletics slugs; an empty kicker is filled with the sport name) and an optional game result: `opponent` (→ `schools`), `homeAway` (`home` | `away` | `neutral`), `rpiScore`, `opponentScore`, `gameStatus` (e.g. "Final/OT"; blank means "Final").
 
 ### `device-tokens` — [`collections/DeviceTokens.ts`](../collections/DeviceTokens.ts)
 

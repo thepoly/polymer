@@ -76,6 +76,8 @@ export interface Config {
     layout: Layout;
     'opinion-page-layout': OpinionPageLayout;
     'features-page-layout': FeaturesPageLayout;
+    'sports-page-layout': SportsPageLayout;
+    schools: School;
     'staff-page-layout': StaffPageLayout;
     submissions: Submission;
     'event-submissions': EventSubmission;
@@ -96,6 +98,8 @@ export interface Config {
     layout: LayoutSelect<false> | LayoutSelect<true>;
     'opinion-page-layout': OpinionPageLayoutSelect<false> | OpinionPageLayoutSelect<true>;
     'features-page-layout': FeaturesPageLayoutSelect<false> | FeaturesPageLayoutSelect<true>;
+    'sports-page-layout': SportsPageLayoutSelect<false> | SportsPageLayoutSelect<true>;
+    schools: SchoolsSelect<false> | SchoolsSelect<true>;
     'staff-page-layout': StaffPageLayoutSelect<false> | StaffPageLayoutSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
     'event-submissions': EventSubmissionsSelect<false> | EventSubmissionsSelect<true>;
@@ -385,6 +389,48 @@ export interface Article {
    */
   breakingNews?: boolean | null;
   /**
+   * Which team this story is about. Fills an empty kicker with the sport name.
+   */
+  sport?:
+    | (
+        | 'mens-ice-hockey'
+        | 'womens-ice-hockey'
+        | 'mens-basketball'
+        | 'womens-basketball'
+        | 'football'
+        | 'mens-soccer'
+        | 'womens-soccer'
+        | 'mens-lacrosse'
+        | 'womens-lacrosse'
+        | 'baseball'
+        | 'softball'
+        | 'field-hockey'
+        | 'mens-swimming-and-diving'
+        | 'womens-swimming-and-diving'
+        | 'mens-track-and-field'
+        | 'womens-track-and-field'
+        | 'mens-cross-country'
+        | 'womens-cross-country'
+        | 'mens-tennis'
+        | 'womens-tennis'
+        | 'golf'
+        | 'club-sports'
+        | 'intramurals'
+        | 'general'
+      )
+    | null;
+  /**
+   * The school RPI played. Leave empty for stories that are not about one game.
+   */
+  opponent?: (number | null) | School;
+  homeAway?: ('home' | 'away' | 'neutral') | null;
+  rpiScore?: number | null;
+  opponentScore?: number | null;
+  /**
+   * e.g. Final, Final/OT, Final/2OT, Final/SO. Defaults to "Final".
+   */
+  gameStatus?: string | null;
+  /**
    * Render this article in Comic Sans everywhere it appears.
    */
   isFollytechnic?: boolean | null;
@@ -423,6 +469,40 @@ export interface Article {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "schools".
+ */
+export interface School {
+  id: number;
+  /**
+   * Full name, e.g. "Union College"
+   */
+  name: string;
+  /**
+   * Shown on scoreboards, e.g. "Union". Falls back to the full name.
+   */
+  shortName?: string | null;
+  /**
+   * Optional, e.g. "Liberty League, ECAC Hockey"
+   */
+  conference?: string | null;
+  /**
+   * The school’s athletics site, e.g. "https://unionathletics.com". The team name on scoreboards links here.
+   */
+  athleticsUrl?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -601,6 +681,25 @@ export interface FeaturesPageLayout {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sports-page-layout".
+ */
+export interface SportsPageLayout {
+  id: number;
+  name: string;
+  layout?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "staff-page-layout".
  */
 export interface StaffPageLayout {
@@ -759,6 +858,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'features-page-layout';
         value: number | FeaturesPageLayout;
+      } | null)
+    | ({
+        relationTo: 'sports-page-layout';
+        value: number | SportsPageLayout;
+      } | null)
+    | ({
+        relationTo: 'schools';
+        value: number | School;
       } | null)
     | ({
         relationTo: 'staff-page-layout';
@@ -953,6 +1060,12 @@ export interface ArticlesSelect<T extends boolean = true> {
   seoTitle?: T;
   searchDescription?: T;
   breakingNews?: T;
+  sport?: T;
+  opponent?: T;
+  homeAway?: T;
+  rpiScore?: T;
+  opponentScore?: T;
+  gameStatus?: T;
   isFollytechnic?: T;
   isPhotofeature?: T;
   focalPointAcknowledged?: T;
@@ -1061,6 +1174,37 @@ export interface FeaturesPageLayoutSelect<T extends boolean = true> {
   layout?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sports-page-layout_select".
+ */
+export interface SportsPageLayoutSelect<T extends boolean = true> {
+  name?: T;
+  layout?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "schools_select".
+ */
+export interface SchoolsSelect<T extends boolean = true> {
+  name?: T;
+  shortName?: T;
+  conference?: T;
+  athleticsUrl?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

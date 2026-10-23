@@ -19,6 +19,7 @@
     "db:down": "docker compose down",
     "db:fresh": "docker compose down -v && docker compose up -d --wait db && echo y | pnpm exec payload migrate && pnpm exec tsx --env-file=.env scripts/seed.ts",
     "db:seed": "pnpm exec tsx --env-file=.env scripts/seed.ts",
+    "db:seed:schools": "pnpm exec tsx --env-file=.env scripts/seed-schools.ts",
     "db:migrate-test": "bash scripts/db-migrate-test.sh",
     "db:migrate-test:seed": "bash scripts/db-migrate-test.sh --seed",
     "db:migrate-test:boot": "bash scripts/db-migrate-test.sh --seed --boot",

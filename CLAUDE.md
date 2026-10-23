@@ -53,7 +53,7 @@ Collections:
 - `articles`: drafts/publish enabled (`versions.drafts: true`); `publishedDate` is set on first publish in a `beforeChange` hook; `lastModifiedBy` is stamped on every change; `opinionType` auto-derives from the kicker for opinion pieces
 - `live-articles`: live-blog entries with append-only `updates`; mirrors the photo-gallery / carousel rich-text blocks
 - `layout`: homepage curation (lead, slots, top-4, layout template, sections, volume/issue) — drafts enabled
-- `opinion-page-layout`, `features-page-layout`, `staff-page-layout`: per-section page composition
+- `opinion-page-layout`, `features-page-layout`, `sports-page-layout`, `staff-page-layout`: per-section page composition
 - `users`: staff/auth/roles + slug, headshot, retired flag, "one-liner", and seen-newsroom-notice flag
 - `media`: uploaded assets (alt, title, caption, source URL, photographer relationship, write-in photographer)
 - `job-titles`: staff position metadata
@@ -61,6 +61,7 @@ Collections:
 - `event-submissions`: public event submissions for the calendar
 - `logos`: branded section logos and homepage assets
 - `device-tokens`: registered Android and iOS FCM tokens (anonymous create via `/api/push/register`, admin-only read/delete)
+- `schools`: opponents RPI teams play, each with a logo (upload collection; seeded from RPI Athletics schedules by `pnpm db:seed:schools`). Sports articles link one as `opponent`, alongside `homeAway`, `rpiScore`, `opponentScore` and `gameStatus`
 
 Globals:
 

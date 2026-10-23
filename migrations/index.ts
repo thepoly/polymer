@@ -47,6 +47,9 @@ import * as migration_20260507_010000_add_legacy_shortlinks from './20260507_010
 import * as migration_20260906_000000_fix_schema_drift from './20260906_000000_fix_schema_drift'
 import * as migration_20260909_000000_add_focal_point_acknowledged from './20260909_000000_add_focal_point_acknowledged'
 import * as migration_20260922_000000_add_staff_business_manager from './20260922_000000_add_staff_business_manager'
+import * as migration_20261022_000000_add_sports_page_layout from './20261022_000000_add_sports_page_layout'
+import * as migration_20261022_010000_add_schools_and_game_result from './20261022_010000_add_schools_and_game_result'
+import * as migration_20261022_020000_add_article_sport from './20261022_020000_add_article_sport'
 
 export const migrations = [
   {
@@ -293,5 +296,20 @@ export const migrations = [
     up: migration_20260922_000000_add_staff_business_manager.up,
     down: migration_20260922_000000_add_staff_business_manager.down,
     name: '20260922_000000_add_staff_business_manager',
+  },
+  {
+    up: migration_20261022_000000_add_sports_page_layout.up,
+    down: migration_20261022_000000_add_sports_page_layout.down,
+    name: '20261022_000000_add_sports_page_layout',
+  },
+  {
+    up: migration_20261022_010000_add_schools_and_game_result.up,
+    down: migration_20261022_010000_add_schools_and_game_result.down,
+    name: '20261022_010000_add_schools_and_game_result',
+  },
+  {
+    up: migration_20261022_020000_add_article_sport.up,
+    down: migration_20261022_020000_add_article_sport.down,
+    name: '20261022_020000_add_article_sport',
   },
 ];
