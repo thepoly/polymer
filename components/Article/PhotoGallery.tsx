@@ -64,12 +64,11 @@ export async function PhotoGallery({ images }: Props) {
             {col.map((entry, i) => (
               <figure key={i} className="m-0 relative">
                 <Image
-                  src={(entry.image.sizes?.gallery?.url) || entry.image.url!}
+                  src={entry.image.url!}
                   alt={entry.image.title || ""}
-                  width={(entry.image.sizes?.gallery?.width) || entry.image.width || 1200}
-                  height={(entry.image.sizes?.gallery?.height) || entry.image.height || 800}
+                  width={entry.image.width || 1200}
+                  height={entry.image.height || 800}
                   sizes={`(max-width: 768px) 100vw, ${Math.round(100 / colCount)}vw`}
-                  quality={70}
                   loading="lazy"
                   className="w-full h-auto"
                 />

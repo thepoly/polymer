@@ -49,7 +49,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         {featuredImage?.url && (
           <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
             <Image
-              src={(featuredImage as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || featuredImage.url}
+              src={featuredImage.url}
               alt={featuredImage.title || ""}
               fill
               className="object-cover opacity-90"
@@ -130,6 +130,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                           alt={`${user.firstName} ${user.lastName}`}
                           fill
                           className="object-cover"
+                          sizes="28px"
                           style={{ objectPosition: focalObjectPosition(headshot) }}
                         />
                       </Link>
@@ -145,6 +146,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                           alt={writeIn.name}
                           fill
                           className="object-cover"
+                          sizes="28px"
                           style={{ objectPosition: focalObjectPosition(photo) }}
                         />
                       </div>

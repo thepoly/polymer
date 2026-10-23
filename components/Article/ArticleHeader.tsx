@@ -44,7 +44,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
               className={featuredImageWrapperClassName}
             >
               <Image
-                src={(featuredImage as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || featuredImage.url}
+                src={featuredImage.url}
                 alt={featuredImage.title || ""}
                 fill
                 className="object-cover"
