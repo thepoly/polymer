@@ -113,15 +113,22 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
-      {
-        source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
+      // Production builds content-hash every /_next/static filename, so a year
+      // of immutable caching is safe. The dev server reuses chunk names as their
+      // contents change, so applying it there leaves browsers on stale CSS/JS.
+      ...(process.env.NODE_ENV === 'production'
+        ? [
+            {
+              source: '/_next/static/:path*',
+              headers: [
+                {
+                  key: 'Cache-Control',
+                  value: 'public, max-age=31536000, immutable',
+                },
+              ],
+            },
+          ]
+        : []),
       {
         source: '/fonts/:path*',
         headers: [
