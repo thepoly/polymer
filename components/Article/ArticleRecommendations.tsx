@@ -165,7 +165,7 @@ const toPublicRecommendationArticle = (article: Article): RecommendationArticle 
     article.featuredImage && typeof article.featuredImage !== 'number'
       ? {
           id: article.featuredImage.id,
-          url: article.featuredImage.sizes?.card?.url || article.featuredImage.url,
+          url: article.featuredImage.url,
           title: article.featuredImage.title,
           alt: article.featuredImage.alt,
           sizes: article.featuredImage.sizes,
@@ -253,7 +253,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
               {leadImage?.url ? (
                 <div className="relative aspect-[16/10] overflow-hidden bg-gray-100 dark:bg-zinc-800">
                   <Image
-                    src={leadImage.sizes?.card?.url || leadImage.url}
+                    src={leadImage.url}
                     alt={leadImage.title || ""}
                     fill
                     className="object-cover"
@@ -303,7 +303,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                       {image?.url ? (
                         <div className="relative hidden aspect-square overflow-hidden bg-gray-100 dark:bg-zinc-800 sm:block">
                           <Image
-                            src={image.sizes?.card?.url || image.url}
+                            src={image.url}
                             alt={image.title || ""}
                             fill
                             className="object-cover"

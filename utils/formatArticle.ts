@@ -139,7 +139,9 @@ export const formatArticle = (
     author: authors ? authors.toUpperCase() : 'THE POLY',
     date: dateString,
     isoDate: article.publishedDate || article.createdAt || null,
-    image: featuredImage?.sizes?.card?.url || featuredImage?.url || null,
+    // The original upload: next/image resizes it per `sizes`, so cards stay
+    // light while never starting from Payload's pre-compressed copies
+    image: featuredImage?.url || null,
     imageFull: featuredImage?.url || null,
     imageCaption: article.imageCaption || null,
     imagePhotographer,

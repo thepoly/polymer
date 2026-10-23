@@ -94,6 +94,10 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    // Next 16 only serves listed qualities and snaps every other request
+    // (including the default 75) to the closest one, so this is the quality
+    // of every optimized image on the site.
+    qualities: [90],
     minimumCacheTTL: 86400,
     remotePatterns: [
       {

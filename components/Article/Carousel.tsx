@@ -28,11 +28,10 @@ export function Carousel({ images }: Props) {
               >
                 <div className="relative h-[360px] md:h-[480px] overflow-hidden">
                   <Image
-                    src={(image.sizes?.gallery?.url) || image.url!}
+                    src={image.url!}
                     alt={image.title || ""}
                     fill
                     sizes="(max-width: 768px) 80vw, 40vw"
-                    quality={70}
                     loading="lazy"
                     className="object-cover"
                   />
