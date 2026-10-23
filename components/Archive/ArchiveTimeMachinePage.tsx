@@ -179,7 +179,7 @@ function ArchiveArticleRow({ article }: { article: Article }) {
         <h2
           className={`font-copy text-[28px] leading-[1.06] tracking-[-0.02em] text-text-main transition-colors group-hover:text-accent ${
             article.section === "opinion" ? "font-light" : "font-bold"
-          } ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""}`}
+          } ${article.section === "sports" ? "font-light" : ""} ${article.section === "features" ? "font-light" : ""}`}
         >
           {article.title}
         </h2>

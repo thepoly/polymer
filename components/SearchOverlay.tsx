@@ -1292,7 +1292,7 @@ export default function SearchOverlay({
                       className="relative flex flex-col group cursor-pointer py-4 first:pt-0"
                       style={animateResults ? { animation: `searchResultIn 320ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms both` } : undefined}
                     >
-                      <h3 className={`font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors mb-1 [overflow-wrap:anywhere] break-words font-copy text-[22px] md:text-[24px] ${article.section === "opinion" ? "font-light" : ""} ${article.section === "news" ? "text-[23px] md:text-[25px]" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light text-[23px] md:text-[25px]" : ""}`}>
+                      <h3 className={`font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors mb-1 [overflow-wrap:anywhere] break-words font-copy text-[22px] md:text-[24px] ${article.section === "opinion" ? "font-light" : ""} ${article.section === "news" ? "text-[23px] md:text-[25px]" : ""} ${article.section === "sports" ? "font-light" : ""} ${article.section === "features" ? "font-light text-[23px] md:text-[25px]" : ""}`}>
                         {article.title}
                       </h3>
                       <Byline author={article.author} date={article.date} />
