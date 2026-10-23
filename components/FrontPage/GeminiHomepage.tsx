@@ -18,7 +18,7 @@ const getLeadDate = (article: Article): string | null => {
 };
 
 const sectionFontClasses = (section: string | undefined): string => {
-  if (section === "sports") return "font-normal tracking-[0.015em]";
+  if (section === "sports") return "font-light";
   if (section === "features") return "font-light";
   if (section === "opinion") return "font-light";
   return "";

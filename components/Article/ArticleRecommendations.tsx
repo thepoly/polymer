@@ -113,7 +113,7 @@ const getHeadlineClasses = (article: RecommendationArticle, variant: 'lead' | 'l
         ? 'font-light text-[30px] md:text-[34px]'
         : 'font-light text-[23px] md:text-[25px]'
       : '',
-    article.section === 'sports' ? 'font-normal tracking-[0.015em]' : '',
+    article.section === 'sports' ? 'font-light' : '',
     article.section === 'opinion' ? 'font-light' : '',
     article.section === 'news'
       ? variant === 'lead'

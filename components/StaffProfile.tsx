@@ -302,7 +302,7 @@ export function StaffProfile({
                   const publishedDate = new Date(article.publishedDate!);
                   const year = publishedDate.getFullYear();
                   const month = (publishedDate.getMonth() + 1).toString().padStart(2, '0');
-                  const headlineClassName = `font-copy font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors group-hover:text-accent mb-1 [overflow-wrap:anywhere] break-words ${article.section === "opinion" ? "font-light" : ""} ${(article.section === "news" || article.section === "features") ? "text-[23px] md:text-[25px]" : "text-[22px] md:text-[24px]"} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""}`;
+                  const headlineClassName = `font-copy font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors group-hover:text-accent mb-1 [overflow-wrap:anywhere] break-words ${article.section === "opinion" ? "font-light" : ""} ${(article.section === "news" || article.section === "features") ? "text-[23px] md:text-[25px]" : "text-[22px] md:text-[24px]"} ${article.section === "sports" ? "font-light" : ""} ${article.section === "features" ? "font-light" : ""}`;
 
                   return (
                     <div key={article.id} className="group">
