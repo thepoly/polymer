@@ -7,8 +7,13 @@ import SectionPage from '@/components/SectionPage';
 import OpinionSectionPage from '@/components/Opinion/OpinionSectionPage';
 import NewsSectionPage from '@/components/News/NewsSectionPage';
 import FeaturesSectionPage, { type FeaturesEvent, type SpotlightPhoto } from '@/components/Features/FeaturesSectionPage';
+import SportsSectionPage from '@/components/Sports/SportsSectionPage';
+import type { StandingsTeam } from '@/components/Sports/SportsStandings';
+import { getSportsStandings, type SportStandings } from '@/lib/standings';
+import type { StandingsOverride } from '@/lib/standingsSchedule';
+import { RPI_SCHOOL_NAME } from '@/collections/Schools';
 import { Article as PayloadArticle, Media } from '@/payload-types';
-import { Article as ComponentArticle } from '@/components/FrontPage/types';
+import { Article as ComponentArticle, GameTeam } from '@/components/FrontPage/types';
 import type { SpotlightAuthor } from '@/components/Opinion/AuthorSpotlightCarousel';
 import { formatArticle } from '@/utils/formatArticle';
 import { opinionGroups } from '@/components/Opinion/opinionGroups';
@@ -21,6 +26,16 @@ export const revalidate = 60;
 // Slots the news layout can place (columns + "More in News"). The page prefers
 // recent stories but backfills to this many so no column comes up empty.
 const NEWS_LAYOUT_CAPACITY = 26;
+
+// Sport + game-result fields sports stories carry (opponent populates at depth 1)
+const SPORTS_GAME_SELECT = {
+  sport: true,
+  opponent: true,
+  homeAway: true,
+  rpiScore: true,
+  opponentScore: true,
+  gameStatus: true,
+} as const;
 
 type Args = {
   params: Promise<{
@@ -113,6 +128,7 @@ export default async function SectionPageRoute({ params }: Args) {
       updatedAt: true,
       authors: true,
       ...(isOpinion && { opinionType: true }),
+      ...(section === 'sports' && SPORTS_GAME_SELECT),
       writeInAuthors: true,
       isFollytechnic: true,
     },
@@ -466,6 +482,132 @@ export default async function SectionPageRoute({ params }: Args) {
     }
   }
 
+  // Fetch sports page layout — lead (+ scoreboard), below-lead card, headlines
+  let sportsPinnedLead: ComponentArticle | null = null;
+  let sportsPinnedBelowLead: ComponentArticle | null = null;
+  let sportsPinnedBelowLead2: ComponentArticle | null = null;
+  let sportsPinnedHeadlines: (ComponentArticle | null)[] = [];
+  let sportsShowScoreboard = true;
+  let sportsRpiTeam: GameTeam | null = null;
+  let sportsStandings: SportStandings[] = [];
+  const sportsStandingsTeams: Record<string, StandingsTeam> = {};
+
+  if (section === 'sports') {
+    type SportsLayoutShape = {
+      lead?: number | null;
+      showScoreboard?: boolean;
+      belowLead?: number | null;
+      belowLead2?: number | null;
+      headlines?: (number | null)[];
+      standingsOverrides?: StandingsOverride[];
+    };
+    let standingsOverrides: StandingsOverride[] | undefined;
+
+    // RPI's own school record supplies its side of the scoreboard
+    try {
+      const rpiResponse = await payload.find({
+        collection: 'schools',
+        where: { name: { equals: RPI_SCHOOL_NAME } },
+        limit: 1,
+        depth: 0,
+        // url is derived from filename, so both are needed
+        select: { name: true, shortName: true, url: true, filename: true, athleticsUrl: true },
+      });
+      const rpi = rpiResponse.docs[0];
+      if (rpi) {
+        sportsRpiTeam = {
+          name: rpi.name,
+          shortName: rpi.shortName || 'RPI',
+          logo: rpi.url || null,
+          url: rpi.athleticsUrl || null,
+        };
+      }
+    } catch {
+      // Schools table may not exist yet
+    }
+
+    try {
+      const layoutResponse = await payload.find({
+        collection: 'sports-page-layout',
+        limit: 1,
+        depth: 0,
+        select: { layout: true },
+      });
+      const doc = layoutResponse.docs[0] as Record<string, unknown> | undefined;
+      const layoutJson = doc?.layout as SportsLayoutShape | undefined;
+
+      if (layoutJson) {
+        sportsShowScoreboard = layoutJson.showScoreboard ?? true;
+        standingsOverrides = layoutJson.standingsOverrides;
+
+        const allPinnedIds = new Set<number>();
+        for (const id of [layoutJson.lead, layoutJson.belowLead, layoutJson.belowLead2, ...(layoutJson.headlines || [])]) {
+          if (id) allPinnedIds.add(id);
+        }
+
+        if (allPinnedIds.size > 0) {
+          const pinnedResponse = await payload.find({
+            collection: 'articles',
+            where: {
+              and: [
+                { id: { in: Array.from(allPinnedIds) } },
+                { _status: { equals: 'published' } },
+              ],
+            },
+            limit: allPinnedIds.size,
+            depth: 1,
+            select: {
+              title: true, slug: true, subdeck: true, featuredImage: true,
+              section: true, kicker: true, publishedDate: true, createdAt: true,
+              authors: true, writeInAuthors: true, isFollytechnic: true,
+              ...SPORTS_GAME_SELECT,
+            },
+          });
+          const pinnedMap = new Map(
+            pinnedResponse.docs.map((a) => [a.id, formatArticle(a)]),
+          );
+
+          // Keeps slot positions: an unpublished pin leaves its slot to auto-fill
+          const resolve = (id: number | null | undefined): ComponentArticle | null =>
+            (id ? pinnedMap.get(id) ?? null : null);
+
+          sportsPinnedLead = resolve(layoutJson.lead);
+          sportsPinnedBelowLead = resolve(layoutJson.belowLead);
+          sportsPinnedBelowLead2 = resolve(layoutJson.belowLead2);
+          sportsPinnedHeadlines = (layoutJson.headlines || []).map(resolve);
+        }
+      }
+    } catch {
+      // Table may not exist yet
+    }
+
+    // Standings for the sports the calendar (and any editor override) picks
+    sportsStandings = await getSportsStandings({ overrides: standingsOverrides });
+
+    // Logos + athletics links for every team in the tables, matched to
+    // Schools by short name (falling back to full name)
+    const teamNames = [...new Set(sportsStandings.flatMap((s) => s.rows.map((r) => r.team)))];
+    if (teamNames.length > 0) {
+      try {
+        const schoolsResponse = await payload.find({
+          collection: 'schools',
+          where: { or: [{ shortName: { in: teamNames } }, { name: { in: teamNames } }] },
+          limit: teamNames.length * 2,
+          depth: 0,
+          select: { name: true, shortName: true, url: true, filename: true, athleticsUrl: true },
+        });
+        for (const school of schoolsResponse.docs) {
+          const key = school.shortName && teamNames.includes(school.shortName) ? school.shortName : school.name;
+          if (!sportsStandingsTeams[key]) {
+            sportsStandingsTeams[key] = { logo: school.url || null, url: school.athleticsUrl || null };
+          }
+        }
+      } catch {
+        // Schools table may not exist yet; rows render without logos
+      }
+    }
+  }
+
   return (
     <main className={`min-h-screen bg-bg-main section-${section} transition-colors duration-300`}>
       <script
@@ -506,6 +648,19 @@ export default async function SectionPageRoute({ params }: Args) {
           pinnedCollarCity={featuresPinnedCollarCity}
           collarCityImages={featuresCollarCityImages}
           pinnedWide={featuresPinnedWide}
+        />
+      ) : section === 'sports' ? (
+        <SportsSectionPage
+          title={sectionTitle}
+          articles={formattedArticles}
+          pinnedLead={sportsPinnedLead}
+          pinnedBelowLead={sportsPinnedBelowLead}
+          pinnedBelowLead2={sportsPinnedBelowLead2}
+          pinnedHeadlines={sportsPinnedHeadlines}
+          showScoreboard={sportsShowScoreboard}
+          rpiTeam={sportsRpiTeam}
+          standings={sportsStandings}
+          standingsTeams={sportsStandingsTeams}
         />
       ) : isNews ? (
         <NewsSectionPage
