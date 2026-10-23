@@ -68,6 +68,8 @@ import JobTitles from './collections/JobTitles.ts'
 import Layout from './collections/Layout.ts'
 import OpinionPageLayout from './collections/OpinionPageLayout.ts'
 import FeaturesPageLayout from './collections/FeaturesPageLayout.ts'
+import SportsPageLayout from './collections/SportsPageLayout.ts'
+import Schools from './collections/Schools.ts'
 import StaffPageLayout from './collections/StaffPageLayout.ts'
 import Submissions from './collections/Submissions.ts'
 import EventSubmissions from './collections/EventSubmissions.ts'
@@ -107,7 +109,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Media, Logos, Articles, LiveArticles, JobTitles, Layout, OpinionPageLayout, FeaturesPageLayout, StaffPageLayout, Submissions, EventSubmissions, DeviceTokens],
+  collections: [Users, Media, Logos, Articles, LiveArticles, JobTitles, Layout, OpinionPageLayout, FeaturesPageLayout, SportsPageLayout, Schools, StaffPageLayout, Submissions, EventSubmissions, DeviceTokens],
   globals: [Theme, Seo],
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [
