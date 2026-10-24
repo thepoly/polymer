@@ -197,7 +197,7 @@ export default function OpinionSectionPage({
   ].filter((article): article is ComponentArticle => Boolean(article));
 
   return (
-    <div className="mx-auto max-w-[1280px] px-4 py-5 pb-8 md:px-[30px]">
+    <div className="mx-auto max-w-[1280px] px-4 py-5 pb-8 md:px-6 xl:px-[30px]">
       {/* Header */}
       <div className="mt-6 mb-8 flex flex-col items-center gap-4 text-center sm:mb-10 lg:flex-row lg:items-center lg:gap-6 lg:text-left">
         <h1 className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[44px] sm:text-[52px] lg:text-[60px]" style={{ fontWeight: 400, lineHeight: 1 }}>
