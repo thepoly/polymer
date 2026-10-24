@@ -48,21 +48,24 @@ const gameDayLabel = (date: string) =>
 /** The story's sport ("Men's Hockey"); kicker for stories not labelled yet */
 const sportName = (article: ComponentArticle) => sportLabel(article.sport) ?? article.kicker;
 
-/** Author names, each linked to its staff profile (write-ins stay plain text) */
-function AuthorNames({ article, linkClassName = "" }: { article: ComponentArticle; linkClassName?: string }) {
+/**
+ * Author names in red, joined with "&", each linked to its staff profile
+ * (write-ins stay plain text)
+ */
+function AuthorNames({ article }: { article: ComponentArticle }) {
   const authors = article.authorLinks?.length
     ? article.authorLinks
     : article.author
       ? [{ name: article.author, href: null }]
       : [];
   return (
-    <>
+    <span className="text-accent">
       {authors.map((a, i) => (
         <React.Fragment key={i}>
-          {i > 0 && (i === authors.length - 1 ? " and " : ", ")}
+          {i > 0 && " & "}
           {a.href ? (
             // z-10 lifts the link above the card's stretched title link
-            <TransitionLink href={a.href} className={`relative z-10 transition-colors hover:text-accent ${linkClassName}`}>
+            <TransitionLink href={a.href} className="relative z-10 transition-colors hover:text-text-main">
               {a.name}
             </TransitionLink>
           ) : (
@@ -70,7 +73,7 @@ function AuthorNames({ article, linkClassName = "" }: { article: ComponentArticl
           )}
         </React.Fragment>
       ))}
-    </>
+    </span>
   );
 }
 
@@ -333,8 +336,8 @@ function SportsLeadStory({
             {article.richTitle ?? article.title}
           </h2>
         </TransitionLink>
-        <p className="mt-3 font-meta text-[13px] font-medium uppercase tracking-[0.04em] text-accent">
-          <AuthorNames article={article} linkClassName="hover:text-text-main" />
+        <p className="mt-3 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
+          <AuthorNames article={article} />
         </p>
       </div>
     </article>
