@@ -34,6 +34,16 @@ const shortDate = (article: ComponentArticle, withYear = false) => {
   });
 };
 
+/** Day the lead's game was played, typed into the layout editor */
+export type ScoreboardDate = { articleId: number; date: string };
+
+// "2026-10-22" is a calendar day, not an instant, so it's read as UTC to keep
+// it from shifting a day in any time zone
+const gameDayLabel = (date: string) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(date)
+    ? new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric" })
+    : null;
+
 /** The story's sport ("Men's Hockey"); kicker for stories not labelled yet */
 const sportName = (article: ComponentArticle) => sportLabel(article.sport) ?? article.kicker;
 
@@ -275,15 +285,19 @@ function ScoreboardBar({
 function SportsLeadStory({
   article,
   showScoreboard,
+  gameDate,
   rpiTeam,
 }: {
   article: ComponentArticle;
   showScoreboard: boolean;
+  /** Day the game was played, for the scoreboard; else the publish date */
+  gameDate: string | null;
   rpiTeam: GameTeam;
 }) {
   const href = getArticleUrl(article);
   const image = article.imageFull || article.image;
   const date = shortDate(article);
+  const scoreboardDate = (gameDate && gameDayLabel(gameDate)) || date;
   const sport = sportName(article);
 
   return (
@@ -292,7 +306,7 @@ function SportsLeadStory({
     <article className="group flex flex-col">
       {showScoreboard && article.game && (
         <div className="order-2 lg:order-1">
-          <ScoreboardBar game={article.game} rpiTeam={rpiTeam} sport={sport} date={date} />
+          <ScoreboardBar game={article.game} rpiTeam={rpiTeam} sport={sport} date={scoreboardDate} />
         </div>
       )}
 
@@ -433,6 +447,7 @@ export interface SportsSectionPageProps {
   pinnedBelowLead2: ComponentArticle | null;
   pinnedHeadlines: (ComponentArticle | null)[];
   showScoreboard: boolean;
+  scoreboardDate: ScoreboardDate | null;
   rpiTeam: GameTeam | null;
   standings: SportStandings[];
   standingsTeams: Record<string, StandingsTeam>;
@@ -446,6 +461,7 @@ export default function SportsSectionPage({
   pinnedBelowLead2,
   pinnedHeadlines,
   showScoreboard,
+  scoreboardDate,
   rpiTeam,
   standings,
   standingsTeams,
@@ -503,7 +519,13 @@ export default function SportsSectionPage({
             standings, headlines. Desktop keeps the two-column layout. */}
         <div className="flex flex-col gap-8">
           {lead && (
-            <SportsLeadStory article={lead} showScoreboard={showScoreboard} rpiTeam={rpiTeam ?? RPI_FALLBACK} />
+            <SportsLeadStory
+              article={lead}
+              showScoreboard={showScoreboard}
+              // Only for the article it was entered for, never one that auto-filled the slot
+              gameDate={scoreboardDate && String(scoreboardDate.articleId) === String(lead.id) ? scoreboardDate.date : null}
+              rpiTeam={rpiTeam ?? RPI_FALLBACK}
+            />
           )}
           {belowLead && <SportsWideCard article={belowLead} />}
           {belowLead2 && <SportsWideCard article={belowLead2} flip />}

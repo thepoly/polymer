@@ -25,6 +25,7 @@ import {
   type Phase,
   type StandingsOverride,
 } from '@/lib/standingsSchedule';
+import type { ScoreboardDate } from '@/components/Sports/SportsSectionPage';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,6 +50,8 @@ type ArticleData = {
 type SportsLayout = {
   lead: number | null;
   showScoreboard: boolean;
+  /** Day the lead's game was played, shown under the scoreboard */
+  scoreboardDate: ScoreboardDate | null;
   belowLead: number | null;
   /** Second wide card, shown only when the scoreboard isn't */
   belowLead2: number | null;
@@ -451,6 +454,9 @@ function StandingsPanel({
 export function SportsLayoutEditor() {
   const [slots, setSlots] = useState<SlotLayout>({ ...EMPTY_SLOTS });
   const [showScoreboard, setShowScoreboard] = useState(true);
+  // Kept with the article it was entered for, so moving another story into
+  // the lead shows an empty box rather than the old game's date
+  const [scoreboardDate, setScoreboardDate] = useState<ScoreboardDate | null>(null);
   const [standingsOverrides, setStandingsOverrides] = useState<StandingsOverride[]>([]);
   const [now] = useState(() => new Date());
   const [articles, setArticles] = useState<ArticleData[]>([]);
@@ -520,6 +526,7 @@ export function SportsLayoutEditor() {
               headlines: padArray(savedLayout.headlines, HEADLINE_COUNT),
             });
             setShowScoreboard(savedLayout.showScoreboard ?? true);
+            setScoreboardDate(savedLayout.scoreboardDate ?? null);
             // Expired overrides are dropped; the next save clears them for good
             setStandingsOverrides(activeOverrides(savedLayout.standingsOverrides, new Date()));
           }
@@ -563,6 +570,11 @@ export function SportsLayoutEditor() {
 
   const toggleScoreboard = useCallback(() => {
     setShowScoreboard((prev) => !prev);
+    markDirty();
+  }, [markDirty]);
+
+  const changeScoreboardDate = useCallback((articleId: number, date: string) => {
+    setScoreboardDate(date ? { articleId, date } : null);
     markDirty();
   }, [markDirty]);
 
@@ -630,9 +642,12 @@ export function SportsLayoutEditor() {
     if (!docIdRef.current) return;
     setSaving(true);
     setError(null);
+    const leadId = slots.lead[0];
     const layout: SportsLayout = {
-      lead: slots.lead[0],
+      lead: leadId,
       showScoreboard,
+      // A date entered for an earlier lead is dropped
+      scoreboardDate: scoreboardDate && scoreboardDate.articleId === leadId ? scoreboardDate : null,
       standingsOverrides,
       belowLead: slots.belowLead[0],
       belowLead2: slots.belowLead[1],
@@ -668,6 +683,7 @@ export function SportsLayoutEditor() {
     const id = slots[column][index];
     return id ? articleMap.get(id) || null : null;
   };
+  const leadId = slots.lead[0];
 
   return (
     <DndContext
@@ -712,6 +728,28 @@ export function SportsLayoutEditor() {
                   <input type="checkbox" checked={showScoreboard} onChange={toggleScoreboard} />
                   Show scoreboard above the lead (from the story&apos;s game result, when it has one)
                 </label>
+                {showScoreboard && leadId !== null && (
+                  <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.72rem', alignSelf: 'flex-start' }}>
+                    <span style={{ fontWeight: 600 }}>Date played</span>
+                    <input
+                      type="date"
+                      value={scoreboardDate?.articleId === leadId ? scoreboardDate.date : ''}
+                      onChange={(e) => changeScoreboardDate(leadId, e.target.value)}
+                      style={{
+                        padding: '5px 8px',
+                        fontSize: '0.72rem',
+                        borderRadius: 4,
+                        border: '1px solid var(--theme-elevation-200, #333)',
+                        background: 'var(--theme-elevation-100, #1a1a1a)',
+                        color: 'var(--theme-text, #fff)',
+                        colorScheme: 'light dark',
+                      }}
+                    />
+                    <span style={{ fontSize: '0.62rem', opacity: 0.5 }}>
+                      Shown under the scoreboard. Leave empty to use the publish date.
+                    </span>
+                  </label>
+                )}
                 <DropSlot
                   slotId="below-0"
                   label="Below lead (image + text)"

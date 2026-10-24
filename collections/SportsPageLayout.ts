@@ -45,6 +45,10 @@ const SportsPageLayout: CollectionConfig = {
     //   lead: number | null,          // headline story (needs an image)
     //   showScoreboard: boolean,      // scoreboard above the lead, built from the
     //                                 // lead story's opponent + scores
+    //   scoreboardDate: { articleId: number, date: 'YYYY-MM-DD' } | null,
+    //                                 // day the lead's game was played, shown
+    //                                 // under the scoreboard; applies only
+    //                                 // while that article is the lead
     //   belowLead: number | null,     // wide card under the lead
     //   belowLead2: number | null,    // second wide card (text left, photo
     //                                 // right), only when the scoreboard is off

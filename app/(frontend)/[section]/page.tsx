@@ -7,7 +7,7 @@ import SectionPage from '@/components/SectionPage';
 import OpinionSectionPage from '@/components/Opinion/OpinionSectionPage';
 import NewsSectionPage from '@/components/News/NewsSectionPage';
 import FeaturesSectionPage, { type FeaturesEvent, type SpotlightPhoto } from '@/components/Features/FeaturesSectionPage';
-import SportsSectionPage from '@/components/Sports/SportsSectionPage';
+import SportsSectionPage, { type ScoreboardDate } from '@/components/Sports/SportsSectionPage';
 import type { StandingsTeam } from '@/components/Sports/SportsStandings';
 import { getSportsStandings, type SportStandings } from '@/lib/standings';
 import type { StandingsOverride } from '@/lib/standingsSchedule';
@@ -488,6 +488,7 @@ export default async function SectionPageRoute({ params }: Args) {
   let sportsPinnedBelowLead2: ComponentArticle | null = null;
   let sportsPinnedHeadlines: (ComponentArticle | null)[] = [];
   let sportsShowScoreboard = true;
+  let sportsScoreboardDate: ScoreboardDate | null = null;
   let sportsRpiTeam: GameTeam | null = null;
   let sportsStandings: SportStandings[] = [];
   const sportsStandingsTeams: Record<string, StandingsTeam> = {};
@@ -496,6 +497,7 @@ export default async function SectionPageRoute({ params }: Args) {
     type SportsLayoutShape = {
       lead?: number | null;
       showScoreboard?: boolean;
+      scoreboardDate?: ScoreboardDate | null;
       belowLead?: number | null;
       belowLead2?: number | null;
       headlines?: (number | null)[];
@@ -538,6 +540,7 @@ export default async function SectionPageRoute({ params }: Args) {
 
       if (layoutJson) {
         sportsShowScoreboard = layoutJson.showScoreboard ?? true;
+        sportsScoreboardDate = layoutJson.scoreboardDate ?? null;
         standingsOverrides = layoutJson.standingsOverrides;
 
         const allPinnedIds = new Set<number>();
@@ -658,6 +661,7 @@ export default async function SectionPageRoute({ params }: Args) {
           pinnedBelowLead2={sportsPinnedBelowLead2}
           pinnedHeadlines={sportsPinnedHeadlines}
           showScoreboard={sportsShowScoreboard}
+          scoreboardDate={sportsScoreboardDate}
           rpiTeam={sportsRpiTeam}
           standings={sportsStandings}
           standingsTeams={sportsStandingsTeams}
