@@ -325,7 +325,7 @@ function SportsLeadStory({
         </div>
       </TransitionLink>
 
-      <div className="relative z-10 order-1 mb-5 bg-bg-main lg:order-3 lg:mb-0 lg:-mt-16 lg:ml-auto lg:w-[72%] lg:pl-5 lg:pt-4">
+      <div className="relative z-10 order-1 mb-5 bg-bg-main lg:order-3 lg:mb-0 lg:-mt-8 lg:ml-auto lg:w-[72%] lg:pl-5 lg:pt-4">
         <MetaLine article={article} date={date} showAuthors={false} className="mb-2 text-[12px]" />
         <TransitionLink href={href}>
           <h2 className="font-copy font-light text-[30px] sm:text-[36px] lg:text-[38px] leading-[1.08] tracking-[-0.01em] text-text-main group-hover:text-accent transition-colors">
@@ -510,7 +510,7 @@ export default function SportsSectionPage({
         </div>
       </div>
 
-      {/* Top block: lead stories (~63%) | headlines and standings (~37%) */}
+      {/* Top block: lead stories (~63%) | standings and headlines (~37%) */}
       <div
         className="flex flex-col gap-10 lg:grid lg:gap-y-0"
         style={{ gridTemplateColumns: "1.7fr 1fr", columnGap: COLUMN_GAP }}
@@ -532,14 +532,14 @@ export default function SportsSectionPage({
         </div>
 
         <div className="flex flex-col gap-10 lg:gap-0 lg:border-l lg:border-rule lg:pl-6">
-          {headlines.length > 0 && (
-            <div className="order-2 lg:order-1">
-              <SportsHeadlines articles={headlines} />
+          {standings.length > 0 && (
+            <div>
+              <SportsStandings standings={standings} teams={standingsTeams} defaultSport={lead?.sport} />
             </div>
           )}
-          {standings.length > 0 && (
-            <div className="order-1 lg:order-2 lg:mt-3">
-              <SportsStandings standings={standings} teams={standingsTeams} defaultSport={lead?.sport} />
+          {headlines.length > 0 && (
+            <div className={standings.length > 0 ? "lg:mt-6" : ""}>
+              <SportsHeadlines articles={headlines} />
             </div>
           )}
         </div>
