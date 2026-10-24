@@ -10,6 +10,7 @@ import FeaturesSectionPage, { type FeaturesEvent, type SpotlightPhoto } from '@/
 import SportsSectionPage, { type ScoreboardDate } from '@/components/Sports/SportsSectionPage';
 import type { StandingsTeam } from '@/components/Sports/SportsStandings';
 import { getSportsStandings, type SportStandings } from '@/lib/standings';
+import { getSportsSchedule, type SportSchedule } from '@/lib/schedule';
 import type { StandingsOverride } from '@/lib/standingsSchedule';
 import { RPI_SCHOOL_NAME } from '@/collections/Schools';
 import { Article as PayloadArticle, Media } from '@/payload-types';
@@ -492,6 +493,7 @@ export default async function SectionPageRoute({ params }: Args) {
   let sportsRpiTeam: GameTeam | null = null;
   let sportsStandings: SportStandings[] = [];
   const sportsStandingsTeams: Record<string, StandingsTeam> = {};
+  let sportsSchedule: SportSchedule[] = [];
 
   if (section === 'sports') {
     type SportsLayoutShape = {
@@ -609,6 +611,42 @@ export default async function SectionPageRoute({ params }: Args) {
         // Schools table may not exist yet; rows render without logos
       }
     }
+
+    // Score strip: RPI's recent finals and next game in each standings sport.
+    // Opponents take the short name and logo from Schools when there is one,
+    // so editors' logo fixes carry over; otherwise RPI Athletics' own.
+    sportsSchedule = await getSportsSchedule(sportsStandings.map((s) => s.sport));
+    const opponentNames = [...new Set(sportsSchedule.flatMap((s) => s.games.map((g) => g.opponent.name)))];
+    if (opponentNames.length > 0) {
+      try {
+        const schoolsResponse = await payload.find({
+          collection: 'schools',
+          where: { name: { in: opponentNames } },
+          limit: opponentNames.length,
+          depth: 0,
+          // url is derived from filename, so both are needed
+          select: { name: true, shortName: true, url: true, filename: true },
+        });
+        const schools = new Map(schoolsResponse.docs.map((s) => [s.name, s]));
+        sportsSchedule = sportsSchedule.map((s) => ({
+          ...s,
+          games: s.games.map((g) => {
+            const school = schools.get(g.opponent.name);
+            if (!school) return g;
+            return {
+              ...g,
+              opponent: {
+                ...g.opponent,
+                shortName: school.shortName || g.opponent.shortName,
+                logo: school.url || g.opponent.logo,
+              },
+            };
+          }),
+        }));
+      } catch {
+        // Schools table may not exist yet; RPI Athletics' names and logos stay
+      }
+    }
   }
 
   return (
@@ -665,6 +703,7 @@ export default async function SectionPageRoute({ params }: Args) {
           rpiTeam={sportsRpiTeam}
           standings={sportsStandings}
           standingsTeams={sportsStandingsTeams}
+          schedule={sportsSchedule}
         />
       ) : isNews ? (
         <NewsSectionPage

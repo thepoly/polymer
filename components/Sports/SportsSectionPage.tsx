@@ -6,8 +6,10 @@ import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import type { Article as ComponentArticle, GameResult, GameTeam } from "@/components/FrontPage/types";
 import type { SportStandings } from "@/lib/standings";
+import type { SportSchedule } from "@/lib/schedule";
 import { sportLabel } from "@/lib/sports";
 import SportsStandings, { type StandingsTeam } from "./SportsStandings";
+import SportsScoreStrip from "./SportsScoreStrip";
 
 const RPI_FALLBACK: GameTeam = {
   name: "Rensselaer Polytechnic Institute",
@@ -16,7 +18,6 @@ const RPI_FALLBACK: GameTeam = {
   url: "https://rpiathletics.com",
 };
 
-const PAGE_SIDE_PADDING = "clamp(16px, 3vw, 30px)";
 const COLUMN_GAP = "clamp(16px, 2vw, 28px)";
 const HEADLINE_COUNT = 3;
 
@@ -451,6 +452,8 @@ export interface SportsSectionPageProps {
   rpiTeam: GameTeam | null;
   standings: SportStandings[];
   standingsTeams: Record<string, StandingsTeam>;
+  /** RPI's recent and upcoming games per standings sport, for the score strip */
+  schedule: SportSchedule[];
 }
 
 export default function SportsSectionPage({
@@ -465,6 +468,7 @@ export default function SportsSectionPage({
   rpiTeam,
   standings,
   standingsTeams,
+  schedule,
 }: SportsSectionPageProps) {
   // Pinned slots win; empty slots fill from the newest unused stories,
   // preferring ones with a photo since every slot here shows one.
@@ -489,26 +493,25 @@ export default function SportsSectionPage({
   const belowLead2 = scoreboardShown ? null : (pinnedBelowLead2 ?? take());
 
   return (
-    <div style={{ maxWidth: 1280, margin: "0 auto", padding: `20px ${PAGE_SIDE_PADDING} 32px` }}>
-      {/* Header */}
-      <div className="mt-3 mb-8 flex flex-col items-center gap-4 text-center sm:mb-10 lg:flex-row lg:items-center lg:gap-6 lg:text-left">
+    // Side padding matches the site header's, so the page lines up with the
+    // rule under the logo at every width
+    <div className={`mx-auto max-w-[1280px] px-4 pb-8 md:px-6 xl:px-[30px] ${schedule.length > 0 ? "" : "pt-5"}`}>
+      {/* Header: the score strip, hung from the header's rule, with the page
+          title kept for screen readers and search. If RPI Athletics' feed has
+          nothing, the title shows instead. */}
+      {schedule.length > 0 ? (
+        <>
+          <h1 className="sr-only">{title}</h1>
+          <SportsScoreStrip schedule={schedule} rpiTeam={rpiTeam ?? RPI_FALLBACK} />
+        </>
+      ) : (
         <h1
-          className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[44px] sm:text-[52px] lg:text-[60px]"
+          className="mt-3 mb-8 text-center font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[44px] sm:mb-10 sm:text-[52px] lg:text-left lg:text-[60px]"
           style={{ fontWeight: 400, lineHeight: 1 }}
         >
           {title}
         </h1>
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[24px] sm:text-[28px] lg:justify-start lg:text-[36px]">
-          <span className="hidden h-10 w-px shrink-0 bg-[var(--foreground-muted)] lg:block" />
-          <a
-            href="mailto:sports@poly.rpi.edu?subject=Sports%20Request%2FComment%20or%20Tip"
-            className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
-            style={{ fontWeight: 300 }}
-          >
-            Contact
-          </a>
-        </div>
-      </div>
+      )}
 
       {/* Top block: lead stories (~63%) | standings and headlines (~37%) */}
       <div
