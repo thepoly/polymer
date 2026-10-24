@@ -24,8 +24,21 @@ const TABLE_KINDS = ["column", "line"];
 
 const GROUP_COLORS = ["red", "purple"];
 const SERIES_COLORS = ["red", "purple", "orange", "lavender"];
-const HEX = { red: "#D6001C", purple: "#6A35A0", orange: "#D9702A", lavender: "#9A64C8" };
+// Gray is for context lines: any number of them can share it. Lines only; columns need a color each.
+const GRAY = "gray";
+const HEX = { red: "#D6001C", purple: "#6A35A0", orange: "#D9702A", lavender: "#9A64C8", gray: "#bbbbbb" };
+const MAX_LINES = 10;
 const MAX_SLICES = 5;
+
+/** How many series the current kind can hold. */
+const maxSeries = () => (doc?.meta.kind === "line" ? MAX_LINES : SERIES_COLORS.length);
+
+/** One color each while they last; past that, RPI (or the first series) in red and the rest gray. Matches lib/graph/series.js. */
+function defaultSeriesColors(names) {
+  if (names.length <= SERIES_COLORS.length) return names.map((_, i) => SERIES_COLORS[i]);
+  const lead = Math.max(0, names.findIndex((n) => /^rpi$|rensselaer/i.test(String(n).trim())));
+  return names.map((_, i) => (i === lead ? "red" : GRAY));
+}
 
 // Keys the editor writes. Anything else in a file (hand-tuned settings) is carried through as is.
 const KNOWN = new Set([
@@ -162,7 +175,10 @@ function fromFile(g, name) {
   if (g.columns) {
     d.table = {
       columns: g.columns.map(str),
-      colors: g.columns.slice(1).map((_, i) => g.colors?.[i] ?? SERIES_COLORS[i] ?? "red"),
+      colors: (() => {
+        const defaults = defaultSeriesColors(g.columns.slice(1));
+        return g.columns.slice(1).map((_, i) => g.colors?.[i] ?? defaults[i]);
+      })(),
       rows: (g.rows ?? []).map((r) => g.columns.map((_, i) => str(r?.[i]))),
     };
   }
@@ -357,6 +373,21 @@ function pasteItems(rows) {
   return groups;
 }
 
+const SMALL_WORDS = new Set(["a", "an", "and", "as", "at", "by", "for", "in", "of", "on", "or", "per", "the", "to", "vs"]);
+
+/**
+ * A spreadsheet's column id ("case_western", "rpi") → a name for the graph ("Case Western",
+ * "RPI"). Headers already written as names are left alone. A lone word of two or three
+ * letters is taken for an acronym (RPI, RIT, WPI, FY); anything it gets wrong can be retyped.
+ */
+function tidyHeader(s) {
+  const t = String(s ?? "").trim();
+  if (!/^[a-z][a-z0-9]*(_[a-z0-9]+)*$/.test(t)) return t;
+  const words = t.split("_");
+  if (words.length === 1 && /^[a-z]{2,3}$/.test(t)) return t.toUpperCase();
+  return words.map((w, i) => (i && SMALL_WORDS.has(w) ? w : w[0].toUpperCase() + w.slice(1))).join(" ");
+}
+
 /** Pasted rows → a table with a header row of series names. */
 function pasteTable(rows) {
   const body = rows.filter((r) => r.length);
@@ -364,7 +395,9 @@ function pasteTable(rows) {
   const first = body[0];
   const header = first.slice(1).some((c) => !isNumCell(c) && !blank(c)) || first.every((c) => !isNumCell(c));
   const width = Math.max(...body.map((r) => r.length), 2);
-  const columns = header ? first.concat(Array(width).fill("")).slice(0, width) : ["Category", ...Array.from({ length: width - 1 }, (_, i) => `Series ${i + 1}`)];
+  const columns = header
+    ? first.concat(Array(width).fill("")).slice(0, width).map(tidyHeader)
+    : ["Category", ...Array.from({ length: width - 1 }, (_, i) => `Series ${i + 1}`)];
   const data = (header ? body.slice(1) : body).map((r) => r.concat(Array(width).fill("")).slice(0, width));
   return { columns, rows: data };
 }
@@ -413,15 +446,19 @@ function applyPaste(text, mode = "replace") {
   } else if (TABLE_KINDS.includes(kind)) {
     const t = pasteTable(rows);
     if (!t) return;
-    if (t.columns.length - 1 > SERIES_COLORS.length) {
-      status(`Only ${SERIES_COLORS.length} series fit; columns after that were left off.`, true);
-      t.columns = t.columns.slice(0, SERIES_COLORS.length + 1);
-      t.rows = t.rows.map((r) => r.slice(0, SERIES_COLORS.length + 1));
+    const max = maxSeries();
+    if (t.columns.length - 1 > max) {
+      status(kind === "line"
+        ? `Only ${max} lines fit; columns after that were left off.`
+        : `Only ${max} series fit in a column chart; columns after that were left off. A line chart holds ${MAX_LINES}.`, true);
+      t.columns = t.columns.slice(0, max + 1);
+      t.rows = t.rows.map((r) => r.slice(0, max + 1));
     }
     if (mode === "append" && t.columns.length === doc.table.columns.length) {
       doc.table.rows = doc.table.rows.filter((r) => !r.every(blank)).concat(t.rows);
     } else {
-      doc.table = { columns: t.columns, colors: t.columns.slice(1).map((_, i) => doc.table.colors[i] ?? SERIES_COLORS[i]), rows: t.rows };
+      // New data, new colors: past four lines, that means RPI in red and the rest gray.
+      doc.table = { columns: t.columns, colors: defaultSeriesColors(t.columns.slice(1)), rows: t.rows };
       fixSeriesColors();
     }
   } else {
@@ -872,6 +909,8 @@ function switchKind(kind) {
     if (ITEM_KINDS.includes(from) && !itemsBlank) doc.scatter.points = doc.groups.flatMap((g) => g.rows).map(([label, x]) => ({ ...emptyPoint(), label, x }));
   }
   doc.meta.kind = kind;
+  // Columns can't use gray; give those series real colors (the preview says if there are too many).
+  if (TABLE_KINDS.includes(kind)) fixSeriesColors();
   rerender();
   changed();
 }
@@ -1087,12 +1126,15 @@ function foldOther(gi) {
   changed();
 }
 
+/** Every series gets a color: no two share one, except gray, which lines share as context. */
 function fixSeriesColors() {
   const t = doc.table;
   const used = new Set();
   t.colors = t.columns.slice(1).map((_, i) => {
     let c = t.colors[i];
-    if (!c || used.has(c)) c = SERIES_COLORS.find((x) => !used.has(x));
+    if (c === GRAY && doc.meta.kind !== "line") c = null;
+    if (c === GRAY) return c;
+    if (!c || used.has(c)) c = SERIES_COLORS.find((x) => !used.has(x)) ?? GRAY;
     used.add(c);
     return c;
   });
@@ -1103,7 +1145,7 @@ function tableEditor() {
   const width = t.columns.length;
   const makeRow = () => Array(t.columns.length).fill("");
   const widen = (n) => {
-    const target = Math.min(n, SERIES_COLORS.length + 1);
+    const target = Math.min(n, maxSeries() + 1);
     while (t.columns.length < target) t.columns.push(`Series ${t.columns.length}`);
     t.rows.forEach((r) => { while (r.length < target) r.push(""); });
     fixSeriesColors();
@@ -1132,13 +1174,15 @@ function tableEditor() {
               value: t.colors[i], "aria-label": `Series ${ci} color`,
               onchange: (e) => {
                 const prev = t.colors[i];
-                const clash = t.colors.indexOf(e.target.value);
-                if (clash >= 0) t.colors[clash] = prev; // swap, so no two series share a color
-                t.colors[i] = e.target.value;
+                const next = e.target.value;
+                // Swap, so no two series share a color. Gray isn't a clash: any number can be gray.
+                const clash = next === GRAY ? -1 : t.colors.indexOf(next);
+                if (clash >= 0) t.colors[clash] = prev;
+                t.colors[i] = next;
                 rerender();
                 changed();
               },
-            }, SERIES_COLORS.map((x) => h("option", { value: x }, x[0].toUpperCase() + x.slice(1)))),
+            }, [...SERIES_COLORS, ...(doc.meta.kind === "line" ? [GRAY] : [])].map((x) => h("option", { value: x }, x === GRAY ? "Gray (context)" : x[0].toUpperCase() + x.slice(1)))),
             t.columns.length > 2 && h("button", { class: "link", title: "Remove series", "aria-label": `Remove series ${c}`, onclick: () => removeSeries(ci) }, "×"),
           )
         )
@@ -1162,9 +1206,11 @@ function tableEditor() {
     ),
     h("div", { class: "grid-actions" },
       h("button", { class: "link", onclick: () => { t.rows.push(makeRow()); rerender(); changed(); focusLast("t", t.rows.length - 1); } }, "+ Add row"),
-      t.columns.length - 1 < SERIES_COLORS.length
+      t.columns.length - 1 < maxSeries()
         ? h("button", { class: "link", onclick: addSeries }, "+ Add series")
-        : h("span", { class: "hint" }, `Up to ${SERIES_COLORS.length} series.`),
+        : h("span", { class: "hint" }, doc.meta.kind === "line" ? `Up to ${MAX_LINES} lines.` : `Up to ${SERIES_COLORS.length} series. A line chart holds ${MAX_LINES}.`),
+      doc.meta.kind === "line" && t.columns.length - 1 > SERIES_COLORS.length &&
+        h("span", { class: "hint" }, "Past four lines, color the one the story is about and set the rest to Gray."),
     ),
   ];
 }
@@ -1309,11 +1355,40 @@ function updateComputed() {
   renderFileName();
 }
 
+/**
+ * Lines that sit at 0 for two or more rows before their first real figure. In financial
+ * data that's nearly always years with no figures, and drawn as zero it's a fake jump.
+ */
+function leadingZeroRuns() {
+  if (doc?.meta.kind !== "line") return [];
+  const t = doc.table;
+  return t.columns.slice(1).flatMap((name, i) => {
+    let k = 0;
+    while (k < t.rows.length && parseNum(t.rows[k][i + 1]) === 0) k++;
+    const realAfter = k < t.rows.length && (parseNum(t.rows[k][i + 1]) ?? 0) !== 0;
+    return k >= 2 && realAfter ? [{ col: i + 1, name: name.trim() || `Series ${i + 1}`, rows: k, from: t.rows[k][0] }] : [];
+  });
+}
+
 function updateWarnings() {
   const box = $("#warnings");
   if (!box || !doc) return;
   const { warnings } = toFile(doc);
-  box.replaceChildren(...(warnings.length ? [h("div", { class: "warn" }, warnings.slice(0, 6).map((w) => h("div", {}, w)), warnings.length > 6 && h("div", {}, `…and ${warnings.length - 6} more.`))] : []));
+  const runs = leadingZeroRuns();
+  const blankRuns = () => {
+    runs.forEach((r) => doc.table.rows.slice(0, r.rows).forEach((row) => (row[r.col] = "")));
+    rerender();
+    changed();
+  };
+  box.replaceChildren(
+    ...(warnings.length ? [h("div", { class: "warn" }, warnings.slice(0, 6).map((w) => h("div", {}, w)), warnings.length > 6 && h("div", {}, `…and ${warnings.length - 6} more.`))] : []),
+    ...(runs.length
+      ? [h("div", { class: "warn" },
+          runs.map((r) => h("div", {}, `${r.name} is 0 until ${r.from || "its first figure"}.`)),
+          h("div", {}, "If those years have no figures rather than a real zero, blank them so each line starts where its data does."),
+          h("button", { class: "btn small", onclick: blankRuns }, runs.length > 1 ? "Blank those zeros" : "Blank that zero run"))]
+      : []),
+  );
   renderFileName();
 }
 
