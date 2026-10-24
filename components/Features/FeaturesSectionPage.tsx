@@ -27,7 +27,6 @@ export type SpotlightPhoto = {
   photographerUrl?: string;
 };
 
-const PAGE_SIDE_PADDING = "clamp(16px, 3vw, 30px)";
 const COLUMN_GAP = "clamp(16px, 2vw, 24px)";
 const SECTION_RULE_GAP = "clamp(18px, 3vw, 24px)";
 const SECTION_RULE_INSET = 7;
@@ -445,9 +444,9 @@ export default function FeaturesSectionPage({
     }) as const;
 
   return (
-    <div
-      style={{ maxWidth: 1280, margin: "0 auto", padding: `20px ${PAGE_SIDE_PADDING} 32px` }}
-    >
+    // Side padding matches the site header's, so the page lines up with the
+    // rule under the logo at every width
+    <div className="mx-auto max-w-[1280px] px-4 pt-5 pb-8 md:px-6 xl:px-[30px]">
       {/* Header */}
       <div className="mt-6 mb-8 flex flex-col items-center gap-4 text-center sm:mb-10 lg:flex-row lg:items-center lg:gap-6 lg:text-left">
         <h1
