@@ -303,6 +303,48 @@ export interface Logo {
 export interface Article {
   id: number;
   section: 'news' | 'sports' | 'features' | 'opinion';
+  /**
+   * Which team this story is about. Fills an empty kicker with the sport name.
+   */
+  sport?:
+    | (
+        | 'mens-ice-hockey'
+        | 'womens-ice-hockey'
+        | 'mens-basketball'
+        | 'womens-basketball'
+        | 'football'
+        | 'mens-soccer'
+        | 'womens-soccer'
+        | 'mens-lacrosse'
+        | 'womens-lacrosse'
+        | 'baseball'
+        | 'softball'
+        | 'field-hockey'
+        | 'mens-swimming-and-diving'
+        | 'womens-swimming-and-diving'
+        | 'mens-track-and-field'
+        | 'womens-track-and-field'
+        | 'mens-cross-country'
+        | 'womens-cross-country'
+        | 'mens-tennis'
+        | 'womens-tennis'
+        | 'golf'
+        | 'club-sports'
+        | 'intramurals'
+        | 'general'
+      )
+    | null;
+  /**
+   * The school RPI played. Leave empty for stories that are not about one game.
+   */
+  opponent?: (number | null) | School;
+  homeAway?: ('home' | 'away' | 'neutral') | null;
+  rpiScore?: number | null;
+  opponentScore?: number | null;
+  /**
+   * e.g. Final, Final/OT, Final/2OT, Final/SO. Defaults to "Final".
+   */
+  gameStatus?: string | null;
   title: {
     root: {
       type: string;
@@ -388,48 +430,6 @@ export interface Article {
    * Fires a push notification to mobile app users when this article is published.
    */
   breakingNews?: boolean | null;
-  /**
-   * Which team this story is about. Fills an empty kicker with the sport name.
-   */
-  sport?:
-    | (
-        | 'mens-ice-hockey'
-        | 'womens-ice-hockey'
-        | 'mens-basketball'
-        | 'womens-basketball'
-        | 'football'
-        | 'mens-soccer'
-        | 'womens-soccer'
-        | 'mens-lacrosse'
-        | 'womens-lacrosse'
-        | 'baseball'
-        | 'softball'
-        | 'field-hockey'
-        | 'mens-swimming-and-diving'
-        | 'womens-swimming-and-diving'
-        | 'mens-track-and-field'
-        | 'womens-track-and-field'
-        | 'mens-cross-country'
-        | 'womens-cross-country'
-        | 'mens-tennis'
-        | 'womens-tennis'
-        | 'golf'
-        | 'club-sports'
-        | 'intramurals'
-        | 'general'
-      )
-    | null;
-  /**
-   * The school RPI played. Leave empty for stories that are not about one game.
-   */
-  opponent?: (number | null) | School;
-  homeAway?: ('home' | 'away' | 'neutral') | null;
-  rpiScore?: number | null;
-  opponentScore?: number | null;
-  /**
-   * e.g. Final, Final/OT, Final/2OT, Final/SO. Defaults to "Final".
-   */
-  gameStatus?: string | null;
   /**
    * Render this article in Comic Sans everywhere it appears.
    */
@@ -1037,6 +1037,12 @@ export interface LogosSelect<T extends boolean = true> {
  */
 export interface ArticlesSelect<T extends boolean = true> {
   section?: T;
+  sport?: T;
+  opponent?: T;
+  homeAway?: T;
+  rpiScore?: T;
+  opponentScore?: T;
+  gameStatus?: T;
   title?: T;
   plainTitle?: T;
   plainContent?: T;
@@ -1060,12 +1066,6 @@ export interface ArticlesSelect<T extends boolean = true> {
   seoTitle?: T;
   searchDescription?: T;
   breakingNews?: T;
-  sport?: T;
-  opponent?: T;
-  homeAway?: T;
-  rpiScore?: T;
-  opponentScore?: T;
-  gameStatus?: T;
   isFollytechnic?: T;
   isPhotofeature?: T;
   focalPointAcknowledged?: T;

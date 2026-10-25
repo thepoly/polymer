@@ -24,8 +24,11 @@ Both pages revalidate every 60 seconds.
 
 ## For editors
 
-**On a sports article** (sidebar, sports section only):
+**On a sports article** (right under Section; shown only for sports):
 - **Sport.** Choosing one fills an empty kicker with the sport's name.
+  For a story that isn't about one team, pick "General / Multiple Sports",
+  or leave Sport blank and write a kicker, which is then used as the
+  story's label on `/sports`.
 - **Game result** (all optional): opponent (a school), home / away /
   neutral, RPI score, opponent score, and status. Leave status blank for
   "Final"; type "Final/OT" and similar when it applies. The scoreboard only
