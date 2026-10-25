@@ -28,10 +28,13 @@ const pageHref = (sport: SportValue | null, page: number) => {
   return `/sports/all${query ? `?${query}` : ""}`;
 };
 
-/** Stands in a grid cell where a new month starts: "OCT / October 2026" */
+/**
+ * Stands in a grid cell where a new month starts: "OCT / October 2026". It's
+ * pinned to the first column, so each month begins on a new row.
+ */
 function MonthTile({ monthKey: key, isCurrent }: { monthKey: string; isCurrent: boolean }) {
   return (
-    <div className="flex aspect-[4/5] flex-col justify-start pt-1">
+    <div className="flex aspect-[4/5] flex-col justify-start pt-1" style={{ gridColumnStart: 1 }}>
       <span aria-hidden="true" className="mb-4 block h-[2px] w-8 bg-accent" />
       <h2
         className="uppercase leading-[0.9] text-text-main text-[56px] sm:text-[68px] lg:text-[76px]"
@@ -62,7 +65,7 @@ function Tab({ href, active, children }: { href: string; active: boolean; childr
 
 /**
  * Every sports story as a grid of photo cards, newest first, reading left to
- * right. A month tile opens each month. Tabs filter by sport (most stories
+ * right. A month tile opens each month on a new row. Tabs filter by sport (most stories
  * first), and the list pages at the foot.
  */
 export default function SportsAllStories({
