@@ -52,6 +52,9 @@ const SOURCES: Partial<Record<SportValue, { conference: Conference; path: string
   'womens-lacrosse': { conference: 'Liberty League', path: 'wlax' },
   baseball: { conference: 'Liberty League', path: 'baseball' },
   softball: { conference: 'Liberty League', path: 'softball' },
+  'field-hockey': { conference: 'Liberty League', path: 'fhock' },
+  'mens-tennis': { conference: 'Liberty League', path: 'mten' },
+  'womens-tennis': { conference: 'Liberty League', path: 'wten' },
 }
 
 const CONFERENCE_SITES: Record<Conference, string> = {

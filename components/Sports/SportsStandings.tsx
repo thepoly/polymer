@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import type { SportStandings, StandingsRow } from "@/lib/standings";
+import { MAX_TABS } from "@/lib/standingsSchedule";
 
 export type StandingsTeam = { logo: string | null; url: string | null };
 
@@ -51,7 +52,8 @@ function TeamCell({ row, team }: { row: StandingsRow; team?: StandingsTeam }) {
 /**
  * Tabs spread across the full width when they fit. When they don't, the row
  * scrolls sideways (finger or trackpad swipe), with a fade on the cut-off edge
- * and arrows for mouse users, who can't swipe sideways.
+ * and arrows for mouse users, who can't swipe sideways. Past five sports each
+ * tab takes at least a fifth of the row, so no more than five show at once.
  */
 function SportTabs({
   standings,
@@ -97,6 +99,9 @@ function SportTabs({
   const scrollBy = (direction: 1 | -1) =>
     listRef.current?.scrollBy({ left: direction * listRef.current.clientWidth * 0.6, behavior: "smooth" });
 
+  // Five tabs and the four gap-x-4 gaps between them fill the row
+  const tabWidth = standings.length > MAX_TABS ? { minWidth: "calc((100% - 4rem) / 5)" } : undefined;
+
   const fade = (side: "left" | "right") => ({
     background: `linear-gradient(to ${side === "left" ? "right" : "left"}, var(--background) 35%, transparent)`,
   });
@@ -118,7 +123,8 @@ function SportTabs({
               role="tab"
               aria-selected={selected}
               onClick={() => onSelect(s.sport)}
-              className={`shrink-0 border-b-2 pb-1.5 font-meta text-[11px] uppercase tracking-[0.04em] whitespace-nowrap transition-colors xl:text-[12px] xl:tracking-[0.06em] ${
+              style={tabWidth}
+              className={`shrink-0 border-b-2 pb-1.5 text-left font-meta text-[11px] uppercase tracking-[0.04em] whitespace-nowrap transition-colors xl:text-[12px] xl:tracking-[0.06em] ${
                 selected
                   ? "border-accent text-text-main"
                   : "border-transparent text-text-muted hover:text-text-main"
@@ -136,7 +142,7 @@ function SportTabs({
             type="button"
             aria-label="Scroll sports left"
             onClick={() => scrollBy(-1)}
-            className="pointer-events-auto hidden pb-1.5 pl-0.5 font-meta text-[15px] leading-none text-text-muted transition-colors hover:text-accent [@media(hover:hover)]:block"
+            className="pointer-events-auto hidden pb-2.5 pl-0.5 font-meta text-[15px] leading-none text-text-muted transition-colors hover:text-accent [@media(hover:hover)]:block"
           >
             &#8249;
           </button>
@@ -148,7 +154,7 @@ function SportTabs({
             type="button"
             aria-label="Scroll sports right"
             onClick={() => scrollBy(1)}
-            className="pointer-events-auto hidden pb-1.5 pr-0.5 font-meta text-[15px] leading-none text-text-muted transition-colors hover:text-accent [@media(hover:hover)]:block"
+            className="pointer-events-auto hidden pb-2.5 pr-0.5 font-meta text-[15px] leading-none text-text-muted transition-colors hover:text-accent [@media(hover:hover)]:block"
           >
             &#8250;
           </button>
