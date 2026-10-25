@@ -28,6 +28,8 @@ export interface Article {
   isoDate?: string | null;
   image: string | null;
   imageFull: string | null;
+  /** CSS object-position from the photo's focal point ("50% 30%") */
+  imageFocus?: string | null;
   imageCaption?: string | null;
   imagePhotographer?: string | null;
   imagePhotographerId?: string | number | null;

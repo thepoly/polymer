@@ -49,10 +49,21 @@ const SportsPageLayout: CollectionConfig = {
     //                                 // day the lead's game was played, shown
     //                                 // under the scoreboard; applies only
     //                                 // while that article is the lead
+    //   leadTitleOverlay: boolean,    // lead title box overlaps the photo on
+    //                                 // desktop (default on); off puts a plain
+    //                                 // title under the photo
+    //   showScoreStrip: boolean,      // RPI scores banner at the top (default
+    //                                 // on); off brings back the plain
+    //                                 // "Sports | Contact" header
     //   belowLead: number | null,     // wide card under the lead
     //   belowLead2: number | null,    // second wide card (text left, photo
     //                                 // right), only when the scoreboard is off
     //   headlines: (number | null)[], // 3 slots in the right column
+    //   featured: (number | null)[],  // 7 cards in the featured row
+    //   featuredFocus: { [articleId]: { x, y } },
+    //                                 // editors' framing of each featured
+    //                                 // card's photo (object-position %);
+    //                                 // without one, the photo's focal point
     //   standingsOverrides: { sport, mode: 'show' | 'hide', until }[],
     //                                 // editor overrides of the automatic
     //                                 // standings pick; each lasts 7 days
