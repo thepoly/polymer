@@ -21,10 +21,13 @@ type StandingsSport = {
   appear: string
   regEnd: string
   leave: string
+  /** The conference names the season after the fall before ("2026-27" for
+   *  spring 2027), so its table's year is one less than the window's */
+  labelledByFall?: boolean
 }
 
-// Reading order of the tabs, left to right. Also the priority when more
-// sports qualify than fit.
+// Reading order of the tabs, left to right. Also the priority for the first
+// MAX_TABS when more sports qualify than fit on screen.
 export const STANDINGS_SPORTS: StandingsSport[] = [
   { sport: 'mens-ice-hockey', tabLabel: 'M. Hockey', group: 'hockey', appear: '10-18', regEnd: '03-21', leave: '04-12' },
   { sport: 'womens-ice-hockey', tabLabel: 'W. Hockey', group: 'hockey', appear: '10-11', regEnd: '03-08', leave: '03-23' },
@@ -33,13 +36,18 @@ export const STANDINGS_SPORTS: StandingsSport[] = [
   { sport: 'womens-basketball', tabLabel: 'W. Basketball', group: 'basketball', appear: '11-22', regEnd: '03-01', leave: '03-21' },
   { sport: 'mens-soccer', tabLabel: 'M. Soccer', group: 'soccer', appear: '09-14', regEnd: '11-09', leave: '11-30' },
   { sport: 'womens-soccer', tabLabel: 'W. Soccer', group: 'soccer', appear: '09-14', regEnd: '11-09', leave: '11-30' },
+  { sport: 'field-hockey', tabLabel: 'Field Hockey', group: 'field-hockey', appear: '09-14', regEnd: '11-09', leave: '11-23' },
   { sport: 'mens-lacrosse', tabLabel: 'M. Lacrosse', group: 'lacrosse', appear: '03-08', regEnd: '05-03', leave: '05-27' },
   { sport: 'womens-lacrosse', tabLabel: 'W. Lacrosse', group: 'lacrosse', appear: '03-08', regEnd: '05-03', leave: '05-27' },
   { sport: 'baseball', tabLabel: 'Baseball', group: 'diamond', appear: '03-22', regEnd: '05-10', leave: '06-07' },
   { sport: 'softball', tabLabel: 'Softball', group: 'diamond', appear: '03-22', regEnd: '05-10', leave: '05-31' },
+  // Tennis also plays a few weeks in the fall, too short to show
+  { sport: 'mens-tennis', tabLabel: 'M. Tennis', group: 'tennis', appear: '03-07', regEnd: '05-03', leave: '05-25', labelledByFall: true },
+  { sport: 'womens-tennis', tabLabel: 'W. Tennis', group: 'tennis', appear: '03-07', regEnd: '05-03', leave: '05-25', labelledByFall: true },
 ]
 
-const MAX_TABS = 5
+/** Tabs that fit on screen; any further sports scroll in from the side */
+export const MAX_TABS = 5
 const MIN_TABS = 3
 /** How long an editor's Show/Hide choice lasts before automation takes over */
 export const OVERRIDE_DAYS = 7
@@ -108,12 +116,14 @@ export function activeOverrides(overrides: StandingsOverride[] | undefined, now:
 }
 
 /**
- * Pick up to MAX_TABS sports, in tab order:
+ * Pick the sports for the tabs. The first MAX_TABS, in tab order:
  *   1. editor "show" overrides
  *   2. live sports, then winding-down ones, by priority; a men's/women's pair
  *      is added together or not at all
  *   3. if fewer than MIN_TABS, the most recently finished sports (this is what
  *      holds the spring tables over the summer)
+ * Then every other shown or in-season sport, in tab order, which the card
+ * reaches by scrolling its tabs sideways.
  * Editor "hide" overrides are skipped everywhere.
  */
 export function selectStandings({
@@ -139,7 +149,8 @@ export function selectStandings({
 
   const isCurrentSeason = (s: StandingsSport) => {
     const year = available.get(s.sport)?.seasonYear
-    return year == null || year === info.get(s.sport)?.seasonYear
+    const season = info.get(s.sport)?.seasonYear
+    return year == null || (season != null && year === season - (s.labelledByFall ? 1 : 0))
   }
   const qualifies = (s: StandingsSport, phase: Phase) =>
     info.get(s.sport)?.phase === phase &&
@@ -149,9 +160,9 @@ export function selectStandings({
   // Groups in priority order (the order they first appear in STANDINGS_SPORTS)
   const groups = [...new Set(candidates.map((s) => s.group))].map((g) => candidates.filter((s) => s.group === g))
 
-  const addGroup = (members: StandingsSport[]) => {
+  const addGroup = (members: StandingsSport[], limit = MAX_TABS) => {
     const fresh = members.filter((s) => !selected.has(s.sport))
-    if (fresh.length > 0 && selected.size + fresh.length <= MAX_TABS) fresh.forEach((s) => selected.add(s.sport))
+    if (fresh.length > 0 && selected.size + fresh.length <= limit) fresh.forEach((s) => selected.add(s.sport))
   }
 
   for (const phase of ['live', 'winding-down'] as const) {
@@ -175,5 +186,16 @@ export function selectStandings({
     }
   }
 
-  return STANDINGS_SPORTS.filter((s) => selected.has(s.sport)).map((s) => s.sport)
+  const onScreen = STANDINGS_SPORTS.filter((s) => selected.has(s.sport)).map((s) => s.sport)
+
+  // Everything else that's shown or in season goes after them
+  for (const sport of shown) {
+    if (available.has(sport)) selected.add(sport)
+  }
+  for (const phase of ['live', 'winding-down'] as const) {
+    for (const members of groups) addGroup(members.filter((s) => qualifies(s, phase)), Infinity)
+  }
+  const more = STANDINGS_SPORTS.filter((s) => selected.has(s.sport) && !onScreen.includes(s.sport)).map((s) => s.sport)
+
+  return [...onScreen, ...more]
 }

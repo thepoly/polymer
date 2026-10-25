@@ -12,7 +12,7 @@ over time.
 | Score strip (top) | For each sport in the standings card: RPI's last two finals and next game | rpiathletics.com calendar feed ([`lib/schedule.ts`](../lib/schedule.ts)) |
 | Lead + scoreboard | Lead story with a scoreboard (logos, score, sport, status, date played) | The lead article's game result + `schools` |
 | Below-lead stories | One wide story, or two when the scoreboard is off | Layout editor, auto-filled with the newest stories |
-| Standings card | 3-5 sports, top five teams with RPI held at its real rank | ECAC Hockey and Liberty League standings pages ([`lib/standings.ts`](../lib/standings.ts)) |
+| Standings card | Every sport in season (at least 3). Five tabs fit; any more scroll sideways (trackpad or finger swipe, or the arrows). Top five teams, with RPI held at its real rank | ECAC Hockey and Liberty League standings pages ([`lib/standings.ts`](../lib/standings.ts)) |
 | Headlines | Three stories | Layout editor / newest stories |
 | More Headlines | A carousel of seven photo cards, ending in a link to `/sports/all` | Layout editor / newest unused stories |
 | `/sports/all` | Every sports story by month, filterable by sport, 24 per page | Articles |
@@ -115,7 +115,7 @@ use).
 | --- | --- | --- |
 | `rpiathletics.com` calendar feed (`responsive-calendar.ashx`) | Score strip | [`lib/schedule.ts`](../lib/schedule.ts) |
 | `ecachockey.com` standings | Men's and women's hockey | [`lib/standings.ts`](../lib/standings.ts) |
-| `libertyleagueathletics.com` standings | Football, basketball, soccer, lacrosse, baseball, softball | [`lib/standings.ts`](../lib/standings.ts) |
+| `libertyleagueathletics.com` standings | Football, basketball, soccer, field hockey, lacrosse, baseball, softball, tennis | [`lib/standings.ts`](../lib/standings.ts) |
 
 How it behaves:
 - Each page or feed is fetched at most once an hour, with an 8-second
@@ -138,7 +138,7 @@ can turn the scores banner off.
 | When | What | Where |
 | --- | --- | --- |
 | A new opponent appears | Add it with the Schools button (name, short name, logo, athletics URL). The score strip falls back to RPI Athletics' logo until then. | Newsroom → Sports Layout → Schools |
-| Season dates shift | Each sport's appear / regular-season-end / leave dates (month-day, Troy time) | `STANDINGS_SPORTS` in [`lib/standingsSchedule.ts`](../lib/standingsSchedule.ts) |
+| Season dates shift | Each sport's appear / regular-season-end / leave dates (month-day, Troy time). Tennis covers only its spring season; its fall matches are too few to show. | `STANDINGS_SPORTS` in [`lib/standingsSchedule.ts`](../lib/standingsSchedule.ts) |
 | RPI changes conference, or a conference moves its site | Conference and URL path per sport | `SOURCES` and `CONFERENCE_SITES` in [`lib/standings.ts`](../lib/standings.ts) |
 | Adding a sport | 1. Add to `SPORTS` in [`lib/sports.ts`](../lib/sports.ts). It's a Postgres enum, so this **needs a migration in both paths** ([`docs/migrations.md`](migrations.md)). 2. For standings: `STANDINGS_SPORTS` + `SOURCES`. 3. For the score strip: `FEED_SPORTS` in `lib/schedule.ts`. | |
 | Refreshing the seed list | Edit `scripts/data/schools.json` and re-run `pnpm db:seed:schools`. Only new schools and missing logos or links are added. | |
