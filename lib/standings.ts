@@ -31,6 +31,10 @@ export type SportStandings = {
   confStarted: boolean
   /** Start year of the season the table covers ("2026-27" → 2026) */
   seasonYear: number | null
+  /** RPI's division ("East") when the conference splits into divisions */
+  division: string | null
+  /** True when `conf` holds division records (the "Div" column) */
+  divisionRecords: boolean
   rows: StandingsRow[]
 }
 
@@ -99,31 +103,58 @@ function parseStandings(html: string, conference: Conference) {
   const ptsCol = col('PTS')
   if (confCol < 1 || overallCol < 1 || confCol === overallCol) return null
 
-  const rows: StandingsRow[] = []
+  // Divisional tables (Liberty League baseball) open each division with a
+  // header row ("East"); rows are grouped under it and ranked within it, by
+  // the division record in the DIV column
+  const divCol = col('DIV')
+  const divRecords = new Map<StandingsRow, string>()
+  const groups: { division: string | null; rows: StandingsRow[] }[] = [{ division: null, rows: [] }]
   for (const tr of tbody.split('<tr').slice(1)) {
     const values = desktopOnly(cells(tr, 'td')).map((c) => c.text)
-    const team = values[0]
+    if (values.length === 0) {
+      const heading = desktopOnly(cells(tr, 'th'))[0]?.text
+      if (!heading) return null
+      groups.push({ division: heading, rows: [] })
+      continue
+    }
+    // After the regular season teams carry their tournament seed: "RPI (3)"
+    const team = values[0]?.replace(/\s*\(\d+\)$/, '')
     const conf = values[confCol]
     const overall = values[overallCol]
     if (!team || !RECORD.test(conf ?? '') || !RECORD.test(overall ?? '')) return null
-    rows.push({
-      rank: rows.length + 1,
+    const group = groups[groups.length - 1]
+    const row: StandingsRow = {
+      rank: group.rows.length + 1,
       team,
       conf,
       pts: ptsCol >= 0 && values[ptsCol] !== undefined ? Number(values[ptsCol]) : null,
       overall,
       isRpi: team === 'RPI',
-    })
+    }
+    group.rows.push(row)
+    const div = divCol > 0 ? values[divCol] : undefined
+    if (div && RECORD.test(div)) divRecords.set(row, div)
   }
 
   // Sanity checks: a real conference table, with RPI in it
-  if (rows.length < 4 || !rows.some((r) => r.isRpi)) return null
+  const teamCount = groups.reduce((n, g) => n + g.rows.length, 0)
+  const group = groups.find((g) => g.rows.some((r) => r.isRpi))
+  if (teamCount < 4 || !group || group.rows.length < 2) return null
+
+  // With divisions, RPI's is the table that matters. Its record column shows
+  // the division record the ranking follows, when every team has one;
+  // otherwise it keeps the conference record (and its conference label)
+  const division = groups.length > 1 ? group.division : null
+  const divisionRecords = Boolean(division) && group.rows.every((r) => divRecords.has(r))
+  const rows = divisionRecords ? group.rows.map((r) => ({ ...r, conf: divRecords.get(r)! })) : group.rows
 
   // The season picker's selected option, e.g. "2026-27 Men's Ice Hockey Standings"
   const season = html.match(/<option selected="selected"[^>]*>\s*(\d{4})/)
 
   return {
     rows,
+    division,
+    divisionRecords,
     hasPoints: ptsCol >= 0,
     confStarted: rows.some((r) => sumRecord(r.conf) > 0),
     seasonYear: season ? Number(season[1]) : null,
