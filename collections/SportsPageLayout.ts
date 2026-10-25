@@ -32,6 +32,11 @@ const SportsPageLayout: CollectionConfig = {
       const roles = (user as unknown as { roles?: string[] }).roles || []
       return roles.some((role: string) => ['admin', 'eic', 'editor'].includes(role))
     },
+    delete: ({ req: { user } }) => {
+      if (!user) return false
+      const roles = (user as unknown as { roles?: string[] }).roles || []
+      return roles.includes('admin')
+    },
   },
   fields: [
     {
