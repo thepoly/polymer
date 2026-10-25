@@ -243,14 +243,21 @@ body {
   line-height: 1.4;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  transition: color 0.3s ease, background-color 0.3s ease;
   min-height: 100dvh;
   max-width: 100%;
   overflow-x: hidden;
 }
 
-* {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+/* Colours fade when the theme changes: ThemeProvider adds .theme-fading to
+   <html> for a moment, so this never sits on every element (where, being
+   unlayered, it would cancel Tailwind's transition utilities site-wide).
+   Readers who ask for less motion get the change at once, and the circle
+   wipe's .theme-switching rule below still turns it off while the wipe runs. */
+@media (prefers-reduced-motion: no-preference) {
+  .theme-fading,
+  .theme-fading * {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
 }
 
 .font-display {

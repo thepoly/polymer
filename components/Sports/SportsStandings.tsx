@@ -136,7 +136,7 @@ function SportTabs({
             type="button"
             aria-label="Scroll sports left"
             onClick={() => scrollBy(-1)}
-            className="pointer-events-auto hidden pb-1.5 pl-0.5 font-meta text-[15px] leading-none text-text-muted hover:text-accent [@media(hover:hover)]:block"
+            className="pointer-events-auto hidden pb-1.5 pl-0.5 font-meta text-[15px] leading-none text-text-muted transition-colors hover:text-accent [@media(hover:hover)]:block"
           >
             &#8249;
           </button>
@@ -148,7 +148,7 @@ function SportTabs({
             type="button"
             aria-label="Scroll sports right"
             onClick={() => scrollBy(1)}
-            className="pointer-events-auto hidden pb-1.5 pr-0.5 font-meta text-[15px] leading-none text-text-muted hover:text-accent [@media(hover:hover)]:block"
+            className="pointer-events-auto hidden pb-1.5 pr-0.5 font-meta text-[15px] leading-none text-text-muted transition-colors hover:text-accent [@media(hover:hover)]:block"
           >
             &#8250;
           </button>
