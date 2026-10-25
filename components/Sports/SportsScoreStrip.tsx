@@ -86,7 +86,7 @@ function GameCell({ game, rpiTeam }: { game: ScheduleGame; rpiTeam: GameTeam }) 
       </div>
     </>
   );
-  const className = "block w-[176px] shrink-0 snap-start border-l border-rule px-3 py-2.5 sm:w-[190px]";
+  const className = "block w-[176px] shrink-0 snap-start border-l border-rule px-3 py-3.5 sm:w-[190px]";
 
   return game.link ? (
     <a
@@ -189,7 +189,7 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
   return (
     <section
       aria-label="RPI scores and schedule"
-      className="relative mb-8 sm:mb-10"
+      className="relative mb-3 sm:mb-5"
       onMouseEnter={() => setRevealed(true)}
     >
       <div
