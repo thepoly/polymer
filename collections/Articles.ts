@@ -239,6 +239,86 @@ const Articles: CollectionConfig = {
       ],
       required: true,
     },
+    // Sports fields sit right under Section, where editors will see them, not
+    // down the sidebar. Rows are layout only: the columns are unchanged.
+    {
+      name: 'sport',
+      type: 'select',
+      options: SPORTS.map(({ value, label }) => ({ value, label })),
+      index: true,
+      admin: {
+        description: 'Which team this story is about. Fills an empty kicker with the sport name.',
+        condition: (data: Record<string, unknown>) => data?.section === 'sports',
+      },
+    },
+    // Game result — sports stories about a single game. Drives the scoreboard
+    // above the lead story on /sports.
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'opponent',
+          type: 'relationship',
+          relationTo: 'schools',
+          hasMany: false,
+          admin: {
+            width: '50%',
+            description: 'The school RPI played. Leave empty for stories that are not about one game.',
+            condition: (data: Record<string, unknown>) => data?.section === 'sports',
+          },
+        },
+        {
+          name: 'homeAway',
+          type: 'select',
+          label: 'Home / Away',
+          options: [
+            { label: 'Home', value: 'home' },
+            { label: 'Away', value: 'away' },
+            { label: 'Neutral site', value: 'neutral' },
+          ],
+          admin: {
+            width: '50%',
+            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
+          },
+        },
+      ],
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'rpiScore',
+          type: 'number',
+          label: 'RPI Score',
+          min: 0,
+          admin: {
+            width: '25%',
+            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
+          },
+        },
+        {
+          name: 'opponentScore',
+          type: 'number',
+          label: 'Opponent Score',
+          min: 0,
+          admin: {
+            width: '25%',
+            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
+          },
+        },
+        {
+          name: 'gameStatus',
+          type: 'text',
+          label: 'Game Status',
+          admin: {
+            width: '50%',
+            placeholder: 'Final',
+            description: 'e.g. Final, Final/OT, Final/2OT, Final/SO. Defaults to "Final".',
+            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
+          },
+        },
+      ],
+    },
     {
       name: 'title',
       type: 'richText',
@@ -405,75 +485,6 @@ const Articles: CollectionConfig = {
       admin: {
         description: 'Fires a push notification to mobile app users when this article is published.',
         position: 'sidebar',
-      },
-    },
-    {
-      name: 'sport',
-      type: 'select',
-      options: SPORTS.map(({ value, label }) => ({ value, label })),
-      index: true,
-      admin: {
-        position: 'sidebar',
-        description: 'Which team this story is about. Fills an empty kicker with the sport name.',
-        condition: (data: Record<string, unknown>) => data?.section === 'sports',
-      },
-    },
-    // Game result — sports stories about a single game. Drives the scoreboard
-    // above the lead story on /sports.
-    {
-      name: 'opponent',
-      type: 'relationship',
-      relationTo: 'schools',
-      hasMany: false,
-      admin: {
-        position: 'sidebar',
-        description: 'The school RPI played. Leave empty for stories that are not about one game.',
-        condition: (data: Record<string, unknown>) => data?.section === 'sports',
-      },
-    },
-    {
-      name: 'homeAway',
-      type: 'select',
-      label: 'Home / Away',
-      options: [
-        { label: 'Home', value: 'home' },
-        { label: 'Away', value: 'away' },
-        { label: 'Neutral site', value: 'neutral' },
-      ],
-      admin: {
-        position: 'sidebar',
-        condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
-      },
-    },
-    {
-      name: 'rpiScore',
-      type: 'number',
-      label: 'RPI Score',
-      min: 0,
-      admin: {
-        position: 'sidebar',
-        condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
-      },
-    },
-    {
-      name: 'opponentScore',
-      type: 'number',
-      label: 'Opponent Score',
-      min: 0,
-      admin: {
-        position: 'sidebar',
-        condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
-      },
-    },
-    {
-      name: 'gameStatus',
-      type: 'text',
-      label: 'Game Status',
-      admin: {
-        position: 'sidebar',
-        placeholder: 'Final',
-        description: 'e.g. Final, Final/OT, Final/2OT, Final/SO. Defaults to "Final".',
-        condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
       },
     },
     {
