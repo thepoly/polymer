@@ -143,7 +143,7 @@ export function SectionPinEditor({ section }: { section: string }) {
                 </button>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="text-text-muted hover:text-text-main text-lg leading-none px-1"
+                  className="text-text-muted transition-colors hover:text-text-main text-lg leading-none px-1"
                 >
                   ×
                 </button>

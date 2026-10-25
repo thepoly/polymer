@@ -1250,7 +1250,7 @@ export default function SearchOverlay({
                     onChange={(sort) => updateFilters({ sort: sort as SearchFilters["sort"] })}
                   />.{" "}
                   <span className="hidden md:inline">
-                    Our search algorithm uses title, subtitle, kicker, author, and body matching.{archiveSubtitle ? ` ${archiveSubtitle}.` : " You are currently searching our online database, containing articles published after 2009."} You can access older articles in <TransitionLink href="/archive" className="underline hover:text-accent">our online archives</TransitionLink> or <a href="https://digitalassets.archives.rpi.edu/do/235be3d2-f018-48af-a413-b50e16dd6dc7" target="_blank" rel="noopener noreferrer" className="underline hover:text-accent">our archive at the Richard G. Folsom Library</a>.
+                    Our search algorithm uses title, subtitle, kicker, author, and body matching.{archiveSubtitle ? ` ${archiveSubtitle}.` : " You are currently searching our online database, containing articles published after 2009."} You can access older articles in <TransitionLink href="/archive" className="underline transition-colors hover:text-accent">our online archives</TransitionLink> or <a href="https://digitalassets.archives.rpi.edu/do/235be3d2-f018-48af-a413-b50e16dd6dc7" target="_blank" rel="noopener noreferrer" className="underline transition-colors hover:text-accent">our archive at the Richard G. Folsom Library</a>.
                   </span>
                 </TypeOut>
               </p>

@@ -84,14 +84,14 @@ function PhotoCredits({ faces }: { faces: EasterEggFace[] }) {
       <ul className="flex flex-col gap-0.5">
         {faces.map((face) => (
           <li key={face.src}>
-            <a href={face.source} rel="nofollow noopener noreferrer" target="_blank" className="hover:text-accent">
+            <a href={face.source} rel="nofollow noopener noreferrer" target="_blank" className="transition-colors hover:text-accent">
               {face.source.split('File:')[1]?.replace(/_/g, ' ').replace(/\.jpg$/i, '') ?? face.src}
             </a>
             {' — '}
             {face.credit}
             {', '}
             {face.licenseUrl ? (
-              <a href={face.licenseUrl} rel="nofollow noopener noreferrer" target="_blank" className="hover:text-accent">
+              <a href={face.licenseUrl} rel="nofollow noopener noreferrer" target="_blank" className="transition-colors hover:text-accent">
                 {face.license}
               </a>
             ) : (
