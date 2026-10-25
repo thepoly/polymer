@@ -76,8 +76,11 @@ So: every schema change touches **both** files.
    `INSERT INTO payload_migrations` block:
 
    ```sql
-   ('<timestamp>_add_my_field', <batch>, NOW(), NOW()),
+   ('<timestamp>_add_my_field', <batch>),
    ```
+
+   A row is only inserted when no row with that name exists yet, so the
+   script can run on every deploy without piling up duplicates.
 
    Pick the next sensible `batch` number (see existing entries for the
    convention — usually one batch per "logical group" of migrations).
