@@ -174,7 +174,8 @@ export default function SportsStandings({
   const current = standings.find((s) => s.sport === active) ?? standings[0];
   if (!current) return null;
 
-  const abbr = CONFERENCE_ABBR[current.conference] ?? "Conf";
+  // Divisional tables show (and rank by) the division record
+  const abbr = current.divisionRecords ? "Div" : CONFERENCE_ABBR[current.conference] ?? "Conf";
   const rpi = current.rows.find((r) => r.isRpi);
   const rows = visibleRows(current.rows);
 
@@ -190,6 +191,13 @@ export default function SportsStandings({
       </div>
 
       <SportTabs standings={standings} activeSport={current.sport} onSelect={setActive} />
+
+      {/* Divisional sports show RPI's division */}
+      {current.division && (
+        <p className="mb-1.5 font-meta text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+          {current.division} Division
+        </p>
+      )}
 
       {current.confStarted ? (
         <table className="w-full table-fixed font-meta text-[13px] tabular-nums">
