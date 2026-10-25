@@ -14,6 +14,8 @@ import { notFound } from 'next/navigation';
 export const revalidate = 60;
 
 const PER_PAGE = 24;
+// Far past any real archive; bigger numbers would overflow the query offset
+const MAX_PAGE = 1000;
 
 export const metadata: Metadata = {
   title: 'Sports Stories',
@@ -31,6 +33,7 @@ export default async function SportsAllStoriesPage({ searchParams }: Args) {
   // Whole, finite page numbers only ("Infinity" or "abc" mean page 1)
   const parsedPage = Math.floor(Number(params.page));
   const requestedPage = Number.isFinite(parsedPage) && parsedPage > 1 ? parsedPage : 1;
+  if (requestedPage > MAX_PAGE) notFound();
   const payload = await getPayload({ config });
 
   const published: Where[] = [{ section: { equals: 'sports' } }, { _status: { equals: 'published' } }];

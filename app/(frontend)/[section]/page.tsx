@@ -12,7 +12,7 @@ import type { StandingsTeam } from '@/components/Sports/SportsStandings';
 import type { FeaturedFocus } from '@/components/Sports/sportsFormat';
 import { getSportsStandings, type SportStandings } from '@/lib/standings';
 import { getSportsSchedule, type SportSchedule } from '@/lib/schedule';
-import type { StandingsOverride } from '@/lib/standingsSchedule';
+import { STANDINGS_SPORTS, type StandingsOverride } from '@/lib/standingsSchedule';
 import { RPI_SCHOOL_NAME } from '@/collections/Schools';
 import { Article as PayloadArticle, Media } from '@/payload-types';
 import { Article as ComponentArticle, GameTeam } from '@/components/FrontPage/types';
@@ -606,8 +606,23 @@ export default async function SectionPageRoute({ params }: Args) {
       // Table may not exist yet
     }
 
-    // Standings for the sports the calendar (and any editor override) picks
-    sportsStandings = await getSportsStandings({ overrides: standingsOverrides });
+    // Standings for the sports the calendar (and any editor override) picks.
+    // The score strip follows the standings' sports, but which ones those are
+    // is only known once the tables are in, so the schedule is fetched for
+    // every standings sport alongside them and narrowed afterwards; a slow
+    // feed then costs one wait instead of two in a row. When editors switch
+    // the strip off, RPI Athletics isn't contacted at all, and a failure
+    // falls back to the plain header rather than an error page.
+    const [standings, schedule] = await Promise.all([
+      getSportsStandings({ overrides: standingsOverrides }),
+      sportsShowScoreStrip
+        ? getSportsSchedule(STANDINGS_SPORTS.map((s) => s.sport)).catch((err: Error) => {
+            console.warn(`[schedule] ${err.message}`);
+            return [] as SportSchedule[];
+          })
+        : Promise.resolve([] as SportSchedule[]),
+    ]);
+    sportsStandings = standings;
 
     // Logos + athletics links for every team in the tables, matched to
     // Schools by short name (falling back to full name)
@@ -632,18 +647,14 @@ export default async function SectionPageRoute({ params }: Args) {
       }
     }
 
-    // Score strip: RPI's recent finals and next game in each standings sport.
-    // Opponents take the short name and logo from Schools when there is one,
-    // so editors' logo fixes carry over; otherwise RPI Athletics' own. When
-    // editors switch the strip off, RPI Athletics isn't contacted at all, and
-    // a failure here falls back to the plain header rather than an error page.
-    if (sportsShowScoreStrip) {
-      try {
-        sportsSchedule = await getSportsSchedule(sportsStandings.map((s) => s.sport));
-      } catch (err) {
-        console.warn(`[schedule] ${(err as Error).message}`);
-      }
-    }
+    // Score strip: RPI's recent finals and next game in each standings sport,
+    // in the standings card's order. Opponents take the short name and logo
+    // from Schools when there is one, so editors' logo fixes carry over;
+    // otherwise RPI Athletics' own.
+    const scheduleBySport = new Map(schedule.map((s) => [s.sport, s]));
+    sportsSchedule = sportsStandings
+      .map((s) => scheduleBySport.get(s.sport))
+      .filter((s): s is SportSchedule => s !== undefined);
     const opponentNames = [...new Set(sportsSchedule.flatMap((s) => s.games.map((g) => g.opponent.name)))];
     if (opponentNames.length > 0) {
       try {
