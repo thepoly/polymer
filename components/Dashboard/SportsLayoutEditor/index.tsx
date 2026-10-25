@@ -26,6 +26,7 @@ import {
   type StandingsOverride,
 } from '@/lib/standingsSchedule';
 import type { ScoreboardDate } from '@/components/Sports/SportsSectionPage';
+import { FEATURED_COUNT, type FeaturedFocus } from '@/components/Sports/sportsFormat';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -39,7 +40,7 @@ type ArticleData = {
   section: string;
   publishedDate: string | null;
   createdAt: string;
-  featuredImage?: { url?: string | null; alt?: string | null } | number | null;
+  featuredImage?: { url?: string | null; alt?: string | null; focalX?: number | null; focalY?: number | null } | number | null;
   subdeck?: string | null;
   kicker?: string | null;
   authors?: Array<number | { firstName: string; lastName: string }>;
@@ -56,6 +57,12 @@ type SportsLayout = {
   /** Second wide card, shown only when the scoreboard isn't */
   belowLead2: number | null;
   headlines: (number | null)[];
+  featured: (number | null)[];
+  featuredFocus: FeaturedFocus;
+  /** RPI scores banner at the top; off shows the plain "Sports | Contact" header */
+  showScoreStrip: boolean;
+  /** Lead title overlaps its photo on desktop; off puts a plain title below */
+  leadTitleOverlay: boolean;
   standingsOverrides: StandingsOverride[];
 };
 
@@ -64,6 +71,7 @@ type SlotLayout = {
   lead: (number | null)[];
   belowLead: (number | null)[];
   headlines: (number | null)[];
+  featured: (number | null)[];
 };
 
 // ---------------------------------------------------------------------------
@@ -83,9 +91,10 @@ const EMPTY_SLOTS: SlotLayout = {
   // [below lead, second below lead]
   belowLead: [null, null],
   headlines: Array(HEADLINE_COUNT).fill(null),
+  featured: Array(FEATURED_COUNT).fill(null),
 };
 
-// Slot ID format: "lead-0", "below-0", "below-1", "head-2"
+// Slot ID format: "lead-0", "below-0", "below-1", "head-2", "feat-6"
 type ColumnKey = keyof SlotLayout;
 
 const parseSlotId = (slotId: string): { column: ColumnKey; index: number } | null => {
@@ -94,6 +103,7 @@ const parseSlotId = (slotId: string): { column: ColumnKey; index: number } | nul
   if (prefix === 'lead') return { column: 'lead', index };
   if (prefix === 'below') return { column: 'belowLead', index };
   if (prefix === 'head') return { column: 'headlines', index };
+  if (prefix === 'feat') return { column: 'featured', index };
   return null;
 };
 
@@ -128,7 +138,7 @@ const extractDocId = (): string | null => {
 
 const collectUsedIds = (slots: SlotLayout): Set<number> => {
   const ids = new Set<number>();
-  for (const col of [slots.lead, slots.belowLead, slots.headlines]) {
+  for (const col of [slots.lead, slots.belowLead, slots.headlines, slots.featured]) {
     for (const id of col) {
       if (id !== null) ids.add(id);
     }
@@ -226,6 +236,218 @@ function DropSlot({
             </svg>
             <span>Drop article (auto-fills if empty)</span>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Featured Slot (portrait card preview; drag the photo to reframe it)
+// ---------------------------------------------------------------------------
+
+const clampPercent = (n: number) => Math.max(0, Math.min(100, n));
+
+/** The photo's own focal point, which a card uses until an editor reframes it */
+const defaultFocus = (article: ArticleData) => {
+  const image = typeof article.featuredImage === 'object' ? article.featuredImage : null;
+  return {
+    x: typeof image?.focalX === 'number' ? clampPercent(image.focalX) : 50,
+    y: typeof image?.focalY === 'number' ? clampPercent(image.focalY) : 50,
+  };
+};
+
+/**
+ * The card as it appears on the page (4:5, dark shade, headline). Dragging the
+ * photo pans it inside the card; the position is an object-position in %.
+ */
+function FramePreview({
+  article,
+  focus,
+  onChange,
+}: {
+  article: ArticleData;
+  focus: { x: number; y: number } | undefined;
+  onChange: (focus: { x: number; y: number }) => void;
+}) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const drag = useRef<{ x: number; y: number; from: { x: number; y: number } } | null>(null);
+  const position = focus ?? defaultFocus(article);
+  const imageUrl = getImageUrl(article);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (!imageUrl) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { x: e.clientX, y: e.clientY, from: position };
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    const start = drag.current;
+    const box = boxRef.current?.getBoundingClientRect();
+    const img = imgRef.current;
+    if (!start || !box || !img?.naturalWidth) return;
+    // How far the covered photo overhangs the card on each axis; moving the
+    // pointer that far sweeps the position across its full 0–100% range
+    const scale = Math.max(box.width / img.naturalWidth, box.height / img.naturalHeight);
+    const overX = img.naturalWidth * scale - box.width;
+    const overY = img.naturalHeight * scale - box.height;
+    onChange({
+      x: overX > 0.5 ? Math.round(clampPercent(start.from.x - ((e.clientX - start.x) / overX) * 100)) : start.from.x,
+      y: overY > 0.5 ? Math.round(clampPercent(start.from.y - ((e.clientY - start.y) / overY) * 100)) : start.from.y,
+    });
+  };
+
+  const onPointerUp = () => {
+    drag.current = null;
+  };
+
+  return (
+    <div
+      ref={boxRef}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      title={imageUrl ? 'Drag the photo to choose what the card shows' : undefined}
+      style={{
+        position: 'relative',
+        aspectRatio: '4 / 5',
+        overflow: 'hidden',
+        background: '#111',
+        cursor: imageUrl ? 'grab' : 'default',
+        touchAction: 'none',
+        userSelect: 'none',
+      }}
+    >
+      {imageUrl && (
+        <img
+          ref={imgRef}
+          src={imageUrl}
+          alt=""
+          draggable={false}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: `${position.x}% ${position.y}%`,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.94) 0%, rgba(0,0,0,0.78) 30%, rgba(0,0,0,0.25) 58%, rgba(0,0,0,0) 76%)',
+        }}
+      />
+      <div style={{ position: 'absolute', left: 8, right: 8, bottom: 8, pointerEvents: 'none' }}>
+        <div style={{ width: 14, height: 2, background: '#C41E3A', marginBottom: 5 }} />
+        <div
+          style={{
+            color: '#fff',
+            fontSize: '0.66rem',
+            lineHeight: 1.2,
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+          }}
+        >
+          {article.plainTitle}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FeaturedSlot({
+  index,
+  article,
+  focus,
+  onClear,
+  onFocusChange,
+  onFocusReset,
+}: {
+  index: number;
+  article: ArticleData | null;
+  focus: { x: number; y: number } | undefined;
+  onClear: () => void;
+  onFocusChange: (focus: { x: number; y: number }) => void;
+  onFocusReset: () => void;
+}) {
+  const slotId = `feat-${index}`;
+  const { isOver, setNodeRef } = useDroppable({ id: `drop-${slotId}`, data: { slotId } });
+  // Only the header moves the story between slots, so dragging the photo
+  // reframes it instead
+  const { attributes, listeners, setNodeRef: setHandleRef, isDragging } = useDraggable({
+    id: `slot-article-${slotId}`,
+    data: { article, source: 'slot', slotId },
+    disabled: !article,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`fle-slot ${isOver ? 'fle-slot-over' : ''} ${article ? 'fle-slot-filled' : ''}`}
+      style={{ opacity: isDragging ? 0.4 : 1 }}
+    >
+      <div
+        ref={setHandleRef}
+        {...listeners}
+        {...attributes}
+        className="fle-slot-header"
+        style={{ cursor: article ? 'grab' : 'default', padding: '5px 8px' }}
+        title={article ? 'Drag to move this story' : undefined}
+      >
+        <span className="fle-slot-label">{index + 1}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          {article && focus && (
+            <button
+              type="button"
+              className="fle-slot-clear"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={onFocusReset}
+              title="Reset framing to the photo's focal point"
+              style={{ fontSize: '0.8rem' }}
+            >
+              &#8634;
+            </button>
+          )}
+          {article && (
+            <button
+              type="button"
+              className="fle-slot-clear"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={onClear}
+              title="Remove article"
+            >
+              &times;
+            </button>
+          )}
+        </div>
+      </div>
+      {article ? (
+        <FramePreview article={article} focus={focus} onChange={onFocusChange} />
+      ) : (
+        <div
+          style={{
+            aspectRatio: '4 / 5',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            padding: 8,
+            fontSize: '0.62rem',
+            opacity: 0.35,
+          }}
+        >
+          Drop article (auto-fills if empty)
         </div>
       )}
     </div>
@@ -457,6 +679,10 @@ export function SportsLayoutEditor() {
   // Kept with the article it was entered for, so moving another story into
   // the lead shows an empty box rather than the old game's date
   const [scoreboardDate, setScoreboardDate] = useState<ScoreboardDate | null>(null);
+  // Featured cards' framing by article id, so it follows a story between slots
+  const [featuredFocus, setFeaturedFocus] = useState<FeaturedFocus>({});
+  const [showScoreStrip, setShowScoreStrip] = useState(true);
+  const [leadTitleOverlay, setLeadTitleOverlay] = useState(true);
   const [standingsOverrides, setStandingsOverrides] = useState<StandingsOverride[]>([]);
   const [now] = useState(() => new Date());
   const [articles, setArticles] = useState<ArticleData[]>([]);
@@ -524,9 +750,13 @@ export function SportsLayoutEditor() {
               lead: [savedLayout.lead ?? null],
               belowLead: [savedLayout.belowLead ?? null, savedLayout.belowLead2 ?? null],
               headlines: padArray(savedLayout.headlines, HEADLINE_COUNT),
+              featured: padArray(savedLayout.featured, FEATURED_COUNT),
             });
             setShowScoreboard(savedLayout.showScoreboard ?? true);
             setScoreboardDate(savedLayout.scoreboardDate ?? null);
+            setFeaturedFocus(savedLayout.featuredFocus ?? {});
+            setShowScoreStrip(savedLayout.showScoreStrip ?? true);
+            setLeadTitleOverlay(savedLayout.leadTitleOverlay ?? true);
             // Expired overrides are dropped; the next save clears them for good
             setStandingsOverrides(activeOverrides(savedLayout.standingsOverrides, new Date()));
           }
@@ -575,6 +805,16 @@ export function SportsLayoutEditor() {
 
   const changeScoreboardDate = useCallback((articleId: number, date: string) => {
     setScoreboardDate(date ? { articleId, date } : null);
+    markDirty();
+  }, [markDirty]);
+
+  const changeFeaturedFocus = useCallback((articleId: number, focus: { x: number; y: number } | null) => {
+    setFeaturedFocus((prev) => {
+      const next = { ...prev };
+      if (focus) next[String(articleId)] = focus;
+      else delete next[String(articleId)];
+      return next;
+    });
     markDirty();
   }, [markDirty]);
 
@@ -652,6 +892,13 @@ export function SportsLayoutEditor() {
       belowLead: slots.belowLead[0],
       belowLead2: slots.belowLead[1],
       headlines: slots.headlines,
+      featured: slots.featured,
+      showScoreStrip,
+      leadTitleOverlay,
+      // Only framing for stories still in the row is kept
+      featuredFocus: Object.fromEntries(
+        Object.entries(featuredFocus).filter(([id]) => slots.featured.includes(Number(id))),
+      ),
     };
     try {
       const res = await fetch(`/api/sports-page-layout/${docIdRef.current}`, {
@@ -695,8 +942,24 @@ export function SportsLayoutEditor() {
       <div className="fle-root">
         {/* Toolbar */}
         <div className="fle-toolbar">
-          <div className="fle-toolbar-left">
+          <div className="fle-toolbar-left" style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <h2 className="fle-toolbar-title">Sports Page Layout</h2>
+            {/* Escape hatch: if the scores banner misbehaves, any editor can
+                swap it for the plain header (takes effect on Activate) */}
+            <label
+              className="fle-image-toggle"
+              title="Off: the page shows the plain “Sports | Contact” header and stops loading RPI Athletics scores"
+            >
+              <input
+                type="checkbox"
+                checked={showScoreStrip}
+                onChange={() => {
+                  setShowScoreStrip((prev) => !prev);
+                  markDirty();
+                }}
+              />
+              Scores banner {showScoreStrip ? 'on' : 'off (plain header shown)'}
+            </label>
           </div>
           <div className="fle-toolbar-right">
             {error && <span className="fle-toolbar-error">{error}</span>}
@@ -750,23 +1013,57 @@ export function SportsLayoutEditor() {
                     </span>
                   </label>
                 )}
+                {/* Last-minute fallback: a plain title under the photo
+                    instead of the box overlapping it (desktop only) */}
+                <label
+                  className="fle-image-toggle"
+                  title="Off: the lead's headline sits under the photo as a plain title instead of overlapping it (desktop; phones already show it above the photo)"
+                  style={{ alignSelf: 'flex-start' }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={leadTitleOverlay}
+                    onChange={() => {
+                      setLeadTitleOverlay((prev) => !prev);
+                      markDirty();
+                    }}
+                  />
+                  Lead title overlaps the photo {leadTitleOverlay ? '' : '(off: plain title under the photo)'}
+                </label>
                 <DropSlot
                   slotId="below-0"
                   label="Below lead (image + text)"
                   article={getArticle('belowLead', 0)}
                   onClear={() => clearSlot('below-0')}
                 />
-                {/* Only used when the scoreboard is off; dimmed otherwise */}
-                <div style={{ opacity: showScoreboard ? 0.45 : 1 }}>
+                {/* Only used when the scoreboard is off, so it collapses to a
+                    note while the scoreboard shows; a story placed there stays
+                    saved and returns with the slot */}
+                {showScoreboard ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.62rem', padding: '2px 2px 0' }}>
+                    <span style={{ opacity: 0.5 }}>
+                      Second below-lead slot appears when the scoreboard is off
+                      {getArticle('belowLead', 1) ? ` (holding “${getArticle('belowLead', 1)?.plainTitle}”)` : ''}
+                    </span>
+                    {/* Frees the held story for other slots without turning the scoreboard off */}
+                    {getArticle('belowLead', 1) && (
+                      <button
+                        type="button"
+                        onClick={() => clearSlot('below-1')}
+                        style={{ background: 'none', border: 'none', padding: 0, color: '#C41E3A', cursor: 'pointer', fontSize: '0.62rem', fontWeight: 600 }}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ) : (
                   <DropSlot
                     slotId="below-1"
-                    label={showScoreboard
-                      ? 'Second below lead (shown only when the scoreboard is off)'
-                      : 'Second below lead (text + image)'}
+                    label="Second below lead (text + image)"
                     article={getArticle('belowLead', 1)}
                     onClear={() => clearSlot('below-1')}
                   />
-                </div>
+                )}
               </div>
 
               <div className="fle-column">
@@ -783,6 +1080,32 @@ export function SportsLayoutEditor() {
                   />
                 ))}
                 <StandingsPanel overrides={standingsOverrides} now={now} onChange={setStandingsMode} />
+              </div>
+            </div>
+
+            {/* Featured row: seven portrait cards under the top block */}
+            <div className="fle-column" style={{ marginTop: 16 }}>
+              <div className="fle-column-header">
+                <span className="fle-column-title">More Headlines</span>
+                <span style={{ fontSize: '0.62rem', opacity: 0.5 }}>
+                  Drag a photo to choose what its card shows; drag the number bar to move a story
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(${FEATURED_COUNT}, minmax(0, 1fr))`, gap: 10 }}>
+                {slots.featured.map((id, i) => {
+                  const article = getArticle('featured', i);
+                  return (
+                    <FeaturedSlot
+                      key={`feat-${i}`}
+                      index={i}
+                      article={article}
+                      focus={id !== null ? featuredFocus[String(id)] : undefined}
+                      onClear={() => clearSlot(`feat-${i}`)}
+                      onFocusChange={(focus) => id !== null && changeFeaturedFocus(id, focus)}
+                      onFocusReset={() => id !== null && changeFeaturedFocus(id, null)}
+                    />
+                  );
+                })}
               </div>
             </div>
           </div>

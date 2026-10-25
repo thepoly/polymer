@@ -1,6 +1,7 @@
 import { Media } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
 import React from 'react';
+import { focalObjectPosition } from './focalPoint';
 
 type PublicAuthorLike = {
   id?: number | string;
@@ -9,7 +10,7 @@ type PublicAuthorLike = {
   slug?: string | null;
 };
 
-type PublicMediaLike = Pick<Media, 'url' | 'alt'> & {
+type PublicMediaLike = Pick<Media, 'url' | 'alt'> & Partial<Pick<Media, 'focalX' | 'focalY'>> & {
   title?: string | null;
   photographer?: number | { id: number | string; firstName: string; lastName: string; slug?: string | null } | null;
   writeInPhotographer?: string | null;
@@ -158,6 +159,7 @@ export const formatArticle = (
     // light while never starting from Payload's pre-compressed copies
     image: featuredImage?.url || null,
     imageFull: featuredImage?.url || null,
+    imageFocus: featuredImage ? focalObjectPosition(featuredImage) : null,
     imageCaption: article.imageCaption || null,
     imagePhotographer,
     imagePhotographerId,

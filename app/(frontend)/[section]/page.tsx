@@ -9,6 +9,7 @@ import NewsSectionPage from '@/components/News/NewsSectionPage';
 import FeaturesSectionPage, { type FeaturesEvent, type SpotlightPhoto } from '@/components/Features/FeaturesSectionPage';
 import SportsSectionPage, { type ScoreboardDate } from '@/components/Sports/SportsSectionPage';
 import type { StandingsTeam } from '@/components/Sports/SportsStandings';
+import type { FeaturedFocus } from '@/components/Sports/sportsFormat';
 import { getSportsStandings, type SportStandings } from '@/lib/standings';
 import { getSportsSchedule, type SportSchedule } from '@/lib/schedule';
 import type { StandingsOverride } from '@/lib/standingsSchedule';
@@ -483,7 +484,8 @@ export default async function SectionPageRoute({ params }: Args) {
     }
   }
 
-  // Fetch sports page layout — lead (+ scoreboard), below-lead card, headlines
+  // Fetch sports page layout — lead (+ scoreboard), below-lead card, headlines,
+  // featured row
   let sportsPinnedLead: ComponentArticle | null = null;
   let sportsPinnedBelowLead: ComponentArticle | null = null;
   let sportsPinnedBelowLead2: ComponentArticle | null = null;
@@ -494,6 +496,10 @@ export default async function SectionPageRoute({ params }: Args) {
   let sportsStandings: SportStandings[] = [];
   const sportsStandingsTeams: Record<string, StandingsTeam> = {};
   let sportsSchedule: SportSchedule[] = [];
+  let sportsPinnedFeatured: (ComponentArticle | null)[] = [];
+  let sportsFeaturedFocus: FeaturedFocus = {};
+  let sportsShowScoreStrip = true;
+  let sportsLeadTitleOverlay = true;
 
   if (section === 'sports') {
     type SportsLayoutShape = {
@@ -503,6 +509,10 @@ export default async function SectionPageRoute({ params }: Args) {
       belowLead?: number | null;
       belowLead2?: number | null;
       headlines?: (number | null)[];
+      featured?: (number | null)[];
+      featuredFocus?: FeaturedFocus;
+      showScoreStrip?: boolean;
+      leadTitleOverlay?: boolean;
       standingsOverrides?: StandingsOverride[];
     };
     let standingsOverrides: StandingsOverride[] | undefined;
@@ -543,10 +553,19 @@ export default async function SectionPageRoute({ params }: Args) {
       if (layoutJson) {
         sportsShowScoreboard = layoutJson.showScoreboard ?? true;
         sportsScoreboardDate = layoutJson.scoreboardDate ?? null;
+        sportsFeaturedFocus = layoutJson.featuredFocus ?? {};
+        sportsShowScoreStrip = layoutJson.showScoreStrip ?? true;
+        sportsLeadTitleOverlay = layoutJson.leadTitleOverlay ?? true;
         standingsOverrides = layoutJson.standingsOverrides;
 
         const allPinnedIds = new Set<number>();
-        for (const id of [layoutJson.lead, layoutJson.belowLead, layoutJson.belowLead2, ...(layoutJson.headlines || [])]) {
+        for (const id of [
+          layoutJson.lead,
+          layoutJson.belowLead,
+          layoutJson.belowLead2,
+          ...(layoutJson.headlines || []),
+          ...(layoutJson.featured || []),
+        ]) {
           if (id) allPinnedIds.add(id);
         }
 
@@ -579,6 +598,7 @@ export default async function SectionPageRoute({ params }: Args) {
           sportsPinnedLead = resolve(layoutJson.lead);
           sportsPinnedBelowLead = resolve(layoutJson.belowLead);
           sportsPinnedBelowLead2 = resolve(layoutJson.belowLead2);
+          sportsPinnedFeatured = (layoutJson.featured || []).map(resolve);
           sportsPinnedHeadlines = (layoutJson.headlines || []).map(resolve);
         }
       }
@@ -614,8 +634,16 @@ export default async function SectionPageRoute({ params }: Args) {
 
     // Score strip: RPI's recent finals and next game in each standings sport.
     // Opponents take the short name and logo from Schools when there is one,
-    // so editors' logo fixes carry over; otherwise RPI Athletics' own.
-    sportsSchedule = await getSportsSchedule(sportsStandings.map((s) => s.sport));
+    // so editors' logo fixes carry over; otherwise RPI Athletics' own. When
+    // editors switch the strip off, RPI Athletics isn't contacted at all, and
+    // a failure here falls back to the plain header rather than an error page.
+    if (sportsShowScoreStrip) {
+      try {
+        sportsSchedule = await getSportsSchedule(sportsStandings.map((s) => s.sport));
+      } catch (err) {
+        console.warn(`[schedule] ${(err as Error).message}`);
+      }
+    }
     const opponentNames = [...new Set(sportsSchedule.flatMap((s) => s.games.map((g) => g.opponent.name)))];
     if (opponentNames.length > 0) {
       try {
@@ -704,6 +732,9 @@ export default async function SectionPageRoute({ params }: Args) {
           standings={sportsStandings}
           standingsTeams={sportsStandingsTeams}
           schedule={sportsSchedule}
+          pinnedFeatured={sportsPinnedFeatured}
+          featuredFocus={sportsFeaturedFocus}
+          leadTitleOverlay={sportsLeadTitleOverlay}
         />
       ) : isNews ? (
         <NewsSectionPage

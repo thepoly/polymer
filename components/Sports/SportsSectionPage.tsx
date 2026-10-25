@@ -7,9 +7,10 @@ import { getArticleUrl } from "@/utils/getArticleUrl";
 import type { Article as ComponentArticle, GameResult, GameTeam } from "@/components/FrontPage/types";
 import type { SportStandings } from "@/lib/standings";
 import type { SportSchedule } from "@/lib/schedule";
-import { sportLabel } from "@/lib/sports";
 import SportsStandings, { type StandingsTeam } from "./SportsStandings";
 import SportsScoreStrip from "./SportsScoreStrip";
+import SportsFeatured from "./SportsFeatured";
+import { FEATURED_COUNT, shortDate, sportName, type FeaturedFocus } from "./sportsFormat";
 
 const RPI_FALLBACK: GameTeam = {
   name: "Rensselaer Polytechnic Institute",
@@ -23,18 +24,6 @@ const HEADLINE_COUNT = 3;
 
 /* ── Helpers ── */
 
-// Fixed to Troy's time zone so the server render and the browser agree
-const shortDate = (article: ComponentArticle, withYear = false) => {
-  const iso = article.publishedDate || article.createdAt;
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString("en-US", {
-    timeZone: "America/New_York",
-    month: "short",
-    day: "numeric",
-    ...(withYear && { year: "numeric" }),
-  });
-};
-
 /** Day the lead's game was played, typed into the layout editor */
 export type ScoreboardDate = { articleId: number; date: string };
 
@@ -44,9 +33,6 @@ const gameDayLabel = (date: string) =>
   /^\d{4}-\d{2}-\d{2}$/.test(date)
     ? new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric" })
     : null;
-
-/** The story's sport ("Men's Hockey"); kicker for stories not labelled yet */
-const sportName = (article: ComponentArticle) => sportLabel(article.sport) ?? article.kicker;
 
 /**
  * Author names in red, joined with "&", each linked to its staff profile
@@ -290,12 +276,15 @@ function SportsLeadStory({
   article,
   showScoreboard,
   gameDate,
+  titleOverlay,
   rpiTeam,
 }: {
   article: ComponentArticle;
   showScoreboard: boolean;
   /** Day the game was played, for the scoreboard; else the publish date */
   gameDate: string | null;
+  /** Desktop: title box overlapping the photo's foot, else a plain title below it */
+  titleOverlay: boolean;
   rpiTeam: GameTeam;
 }) {
   const href = getArticleUrl(article);
@@ -305,8 +294,9 @@ function SportsLeadStory({
   const sport = sportName(article);
 
   return (
-    // Desktop: scoreboard, photo, then the title box overlapping the photo.
-    // Phones reorder to title, scoreboard, photo.
+    // Desktop: scoreboard, photo, then the title box overlapping the photo
+    // (or, with the overlay off, a plain title under it). Phones reorder to
+    // title, scoreboard, photo either way.
     <article className="group flex flex-col">
       {showScoreboard && article.game && (
         <div className="order-2 lg:order-1">
@@ -329,7 +319,13 @@ function SportsLeadStory({
         </div>
       </TransitionLink>
 
-      <div className="relative z-10 order-1 mb-5 bg-bg-main lg:order-3 lg:mb-0 lg:-mt-8 lg:ml-auto lg:w-[72%] lg:pl-5 lg:pt-4">
+      <div
+        className={
+          titleOverlay
+            ? "relative z-10 order-1 mb-5 bg-bg-main lg:order-3 lg:mb-0 lg:-mt-8 lg:ml-auto lg:w-[72%] lg:pl-5 lg:pt-4"
+            : "order-1 mb-5 lg:order-3 lg:mb-0 lg:mt-4"
+        }
+      >
         <MetaLine article={article} date={date} showAuthors={false} className="mb-2 text-[12px]" />
         <TransitionLink href={href}>
           <h2 className="font-copy font-light text-[30px] sm:text-[36px] lg:text-[38px] leading-[1.08] tracking-[-0.01em] text-text-main group-hover:text-accent transition-colors">
@@ -386,14 +382,25 @@ function SportsWideCard({ article, flip = false }: { article: ComponentArticle; 
 // Below desktop the list runs full width, so sizes scale with the screen
 // between a floor and a ceiling (thumbnail capped at 260px) to keep text and
 // photo in proportion; the narrow desktop column keeps fixed sizes.
-function HeadlineRow({ article, flip = false }: { article: ComponentArticle; flip?: boolean }) {
+function HeadlineRow({ article }: { article: ComponentArticle }) {
   const image = article.image || article.imageFull;
 
   return (
-    <div className={`group relative flex items-center gap-4 py-5 first:pt-0 sm:gap-5 lg:gap-3 ${flip ? "flex-row-reverse" : ""}`}>
+    // The photo fills the row from top to bottom: at least 3:2 (the spacer
+    // inside sets that floor), and taller when the headline runs long
+    <div className="group relative flex gap-4 py-5 first:pt-0 last:pb-0 sm:gap-5 lg:gap-3">
       {image && (
-        <div className="relative aspect-[3/2] w-[40%] max-w-[260px] shrink-0 overflow-hidden bg-rule lg:w-[48%] lg:max-w-none">
-          <Image src={image} alt={article.title} fill sizes="(max-width: 1024px) 40vw, 210px" className="object-cover" />
+        <div className="relative w-[40%] max-w-[260px] shrink-0 overflow-hidden bg-rule lg:w-[48%] lg:max-w-none">
+          <div aria-hidden="true" className="aspect-[3/2]" />
+          <Image
+            src={image}
+            alt={article.title}
+            fill
+            // Cropping to a taller box draws the photo wider than the column
+            sizes="(max-width: 1024px) 60vw, 320px"
+            className="object-cover"
+            style={{ objectPosition: article.imageFocus || undefined }}
+          />
         </div>
       )}
       <div className="min-w-0 flex-1">
@@ -431,9 +438,9 @@ function SportsHeadlines({ articles }: { articles: ComponentArticle[] }) {
         </h2>
       </div>
       <div className="divide-y divide-rule">
-        {/* Rows alternate: photo left, then text left, then photo left */}
-        {articles.map((a, i) => (
-          <HeadlineRow key={a.id} article={a} flip={i % 2 === 1} />
+        {/* Every row: photo left, text right */}
+        {articles.map((a) => (
+          <HeadlineRow key={a.id} article={a} />
         ))}
       </div>
     </section>
@@ -457,6 +464,11 @@ export interface SportsSectionPageProps {
   standingsTeams: Record<string, StandingsTeam>;
   /** RPI's recent and upcoming games per standings sport, for the score strip */
   schedule: SportSchedule[];
+  /** Featured row slots, in order (null = fill automatically) */
+  pinnedFeatured: (ComponentArticle | null)[];
+  featuredFocus: FeaturedFocus;
+  /** Lead title overlaps its photo on desktop (default), else sits below it */
+  leadTitleOverlay: boolean;
 }
 
 export default function SportsSectionPage({
@@ -472,11 +484,14 @@ export default function SportsSectionPage({
   standings,
   standingsTeams,
   schedule,
+  pinnedFeatured,
+  featuredFocus,
+  leadTitleOverlay,
 }: SportsSectionPageProps) {
   // Pinned slots win; empty slots fill from the newest unused stories,
   // preferring ones with a photo since every slot here shows one.
   const used = new Set<string | number>();
-  for (const a of [pinnedLead, pinnedBelowLead, pinnedBelowLead2, ...pinnedHeadlines]) {
+  for (const a of [pinnedLead, pinnedBelowLead, pinnedBelowLead2, ...pinnedHeadlines, ...pinnedFeatured]) {
     if (a) used.add(a.id);
   }
   const take = (): ComponentArticle | null => {
@@ -494,26 +509,43 @@ export default function SportsSectionPage({
   // (mirrored: text left, photo right) fills the space
   const scoreboardShown = showScoreboard && Boolean(lead?.game);
   const belowLead2 = scoreboardShown ? null : (pinnedBelowLead2 ?? take());
+  // Featured row: pinned cards keep their places, the rest fill from what's left
+  const featured = Array.from({ length: FEATURED_COUNT }, (_, i) => pinnedFeatured[i] ?? take()).filter(
+    (a): a is ComponentArticle => a !== null,
+  );
 
   return (
     // Side padding matches the site header's, so the page lines up with the
     // rule under the logo at every width
     <div className={`mx-auto max-w-[1280px] px-4 pb-8 md:px-6 xl:px-[30px] ${schedule.length > 0 ? "" : "pt-5"}`}>
       {/* Header: the score strip, hung from the header's rule, with the page
-          title kept for screen readers and search. If RPI Athletics' feed has
-          nothing, the title shows instead. */}
+          title kept for screen readers and search. The original "Sports |
+          Contact" header shows instead when editors switch the strip off (the
+          layout editor's "Scores banner") or RPI Athletics' feed has nothing. */}
       {schedule.length > 0 ? (
         <>
           <h1 className="sr-only">{title}</h1>
           <SportsScoreStrip schedule={schedule} rpiTeam={rpiTeam ?? RPI_FALLBACK} />
         </>
       ) : (
-        <h1
-          className="mt-3 mb-8 text-center font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[44px] sm:mb-10 sm:text-[52px] lg:text-left lg:text-[60px]"
-          style={{ fontWeight: 400, lineHeight: 1 }}
-        >
-          {title}
-        </h1>
+        <div className="mt-3 mb-8 flex flex-col items-center gap-4 text-center sm:mb-10 lg:flex-row lg:items-center lg:gap-6 lg:text-left">
+          <h1
+            className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[44px] sm:text-[52px] lg:text-[60px]"
+            style={{ fontWeight: 400, lineHeight: 1 }}
+          >
+            {title}
+          </h1>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[24px] sm:text-[28px] lg:justify-start lg:text-[36px]">
+            <span className="hidden h-10 w-px shrink-0 bg-[var(--foreground-muted)] lg:block" />
+            <a
+              href="mailto:sports@poly.rpi.edu?subject=Sports%20Request%2FComment%20or%20Tip"
+              className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
+              style={{ fontWeight: 300 }}
+            >
+              Contact
+            </a>
+          </div>
+        </div>
       )}
 
       {/* Top block: lead stories (~63%) | standings and headlines (~37%) */}
@@ -530,6 +562,7 @@ export default function SportsSectionPage({
               showScoreboard={showScoreboard}
               // Only for the article it was entered for, never one that auto-filled the slot
               gameDate={scoreboardDate && String(scoreboardDate.articleId) === String(lead.id) ? scoreboardDate.date : null}
+              titleOverlay={leadTitleOverlay}
               rpiTeam={rpiTeam ?? RPI_FALLBACK}
             />
           )}
@@ -550,6 +583,8 @@ export default function SportsSectionPage({
           )}
         </div>
       </div>
+
+      {featured.length > 0 && <SportsFeatured articles={featured} focus={featuredFocus} />}
     </div>
   );
 }
