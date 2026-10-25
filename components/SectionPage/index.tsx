@@ -16,7 +16,7 @@ const tc = (article: Article, size: string) =>
     article.section === "features"
       ? "font-normal"
       : article.section === "sports"
-        ? "font-normal tracking-[0.015em]"
+        ? "font-light"
         : article.section === "opinion"
           ? "font-light"
           : ""

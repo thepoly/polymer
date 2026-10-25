@@ -27,6 +27,7 @@ export const SenateCard = ({ article }: { article: Article }) => (
                         alt={article.imageTitle || ""} 
                         fill
                         className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 350px"
                     />
                 </div>
             </div>

@@ -4,6 +4,7 @@ import { lexicalEditor, BoldFeature, ItalicFeature } from '@payloadcms/richtext-
 import { getPostHogClient } from '../lib/posthog-server'
 import { getPlainText } from '../utils/getPlainText'
 import { getContentPlainText } from '../utils/getContentPlainText'
+import { SPORTS, sportLabel } from '../lib/sports'
 
 const Articles: CollectionConfig = {
   slug: 'articles',
@@ -187,6 +188,17 @@ const Articles: CollectionConfig = {
           data.opinionType = matched || 'more'
         }
 
+        // Sports stories with no kicker get the sport's name ("Men's Hockey").
+        // Partial updates may omit fields, so fall back to the saved doc.
+        {
+          const section = data.section ?? originalDoc?.section
+          const sport = data.sport ?? originalDoc?.sport
+          const kicker = data.kicker !== undefined ? data.kicker : originalDoc?.kicker
+          if (section === 'sports' && sport && !kicker?.trim()) {
+            data.kicker = sportLabel(sport) ?? kicker
+          }
+        }
+
         // Auto-generate slug from title if not set, or sanitize existing slug
         const plainTitle = getPlainText(data.title);
         data.plainTitle = plainTitle;
@@ -226,6 +238,86 @@ const Articles: CollectionConfig = {
         { label: 'Opinion', value: 'opinion' },
       ],
       required: true,
+    },
+    // Sports fields sit right under Section, where editors will see them, not
+    // down the sidebar. Rows are layout only: the columns are unchanged.
+    {
+      name: 'sport',
+      type: 'select',
+      options: SPORTS.map(({ value, label }) => ({ value, label })),
+      index: true,
+      admin: {
+        description: 'Which team this story is about. Fills an empty kicker with the sport name.',
+        condition: (data: Record<string, unknown>) => data?.section === 'sports',
+      },
+    },
+    // Game result — sports stories about a single game. Drives the scoreboard
+    // above the lead story on /sports.
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'opponent',
+          type: 'relationship',
+          relationTo: 'schools',
+          hasMany: false,
+          admin: {
+            width: '50%',
+            description: 'The school RPI played. Leave empty for stories that are not about one game.',
+            condition: (data: Record<string, unknown>) => data?.section === 'sports',
+          },
+        },
+        {
+          name: 'homeAway',
+          type: 'select',
+          label: 'Home / Away',
+          options: [
+            { label: 'Home', value: 'home' },
+            { label: 'Away', value: 'away' },
+            { label: 'Neutral site', value: 'neutral' },
+          ],
+          admin: {
+            width: '50%',
+            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
+          },
+        },
+      ],
+    },
+    {
+      type: 'row',
+      fields: [
+        {
+          name: 'rpiScore',
+          type: 'number',
+          label: 'RPI Score',
+          min: 0,
+          admin: {
+            width: '25%',
+            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
+          },
+        },
+        {
+          name: 'opponentScore',
+          type: 'number',
+          label: 'Opponent Score',
+          min: 0,
+          admin: {
+            width: '25%',
+            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
+          },
+        },
+        {
+          name: 'gameStatus',
+          type: 'text',
+          label: 'Game Status',
+          admin: {
+            width: '50%',
+            placeholder: 'Final',
+            description: 'e.g. Final, Final/OT, Final/2OT, Final/SO. Defaults to "Final".',
+            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
+          },
+        },
+      ],
     },
     {
       name: 'title',

@@ -15,6 +15,7 @@ root has lighter-weight onboarding (`/README.md`) and agent-oriented guides
 | [`migrations.md`](migrations.md) | The dual-path migration rule (Payload TS + raw SQL) — read **before** you change the schema |
 | [`search.md`](search.md) | Working on `/api/search`, `/archive`, or rate limiting |
 | [`push-notifications.md`](push-notifications.md) | Touching breaking-news, FCM, or the `device-tokens` collection |
+| [`sports-section.md`](sports-section.md) | `/sports`, its layout editor, schools, standings and score feeds, and their upkeep |
 | [`analytics.md`](analytics.md) | Adding/removing PostHog events, privacy guardrails |
 | [`deployment.md`](deployment.md) | Production runbook: deploy steps, host setup, rollback, ownership rules |
 | [`android-release.md`](android-release.md) | Cutting an Android APK release |

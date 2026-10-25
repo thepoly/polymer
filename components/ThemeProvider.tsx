@@ -110,6 +110,23 @@ export default function ThemeProvider({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Colours fade between themes while .theme-fading is on <html> (see
+  // globals.css); every way of switching theme passes through here. Only when
+  // the theme actually changes: comparing with the last one seen (rather than
+  // skipping the first run) also holds when StrictMode runs effects twice.
+  const lastThemeRef = useRef(isDarkMode);
+  useEffect(() => {
+    if (lastThemeRef.current === isDarkMode) return;
+    lastThemeRef.current = isDarkMode;
+    const root = document.documentElement;
+    root.classList.add("theme-fading");
+    const timeout = window.setTimeout(() => root.classList.remove("theme-fading"), 350);
+    return () => {
+      window.clearTimeout(timeout);
+      root.classList.remove("theme-fading");
+    };
+  }, [isDarkMode]);
+
   useEffect(() => {
     const themeColor = isDarkMode ? "#0a0a0a" : "#ffffff";
 

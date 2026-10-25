@@ -243,14 +243,21 @@ body {
   line-height: 1.4;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  transition: color 0.3s ease, background-color 0.3s ease;
   min-height: 100dvh;
   max-width: 100%;
   overflow-x: hidden;
 }
 
-* {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+/* Colours fade when the theme changes: ThemeProvider adds .theme-fading to
+   <html> for a moment, so this never sits on every element (where, being
+   unlayered, it would cancel Tailwind's transition utilities site-wide).
+   Readers who ask for less motion get the change at once, and the circle
+   wipe's .theme-switching rule below still turns it off while the wipe runs. */
+@media (prefers-reduced-motion: no-preference) {
+  .theme-fading,
+  .theme-fading * {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
 }
 
 .font-display {
@@ -321,6 +328,19 @@ h6.font-display.italic {
 
 .search-icon-animate {
   animation: search-icon-slide 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Sports score strip: the progress bar fills from the strip's left edge up to
+   its current point, like a thermometer, the first time it appears */
+@keyframes score-strip-fill {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .score-strip-fill {
+    animation: score-strip-fill 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
 }
 
 @keyframes rainbow-swirl-border {

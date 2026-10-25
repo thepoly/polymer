@@ -49,7 +49,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         {featuredImage?.url && (
           <div className="absolute inset-0 w-full h-full z-0 pointer-events-none">
             <Image
-              src={(featuredImage as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || featuredImage.url}
+              src={featuredImage.url}
               alt={featuredImage.title || ""}
               fill
               className="object-cover opacity-90"
@@ -110,7 +110,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center text-center px-4 pb-8 sm:pb-10 md:pb-12 pointer-events-none">
           <div className="max-w-[90vw] w-full space-y-1">
             
-            <h1 data-ie-field="title" className={`font-copy font-bold text-[43px] md:text-[38px] lg:text-[47px] text-white leading-[1.05] tracking-[-0.02em] drop-shadow-lg ${article.section === "opinion" ? "font-light" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""} pointer-events-auto`}>
+            <h1 data-ie-field="title" className={`font-copy font-bold text-[43px] md:text-[38px] lg:text-[47px] text-white leading-[1.05] tracking-[-0.02em] drop-shadow-lg ${article.section === "opinion" ? "font-light" : ""} ${article.section === "sports" ? "font-light" : ""} ${article.section === "features" ? "font-light" : ""} pointer-events-auto`}>
               {renderLexicalHeadline(article.title)}
             </h1>
 
@@ -130,6 +130,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                           alt={`${user.firstName} ${user.lastName}`}
                           fill
                           className="object-cover"
+                          sizes="28px"
                           style={{ objectPosition: focalObjectPosition(headshot) }}
                         />
                       </Link>
@@ -145,6 +146,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                           alt={writeIn.name}
                           fill
                           className="object-cover"
+                          sizes="28px"
                           style={{ objectPosition: focalObjectPosition(photo) }}
                         />
                       </div>

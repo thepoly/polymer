@@ -1,13 +1,16 @@
 import { Media } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
 import React from 'react';
+import { focalObjectPosition } from './focalPoint';
 
 type PublicAuthorLike = {
+  id?: number | string;
   firstName: string;
   lastName: string;
+  slug?: string | null;
 };
 
-type PublicMediaLike = Pick<Media, 'url' | 'alt'> & {
+type PublicMediaLike = Pick<Media, 'url' | 'alt'> & Partial<Pick<Media, 'focalX' | 'focalY'>> & {
   title?: string | null;
   photographer?: number | { id: number | string; firstName: string; lastName: string; slug?: string | null } | null;
   writeInPhotographer?: string | null;
@@ -21,6 +24,13 @@ type PublicMediaLike = Pick<Media, 'url' | 'alt'> & {
 type WriteInAuthor = {
   name: string;
   photo?: unknown;
+};
+
+type SchoolLike = {
+  name: string;
+  shortName?: string | null;
+  url?: string | null;
+  athleticsUrl?: string | null;
 };
 
 type FormatArticleInput = {
@@ -39,6 +49,12 @@ type FormatArticleInput = {
   writeInAuthors?: WriteInAuthor[] | null;
   _status?: string | null;
   isFollytechnic?: boolean | null;
+  sport?: string | null;
+  opponent?: number | SchoolLike | null;
+  homeAway?: 'home' | 'away' | 'neutral' | null;
+  rpiScore?: number | null;
+  opponentScore?: number | null;
+  gameStatus?: string | null;
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -139,8 +155,11 @@ export const formatArticle = (
     author: authors ? authors.toUpperCase() : 'THE POLY',
     date: dateString,
     isoDate: article.publishedDate || article.createdAt || null,
-    image: featuredImage?.sizes?.card?.url || featuredImage?.url || null,
+    // The original upload: next/image resizes it per `sizes`, so cards stay
+    // light while never starting from Payload's pre-compressed copies
+    image: featuredImage?.url || null,
     imageFull: featuredImage?.url || null,
+    imageFocus: featuredImage ? focalObjectPosition(featuredImage) : null,
     imageCaption: article.imageCaption || null,
     imagePhotographer,
     imagePhotographerId,
@@ -151,5 +170,31 @@ export const formatArticle = (
     publishedDate: article.publishedDate,
     createdAt: article.createdAt,
     isFollytechnic: article.isFollytechnic || false,
+    // Each author with a staff profile link (write-ins have no profile)
+    authorLinks: [
+      ...(article.authors || [])
+        .filter((a): a is PublicAuthorLike => typeof a !== 'number')
+        .map((a) => ({
+          name: `${a.firstName} ${a.lastName}`,
+          href: a.slug || a.id ? `/staff/${a.slug || a.id}` : null,
+        })),
+      ...(article.writeInAuthors || []).filter((a) => a.name).map((a) => ({ name: a.name, href: null })),
+    ],
+    sport: article.sport || null,
+    // Only present when the opponent was populated (depth >= 1)
+    game: article.opponent && typeof article.opponent === 'object'
+      ? {
+          opponent: {
+            name: article.opponent.name,
+            shortName: article.opponent.shortName || article.opponent.name,
+            logo: article.opponent.url || null,
+            url: article.opponent.athleticsUrl || null,
+          },
+          homeAway: article.homeAway || 'home',
+          rpiScore: article.rpiScore ?? null,
+          opponentScore: article.opponentScore ?? null,
+          status: article.gameStatus || 'Final',
+        }
+      : null,
   };
 };

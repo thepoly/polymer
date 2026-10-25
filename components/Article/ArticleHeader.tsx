@@ -24,7 +24,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                 {article.kicker}
             </span>
         )}
-        <h1 data-ie-field="title" className={`font-bold text-[39px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em] transition-colors font-copy ${article.section === "opinion" ? "font-light" : ""} ${article.section === "sports" ? "font-normal tracking-[0.015em]" : ""} ${article.section === "features" ? "font-light" : ""}`}>
+        <h1 data-ie-field="title" className={`font-bold text-[39px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em] transition-colors font-copy ${article.section === "opinion" ? "font-light" : ""} ${article.section === "sports" ? "font-light" : ""} ${article.section === "features" ? "font-light" : ""}`}>
           {renderLexicalHeadline(article.title)}
         </h1>
         {article.subdeck && (
@@ -44,7 +44,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
               className={featuredImageWrapperClassName}
             >
               <Image
-                src={(featuredImage as Media & { sizes?: { gallery?: { url?: string } } }).sizes?.gallery?.url || featuredImage.url}
+                src={featuredImage.url}
                 alt={featuredImage.title || ""}
                 fill
                 className="object-cover"

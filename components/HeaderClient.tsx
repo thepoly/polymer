@@ -105,9 +105,11 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
   const shouldEnableAnimatedHeaderTransition =
     headerAnimation.enabled !== false &&
     (phase !== "idle" || shouldRenderAnimatedHeader(currentPath));
-  const logoOutlineLeftX = -4;
+  // The rule starts flush with the page content (x = 0), so it lines up with
+  // everything below it; the wrap-around box's left side starts there too
+  const logoOutlineLeftX = 0;
   const logoBaselineY = 0.5;
-  const logoOutlineRightX = 464;
+  const logoOutlineRightX = 460;
   const logoOutlineTopY = -89.5;
   const { waveColor1, waveColor2, waveColor3, waveCount, lineWeight, wrapAround } = headerAnimation;
   const waveFleet = generateWaveFleet(waveCount);
@@ -362,7 +364,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
               }
               .animate-terry-suck {
                 animation: terrySuck ${suckDurationMs}ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
-                transform-origin: 468px 0.5px;
+                transform-origin: 464px 0.5px;
               }
               ${wrapAround ? `
               @keyframes terryWrapDraw {
@@ -396,7 +398,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
             <div className="relative">
             <div className="flex items-end justify-between gap-8 pb-0.5">
               <div
-                className={`absolute -left-1 right-0 bottom-0 h-px overflow-visible pointer-events-none ${
+                className={`absolute left-0 right-0 bottom-0 h-px overflow-visible pointer-events-none ${
                   isDarkMode ? "text-[#DDDDDD]" : "text-rule-strong"
                 } ${
                   isAnimating ? "opacity-0" : "opacity-100"
@@ -418,7 +420,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
 
               <div
                 key={`static-${animationKey}`}
-                className={`absolute -left-1 right-0 bottom-0 h-px overflow-visible pointer-events-none ${
+                className={`absolute left-0 right-0 bottom-0 h-px overflow-visible pointer-events-none ${
                   isDarkMode ? "text-[#DDDDDD]" : "text-rule-strong"
                 } ${
                   shouldEnableAnimatedHeaderTransition && phase === "sucking"
@@ -443,7 +445,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
               {shouldEnableAnimatedHeaderTransition && phase === "shooting" && (
                 <div
                   key={`animated-${animationKey}`}
-                  className={`absolute -left-1 right-0 bottom-0 h-px overflow-visible pointer-events-none ${
+                  className={`absolute left-0 right-0 bottom-0 h-px overflow-visible pointer-events-none ${
                     isDarkMode ? "text-[#DDDDDD]" : "text-rule-strong"
                   }`}
                 >
@@ -485,8 +487,8 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                     preserveAspectRatio="none"
                     height={HEADER_WAVE_SVG_H}
                     style={{
-                      left: '-4px',
-                      width: 'calc(100% + 4px)',
+                      left: 0,
+                      width: '100%',
                       bottom: `-${HEADER_WAVE_SVG_H / 2}px`,
                       animation: `headerWaveCrystallize ${shootDurationMs}ms ease-out forwards`,
                       willChange: 'opacity',
@@ -556,7 +558,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
             {liveEntries && liveEntries.length > 0 && (
               <div className="relative">
                 <div
-                  className={`absolute -left-1 right-0 top-0 h-px overflow-visible pointer-events-none ${
+                  className={`absolute left-0 right-0 top-0 h-px overflow-visible pointer-events-none ${
                     isDarkMode ? "text-[#DDDDDD]" : "text-rule-strong"
                   }`}
                 >

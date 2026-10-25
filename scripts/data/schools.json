@@ -1,0 +1,1367 @@
+[
+  {
+    "name": "Adrian College",
+    "shortName": "Adrian",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Adrian_College.png",
+    "athleticsUrl": "http://www.adrianbulldogs.com"
+  },
+  {
+    "name": "Allegheny College",
+    "shortName": "Allegheny",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Allegheny_2022.png",
+    "athleticsUrl": "http://www.alleghenysports.com/"
+  },
+  {
+    "name": "Amherst College",
+    "shortName": "Amherst",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Amherst%20Mammoth%20(1).png",
+    "athleticsUrl": "http://athletics.amherst.edu/"
+  },
+  {
+    "name": "Army",
+    "shortName": "Army",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/army_logo_R.png",
+    "athleticsUrl": "http://goarmywestpoint.com/"
+  },
+  {
+    "name": "Assumption University",
+    "shortName": "Assumption",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/au_A_primary_blue_wt_gray_rgb%20-%20Copy.png",
+    "athleticsUrl": "https://www.assumptiongreyhounds.com/"
+  },
+  {
+    "name": "Augustana College (IL)",
+    "shortName": "Augustana (IL)",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Augustana_IL_Logo.png",
+    "athleticsUrl": "http://www.athletics.augustana.edu"
+  },
+  {
+    "name": "Aurora University",
+    "shortName": "Aurora",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/aurora.png",
+    "athleticsUrl": "http://athletics.aurora.edu/"
+  },
+  {
+    "name": "Ave Maria University",
+    "shortName": "Ave Maria",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/avemaria_logo_200px.png",
+    "athleticsUrl": "http://avemariagyrenes.com/"
+  },
+  {
+    "name": "Babson College",
+    "shortName": "Babson",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Babson.png",
+    "athleticsUrl": "http://www.babsonathletics.com"
+  },
+  {
+    "name": "Bard College",
+    "shortName": "Bard",
+    "conference": "Liberty League",
+    "logoUrl": "https://rpiathletics.com/images/logos/sidearm_bard_logo.png",
+    "athleticsUrl": "http://www.bardathletics.com"
+  },
+  {
+    "name": "Bates College",
+    "shortName": "Bates",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Bates_logo_200x200.png",
+    "athleticsUrl": "https://gobatesbobcats.com/"
+  },
+  {
+    "name": "Bemidji State University",
+    "shortName": "Bemidji State",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/bsu_logo.png",
+    "athleticsUrl": "http://www.bsubeavers.com"
+  },
+  {
+    "name": "Benedictine University",
+    "shortName": "Benedictine",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/eagle_200x200.png",
+    "athleticsUrl": "http://www.benueagles.com/"
+  },
+  {
+    "name": "Berry College (Ga.)",
+    "shortName": "Berry (Ga.)",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/crest%20for%20site.png",
+    "athleticsUrl": "http://www.berryvikings.com"
+  },
+  {
+    "name": "Bethany Lutheran College",
+    "shortName": "Bethany Lutheran",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/blc.png",
+    "athleticsUrl": "http://www.blcvikings.com/"
+  },
+  {
+    "name": "Birmingham-Southern College",
+    "shortName": "Birmingham-Southern",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/BSC-B-Logo.png",
+    "athleticsUrl": "http://www.bscsports.net/"
+  },
+  {
+    "name": "Boston College",
+    "shortName": "Boston College",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Boston_College_200x200.png",
+    "athleticsUrl": "http://bceagles.com/"
+  },
+  {
+    "name": "Boston University",
+    "shortName": "BU",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Boston-U_logo.png",
+    "athleticsUrl": "http://www.goterriers.com/"
+  },
+  {
+    "name": "Bowdoin College",
+    "shortName": "Bowdoin",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Bowdoin.png",
+    "athleticsUrl": "http://athletics.bowdoin.edu"
+  },
+  {
+    "name": "Brandeis University",
+    "shortName": "Brandeis",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/B%20Logo%20on%20White%20200x200.png",
+    "athleticsUrl": "http://www.brandeisjudges.com"
+  },
+  {
+    "name": "Brown University",
+    "shortName": "Brown",
+    "conference": "ECAC Hockey",
+    "logoUrl": "https://rpiathletics.com/images/logos/Brown_logo_200x200.png",
+    "athleticsUrl": "http://brownbears.com"
+  },
+  {
+    "name": "Bucknell University",
+    "shortName": "Bucknell",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/bucknell_logo.png",
+    "athleticsUrl": "http://www.bucknellbison.com/"
+  },
+  {
+    "name": "Buffalo State",
+    "shortName": "Buffalo State",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/c1.png",
+    "athleticsUrl": "http://www.buffalostateathletics.com"
+  },
+  {
+    "name": "California Lutheran University",
+    "shortName": "Cal Lutheran",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Cal_Lutheran.png",
+    "athleticsUrl": "http://www.clusports.com/"
+  },
+  {
+    "name": "Canisius University",
+    "shortName": "Canisius",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/canisius_200x200.png",
+    "athleticsUrl": "http://gogriffs.com/"
+  },
+  {
+    "name": "Capital University",
+    "shortName": "Capital",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/CU_Cap%20Mark%20_%20Full%20color.png",
+    "athleticsUrl": "http://athletics.capital.edu/"
+  },
+  {
+    "name": "Carleton College",
+    "shortName": "Carleton",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Carleton-College.png",
+    "athleticsUrl": "https://athletics.carleton.edu"
+  },
+  {
+    "name": "Carnegie Mellon University",
+    "shortName": "Carnegie Mellon",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Carnegie_Mellon_Tartans.png",
+    "athleticsUrl": "http://athletics.cmu.edu/"
+  },
+  {
+    "name": "Carthage College",
+    "shortName": "Carthage",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Carthage-Athletics-200x200.png",
+    "athleticsUrl": "https://athletics.carthage.edu/"
+  },
+  {
+    "name": "Central College",
+    "shortName": "Central (Iowa)",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Central_College_Logo.png",
+    "athleticsUrl": "https://athletics.central.edu"
+  },
+  {
+    "name": "Chapman University",
+    "shortName": "Chapman",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/chapman.gif",
+    "athleticsUrl": "http://www.chapmanathletics.com/"
+  },
+  {
+    "name": "Christopher Newport University",
+    "shortName": "Christopher Newport",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/d11.png",
+    "athleticsUrl": "http://www.cnusports.com/"
+  },
+  {
+    "name": "Claremont-Mudd-Scripps Colleges",
+    "shortName": "CMS",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/CMS.png",
+    "athleticsUrl": "http://www.cmsathletics.org/"
+  },
+  {
+    "name": "Clark University",
+    "shortName": "Clark",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Clark_Mass.png",
+    "athleticsUrl": "http://www.clarkathletics.com"
+  },
+  {
+    "name": "Clarkson University",
+    "shortName": "Clarkson",
+    "conference": "Liberty League, ECAC Hockey",
+    "logoUrl": "https://rpiathletics.com/images/logos/clarkson.png",
+    "athleticsUrl": "http://clarksonathletics.com/"
+  },
+  {
+    "name": "Colby College",
+    "shortName": "Colby",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Colby_College_logo_200x200.png",
+    "athleticsUrl": "http://gocolbymules.com/"
+  },
+  {
+    "name": "Colby-Sawyer College",
+    "shortName": "Colby-Sawyer",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/CSC_Charger.png",
+    "athleticsUrl": "http://www.colby-sawyerathletics.com/"
+  },
+  {
+    "name": "Colgate University",
+    "shortName": "Colgate",
+    "conference": "ECAC Hockey",
+    "logoUrl": "https://rpiathletics.com/images/logos/Colgate_2022.png",
+    "athleticsUrl": "http://gocolgateraiders.com"
+  },
+  {
+    "name": "Concordia College (Minn.)",
+    "shortName": "Concordia (Minn.)",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/concordia-moorhead.png",
+    "athleticsUrl": "https://www.gocobbers.com/"
+  },
+  {
+    "name": "Concordia University (Wis.)",
+    "shortName": "Concordia (Wis.)",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/concordiawisconsin.png",
+    "athleticsUrl": "http://www.cuwfalcons.com/"
+  },
+  {
+    "name": "Connecticut College",
+    "shortName": "Conn College",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Connecticut_College_Camels.gif",
+    "athleticsUrl": "http://www.conncoll.edu/athletics/"
+  },
+  {
+    "name": "Cornell University",
+    "shortName": "Cornell",
+    "conference": "ECAC Hockey",
+    "logoUrl": "https://rpiathletics.com/images/logos/Cornell_Block_C_Updated_Logo.png",
+    "athleticsUrl": "http://www.cornellbigred.com/"
+  },
+  {
+    "name": "Cornerstone University (Mich.)",
+    "shortName": "Cornerstone (Mich.)",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/cornerstone.png",
+    "athleticsUrl": "http://cugoldeneagles.com/"
+  },
+  {
+    "name": "Cortland",
+    "shortName": "Cortland",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/CortlandLogo2016.png",
+    "athleticsUrl": "http://www.cortlandreddragons.com/"
+  },
+  {
+    "name": "Dartmouth College",
+    "shortName": "Dartmouth",
+    "conference": "ECAC Hockey",
+    "logoUrl": "https://rpiathletics.com/images/logos/Dartmouth%20200x200%20(1).png",
+    "athleticsUrl": "http://www.dartmouthsports.com/"
+  },
+  {
+    "name": "Dean College",
+    "shortName": "Dean",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/dean.png",
+    "athleticsUrl": "http://www.deanbulldogs.com/landing/index"
+  },
+  {
+    "name": "DeSales University",
+    "shortName": "DeSales",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/f3.png",
+    "athleticsUrl": "http://athletics.desales.edu/"
+  },
+  {
+    "name": "Dickinson College",
+    "shortName": "Dickinson",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Dickinson.png",
+    "athleticsUrl": "http://www.dickinsonathletics.com"
+  },
+  {
+    "name": "Dominican University (Ill.)",
+    "shortName": "Dominican (Ill.)",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/DUStar.png",
+    "athleticsUrl": "http://www.dustars.com/"
+  },
+  {
+    "name": "Drew University",
+    "shortName": "Drew",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Drew_Rangers.png",
+    "athleticsUrl": "http://www.drewrangers.com"
+  },
+  {
+    "name": "Eastern Connecticut State",
+    "shortName": "Eastern Connecticut",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/econnstate.png",
+    "athleticsUrl": "http://gowarriorathletics.com"
+  },
+  {
+    "name": "Emerson College",
+    "shortName": "Emerson",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/header_bg.png",
+    "athleticsUrl": "https://emersonlions.com/"
+  },
+  {
+    "name": "Emmanuel College",
+    "shortName": "Emmanuel",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Emmanuel.png",
+    "athleticsUrl": "http://www.goecsaints.com"
+  },
+  {
+    "name": "Emory University",
+    "shortName": "Emory",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Emory.png",
+    "athleticsUrl": "http://www.emoryathletics.com"
+  },
+  {
+    "name": "Endicott College",
+    "shortName": "Endicott",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/g8.png",
+    "athleticsUrl": "http://ecgulls.com"
+  },
+  {
+    "name": "Farmingdale State College",
+    "shortName": "Farmingdale State",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Farmingdale.png",
+    "athleticsUrl": "http://www.farmingdalesports.com"
+  },
+  {
+    "name": "Guilford College",
+    "shortName": "Guilford",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Guilford.png",
+    "athleticsUrl": "https://www.guilfordquakers.com"
+  },
+  {
+    "name": "Gustavus Adolphus College",
+    "shortName": "Gustavus Adolphus",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Gustavus-Adolphus.png",
+    "athleticsUrl": "https://gogusties.com/"
+  },
+  {
+    "name": "Gwynedd Mercy University",
+    "shortName": "Gwynedd Mercy",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Gwynedd-Mercy.png",
+    "athleticsUrl": "http://gwyneddathletics.com"
+  },
+  {
+    "name": "Hamilton College",
+    "shortName": "Hamilton",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Hamilton.png",
+    "athleticsUrl": "http://athletics.hamilton.edu/"
+  },
+  {
+    "name": "Hartwick College",
+    "shortName": "Hartwick",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Hartwick_Hawks.png",
+    "athleticsUrl": "http://www.hartwickhawks.com"
+  },
+  {
+    "name": "Harvard University",
+    "shortName": "Harvard",
+    "conference": "ECAC Hockey",
+    "logoUrl": "https://rpiathletics.com/images/logos/harvardlogo.png",
+    "athleticsUrl": "http://www.gocrimson.com/"
+  },
+  {
+    "name": "Hilbert College",
+    "shortName": "Hilbert",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/hilbert-logo.png",
+    "athleticsUrl": "http://hilberthawks.com"
+  },
+  {
+    "name": "Hobart College",
+    "shortName": "Hobart",
+    "conference": "Liberty League",
+    "logoUrl": "https://libertyleagueathletics.com/images/logos/Hobart-Statesmen.png",
+    "athleticsUrl": "http://www.hwsathletics.com/"
+  },
+  {
+    "name": "Holy Cross",
+    "shortName": "Holy Cross",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Holy-Cross.png",
+    "athleticsUrl": "http://goholycross.com"
+  },
+  {
+    "name": "Husson University",
+    "shortName": "Husson",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Husson-U.png",
+    "athleticsUrl": "https://hussoneagles.com/"
+  },
+  {
+    "name": "Illinois College",
+    "shortName": "Illinois College",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Illinois-College.png",
+    "athleticsUrl": "http://illinoiscollegeathletics.com"
+  },
+  {
+    "name": "Ithaca College",
+    "shortName": "Ithaca",
+    "conference": "Liberty League",
+    "logoUrl": "https://rpiathletics.com/images/logos/Ithaca_.png",
+    "athleticsUrl": "http://bombers.ithaca.edu/"
+  },
+  {
+    "name": "John Jay College",
+    "shortName": "John Jay",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Bloodhound-with-JJ.png",
+    "athleticsUrl": "http://www.johnjayathletics.com/"
+  },
+  {
+    "name": "Johns Hopkins University",
+    "shortName": "Johns Hopkins",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Johns-Hopkins.png",
+    "athleticsUrl": "http://www.hopkinssports.com/"
+  },
+  {
+    "name": "Kean University",
+    "shortName": "Kean",
+    "conference": null,
+    "logoUrl": null,
+    "athleticsUrl": "http://www.keanathletics.com"
+  },
+  {
+    "name": "Keene State",
+    "shortName": "Keene State",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Keene-State.png",
+    "athleticsUrl": "http://www.keeneowls.com"
+  },
+  {
+    "name": "Kenyon College",
+    "shortName": "Kenyon",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Kenyon_Owl_Purple_Gray_200x200.png",
+    "athleticsUrl": "http://athletics.kenyon.edu"
+  },
+  {
+    "name": "Keuka College",
+    "shortName": "Keuka",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Keuka.png",
+    "athleticsUrl": "https://keukaathletics.com/"
+  },
+  {
+    "name": "Lehigh University",
+    "shortName": "Lehigh",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Lehigh.png",
+    "athleticsUrl": "http://www.lehighsports.com"
+  },
+  {
+    "name": "LIU",
+    "shortName": "LIU",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/LIU-Sharks.png",
+    "athleticsUrl": "https://liuathletics.com/"
+  },
+  {
+    "name": "Loyola University (Md.)",
+    "shortName": "Loyola (Md.)",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Loyola-Logo.png",
+    "athleticsUrl": "http://www.loyolagreyhounds.com"
+  },
+  {
+    "name": "Marian University",
+    "shortName": "Marian",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Marian.png",
+    "athleticsUrl": "http://www.sabreathletics.com/"
+  },
+  {
+    "name": "Marietta College",
+    "shortName": "Marietta",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Marietta_College_2023.png",
+    "athleticsUrl": "http://pioneers.marietta.edu/"
+  },
+  {
+    "name": "Marywood University",
+    "shortName": "Marywood",
+    "conference": null,
+    "logoUrl": null,
+    "athleticsUrl": "http://marywoodpacers.com"
+  },
+  {
+    "name": "Massachusetts College of Liberal Arts",
+    "shortName": "MCLA",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/MILA-Logo.png",
+    "athleticsUrl": "http://athletics.mcla.edu"
+  },
+  {
+    "name": "Massachusetts Institute of Technology",
+    "shortName": "MIT",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/MIT.png",
+    "athleticsUrl": "http://www.mitathletics.com"
+  },
+  {
+    "name": "Mercyhurst University",
+    "shortName": "Mercyhurst",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/M_University.png",
+    "athleticsUrl": "http://hurstathletics.com/"
+  },
+  {
+    "name": "Merrimack College",
+    "shortName": "Merrimack",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Merrimack.png",
+    "athleticsUrl": "http://www.merrimackathletics.com/"
+  },
+  {
+    "name": "Messiah College",
+    "shortName": "Messiah",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Messiah_Primary_small_1.png",
+    "athleticsUrl": "http://gomessiah.com"
+  },
+  {
+    "name": "Miami University (OH)",
+    "shortName": "Miami (OH)",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Miami-OH.png",
+    "athleticsUrl": "http://miamiredhawks.com"
+  },
+  {
+    "name": "Middlebury College",
+    "shortName": "Middlebury",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Middlebury-Panther_200px.png",
+    "athleticsUrl": "http://athletics.middlebury.edu"
+  },
+  {
+    "name": "Millsaps College",
+    "shortName": "Millsaps",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/MillsapsUpdatedLogo062023.png",
+    "athleticsUrl": "http://www.gomajors.com"
+  },
+  {
+    "name": "Minnesota State University, Mankato",
+    "shortName": "Minnesota State",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/MSUM_2024.png",
+    "athleticsUrl": "http://www.msumavericks.com"
+  },
+  {
+    "name": "Misericordia University",
+    "shortName": "Misericordia",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Misericordia.png",
+    "athleticsUrl": "http://athletics.misericordia.edu"
+  },
+  {
+    "name": "Mississippi University for Women",
+    "shortName": "MUW",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/MissWomen.png",
+    "athleticsUrl": "http://www.owlsathletics.com/landing/index"
+  },
+  {
+    "name": "Moravian College",
+    "shortName": "Moravian",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Moravian-College.png",
+    "athleticsUrl": "http://moraviansports.com/"
+  },
+  {
+    "name": "Mount Holyoke College",
+    "shortName": "Mount Holyoke",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/mhc_lyons_full_color_mascot_d_rgb_white_200x200.png",
+    "athleticsUrl": "http://athletics.mtholyoke.edu/"
+  },
+  {
+    "name": "Mount Mary University",
+    "shortName": "Mount Mary",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Mount-Mary-Blue-Angels.png",
+    "athleticsUrl": "http://mtmaryathletics.com"
+  },
+  {
+    "name": "Muhlenberg College",
+    "shortName": "Muhlenberg",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/muhlenberg_logo.png",
+    "athleticsUrl": "http://muhlenbergsports.com/"
+  },
+  {
+    "name": "Nazareth University",
+    "shortName": "Nazareth",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Naz%20logo.png",
+    "athleticsUrl": "http://www.nazathletics.com/"
+  },
+  {
+    "name": "New Paltz",
+    "shortName": "New Paltz",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/New_Paltz.png",
+    "athleticsUrl": "http://www.nphawks.com/"
+  },
+  {
+    "name": "New York University",
+    "shortName": "NYU",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/NYU_monogram.png",
+    "athleticsUrl": "http://www.gonyuathletics.com/"
+  },
+  {
+    "name": "Niagara University",
+    "shortName": "Niagara",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/VintageMonte2024.png",
+    "athleticsUrl": "http://www.purpleeagles.com/"
+  },
+  {
+    "name": "North Carolina A&T State University",
+    "shortName": "NC A&T",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/North-Carolina-AT.png",
+    "athleticsUrl": "http://www.ncataggies.com/"
+  },
+  {
+    "name": "North Carolina Wesleyan University",
+    "shortName": "NC Wesleyan",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/NC-Weslyan.png",
+    "athleticsUrl": "http://www.ncwcsports.com"
+  },
+  {
+    "name": "North Central University (MN)",
+    "shortName": "North Central (MN)",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/NCURamsLogo2023.png",
+    "athleticsUrl": "http://www.ncurams.com/"
+  },
+  {
+    "name": "Northeastern University",
+    "shortName": "Northeastern",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/northeastern_logo_new.png",
+    "athleticsUrl": "https://www.nuhuskies.com/"
+  },
+  {
+    "name": "Occidental College",
+    "shortName": "Occidental",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Occidental.png",
+    "athleticsUrl": "http://oxyathletics.com"
+  },
+  {
+    "name": "Ohio State University",
+    "shortName": "Ohio State",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/ohio_state_logo.png",
+    "athleticsUrl": "http://www.ohiostatebuckeyes.com"
+  },
+  {
+    "name": "Oneonta",
+    "shortName": "Oneonta",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/p7.png",
+    "athleticsUrl": "http://www.oneontaathletics.com"
+  },
+  {
+    "name": "Oswego State",
+    "shortName": "Oswego State",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/OswegoLogoFile.png",
+    "athleticsUrl": "http://oswegolakers.com/"
+  },
+  {
+    "name": "Penn State Altoona",
+    "shortName": "Penn State Altoona",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/PennStateAltoona.png",
+    "athleticsUrl": "https://www.psaltoonalions.com/landing/index"
+  },
+  {
+    "name": "Pfeiffer University",
+    "shortName": "Pfeiffer",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Pfeiffer.png",
+    "athleticsUrl": "http://www.gofalconsports.com/"
+  },
+  {
+    "name": "Plattsburgh State",
+    "shortName": "Plattsburgh State",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/WebSquareLogo_Plattsburgh_200x200.png",
+    "athleticsUrl": "http://gocardinalsports.com/"
+  },
+  {
+    "name": "Plymouth State University",
+    "shortName": "Plymouth State",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Plymouth-State.png",
+    "athleticsUrl": "http://athletics.plymouth.edu"
+  },
+  {
+    "name": "Pomona-Pitzer",
+    "shortName": "Pomona-Pitzer",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Pomona-Pitzer.png",
+    "athleticsUrl": "http://www.pe.pomona.edu"
+  },
+  {
+    "name": "Princeton University",
+    "shortName": "Princeton",
+    "conference": "ECAC Hockey",
+    "logoUrl": "https://rpiathletics.com/images/logos/Princeton_Tigers.png",
+    "athleticsUrl": "http://www.goprincetontigers.com/"
+  },
+  {
+    "name": "Providence College",
+    "shortName": "Providence",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Providence_College_200x200.png",
+    "athleticsUrl": "http://www.friars.com/"
+  },
+  {
+    "name": "Purchase College",
+    "shortName": "Purchase",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Purchase_College.png",
+    "athleticsUrl": "http://www.purchasecollegeathletics.com/"
+  },
+  {
+    "name": "Quinnipiac University",
+    "shortName": "Quinnipiac",
+    "conference": "ECAC Hockey",
+    "logoUrl": "https://rpiathletics.com/images/logos/Growler_Halo_3C_DBG.png",
+    "athleticsUrl": "http://www.quinnipiacbobcats.com/"
+  },
+  {
+    "name": "Ramapo College",
+    "shortName": "Ramapo",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/q14.png",
+    "athleticsUrl": "http://www.ramapoathletics.com/"
+  },
+  {
+    "name": "Rensselaer Polytechnic Institute",
+    "shortName": "RPI",
+    "conference": "Liberty League, ECAC Hockey",
+    "logoUrl": "https://rpiathletics.com/images/logos/q16.png",
+    "athleticsUrl": "https://rpiathletics.com"
+  },
+  {
+    "name": "Rhodes College",
+    "shortName": "Rhodes",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/rhodes.png",
+    "athleticsUrl": "http://www.rhodeslynx.com/"
+  },
+  {
+    "name": "RIT",
+    "shortName": "RIT",
+    "conference": "Liberty League",
+    "logoUrl": "https://rpiathletics.com/images/logos/RIT_Site_Logo.png",
+    "athleticsUrl": "http://www.ritathletics.com/"
+  },
+  {
+    "name": "Robert Morris University",
+    "shortName": "Robert Morris",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Robert_Morris.png",
+    "athleticsUrl": "http://www.rmucolonials.com/"
+  },
+  {
+    "name": "Russell Sage College",
+    "shortName": "Russell Sage",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/sage_200x200.png",
+    "athleticsUrl": "http://www.sagegators.com"
+  },
+  {
+    "name": "Rutgers-Camden",
+    "shortName": "Rutgers-Camden",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/rutgers-camden.png",
+    "athleticsUrl": "https://scarletraptors.com/"
+  },
+  {
+    "name": "Rutgers-Newark",
+    "shortName": "Rutgers-Newark",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/RutgersNewark2024.png",
+    "athleticsUrl": "http://www.rutgersnewarkathletics.com"
+  },
+  {
+    "name": "Sacred Heart University",
+    "shortName": "Sacred Heart",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Sacred-Heart.png",
+    "athleticsUrl": "http://www.sacredheartpioneers.com/"
+  },
+  {
+    "name": "Sarah Lawrence College",
+    "shortName": "Sarah Lawrence",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/r12.png",
+    "athleticsUrl": "http://www.gogryphons.com"
+  },
+  {
+    "name": "Sewanee: The University of the South",
+    "shortName": "Sewanee",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Sewanee.png",
+    "athleticsUrl": "http://www.sewaneetigers.com/"
+  },
+  {
+    "name": "Siena College",
+    "shortName": "Siena",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Siena_Primary.png",
+    "athleticsUrl": "http://www.sienasaints.com/"
+  },
+  {
+    "name": "Simmons University",
+    "shortName": "Simmons",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/SImmons_.png",
+    "athleticsUrl": "http://athletics.simmons.edu"
+  },
+  {
+    "name": "Skidmore College",
+    "shortName": "Skidmore",
+    "conference": "Liberty League",
+    "logoUrl": "https://rpiathletics.com/images/logos/SkidmoreLogo200x200.png",
+    "athleticsUrl": "http://www.skidmoreathletics.com/"
+  },
+  {
+    "name": "Southwestern University",
+    "shortName": "Southwestern",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Southwestern_University_2023.png",
+    "athleticsUrl": "http://southwesternpirates.com"
+  },
+  {
+    "name": "Springfield College",
+    "shortName": "Springfield",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Springfield.png",
+    "athleticsUrl": "http://springfieldcollegepride.com"
+  },
+  {
+    "name": "St. Catherine University",
+    "shortName": "St. Catherine",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Saint_Kates.png",
+    "athleticsUrl": "http://www.stkatesathletics.com/"
+  },
+  {
+    "name": "St. John Fisher University",
+    "shortName": "St. John Fisher",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/SJF_2022.png",
+    "athleticsUrl": "http://athletics.sjfc.edu/"
+  },
+  {
+    "name": "St. Lawrence University",
+    "shortName": "St. Lawrence",
+    "conference": "Liberty League, ECAC Hockey",
+    "logoUrl": "https://rpiathletics.com/images/logos/St_Lawrence_NY.png",
+    "athleticsUrl": "http://saintsathletics.com"
+  },
+  {
+    "name": "St. Mary's College of Maryland",
+    "shortName": "St. Mary's (Md.)",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/St-Marys-Maryland.png",
+    "athleticsUrl": "http://www.smcmathletics.com"
+  },
+  {
+    "name": "Stevens Institute of Technology",
+    "shortName": "Stevens",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/t4.png",
+    "athleticsUrl": "http://www.stevensducks.com/"
+  },
+  {
+    "name": "Stonehill College",
+    "shortName": "Stonehill",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Stonehill_2022.png",
+    "athleticsUrl": "http://www.stonehillskyhawks.com"
+  },
+  {
+    "name": "Suffolk University",
+    "shortName": "Suffolk",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Suffolk-Rams.png",
+    "athleticsUrl": "http://gosuffolkrams.com/"
+  },
+  {
+    "name": "SUNY Brockport",
+    "shortName": "SUNY Brockport",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Brockport_Global_200x200.png",
+    "athleticsUrl": "http://www.gobrockport.com"
+  },
+  {
+    "name": "SUNY Canton",
+    "shortName": "SUNY Canton",
+    "conference": null,
+    "logoUrl": null,
+    "athleticsUrl": null
+  },
+  {
+    "name": "SUNY Cobleskill",
+    "shortName": "SUNY Cobleskill",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Cobleskill.png",
+    "athleticsUrl": "http://fightingtigers.cobleskill.edu/"
+  },
+  {
+    "name": "SUNY Geneseo",
+    "shortName": "SUNY Geneseo",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/SUNY-Geneseo.png",
+    "athleticsUrl": "http://knights.geneseo.edu/"
+  },
+  {
+    "name": "SUNY Polytechnic Institute",
+    "shortName": "SUNY Poly",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/SUNY_Poly_Wildcats_200px.png",
+    "athleticsUrl": "http://wildcats.sunypoly.edu/landing/index"
+  },
+  {
+    "name": "SUNY Potsdam",
+    "shortName": "SUNY Potsdam",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/t12.png",
+    "athleticsUrl": "http://potsdambears.com/"
+  },
+  {
+    "name": "SUNY-Delhi",
+    "shortName": "SUNY-Delhi",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/200x200.png",
+    "athleticsUrl": "http://delhibroncos.com"
+  },
+  {
+    "name": "Swarthmore College",
+    "shortName": "Swarthmore",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Swarthmore_College.png",
+    "athleticsUrl": "http://www.swarthmoreathletics.com"
+  },
+  {
+    "name": "Syracuse University",
+    "shortName": "Syracuse",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Syracuse.png",
+    "athleticsUrl": "http://www.cuse.com"
+  },
+  {
+    "name": "Texas Lutheran University",
+    "shortName": "Texas Lutheran",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/TLU.png",
+    "athleticsUrl": "http://www.tlubulldogs.com"
+  },
+  {
+    "name": "The Catholic University of America",
+    "shortName": "Catholic",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Catholic.png",
+    "athleticsUrl": "http://www.catholicathletics.com"
+  },
+  {
+    "name": "The College of New Jersey",
+    "shortName": "TCNJ",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/TCNJ.png",
+    "athleticsUrl": "http://www.tcnjathletics.com/"
+  },
+  {
+    "name": "The College of Saint Rose",
+    "shortName": "Saint Rose",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/saintrose.png",
+    "athleticsUrl": "http://www.gogoldenknights.com/"
+  },
+  {
+    "name": "Transylvania University",
+    "shortName": "Transylvania",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/u13.png",
+    "athleticsUrl": "http://www.transysports.com"
+  },
+  {
+    "name": "Trinity College (Conn.)",
+    "shortName": "Trinity (Conn.)",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Trinity_CT.png",
+    "athleticsUrl": "https://bantamsports.com/"
+  },
+  {
+    "name": "Tufts University",
+    "shortName": "Tufts",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/tufts.png",
+    "athleticsUrl": "https://gotuftsjumbos.com/"
+  },
+  {
+    "name": "Union College",
+    "shortName": "Union",
+    "conference": "Liberty League, ECAC Hockey",
+    "logoUrl": "https://rpiathletics.com/images/logos/Union-Logo.png",
+    "athleticsUrl": "http://www.unionathletics.com/"
+  },
+  {
+    "name": "United States Coast Guard Academy",
+    "shortName": "Coast Guard",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/bearfacelogo200.png",
+    "athleticsUrl": "http://www.uscgasports.com/"
+  },
+  {
+    "name": "University at Albany",
+    "shortName": "UAlbany",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/DaneHeadUAlbany.png",
+    "athleticsUrl": "http://www.ualbanysports.com/"
+  },
+  {
+    "name": "University of Findlay",
+    "shortName": "Findlay",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/UF_Orange_and_Black.png",
+    "athleticsUrl": "http://athletics.findlay.edu/"
+  },
+  {
+    "name": "University of Guelph",
+    "shortName": "Guelph",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Guelph_2025.png",
+    "athleticsUrl": "http://gryphons.ca"
+  },
+  {
+    "name": "University of Hartford",
+    "shortName": "Hartford",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Hartford.png",
+    "athleticsUrl": "http://www.hartfordhawks.com/"
+  },
+  {
+    "name": "University of Maine",
+    "shortName": "Maine",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Maine.png",
+    "athleticsUrl": "http://www.goblackbears.com"
+  },
+  {
+    "name": "University of Maine-Farmington",
+    "shortName": "Maine-Farmington",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Maine-Farmington.png",
+    "athleticsUrl": "http://athletics.umf.maine.edu/"
+  },
+  {
+    "name": "University of Mary Washington",
+    "shortName": "Mary Washington",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/UMW_Eagle_FullColor.png",
+    "athleticsUrl": "http://umweagles.com"
+  },
+  {
+    "name": "University of Massachusetts",
+    "shortName": "UMass",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/UMASS.png",
+    "athleticsUrl": "http://www.umassathletics.com/"
+  },
+  {
+    "name": "University of Massachusetts Lowell",
+    "shortName": "UMass Lowell",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/UMassLowell.png",
+    "athleticsUrl": "http://www.goriverhawks.com/"
+  },
+  {
+    "name": "University of Mount Saint Vincent",
+    "shortName": "Mount Saint Vincent",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/UMSV%20Navy.png",
+    "athleticsUrl": "https://umsvathletics.com/"
+  },
+  {
+    "name": "University of New Hampshire",
+    "shortName": "UNH",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/unh-logo.png",
+    "athleticsUrl": "http://www.unhwildcats.com/"
+  },
+  {
+    "name": "University of Pennsylvania",
+    "shortName": "Penn",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Pann.png",
+    "athleticsUrl": "http://www.pennathletics.com/"
+  },
+  {
+    "name": "University of Redlands",
+    "shortName": "Redlands",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Redlands2023Logo.png",
+    "athleticsUrl": "https://www.goredlands.com"
+  },
+  {
+    "name": "University of Rochester",
+    "shortName": "Rochester",
+    "conference": "Liberty League",
+    "logoUrl": "https://rpiathletics.com/images/logos/Rochester.png",
+    "athleticsUrl": "http://www.uofrathletics.com/"
+  },
+  {
+    "name": "University of Vermont",
+    "shortName": "Vermont",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/w20.png",
+    "athleticsUrl": "http://www.uvmathletics.com/"
+  },
+  {
+    "name": "University of Windsor (Ont.)",
+    "shortName": "Windsor (Ont.)",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/x4.png",
+    "athleticsUrl": "http://www.golancers.ca/"
+  },
+  {
+    "name": "University of Wisconsin-La Crosse",
+    "shortName": "UW-La Crosse",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/UW_Lacrosse_Logo.png",
+    "athleticsUrl": "http://www.uwlathletics.com/"
+  },
+  {
+    "name": "Utica University",
+    "shortName": "Utica",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/utica.png",
+    "athleticsUrl": "http://www.ucpioneers.com"
+  },
+  {
+    "name": "Vassar College",
+    "shortName": "Vassar",
+    "conference": "Liberty League",
+    "logoUrl": "https://rpiathletics.com/images/logos/x18.png",
+    "athleticsUrl": "http://www.vassarathletics.com"
+  },
+  {
+    "name": "Vermont State University Castleton",
+    "shortName": "Castleton",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Castleton.png",
+    "athleticsUrl": "http://www.castletonsports.com/"
+  },
+  {
+    "name": "Virginia Wesleyan University",
+    "shortName": "Virginia Wesleyan",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/VWU_200x200_logo.png",
+    "athleticsUrl": "http://vwuathletics.com"
+  },
+  {
+    "name": "Wartburg College",
+    "shortName": "Wartburg",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/y5.png",
+    "athleticsUrl": "http://www.go-knights.net/"
+  },
+  {
+    "name": "Waynesburg University",
+    "shortName": "Waynesburg",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/y9.png",
+    "athleticsUrl": "http://www.waynesburgsports.com/"
+  },
+  {
+    "name": "Webster University",
+    "shortName": "Webster",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/y11.png",
+    "athleticsUrl": "http://www.websterathletics.com"
+  },
+  {
+    "name": "Wellesley College",
+    "shortName": "Wellesley",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Wellesley-College.png",
+    "athleticsUrl": "http://www.wellesleyblue.com"
+  },
+  {
+    "name": "Wentworth Institute of Technology",
+    "shortName": "Wentworth",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Westworth.png",
+    "athleticsUrl": "http://www.wentworthathletics.com"
+  },
+  {
+    "name": "Wesleyan University",
+    "shortName": "Wesleyan",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/Wesleyan-University.png",
+    "athleticsUrl": "http://athletics.wesleyan.edu"
+  },
+  {
+    "name": "Western New England University",
+    "shortName": "Western New England",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/WNE_Bear_Head_Updated.png",
+    "athleticsUrl": "http://wnegoldenbears.com"
+  },
+  {
+    "name": "Westfield State University",
+    "shortName": "Westfield State",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/westfield_state.png",
+    "athleticsUrl": "http://www.westfieldstateowls.com/"
+  },
+  {
+    "name": "Wheaton College (Mass.)",
+    "shortName": "Wheaton (Mass.)",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/wheaton_mass.png",
+    "athleticsUrl": "https://wheatoncollegelyons.com/"
+  },
+  {
+    "name": "Widener University",
+    "shortName": "Widener",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/z7.png",
+    "athleticsUrl": "http://www.widenerpride.com/"
+  },
+  {
+    "name": "Wilkes University",
+    "shortName": "Wilkes",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/WilkesAthleticsLogo2023.png",
+    "athleticsUrl": "http://www.gowilkesu.com/"
+  },
+  {
+    "name": "William Smith College",
+    "shortName": "William Smith",
+    "conference": "Liberty League",
+    "logoUrl": "https://rpiathletics.com/images/logos/William_Smith.png",
+    "athleticsUrl": "http://www.hwsathletics.com/"
+  },
+  {
+    "name": "Williams College",
+    "shortName": "Williams",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/WilliamsLogo2023.png",
+    "athleticsUrl": "http://ephsports.williams.edu/landing/index"
+  },
+  {
+    "name": "Winona State University",
+    "shortName": "Winona State",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/warriorhead-purple.png",
+    "athleticsUrl": "http://www.winonastatewarriors.com/"
+  },
+  {
+    "name": "Worcester Polytechnic Institute",
+    "shortName": "WPI",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/WPI.png",
+    "athleticsUrl": "http://athletics.wpi.edu"
+  },
+  {
+    "name": "Yale University",
+    "shortName": "Yale",
+    "conference": "ECAC Hockey",
+    "logoUrl": "https://rpiathletics.com/images/logos/YALE_LOGO_2020.png",
+    "athleticsUrl": "http://www.yalebulldogs.com"
+  },
+  {
+    "name": "York College of Pennsylvania",
+    "shortName": "York (Pa.)",
+    "conference": null,
+    "logoUrl": "https://rpiathletics.com/images/logos/York_PA.png",
+    "athleticsUrl": "http://www.ycpspartans.com"
+  }
+]
