@@ -42,6 +42,8 @@ const PAGE = `<!doctype html>
   <section class="preview" aria-label="Preview">
     <div class="preview-bar">
       <span id="size" class="size"></span>
+      <span id="edit-hint" class="size edit-hint" hidden>Drag bars and labels · double-click a label to rename</span>
+      <button id="reset-layout" class="btn small" title="Put every bar and label back where the defaults put them" hidden>Reset to defaults</button>
       <label class="zoom">Zoom
         <select id="zoom">
           <option value="fit" selected>Fit</option>

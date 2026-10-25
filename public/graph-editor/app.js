@@ -16,6 +16,7 @@ const KINDS = [
   { id: "column", label: "Column", icon: '<rect x="4" y="11" width="4" height="10" rx="1" fill="currentColor"/><rect x="10" y="5" width="4" height="16" rx="1" fill="currentColor"/><rect x="16" y="14" width="4" height="7" rx="1" fill="currentColor"/>' },
   { id: "line", label: "Line", icon: '<path d="M3 18l5-6 4 3 8-10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>' },
   { id: "scatter", label: "Scatter", icon: '<circle cx="6" cy="16" r="2.4" fill="currentColor"/><circle cx="11" cy="9" r="2.4" fill="currentColor"/><circle cx="17" cy="13" r="2.4" fill="currentColor"/><circle cx="18" cy="5" r="2.4" fill="currentColor"/>' },
+  { id: "flow", label: "Flow", icon: '<rect x="2.5" y="4" width="3" height="16" rx="1" fill="currentColor"/><path d="M5.5 4.5C12 4.5 12 3.5 18.5 3.5V9C12 9 12 11 5.5 11Z" fill="currentColor" opacity=".45"/><path d="M5.5 12.5C12 12.5 12 14.5 18.5 14.5V20.5C12 20.5 12 19.5 5.5 19.5Z" fill="currentColor" opacity=".45"/><rect x="18.5" y="3" width="3" height="6.5" rx="1" fill="currentColor"/><rect x="18.5" y="14" width="3" height="7" rx="1" fill="currentColor"/>' },
 ];
 const KIND_LABEL = Object.fromEntries(KINDS.map((k) => [k.id, k.label]));
 const SLICED = ["ring", "pie", "pie3d"];
@@ -26,9 +27,15 @@ const GROUP_COLORS = ["red", "purple"];
 const SERIES_COLORS = ["red", "purple", "orange", "lavender"];
 // Gray is for context lines: any number of them can share it. Lines only; columns need a color each.
 const GRAY = "gray";
-const HEX = { red: "#D6001C", purple: "#6A35A0", orange: "#D9702A", lavender: "#9A64C8", gray: "#bbbbbb" };
+const HEX = { red: "#D6001C", purple: "#6A35A0", orange: "#D9702A", lavender: "#9A64C8", gray: "#bbbbbb", ink: "#1a1a1a" };
 const MAX_LINES = 10;
 const MAX_SLICES = 5;
+
+// Flow graphs (lib/graph/flow.js): any bar or band can be set to one of these, or left on Auto.
+const FLOW_COLORS = [...SERIES_COLORS, GRAY, "ink"];
+const FLOW_COLOR_OPTIONS = [["", "Auto"], ...FLOW_COLORS.map((c) => [c, c[0].toUpperCase() + c.slice(1)])];
+const MAX_FLOW_COLUMNS = 8;
+const FLOW_DEFAULTS = { palette: "branches", colorBy: "source", align: "left", order: "auto", labels: "value" };
 
 /** How many series the current kind can hold. */
 const maxSeries = () => (doc?.meta.kind === "line" ? MAX_LINES : SERIES_COLORS.length);
@@ -44,6 +51,7 @@ function defaultSeriesColors(names) {
 const KNOWN = new Set([
   "kicker", "title", "dek", "kind", "width", "items", "combine", "color", "centerLabel", "valueLabel", "sort",
   "columns", "colors", "rows", "stacked", "points", "x", "y", "prefix", "suffix", "othersLabel", "aspect", "source", "credit",
+  "flows", "nodes", "palette", "colorBy", "align", "order", "labels",
 ]);
 
 // ── Small helpers ─────────────────────────────────────────
@@ -129,10 +137,13 @@ function blankDoc(kind = "ring") {
       kind, kicker: "", title: "", dek: "", source: "", credit: "", width: "3.5",
       centerLabel: "total", valueLabel: "Reports", sort: true, prefix: "", suffix: "", stacked: false,
       xLabel: "", yLabel: "", yMin: "", yMax: "", yZero: "auto", aspect: "", othersLabel: "",
+      ...FLOW_DEFAULTS,
     },
     groups: [{ name: "", color: "red", ref: null, rows: emptyRows(4, 2) }],
     table: { columns: ["Category", "Series 1"], colors: ["red"], rows: emptyRows(5, 2) },
     scatter: { x: emptyAxis(), y: emptyAxis(), points: Array.from({ length: 4 }, emptyPoint) },
+    // Rows are [from, to, amount, band color]; nodes holds each bar's color and column by name.
+    flow: { rows: emptyRows(5, 4), nodes: {} },
   };
 }
 
@@ -189,6 +200,15 @@ function fromFile(g, name) {
       yZero: g.y?.zero === true ? "yes" : g.y?.zero === false ? "no" : "auto",
     });
   }
+  if (g.flows) {
+    d.flow = {
+      rows: g.flows.map((r) => [str(r?.[0]), str(r?.[1]), str(r?.[2]), str(r?.[3])]),
+      nodes: Object.fromEntries((g.nodes ?? []).filter((n) => n?.name).map((n) => [n.name, {
+        color: str(n.color), column: str(n.column), y: typeof n.y === "number" ? n.y : null, label: Array.isArray(n.label) ? n.label : null,
+      }])),
+    };
+  }
+  for (const [k, def] of Object.entries(FLOW_DEFAULTS)) d.meta[k] = g[k] ?? def;
   if (g.points) {
     d.scatter = {
       x: axisFrom(g.x),
@@ -265,9 +285,39 @@ function toFile(d) {
     if (kind === "column" && m.stacked) out.stacked = true;
   }
 
-  if (kind === "bar" || TABLE_KINDS.includes(kind)) {
+  if (kind === "bar" || kind === "flow" || TABLE_KINDS.includes(kind)) {
     if (m.prefix) out.prefix = m.prefix;
     if (m.suffix) out.suffix = m.suffix;
+  }
+
+  if (kind === "flow") {
+    out.flows = [];
+    d.flow.rows.forEach(([from, to, amount, color]) => {
+      if ([from, to, amount].every(blank)) return;
+      const where = !blank(from) && !blank(to) ? `“${from.trim()} → ${to.trim()}”` : "A row";
+      const v = parseNum(amount);
+      if (blank(from) || blank(to)) return warnings.push(`${where} needs both a From and a To, so it's left out.`);
+      if (from.trim() === to.trim()) return warnings.push(`“${from.trim()}” can't flow into itself, so that row is left out.`);
+      if (v === null) return warnings.push(`${where} has no amount, so it's left out.`);
+      if (v <= 0) return warnings.push(`${where} is ${v}; a flow has to carry more than zero.`);
+      out.flows.push(color ? [from.trim(), to.trim(), v, color] : [from.trim(), to.trim(), v]);
+    });
+    // Per-bar settings, only for bars still in the data and only what's been set.
+    const names = new Set(out.flows.flatMap((r) => [r[0], r[1]]));
+    const nodes = Object.entries(d.flow.nodes)
+      .filter(([name]) => names.has(name))
+      .map(([name, s]) => ({
+        name,
+        ...(s.color ? { color: s.color } : {}),
+        ...(s.column ? { column: Number(s.column) } : {}),
+        ...(s.y != null ? { y: s.y } : {}),
+        ...(s.label ? { label: s.label } : {}),
+      }))
+      .filter((n) => Object.keys(n).length > 1);
+    if (nodes.length) out.nodes = nodes;
+    for (const [k, def] of Object.entries(FLOW_DEFAULTS)) if (m[k] !== def) out[k] = m[k];
+    const asp = parseNum(m.aspect);
+    if (asp) out.aspect = asp;
   }
 
   if (kind === "scatter") {
@@ -416,10 +466,42 @@ function pastePoints(rows) {
   return { header, points };
 }
 
+// SankeyMATIC's line format, "Budget [120] Instruction", with an optional trailing #color.
+const SANKEYMATIC = /^(.+?)\s*\[\s*([^\]]+?)\s*\]\s*(.+?)(?:\s+#[0-9a-f]{3,8})?$/i;
+
+/**
+ * Pasted flows → [from, to, amount, color] rows. Takes spreadsheet columns (From, To,
+ * Amount, and a color name if wanted), or SankeyMATIC lines. A header row is skipped.
+ */
+function pasteFlows(text) {
+  const lines = String(text).replace(/\r\n?/g, "\n").split("\n").map((l) => l.trim())
+    .filter((l) => l && !l.startsWith("//") && !l.startsWith(":"));
+  if (lines.length && lines.filter((l) => SANKEYMATIC.test(l)).length >= lines.length / 2) {
+    return lines.flatMap((l) => {
+      const m = l.match(SANKEYMATIC);
+      return m ? [[m[1].trim(), m[3].trim(), m[2].trim(), ""]] : [];
+    });
+  }
+  const body = parseClipboard(text).filter((r) => r.length >= 3);
+  if (body.length && !isNumCell(body[0][2])) body.shift();
+  return body.map((r) => {
+    const color = String(r[3] ?? "").trim().toLowerCase();
+    return [r[0], r[1], r[2], FLOW_COLORS.includes(color) ? color : ""];
+  });
+}
+
 function applyPaste(text, mode = "replace") {
   const rows = parseClipboard(text);
   if (!rows.some((r) => r.length)) return status("There's nothing in the paste box.", true);
   const kind = doc.meta.kind;
+
+  if (kind === "flow") {
+    const flows = pasteFlows(text);
+    if (!flows.length) return status("Couldn't find any rows with a from, a to and an amount.", true);
+    doc.flow.rows = mode === "append" ? doc.flow.rows.filter((r) => !r.every(blank)).concat(flows) : flows;
+    rerender();
+    return changed();
+  }
 
   if (ITEM_KINDS.includes(kind)) {
     let groups = pasteItems(rows);
@@ -795,6 +877,7 @@ function changed() {
   updateDirty();
   updateComputed();
   updateWarnings();
+  updateFlowTools();
   schedulePreview();
 }
 
@@ -908,6 +991,19 @@ function switchKind(kind) {
     if (TABLE_KINDS.includes(from) && !tableBlank) doc.scatter.points = doc.table.rows.map((r) => ({ ...emptyPoint(), label: r[0], x: r[1] ?? "", y: r[2] ?? "" }));
     if (ITEM_KINDS.includes(from) && !itemsBlank) doc.scatter.points = doc.groups.flatMap((g) => g.rows).map(([label, x]) => ({ ...emptyPoint(), label, x }));
   }
+  // Rows of a ring or bar become one split: the title (or "Total") into each row. Groups
+  // become a level of their own in between.
+  const flowBlank = doc.flow.rows.every((r) => r.every(blank));
+  if (kind === "flow" && flowBlank && ITEM_KINDS.includes(from) && !itemsBlank) {
+    const root = doc.meta.title.trim() || "Total";
+    const groups = doc.groups.filter((g) => !g.ref);
+    const named = groups.length > 1;
+    const rows = groups.map((g, i) => ({ name: g.name.trim() || `Group ${i + 1}`, rows: g.rows.filter((r) => !r.every(blank)) }));
+    doc.flow.rows = [
+      ...(named ? rows.map((g) => [root, g.name, String(g.rows.reduce((a, r) => a + (parseNum(r[1]) ?? 0), 0)), ""]) : []),
+      ...rows.flatMap((g) => g.rows.map((r) => [named ? g.name : root, r[0], r[1], ""])),
+    ];
+  }
   doc.meta.kind = kind;
   // Columns can't use gray; give those series real colors (the preview says if there are too many).
   if (TABLE_KINDS.includes(kind)) fixSeriesColors();
@@ -920,13 +1016,16 @@ function switchKind(kind) {
 function pasteBox() {
   const ta = h("textarea", { placeholder: "Copy cells in Excel, Google Sheets or Numbers and paste them here.", "aria-label": "Spreadsheet data" });
   const kind = doc.meta.kind;
-  const how = ITEM_KINDS.includes(kind)
-    ? "Two columns: label, then number. A header row is skipped. Leave a blank row between blocks to make two groups."
-    : TABLE_KINDS.includes(kind)
-      ? "First column is the category (a year, a month, a name); each other column is a series. The first row names the series."
-      : "Columns: label, x, y. A header row names the axes. Points without a label show as gray context.";
+  const how = kind === "flow"
+    ? "Columns: from, to, amount, and a color if you want one. A header row is skipped. SankeyMATIC lines like “Budget [120] Instruction” work too."
+    : ITEM_KINDS.includes(kind)
+      ? "Two columns: label, then number. A header row is skipped. Leave a blank row between blocks to make two groups."
+      : TABLE_KINDS.includes(kind)
+        ? "First column is the category (a year, a month, a name); each other column is a series. The first row names the series."
+        : "Columns: label, x, y. A header row names the axes. Points without a label show as gray context.";
   const hasData =
-    ITEM_KINDS.includes(kind) ? doc.groups.some((g) => g.ref || g.rows.some((r) => !r.every(blank)))
+    kind === "flow" ? doc.flow.rows.some((r) => !r.every(blank))
+    : ITEM_KINDS.includes(kind) ? doc.groups.some((g) => g.ref || g.rows.some((r) => !r.every(blank)))
     : TABLE_KINDS.includes(kind) ? doc.table.rows.some((r) => !r.every(blank))
     : doc.scatter.points.some((p) => !blank(p.x));
   return h("details", { class: "paste", open: !hasData },
@@ -942,7 +1041,7 @@ function pasteBox() {
 
 function dataEditor() {
   const kind = doc.meta.kind;
-  const body = ITEM_KINDS.includes(kind) ? itemsEditor() : TABLE_KINDS.includes(kind) ? tableEditor() : pointsEditor();
+  const body = kind === "flow" ? flowEditor() : ITEM_KINDS.includes(kind) ? itemsEditor() : TABLE_KINDS.includes(kind) ? tableEditor() : pointsEditor();
   return [pasteBox(), body, h("div", { id: "warnings" })];
 }
 
@@ -970,10 +1069,10 @@ function gridKeys(e, prefix, ri, ci, grid, makeRow, sync) {
   $(`[data-cell="${CSS.escape(`${prefix}:${next}:${ci}`)}"]`)?.focus();
 }
 
-function cellInput(grid, ri, ci, prefix, { num = false, width, makeRow, onWide, placeholder, sync } = {}) {
+function cellInput(grid, ri, ci, prefix, { num = false, width, makeRow, onWide, placeholder, sync, list } = {}) {
   const v = grid[ri][ci] ?? "";
   return h("input", {
-    type: "text", value: v, placeholder, inputmode: num ? "decimal" : null,
+    type: "text", value: v, placeholder, inputmode: num ? "decimal" : null, list,
     class: num && !blank(v) && parseNum(v) === null ? "bad" : null,
     dataset: { cell: `${prefix}:${ri}:${ci}` },
     "aria-label": placeholder,
@@ -1069,6 +1168,65 @@ function itemsEditor() {
       canAdd && others.length > 0 && linkSel,
       !canAdd && h("span", { class: "hint" }, `A graph holds up to ${GROUP_COLORS.length} groups, one red and one purple.`),
     ),
+  ];
+}
+
+/** Every bar's name, in the order the rows first mention it. */
+const flowNames = () => [...new Set(doc.flow.rows.flatMap((r) => [r[0], r[1]]).map((s) => String(s ?? "").trim()).filter(Boolean))];
+
+const flowSettings = (name) => (doc.flow.nodes[name] ??= { color: "", column: "", y: null, label: null });
+
+/** Anything set by hand on any bar: a color, a column, a dragged position or a nudged label. */
+const flowCustomized = () =>
+  Object.values(doc?.flow?.nodes ?? {}).some((s) => s.color || s.column || s.y != null || s.label);
+
+function flowEditor() {
+  const fl = doc.flow;
+  const makeRow = () => ["", "", "", ""];
+  const names = flowNames();
+  const columnOptions = [["", "Auto"], ...Array.from({ length: MAX_FLOW_COLUMNS }, (_, i) => [String(i + 1), String(i + 1)])];
+
+  const grid = h("table", { class: "grid" },
+    h("thead", {}, h("tr", {},
+      h("th", {}, "From"), h("th", {}, "To"), h("th", { class: "num" }, "Amount"), h("th", {}, "Band"), h("th", {}))),
+    h("tbody", {}, fl.rows.map((r, ri) =>
+      h("tr", {},
+        h("td", {}, cellInput(fl.rows, ri, 0, "fl", { width: 3, makeRow, placeholder: "From", list: "flow-names" })),
+        h("td", {}, cellInput(fl.rows, ri, 1, "fl", { width: 3, makeRow, placeholder: "To", list: "flow-names" })),
+        h("td", { class: "num", style: "width:110px" }, cellInput(fl.rows, ri, 2, "fl", { num: true, width: 3, makeRow, placeholder: "Amount" })),
+        h("td", { style: "width:92px" }, select(r, 3, FLOW_COLOR_OPTIONS, { title: "This band's color" })),
+        rowOps(fl.rows, ri, makeRow),
+      )
+    )),
+  );
+
+  // Each bar, with its color and column. Dragging on the preview sets the rest.
+  const bars = names.length > 0 && h("details", { class: "paste", open: flowCustomized() },
+    h("summary", {}, `Bars (${names.length})`),
+    h("table", { class: "grid" },
+      h("thead", {}, h("tr", {}, h("th", {}, "Bar"), h("th", {}, "Color"), h("th", {}, "Column"), h("th", {}, ""))),
+      h("tbody", {}, names.map((name) => {
+        const s = flowSettings(name);
+        const moved = s.y != null || s.label;
+        return h("tr", {},
+          h("td", { class: "bar-name" }, name),
+          h("td", { style: "width:110px" }, select(s, "color", FLOW_COLOR_OPTIONS, { onchange: () => rerender() })),
+          h("td", { style: "width:80px" }, select(s, "column", columnOptions, { onchange: () => rerender() })),
+          h("td", { class: "hint" }, moved ? h("button", { class: "link", title: "Let the layout place this bar and its label again", onclick: () => { s.y = null; s.label = null; rerender(); changed(); } }, "Unpin") : ""),
+        );
+      })),
+    ),
+    h("span", { class: "hint" }, "Auto follows the data. On the preview, drag bars and labels to move them, and double-click a label to rename its bar."),
+  );
+
+  return [
+    grid,
+    h("datalist", { id: "flow-names" }, names.map((n) => h("option", { value: n }))),
+    h("div", { class: "grid-actions" },
+      h("button", { class: "link", onclick: () => { fl.rows.push(makeRow()); rerender(); changed(); focusLast("fl", fl.rows.length - 1); } }, "+ Add row"),
+      h("span", { class: "hint" }, "Each row is one band: where it comes from, where it goes, how much. The same name is the same bar."),
+    ),
+    bars,
   ];
 }
 
@@ -1266,10 +1424,24 @@ function optionsEditor() {
   }
   if (ITEM_KINDS.includes(kind)) out.push(checkbox(m, "sort", "Sort largest first"));
 
-  if (kind === "bar" || TABLE_KINDS.includes(kind)) {
+  if (kind === "bar" || kind === "flow" || TABLE_KINDS.includes(kind)) {
     out.push(h("div", { class: "row2" },
       field(m, "prefix", "Before numbers", { placeholder: "$" }),
       field(m, "suffix", "After numbers", { placeholder: "%" })));
+  }
+
+  if (kind === "flow") {
+    const pick = (key, label, options) => h("label", { class: "field" }, h("span", {}, label), select(m, key, options));
+    out.push(h("div", { class: "row2" },
+      pick("labels", "Labels show", [["value", "Amounts"], ["percent", "Share of the total"], ["both", "Amounts and shares"], ["name", "Names only"]]),
+      pick("palette", "Colors", [["branches", "A color per branch"], ["red", "All red"], ["gray", "All gray, to pick bars out"]])));
+    out.push(h("div", { class: "row3" },
+      pick("colorBy", "Bands take the color of", [["source", "Where they start"], ["target", "Where they end"]]),
+      pick("align", "Bars line up", [["left", "From the left"], ["justify", "Ends at the right"], ["right", "From the right"], ["center", "Centered"]]),
+      pick("order", "Order in a column", [["auto", "Fewest crossings"], ["data", "As listed"], ["size", "Largest first"]])));
+    out.push(h("div", { class: "row2" },
+      field(m, "aspect", "Height", { placeholder: "auto", hint: "As a share of the width, e.g. 0.8. Auto fits the labels." }),
+      h("div")));
   }
 
   if (TABLE_KINDS.includes(kind)) {
@@ -1450,10 +1622,13 @@ async function runPreview(plotH = null) {
     back.classList.remove("back");
     front = i;
     layoutFrame();
+    attachFlowEditing(back);
     $("#frame").classList.remove("stale");
   };
   back.srcdoc = r.html;
 }
+
+let previewZoom = 1;
 
 function layoutFrame() {
   if (!lastSize) return;
@@ -1461,6 +1636,7 @@ function layoutFrame() {
   const stage = $("#stage");
   const avail = stage.clientWidth - 48;
   const z = zoomSel === "fit" ? Math.max(0.5, Math.min(2.5, avail / lastSize.w)) : Number(zoomSel);
+  previewZoom = z;
   const frame = $("#frame");
   frame.style.width = `${lastSize.w * z}px`;
   frame.style.height = `${lastSize.h * z}px`;
@@ -1473,6 +1649,154 @@ function layoutFrame() {
 }
 const fmtIn = (v) => (Math.round(v * 100) / 100).toString();
 
+// ── Editing on the preview (flow graphs) ──────────────────
+//
+// The flow renderer tags each bar and label with data-node. Dragging one moves it on the
+// spot; letting go saves where it landed in the bar's settings and redraws, so the bands
+// follow. The preview frame is same-origin, so its document takes listeners directly; its
+// own pointer coordinates are in the graphic's px whatever the zoom.
+
+/** Makes el draggable, carrying partners along; done(dx, dy) runs if it actually moved. */
+function draggable(fdoc, el, partners, done) {
+  el.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    el.setPointerCapture(e.pointerId);
+    const [sx, sy] = [e.clientX, e.clientY];
+    let [dx, dy] = [0, 0];
+    const moved = () => Math.hypot(dx, dy) > 2;
+    const move = (ev) => {
+      [dx, dy] = [ev.clientX - sx, ev.clientY - sy];
+      if (!moved()) return;
+      fdoc.documentElement.classList.add("dragging");
+      for (const p of [el, ...partners]) p.setAttribute("transform", `translate(${dx} ${dy})`);
+    };
+    const up = () => {
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+      el.removeEventListener("pointercancel", up);
+      fdoc.documentElement.classList.remove("dragging");
+      if (moved()) done(dx, dy);
+      else for (const p of [el, ...partners]) p.removeAttribute("transform");
+    };
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+  });
+}
+
+function attachFlowEditing(frame) {
+  if (doc?.meta.kind !== "flow") return;
+  const fdoc = frame.contentDocument;
+  const svg = fdoc?.querySelector("svg.flow");
+  if (!svg) return;
+  const style = fdoc.createElement("style");
+  style.textContent = `
+    .flow rect[data-node] { cursor: grab; }
+    .flow rect[data-node]:hover { stroke: #000000; stroke-width: 1px; }
+    .flow .flow-label[data-node] { cursor: move; }
+    .flow .flow-label[data-node]:hover .name { text-decoration: underline; }
+    html.dragging, html.dragging * { cursor: grabbing !important; user-select: none; }`;
+  fdoc.head.append(style);
+
+  const top = Number(svg.dataset.top), plotH = Number(svg.dataset.plotH);
+  const cols = svg.dataset.cols.split(",").map(Number);
+  const nearestColumn = (x) => cols.reduce((best, cx, i) => (Math.abs(cx - x) < Math.abs(cols[best] - x) ? i : best), 0);
+  const labelOf = (name) => [...svg.querySelectorAll(".flow-label[data-node]")].find((el) => el.dataset.node === name);
+
+  // A bar: up and down places it; dropped nearer another column, it moves there.
+  for (const bar of svg.querySelectorAll("rect[data-node]")) {
+    const name = bar.dataset.node;
+    const label = labelOf(name);
+    draggable(fdoc, bar, label ? [label] : [], (dx, dy) => {
+      const s = flowSettings(name);
+      const x = Number(bar.getAttribute("x")), y = Number(bar.getAttribute("y"));
+      const [from, to] = [nearestColumn(x), nearestColumn(x + dx)];
+      if (to !== from) s.column = String(to + 1);
+      s.y = Math.round(Math.min(1, Math.max(0, (y + dy - top) / plotH)) * 1e4) / 1e4;
+      rerender();
+      changed();
+    });
+  }
+
+  // A label: drag to nudge it, double-click to rename its bar.
+  for (const label of svg.querySelectorAll(".flow-label[data-node]")) {
+    const name = label.dataset.node;
+    draggable(fdoc, label, [], (dx, dy) => {
+      const s = flowSettings(name);
+      const [ox, oy] = s.label ?? [0, 0];
+      s.label = [Math.round(ox + dx), Math.round(oy + dy)];
+      rerender();
+      changed();
+    });
+    label.addEventListener("dblclick", (e) => {
+      e.preventDefault();
+      renameOnPreview(frame, label, name);
+    });
+  }
+}
+
+/** An input over the label on the preview; Enter or clicking away renames, Escape doesn't. */
+function renameOnPreview(frame, label, name) {
+  const fr = frame.getBoundingClientRect();
+  const r = label.getBoundingClientRect();
+  const z = previewZoom;
+  const input = h("input", { class: "inline-rename", type: "text", value: name, "aria-label": `Rename ${name}` });
+  Object.assign(input.style, {
+    left: `${fr.left + r.left * z - 5}px`,
+    top: `${fr.top + r.top * z - 4}px`,
+    minWidth: `${Math.max(140, r.width * z + 30)}px`,
+  });
+  document.body.append(input);
+  input.focus();
+  input.select();
+  let finished = false;
+  const finish = (save) => {
+    if (finished) return;
+    finished = true;
+    const next = input.value.trim();
+    input.remove();
+    if (save && next && next !== name) renameFlowNode(name, next);
+  };
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); finish(true); }
+    if (e.key === "Escape") { e.preventDefault(); finish(false); }
+  });
+  input.addEventListener("blur", () => finish(true));
+}
+
+/** Renames a bar everywhere the rows mention it, keeping its settings. */
+function renameFlowNode(from, to) {
+  for (const r of doc.flow.rows) {
+    if (String(r[0]).trim() === from) r[0] = to;
+    if (String(r[1]).trim() === from) r[1] = to;
+  }
+  if (doc.flow.nodes[from]) {
+    doc.flow.nodes[to] ??= doc.flow.nodes[from];
+    delete doc.flow.nodes[from];
+  }
+  status(`Renamed “${from}” to “${to}”.`);
+  rerender();
+  changed();
+}
+
+/** Back to the automatic layout: clears every bar's color, column, position and label nudge. */
+function resetFlowLayout() {
+  if (!flowCustomized()) return;
+  if (!confirm("Put every bar and label back where the defaults put them? This clears the colors, columns and positions set by hand.")) return;
+  doc.flow.nodes = {};
+  rerender();
+  changed();
+  status("Back to the defaults.");
+}
+
+function updateFlowTools() {
+  const flow = doc?.meta.kind === "flow";
+  $("#edit-hint").hidden = !flow;
+  $("#reset-layout").hidden = !flow;
+  $("#reset-layout").disabled = !flowCustomized();
+}
+
 // ── Start ─────────────────────────────────────────────────
 
 $("#new").addEventListener("click", newGraph);
@@ -1481,6 +1805,7 @@ $("#export-pdf").addEventListener("click", exportPdf);
 $("#export-png").addEventListener("click", exportPng);
 $("#filter").addEventListener("input", renderList);
 $("#zoom").addEventListener("change", layoutFrame);
+$("#reset-layout").addEventListener("click", resetFlowLayout);
 window.addEventListener("resize", layoutFrame);
 window.addEventListener("keydown", (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
