@@ -68,8 +68,9 @@ const lastGood = new Map<SportValue, SportStandings>()
 const text = (html: string) =>
   html
     .replace(/<[^>]+>/g, ' ')
-    .replace(/&amp;/g, '&')
     .replace(/&#39;/g, "'")
+    // Last, so "&amp;#39;" stays "&#39;" rather than being decoded twice
+    .replace(/&amp;/g, '&')
     .replace(/\s+/g, ' ')
     .trim()
 
