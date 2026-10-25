@@ -296,10 +296,10 @@ function SportsLeadStory({
   return (
     // Desktop: scoreboard, photo, then the title box overlapping the photo
     // (or, with the overlay off, a plain title under it). Phones reorder to
-    // title, scoreboard, photo either way.
+    // scoreboard, title, photo either way.
     <article className="group flex flex-col">
       {showScoreboard && article.game && (
-        <div className="order-2 lg:order-1">
+        <div className="order-1 pt-4 lg:pt-0">
           <ScoreboardBar game={article.game} rpiTeam={rpiTeam} sport={sport} date={scoreboardDate} />
         </div>
       )}
@@ -322,8 +322,8 @@ function SportsLeadStory({
       <div
         className={
           titleOverlay
-            ? "relative z-10 order-1 mb-5 bg-bg-main lg:order-3 lg:mb-0 lg:-mt-8 lg:ml-auto lg:w-[72%] lg:pl-5 lg:pt-4"
-            : "order-1 mb-5 lg:order-3 lg:mb-0 lg:mt-4"
+            ? "relative z-10 order-2 mb-5 bg-bg-main lg:order-3 lg:mb-0 lg:-mt-8 lg:ml-auto lg:w-[72%] lg:pl-5 lg:pt-4"
+            : "order-2 mb-5 lg:order-3 lg:mb-0 lg:mt-4"
         }
       >
         <MetaLine article={article} date={date} showAuthors={false} className="mb-2 text-[12px]" />
@@ -553,7 +553,7 @@ export default function SportsSectionPage({
         className="flex flex-col gap-10 lg:grid lg:gap-y-0"
         style={{ gridTemplateColumns: "1.7fr 1fr", columnGap: COLUMN_GAP }}
       >
-        {/* Phone order: lead title, scoreboard, lead photo, wide card,
+        {/* Phone order: scoreboard, lead title, lead photo, wide card,
             standings, headlines. Desktop keeps the two-column layout. */}
         <div className="flex flex-col gap-8">
           {lead && (
