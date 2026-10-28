@@ -99,7 +99,7 @@ Optional:
 - `NEXT_PUBLIC_POSTHOG_HOST`
 - `INTERNAL_PUSH_SECRET`
 - `FCM_SERVICE_ACCOUNT_JSON` (raw JSON)
-- `PAYLOAD_DISABLE_PUSH=1` (disables Payload dev `db.push`)
+- `PAYLOAD_DISABLE_PUSH=1` (disables Payload dev `db.push`; keep it set locally, since the schema comes only from migrations)
 
 `pnpm install` runs `scripts/generate-env.js` to create `.env` if missing.
 
