@@ -37,19 +37,10 @@ export async function PhotoGallery({ images }: Props) {
   const colCount = Math.min(populated.length, 3)
   const mdGridCols = { 1: 'md:grid-cols-1', 2: 'md:grid-cols-2', 3: 'md:grid-cols-3' }[colCount]
 
-  // Galleries carry a credit only — no captions. `caption` is dropped rather
-  // than merely left unrendered so that any text saved before the field was
-  // removed from the block cannot resurface, and so the sampled area below
-  // matches exactly what is drawn.
-  const creditOnly: PopulatedCreditedImage[] = populated.map((entry) => ({
-    ...entry,
-    caption: null,
-  }))
-
-  // The credit sits on the photo, so both the corner it occupies and its
-  // colour come from the pixels it will actually cover.
+  // The caption and credit sit on the photo, so both the corner they occupy and
+  // their colour come from the pixels they will actually cover.
   const placed: PlacedImage[] = await Promise.all(
-    creditOnly.map(async (entry) => ({
+    populated.map(async (entry) => ({
       ...entry,
       placement: await getCaptionPlacement(entry.image, captionPlainText(entry), colCount),
     })),

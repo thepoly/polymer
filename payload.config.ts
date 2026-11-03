@@ -17,6 +17,7 @@ const PhotoGalleryBlock: Block = {
       minRows: 1,
       fields: [
         { name: 'image', type: 'upload', relationTo: 'media', required: true },
+        { name: 'caption', type: 'text' },
         {
           name: 'credit',
           type: 'relationship',
@@ -24,8 +25,7 @@ const PhotoGalleryBlock: Block = {
           hasMany: true,
           label: 'Photo Credit',
           admin: {
-            description:
-              'Overrides the photographer set on the media record. Shown over the photo — galleries do not take captions.',
+            description: 'Overrides the photographer set on the media record.',
           },
         },
       ],

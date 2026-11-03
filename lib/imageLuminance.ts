@@ -185,7 +185,7 @@ async function computePlacement(
 }
 
 /**
- * Place and colour a photo's credit from the pixels it will actually sit on:
+ * Place and colour a photo's caption from the pixels it will actually sit on:
  * whichever bottom corner is least busy, then black or white to suit that
  * corner's brightness. Memoised per render pass, so a gallery that repeats an
  * image only decodes it once.
