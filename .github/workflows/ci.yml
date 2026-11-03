@@ -54,7 +54,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run Payload Migrations
-        run: echo "y" | pnpm exec payload migrate
+        # `payload migrate` has exited 0 without applying anything, which only
+        # surfaced later as missing tables in the build.
+        run: |
+          echo "y" | pnpm exec payload migrate 2>&1 | tee migrate.log
+          grep -q 'Done\.' migrate.log || { echo "::error::payload migrate did not finish"; exit 1; }
 
       - name: Lint
         run: pnpm lint
