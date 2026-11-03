@@ -11,6 +11,13 @@ const Articles: CollectionConfig = {
   admin: {
     useAsTitle: 'plainTitle',
     defaultColumns: ['plainTitle', 'updatedAt', 'lastModifiedBy'],
+    components: {
+      edit: {
+        // "Preview draft" and "Copy preview link" in the three-dot menu beside
+        // Publish. The preview itself lives at /preview/:id behind the login.
+        editMenuItems: ['@/components/admin/PreviewMenuItems#PreviewMenuItems'],
+      },
+    },
   },
   access: {
     update: ({ req: { user } }) => {

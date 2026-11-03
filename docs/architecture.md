@@ -67,6 +67,11 @@ Payload is mounted in-process (no separate server). The config wires up:
   override
 - a custom dashboard view (`@/components/Dashboard#default`) and login
   graphics
+- "Preview draft" / "Copy preview link" in the article edit view's three-dot
+  menu (`admin.components.edit.editMenuItems`), which open
+  `/preview/:id`: the latest saved version rendered through the public article
+  layouts, behind the newsroom login (signed-out visitors are sent to
+  `/newsroom/login` and back)
 
 `db.push` is enabled in development unless `PAYLOAD_DISABLE_PUSH=1` —
 useful when you want to run migrations against your dev DB without Payload

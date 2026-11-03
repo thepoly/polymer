@@ -25,6 +25,7 @@ import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0
 import { PositionRowLabel as PositionRowLabel_86f57aac7d0693294032b493201ea313 } from '@/components/Dashboard/PositionRowLabel'
 import { KickerField as KickerField_e2595ae0a94be2629ae7712d78d40f23 } from '@/components/admin/KickerField'
 import { SlugField as SlugField_d66ddfc75b0270bf9636e30c2125444d } from '../../../components/admin/SlugField'
+import { PreviewMenuItems as PreviewMenuItems_0d11815e2eba6d3d575d913f22507aa2 } from '@/components/admin/PreviewMenuItems'
 import { LayoutEditor as LayoutEditor_70d9e2a438fb0ccc6fcdf841a44849c6 } from '@/components/Dashboard/LayoutEditor'
 import { OpinionLayoutEditor as OpinionLayoutEditor_3bb87213e86dff82b05745c669248a71 } from '@/components/Dashboard/OpinionLayoutEditor'
 import { FeaturesLayoutEditor as FeaturesLayoutEditor_4a48329e978179877a0d50f880212653 } from '@/components/Dashboard/FeaturesLayoutEditor'
@@ -64,6 +65,7 @@ export const importMap = {
   "@/components/Dashboard/PositionRowLabel#PositionRowLabel": PositionRowLabel_86f57aac7d0693294032b493201ea313,
   "@/components/admin/KickerField#KickerField": KickerField_e2595ae0a94be2629ae7712d78d40f23,
   "/components/admin/SlugField#SlugField": SlugField_d66ddfc75b0270bf9636e30c2125444d,
+  "@/components/admin/PreviewMenuItems#PreviewMenuItems": PreviewMenuItems_0d11815e2eba6d3d575d913f22507aa2,
   "@/components/Dashboard/LayoutEditor#LayoutEditor": LayoutEditor_70d9e2a438fb0ccc6fcdf841a44849c6,
   "@/components/Dashboard/OpinionLayoutEditor#OpinionLayoutEditor": OpinionLayoutEditor_3bb87213e86dff82b05745c669248a71,
   "@/components/Dashboard/FeaturesLayoutEditor#FeaturesLayoutEditor": FeaturesLayoutEditor_4a48329e978179877a0d50f880212653,
