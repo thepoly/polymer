@@ -57,38 +57,36 @@ export function VersionSplash({ shouldShow, version, versionName, releaseNotes }
 
   return (
     <div className="newsroom-notice-overlay">
-      <div className="newsroom-notice-modal">
-        <p className="newsroom-notice-version">
-          Polymer {version}
-          {releaseNotes ? (
-            <>
-              {' - '}
-              <span className="newsroom-notice-rainbow">{releaseNotes.tagline}</span>
-            </>
-          ) : null}
-        </p>
-        <h2>
+      <div className="newsroom-notice-modal" role="dialog" aria-modal="true" aria-labelledby="newsroom-notice-title">
+        <div className="newsroom-notice-eyebrow">
+          <p className="newsroom-notice-version">Polymer {version}</p>
+          {releaseNotes ? <p className="newsroom-notice-tagline">{releaseNotes.tagline}</p> : null}
+        </div>
+        <h2 id="newsroom-notice-title">
           Welcome to Polymer {version}
-          {versionName ? ` — ${versionName}` : ''}! 🎉
+          {versionName ? <span className="newsroom-notice-name">{versionName}</span> : null}
         </h2>
         {releaseNotes ? (
           <div className="newsroom-notice-body">
-            <p className="newsroom-notice-heading">Release notes:</p>
-            <ul className="newsroom-notice-list">
+            <p className="newsroom-notice-heading">What&apos;s new</p>
+            <ol className="newsroom-notice-list">
               {releaseNotes.notes.map((note) => (
                 <li key={note}>{note}</li>
               ))}
-            </ul>
+            </ol>
           </div>
         ) : null}
-        <button
-          type="button"
-          className="newsroom-notice-button"
-          onClick={handleContinue}
-          disabled={isSaving}
-        >
-          {isSaving ? 'Opening newsroom...' : 'Continue'}
-        </button>
+        <div className="newsroom-notice-footer">
+          <p className="newsroom-notice-hint">You&apos;ll see this once per release.</p>
+          <button
+            type="button"
+            className="newsroom-notice-button"
+            onClick={handleContinue}
+            disabled={isSaving}
+          >
+            {isSaving ? 'Opening newsroom...' : 'Continue'}
+          </button>
+        </div>
       </div>
     </div>
   )
