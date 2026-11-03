@@ -35,6 +35,15 @@ const PhotoGalleryBlock: Block = {
         },
       ],
     },
+    {
+      name: 'caption',
+      type: 'text',
+      label: 'Gallery Caption',
+      admin: {
+        description:
+          'Shown under the whole gallery. When set, it replaces the captions on individual photos.',
+      },
+    },
   ],
 }
 

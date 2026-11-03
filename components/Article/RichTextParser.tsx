@@ -205,10 +205,10 @@ const serialize = (nodes: LexicalNode[], pCount: number, isRoot: boolean): { chi
         );
 
       case 'block': {
-        const blockFields = node.fields as { blockType: string; images?: CreditedImage[] } | undefined;
+        const blockFields = node.fields as { blockType: string; images?: CreditedImage[]; caption?: string | null } | undefined;
         if (!blockFields) return null;
         if (blockFields.blockType === 'photo_gallery') {
-          return <PhotoGallery key={index} images={blockFields.images || []} />;
+          return <PhotoGallery key={index} images={blockFields.images || []} caption={blockFields.caption} />;
         }
         if (blockFields.blockType === 'carousel') {
           return <Carousel key={index} images={blockFields.images || []} />;

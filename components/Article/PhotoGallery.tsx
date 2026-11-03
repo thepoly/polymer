@@ -10,6 +10,8 @@ import {
 
 type Props = {
   images: CreditedImage[]
+  /** Runs under the whole gallery and replaces the per-photo captions. */
+  caption?: string | null
 }
 
 type PlacedImage = PopulatedCreditedImage & { placement: CaptionPlacement }
@@ -28,7 +30,7 @@ function distributeToColumns(images: PlacedImage[], colCount: number): PlacedIma
   return columns
 }
 
-export async function PhotoGallery({ images }: Props) {
+export async function PhotoGallery({ images, caption }: Props) {
   const populated = images.filter((img): img is PopulatedCreditedImage =>
     typeof img.image === 'object' && img.image !== null && !!(img.image as Media).url
   )
@@ -37,10 +39,16 @@ export async function PhotoGallery({ images }: Props) {
   const colCount = Math.min(populated.length, 3)
   const mdGridCols = { 1: 'md:grid-cols-1', 2: 'md:grid-cols-2', 3: 'md:grid-cols-3' }[colCount]
 
+  const galleryCaption = caption?.trim()
+  // Dropped before sampling so the area measured below matches what is drawn.
+  const entries = galleryCaption
+    ? populated.map((entry) => ({ ...entry, caption: null }))
+    : populated
+
   // The caption and credit sit on the photo, so both the corner they occupy and
   // their colour come from the pixels they will actually cover.
   const placed: PlacedImage[] = await Promise.all(
-    populated.map(async (entry) => ({
+    entries.map(async (entry) => ({
       ...entry,
       placement: await getCaptionPlacement(entry.image, captionPlainText(entry), colCount),
     })),
@@ -74,6 +82,11 @@ export async function PhotoGallery({ images }: Props) {
           </div>
         ))}
       </div>
+      {galleryCaption && (
+        <p className="m-0 px-4 pt-1.5 font-meta text-[12px] italic text-text-muted transition-colors">
+          {galleryCaption}
+        </p>
+      )}
     </div>
   )
 }

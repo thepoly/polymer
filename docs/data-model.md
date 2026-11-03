@@ -149,8 +149,11 @@ CI doesn't regenerate; the file is committed.
 Defined inline in `payload.config.ts` and reused by both `articles` and
 `live-articles`:
 
-- `photo_gallery` — array of `{ image, caption }` (image is a `media` upload)
-- `carousel` — same shape; rendered as a swipe carousel on the frontend
+- `photo_gallery` — array of `{ image, caption }` (image is a `media` upload),
+  plus an optional block-level `caption` shown under the gallery that replaces
+  the per-photo captions
+- `carousel` — array of `{ image, caption }`; rendered as a swipe carousel on
+  the frontend
 
 The `media` upload feature also injects two extra fields on the embedded
 upload reference: `caption` (per-use caption) and `credit` (per-use

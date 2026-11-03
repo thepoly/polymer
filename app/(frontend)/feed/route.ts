@@ -38,8 +38,10 @@ function renderFigure(params: {
 function renderGalleryImages(
   images: Array<{ image?: Media | number | null; caption?: string | null }> | undefined,
   siteUrl: string,
+  galleryCaption?: string | null,
 ): string {
   if (!Array.isArray(images) || images.length === 0) return ''
+  const sharedCaption = galleryCaption?.trim()
   const parts: string[] = []
   for (const item of images) {
     if (!item) continue
@@ -51,12 +53,13 @@ function renderGalleryImages(
       renderFigure({
         url: absolute,
         alt: img.alt || img.title || item.caption || '',
-        caption: item.caption || null,
+        caption: sharedCaption ? null : item.caption || null,
         width: img.width || null,
         height: img.height || null,
       }),
     )
   }
+  if (sharedCaption) parts.push(`<p>${escapeHtml(sharedCaption)}</p>`)
   return parts.join('\n')
 }
 
@@ -257,9 +260,10 @@ export async function GET(): Promise<Response> {
                 const fields = (node as unknown as {
                   fields?: {
                     images?: Array<{ image?: Media | number | null; caption?: string | null }>
+                    caption?: string | null
                   }
                 }).fields
-                return renderGalleryImages(fields?.images, siteUrl)
+                return renderGalleryImages(fields?.images, siteUrl, fields?.caption)
               },
               carousel: ({ node }: { node: unknown }) => {
                 const fields = (node as unknown as {
