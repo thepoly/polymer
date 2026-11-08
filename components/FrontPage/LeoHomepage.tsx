@@ -73,7 +73,7 @@ type Piece =
   | { kind: "photo"; card: number; rect: Rect; up?: boolean; crop?: string }
   | { kind: "band"; card: number; rect: Rect; inset?: "top" | "bottom" | "up" }
   | { kind: "text"; card: number; rect: Rect; inset?: "top" | "bottom" | "up"; place?: "above" | "below" }
-  | { kind: "filler"; text: number; rect: Rect; align: "start" | "center" | "end" };
+  | { kind: "filler"; text: number; rect: Rect; align: "start" | "center" | "end"; hug?: "right" };
 
 type Scale = "s" | "m" | "l" | "xl";
 /** `scale` sets how big the card reads: photo footprint is in the rects, type and padding follow from this. */
@@ -105,8 +105,8 @@ const PATTERNS: Record<string, Pattern> = {
       { kind: "photo", card: 0, rect: R(7, 6, 1, 3) },
       { kind: "band", card: 0, rect: R(1, 9, 2), inset: "bottom" },
       { kind: "text", card: 0, rect: R(1, 6, 2), inset: "bottom" },
-      { kind: "filler", text: 0, rect: R(1, 6, 1), align: "end" },
-      { kind: "filler", text: 1, rect: R(1, 6, 3), align: "start" },
+      { kind: "filler", text: 0, rect: R(1, 6, 1), align: "end", hug: "right" },
+      { kind: "filler", text: 1, rect: R(1, 6, 3), align: "start", hug: "right" },
     ],
   },
   sideLeftNarrow: {
@@ -145,7 +145,7 @@ const PATTERNS: Record<string, Pattern> = {
       { kind: "photo", card: 0, rect: R(5, 8, 1, 2) },
       { kind: "band", card: 0, rect: R(1, 7, 1), inset: "top" },
       { kind: "text", card: 0, rect: R(1, 4, 1), inset: "top" },
-      { kind: "filler", text: 0, rect: R(1, 4, 2), align: "end" },
+      { kind: "filler", text: 0, rect: R(1, 4, 2), align: "end", hug: "right" },
     ],
   },
   sideLeft: {
@@ -174,8 +174,8 @@ const PATTERNS: Record<string, Pattern> = {
       { kind: "photo", card: 0, rect: R(5, 8, 1, 2), crop: "aspect-[16/10]" },
       { kind: "band", card: 0, rect: R(3, 10, 3), inset: "up" },
       { kind: "text", card: 0, rect: R(5, 8, 3), inset: "up", place: "below" },
-      { kind: "filler", text: 0, rect: R(1, 4, 1), align: "start" },
-      { kind: "filler", text: 1, rect: R(1, 4, 2), align: "end" },
+      { kind: "filler", text: 0, rect: R(1, 4, 1), align: "start", hug: "right" },
+      { kind: "filler", text: 1, rect: R(1, 4, 2), align: "end", hug: "right" },
     ],
   },
   // Title above: band across the top, photo drops out of its right side; a tab of band shows left of the photo.
@@ -185,8 +185,8 @@ const PATTERNS: Record<string, Pattern> = {
       { kind: "band", card: 0, rect: R(1, 11, 1) },
       { kind: "text", card: 0, rect: R(1, 11, 1), place: "above" },
       { kind: "photo", card: 0, rect: R(5, 8, 2, 2), up: true },
-      { kind: "filler", text: 0, rect: R(1, 4, 2), align: "start" },
-      { kind: "filler", text: 1, rect: R(1, 4, 3), align: "end" },
+      { kind: "filler", text: 0, rect: R(1, 4, 2), align: "start", hug: "right" },
+      { kind: "filler", text: 1, rect: R(1, 4, 3), align: "end", hug: "right" },
     ],
   },
   aboveLeft: {
@@ -211,7 +211,7 @@ const PATTERNS: Record<string, Pattern> = {
       { kind: "photo", card: 1, rect: R(6, 7, 3, 2) },
       { kind: "band", card: 1, rect: R(1, 9, 3), inset: "top" },
       { kind: "text", card: 1, rect: R(1, 5, 3), inset: "top" },
-      { kind: "filler", text: 1, rect: R(1, 5, 4), align: "center" },
+      { kind: "filler", text: 1, rect: R(1, 5, 4), align: "center", hug: "right" },
     ],
   },
   zigRight: {
@@ -220,7 +220,7 @@ const PATTERNS: Record<string, Pattern> = {
       { kind: "photo", card: 0, rect: R(6, 7, 1, 2) },
       { kind: "band", card: 0, rect: R(1, 8, 2), inset: "bottom" },
       { kind: "text", card: 0, rect: R(1, 5, 2), inset: "bottom" },
-      { kind: "filler", text: 0, rect: R(1, 5, 1), align: "center" },
+      { kind: "filler", text: 0, rect: R(1, 5, 1), align: "center", hug: "right" },
       { kind: "photo", card: 1, rect: R(1, 7, 3, 2) },
       { kind: "band", card: 1, rect: R(4, 9, 3), inset: "top" },
       { kind: "text", card: 1, rect: R(8, 5, 3), inset: "top" },
@@ -237,7 +237,7 @@ Object.assign(PATTERNS, {
       { kind: "photo", card: 0, rect: R(9, 4, 1), crop: "aspect-[4/3]" },
       { kind: "band", card: 0, rect: R(5, 6, 1), inset: "top" },
       { kind: "text", card: 0, rect: R(5, 4, 1), inset: "top" },
-      { kind: "filler", text: 0, rect: R(1, 4, 1), align: "center" },
+      { kind: "filler", text: 0, rect: R(1, 4, 1), align: "center", hug: "right" },
     ],
   },
   smallLeft: {
@@ -271,7 +271,7 @@ type PlacedPiece =
   | { kind: "photo"; card: Placed; rect: Rect; priority: boolean; up?: boolean; crop?: string }
   | { kind: "band"; card: Placed; rect: Rect; inset?: "top" | "bottom" | "up" }
   | { kind: "text"; card: Placed; rect: Rect; inset?: "top" | "bottom" | "up"; place?: "above" | "below"; size: Scale; priority: boolean }
-  | { kind: "filler"; text: Placed; rect: Rect; align: "start" | "center" | "end"; size: FloatSize };
+  | { kind: "filler"; text: Placed; rect: Rect; align: "start" | "center" | "end"; size: FloatSize; hug?: "right"; tint?: Placed };
 
 /** Lay the cards out: chain patterns down the grid, zigzagging, until the cards run out. */
 function tile(cards: Placed[], texts: Placed[]): PlacedPiece[] {
@@ -296,7 +296,7 @@ function tile(cards: Placed[], texts: Placed[]): PlacedPiece[] {
       if (piece.kind === "filler") {
         const text = textQ.shift();
         if (!text) continue;
-        out.push({ kind: "filler", text, rect, align: piece.align, size: pick(rng, ["s", "m", "m", "l", piece.rect.span >= 5 ? "xl" : "m"] as const) });
+        out.push({ kind: "filler", text, rect, align: piece.align, hug: piece.hug, tint: batchCards[0], size: pick(rng, ["s", "m", "m", "l", piece.rect.span >= 5 ? "xl" : "m"] as const) });
       } else if (piece.kind === "photo") {
         out.push({ kind: "photo", card: batchCards[piece.card], rect, priority: first, up: piece.up, crop: piece.crop });
       } else if (piece.kind === "band") {
@@ -397,6 +397,7 @@ function BandText({
 }) {
   const a = piece.card.article;
   const wide = piece.place === "above"; // text runs the band's full width: let the title breathe
+  const vertical = (piece.size === "l" || piece.size === "xl") && !wide;
   return (
     <TransitionLink
       href={getArticleUrl(a)}
@@ -405,11 +406,21 @@ function BandText({
       data-homepage-slot={slot ?? undefined}
       className={`group relative z-20 flex min-w-0 flex-col justify-center bg-[var(--band)] px-6 py-7 text-white dark:bg-[var(--band-dark)] dark:text-black md:bg-transparent md:dark:bg-transparent ${
         piece.size === "s" ? "md:px-5 md:py-5" : piece.size === "xl" ? "md:px-10 md:py-10" : "md:px-8 md:py-8"
-      } ${
+      } ${vertical ? "md:pl-12" : ""} ${
         INSET[piece.inset ?? "none"]
       } ${TEXT_PAD[piece.inset === "up" ? "up" : piece.place === "above" ? "above" : "none"]}${a.isFollytechnic ? " follytechnic" : ""}`}
     >
-      <div className={`font-meta font-bold uppercase tracking-[0.04em] leading-none ${piece.size === "s" ? "text-[11px]" : piece.size === "xl" ? "text-[14px] md:text-[16px]" : "text-[13px] md:text-[14px]"}`}>
+      {vertical ? (
+        // Kicker runs up the band's outer edge, reading bottom to top.
+        <div
+          aria-hidden
+          className="pointer-events-none absolute bottom-8 left-3 hidden font-meta text-[12px] font-bold uppercase tracking-[0.18em] leading-none opacity-80 md:block"
+          style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+        >
+          {sectionLabel(a)}
+        </div>
+      ) : null}
+      <div className={`font-meta font-bold uppercase tracking-[0.04em] leading-none ${vertical ? "md:sr-only" : ""} ${piece.size === "s" ? "text-[11px]" : piece.size === "xl" ? "text-[14px] md:text-[16px]" : "text-[13px] md:text-[14px]"}`}>
         {sectionLabel(a)}
       </div>
       <h2
@@ -439,15 +450,20 @@ function BandText({
 }
 
 /** A story without a photo: bare text, no background, floating in a notch. */
-function FloatItem({ piece, slot }: { piece: Extract<PlacedPiece, { kind: "filler" }>; slot: number | null }) {
+function FloatItem({ piece, slot, tint }: { piece: Extract<PlacedPiece, { kind: "filler" }>; slot: number | null; tint?: BandColors | null }) {
   const a = piece.text.article;
   const isOpinion = a.section === "opinion";
   const size = piece.size;
   const align = { start: "md:justify-start", center: "md:justify-center", end: "md:justify-end" }[piece.align];
   return (
-    <div style={gridArea(piece.rect)} className={`flex min-w-0 flex-col px-6 py-6 md:px-7 ${align}`} data-homepage-layout="leo" data-homepage-slot={slot ?? undefined}>
+    <div
+      style={{ ...gridArea(piece.rect), "--tint": tint?.light ?? "var(--color-accent)", "--tint-dark": tint?.dark ?? "#fff" } as React.CSSProperties}
+      className={`flex min-w-0 flex-col px-6 py-6 md:px-7 ${align} ${piece.hug === "right" ? "md:items-end md:text-right" : ""}`}
+      data-homepage-layout="leo"
+      data-homepage-slot={slot ?? undefined}
+    >
       <TransitionLink href={getArticleUrl(a)} className={`group block min-w-0 cursor-pointer${a.isFollytechnic ? " follytechnic" : ""}`}>
-        <div className="font-meta font-bold uppercase text-accent dark:text-white text-[12px] md:text-[13px] tracking-[0.06em] leading-none">
+        <div className="font-meta font-bold uppercase text-[var(--tint)] dark:text-[var(--tint-dark)] text-[12px] md:text-[13px] tracking-[0.06em] leading-none">
           {isOpinion ? (authorText(a) ?? "Opinion") : sectionLabel(a)}
         </div>
         <h3
@@ -544,7 +560,7 @@ export function LeoHomepage({
                   showSubdeck={subdeckOf.get(String(piece.card.article.id)) !== false}
                 />
               );
-            return <FloatItem key={`f${i}`} piece={piece} slot={piece.text.slot} />;
+            return <FloatItem key={`f${i}`} piece={piece} slot={piece.text.slot} tint={piece.tint ? bands[String(piece.tint.article.id)] : null} />;
           })}
         </div>
       </div>
