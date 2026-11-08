@@ -59,7 +59,9 @@ VALUES
   ('20260922_000000_add_staff_business_manager', 31, NOW(), NOW()),
   ('20261022_000000_add_sports_page_layout', 32, NOW(), NOW()),
   ('20261022_010000_add_schools_and_game_result', 32, NOW(), NOW()),
-  ('20261022_020000_add_article_sport', 32, NOW(), NOW())
+  ('20261022_020000_add_article_sport', 32, NOW(), NOW()),
+  ('20261108_000000_add_cancer_to_layout_skeleton', 33, NOW(), NOW()),
+  ('20261108_010000_add_leo_to_layout_skeleton', 34, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1572,4 +1574,20 @@ ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_sport" "public"."enu
 
 CREATE INDEX IF NOT EXISTS "articles_sport_idx" ON "articles" USING btree ("sport");
 CREATE INDEX IF NOT EXISTS "_articles_v_version_version_sport_idx" ON "_articles_v" USING btree ("version_sport");
+
+-- 20261108_000000: Add 'cancer' value to layout skeleton enum (only if it exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_layout_skeleton') THEN
+    ALTER TYPE "public"."enum_layout_skeleton" ADD VALUE IF NOT EXISTS 'cancer';
+  END IF;
+END $$;
+
+-- 20261108_010000: Add 'leo' value to layout skeleton enum (only if it exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'enum_layout_skeleton') THEN
+    ALTER TYPE "public"."enum_layout_skeleton" ADD VALUE IF NOT EXISTS 'leo';
+  END IF;
+END $$;
 SQL

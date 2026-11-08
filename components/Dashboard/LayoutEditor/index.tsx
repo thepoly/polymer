@@ -123,6 +123,8 @@ const SKELETON_SIGN_COLORS: Record<string, string> = {
   aries: '#e85d4a',
   taurus: '#e8892d',
   gemini: '#f0c94a',
+  cancer: '#7fb3d5',
+  leo: '#e0a526',
   custom: '#3b82f6',
 };
 
@@ -675,7 +677,7 @@ function DragOverlayCard({ article }: { article: ArticleData }) {
 // Skeleton definitions — built-in layout templates
 // ---------------------------------------------------------------------------
 
-type SkeletonId = 'custom' | 'aries' | 'taurus' | 'gemini';
+type SkeletonId = 'custom' | 'aries' | 'taurus' | 'gemini' | 'cancer' | 'leo';
 
 type SkeletonDef = {
   id: SkeletonId;
@@ -693,6 +695,8 @@ const SKELETON_LIBRARY: SkeletonDef[] = [
   { id: 'aries', name: 'Aries', description: 'Lead story with photo + 2×2 hero grid. Fully responsive.', icon: '♈', pinned: true, top: true, section: true },
   { id: 'taurus', name: 'Taurus', description: 'Feature story with image + supporting text stories + optional list rail.', icon: '♉', pinned: true, top: true, section: true },
   { id: 'gemini', name: 'Gemini', description: 'Three-column: text-only headline stack left, hero photo + secondary center, photo feature stack right, plus a bottom card row.', icon: '♊', pinned: true, top: true, section: false },
+  { id: 'cancer', name: 'Cancer', description: 'Broadsheet: big lead with photo beside it, stacked story rows with section labels, and a right rail of opinion headlines then photo features.', icon: '♋', pinned: true, top: true, section: false },
+  { id: 'leo', name: 'Leo', description: 'Full-width lead on a band coloured from its photo, running under the overhanging photo, then story rows with an opinion + photo rail.', icon: '♌', pinned: true, top: true, section: false },
   { id: 'custom', name: 'Custom Grid', description: 'Build your own layout with rows and columns.', icon: '⊞', pinned: false, top: true, section: false },
 ];
 
@@ -1316,7 +1320,7 @@ export function LayoutEditor() {
       if (id) sectionPinnedIds.add(id);
     }
   }
-  const heroUsedIds = (skeleton === 'aries' || skeleton === 'taurus' || skeleton === 'gemini')
+  const heroUsedIds = (skeleton === 'aries' || skeleton === 'taurus' || skeleton === 'gemini' || skeleton === 'cancer' || skeleton === 'leo')
     ? ariesUsedIds(aries)
     : collectArticleIds(grid);
   const usedIds = new Set([...heroUsedIds, ...sectionPinnedIds]);
@@ -1371,7 +1375,7 @@ export function LayoutEditor() {
         if (layoutData) {
           // Read skeleton
           const skel = (layoutData as Record<string, unknown>).skeleton as string | undefined;
-          if (skel === 'aries' || skel === 'taurus' || skel === 'gemini') {
+          if (skel === 'aries' || skel === 'taurus' || skel === 'gemini' || skel === 'cancer' || skel === 'leo') {
             setSkeleton(skel as SkeletonId);
             const getRelId = (val: unknown): number | null => {
               if (typeof val === 'number') return val;
@@ -1813,7 +1817,7 @@ export function LayoutEditor() {
   const handleActivate = async () => {
     // Check for unpublished articles in all slots
     const allUsedArticleIds = new Set<number>();
-    if (skeleton === 'aries' || skeleton === 'taurus' || skeleton === 'gemini') {
+    if (skeleton === 'aries' || skeleton === 'taurus' || skeleton === 'gemini' || skeleton === 'cancer' || skeleton === 'leo') {
       for (const id of ariesUsedIds(aries)) allUsedArticleIds.add(id);
     } else {
       for (const id of collectArticleIds(grid)) allUsedArticleIds.add(id);
@@ -1850,13 +1854,13 @@ export function LayoutEditor() {
       const layoutName = 'Homepage Layout';
       const commonFields = { name: layoutName, sectionLayouts: cleanSectionLayouts };
       let body: Record<string, unknown>;
-      if (skeleton === 'aries' || skeleton === 'taurus' || skeleton === 'gemini') {
+      if (skeleton === 'aries' || skeleton === 'taurus' || skeleton === 'gemini' || skeleton === 'cancer' || skeleton === 'leo') {
         // Gemini uses left[0..2] + right[0] as a cluster of 4 auxiliary headlines;
         // preserve the full arrays so slot positions round-trip correctly.
-        const visLeft = skeleton === 'gemini'
+        const visLeft = skeleton === 'gemini' || skeleton === 'cancer' || skeleton === 'leo'
           ? aries.left
           : aries.left.slice(0, ariesColSlotCount(aries.left, articleMap));
-        const visRight = skeleton === 'gemini'
+        const visRight = skeleton === 'gemini' || skeleton === 'cancer' || skeleton === 'leo'
           ? aries.right
           : aries.right.slice(0, ariesColSlotCount(aries.right, articleMap));
         body = {
@@ -1906,7 +1910,7 @@ export function LayoutEditor() {
     return <div className="le-loading"><div className="le-loading-spinner" /><p>Loading layout editor...</p></div>;
   }
 
-  const articleCount = (skeleton === 'aries' || skeleton === 'taurus' || skeleton === 'gemini')
+  const articleCount = (skeleton === 'aries' || skeleton === 'taurus' || skeleton === 'gemini' || skeleton === 'cancer' || skeleton === 'leo')
     ? ariesUsedIds(aries).size
     : [...collectArticleIds(grid)].length;
 
@@ -2108,6 +2112,69 @@ export function LayoutEditor() {
                       <SubdeckToggle slotId={`bottom-${i}`} />
                     </div>
                   ))}
+                </div>
+              </div>
+                );
+              })()
+            ) : skeleton === 'cancer' || skeleton === 'leo' ? (
+              /* Cancer: main column (lead + story rows) and right rail (opinion list + photo features) */
+              (() => {
+                const subdeckFor = (slotId: string): boolean => aries.showSubdeck?.[slotId] !== false;
+                const toggleSubdeck = (slotId: string) => {
+                  setAries((p) => ({ ...p, showSubdeck: { ...(p.showSubdeck ?? {}), [slotId]: !subdeckFor(slotId) } }));
+                  markDirty();
+                };
+                const SubdeckToggle = ({ slotId }: { slotId: string }) => (
+                  <label className="le-subdeck-toggle">
+                    <input type="checkbox" checked={subdeckFor(slotId)} onChange={() => toggleSubdeck(slotId)} />
+                    <span>Show subdeck</span>
+                  </label>
+                );
+                const clearAt = (col: 'left' | 'right' | 'bottom', i: number) => {
+                  setAries((p) => { const next = { ...p, [col]: [...p[col]] }; next[col][i] = null; return next; });
+                  markDirty();
+                };
+                const slot = (col: 'left' | 'right' | 'bottom', i: number, label: string, subdeck: boolean) => (
+                  <div key={`${col}-${i}`} className="le-gemini-slot">
+                    <AriesDropSlot
+                      slotId={`${col}-${i}`}
+                      label={label}
+                      article={aries[col][i] != null ? articleMap.get(aries[col][i]!) || null : null}
+                      isLead={false}
+                      onClear={() => clearAt(col, i)}
+                      numberingSkeleton={skeleton}
+                    />
+                    {subdeck && <SubdeckToggle slotId={`${col}-${i}`} />}
+                  </div>
+                );
+                return (
+              <div className="le-aries-canvas">
+                <div className="le-aries-description">
+                  <span className="le-presets-label">{skeleton === 'leo' ? 'Leo' : 'Cancer'}</span>
+                  <span className="le-aries-desc-text">
+                    Broadsheet: big lead with its photo beside it, then stacked story rows with section labels. Right rail: opinion headlines, then photo features. Empty story, opinion and rail slots fill with the latest stories.
+                  </span>
+                </div>
+                <div className="le-cancer-top">
+                  <div className="le-gemini-col">
+                    <div className="le-gemini-col-label">Main column</div>
+                    <AriesDropSlot
+                      slotId="lead"
+                      label="Lead (photo beside)"
+                      article={aries.lead !== null ? articleMap.get(aries.lead) || null : null}
+                      isLead
+                      onClear={() => { setAries((p) => ({ ...p, lead: null })); markDirty(); }}
+                      numberingSkeleton={skeleton}
+                    />
+                    <SubdeckToggle slotId="lead" />
+                    {[0, 1, 2, 3, 4, 5].map((i) => slot('left', i, `Story row ${i + 1}`, true))}
+                  </div>
+                  <div className="le-gemini-col">
+                    <div className="le-gemini-col-label">Opinion list</div>
+                    {[0, 1, 2, 3, 4].map((i) => slot('right', i, `Opinion ${i + 1}`, false))}
+                    <div className="le-gemini-col-label">Rail features</div>
+                    {[0, 1, 2].map((i) => slot('bottom', i, `Feature ${i + 1}`, true))}
+                  </div>
                 </div>
               </div>
                 );

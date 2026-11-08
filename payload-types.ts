@@ -595,7 +595,7 @@ export interface Layout {
    */
   lastModifiedBy?: (number | null) | User;
   liveArticles?: (number | LiveArticle)[] | null;
-  skeleton?: ('custom' | 'aries' | 'taurus' | 'gemini') | null;
+  skeleton?: ('custom' | 'aries' | 'taurus' | 'gemini' | 'cancer' | 'leo') | null;
   grid?:
     | {
         [k: string]: unknown;

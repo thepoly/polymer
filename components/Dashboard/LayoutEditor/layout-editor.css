@@ -1396,6 +1396,22 @@
   }
 }
 
+/* ---- Cancer skeleton ---- */
+.le-cancer-top {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.le-cancer-top > .le-gemini-col:first-child > .le-aries-slot:first-of-type {
+  min-height: 160px;
+}
+@media (max-width: 900px) {
+  .le-cancer-top {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---- Section Layout Editors ---- */
 .le-section-editors {
   margin-top: 24px;

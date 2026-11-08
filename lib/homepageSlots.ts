@@ -14,7 +14,7 @@
  * loads, users, and environments. Downstream analytics treat them as opaque
  * identifiers — renumbering invalidates historical data.
  */
-export type HomepageLayoutName = 'custom' | 'aries' | 'taurus' | 'gemini';
+export type HomepageLayoutName = 'custom' | 'aries' | 'taurus' | 'gemini' | 'cancer' | 'leo';
 
 /**
  * Aries (stored as AriesData: lead / left[] / right[] / bottom[]).
@@ -123,10 +123,44 @@ const GEMINI_SLOTS: Record<string, number> = {
   'right-4': 14,
 };
 
+/**
+ * Cancer (from components/FrontPage/CancerHomepage.tsx). Broadsheet main
+ * column of stacked story rows plus a right rail: opinion list, then photo
+ * features.
+ *
+ *   ┌──────────────────┬──────────┐
+ *   │ lead             │ right-0  │  opinion list
+ *   │ left-0           │ ...      │
+ *   │ ...              │ right-4  │
+ *   │ left-5           │ bottom-0 │  rail photo features
+ *   │                  │ bottom-2 │
+ *   └──────────────────┴──────────┘
+ */
+const CANCER_SLOTS: Record<string, number> = {
+  lead: 1,
+  'left-0': 2,
+  'left-1': 3,
+  'left-2': 4,
+  'left-3': 5,
+  'left-4': 6,
+  'left-5': 7,
+  'right-0': 8,
+  'right-1': 9,
+  'right-2': 10,
+  'right-3': 11,
+  'right-4': 12,
+  'bottom-0': 13,
+  'bottom-1': 14,
+  'bottom-2': 15,
+};
+
 const NAMED_SKELETON_SLOTS: Record<Exclude<HomepageLayoutName, 'custom'>, Record<string, number>> = {
   aries: ARIES_SLOTS,
   taurus: TAURUS_SLOTS,
   gemini: GEMINI_SLOTS,
+  cancer: CANCER_SLOTS,
+  // Leo is Cancer with the lead lifted to full width; same slots and numbering.
+  leo: CANCER_SLOTS,
 };
 
 export type CustomGridCell = {

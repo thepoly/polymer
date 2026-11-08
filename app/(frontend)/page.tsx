@@ -1,10 +1,14 @@
 export const revalidate = 60;
 import type { Metadata } from "next";
 import Header from "@/components/Header";
+import LeoHeader from "@/components/LeoHeader";
 import ArticleScrollBar from "@/components/ArticleScrollBar";
 import Footer from "@/components/Footer";
 import FrontPage, { SectionBlock } from "@/components/FrontPage";
 import { GeminiHomepage } from "@/components/FrontPage/GeminiHomepage";
+import { CancerHomepage } from "@/components/FrontPage/CancerHomepage";
+import { LeoHomepage } from "@/components/FrontPage/LeoHomepage";
+import { getBandColors, type BandColors } from "@/lib/imageBandColor";
 import { GridLayout, type GridRow } from "@/components/FrontPage/GridLayout";
 import { DynamicSectionHeader } from "@/components/FrontPage/DynamicSectionHeader";
 import { type LiveArticleStripEntry } from "@/components/LiveStrip";
@@ -466,6 +470,105 @@ export default async function Home() {
       )}
     </div>
   );
+
+  // --- Cancer / Leo skeletons: broadsheet main column + opinion/feature rail ---
+  // (Leo lifts the lead to full width; both share slots and fill rules.)
+  if (
+    (layout.skeleton === 'cancer' || layout.skeleton === 'leo') &&
+    layout.grid &&
+    typeof layout.grid === 'object' &&
+    !Array.isArray(layout.grid) &&
+    'lead' in layout.grid
+  ) {
+    const g = layout.grid as {
+      lead?: number | null;
+      left?: (number | null)[];
+      right?: (number | null)[];
+      bottom?: (number | null)[];
+      showSubdeck?: Record<string, boolean>;
+    };
+    const lead = g.lead ? layoutArticleMap.get(g.lead) ?? null : null;
+    if (lead) {
+      const resolve = (ids: (number | null)[] | undefined): ComponentArticle[] =>
+        (ids || [])
+          .map((id) => (id ? layoutArticleMap.get(id) ?? null : null))
+          .filter((a): a is ComponentArticle => Boolean(a));
+
+      // Cancer slot shape (empty slots fill from the latest stories):
+      //   left[0..5]   -> main-column story rows (at least 4 shown)
+      //   right[0..4]  -> opinion headline list (5)
+      //   bottom[0..2] -> rail photo features (at least 2 shown)
+      const storiesPinned = resolve((g.left || []).slice(0, 6));
+      const opinionPinned = resolve((g.right || []).slice(0, 5));
+      const railPinned = resolve((g.bottom || []).slice(0, 3));
+      const taken = new Set<string>(
+        [lead, ...storiesPinned, ...opinionPinned, ...railPinned].map((a) => String(a.id)),
+      );
+      const take = (pool: ComponentArticle[], n: number, filter: (a: ComponentArticle) => boolean = () => true) => {
+        const out: ComponentArticle[] = [];
+        for (const a of pool) {
+          if (out.length >= n) break;
+          if (taken.has(String(a.id)) || !filter(a)) continue;
+          taken.add(String(a.id));
+          out.push(a);
+        }
+        return out;
+      };
+      const opinion = [...opinionPinned, ...take(opinionArticlesRaw, 5 - opinionPinned.length)];
+      const nonOpinionPool = [...newsArticlesRaw, ...featuresArticlesRaw, ...sportsArticlesRaw].sort(
+        (a, b) => new Date(b.publishedDate ?? 0).getTime() - new Date(a.publishedDate ?? 0).getTime(),
+      );
+      const stories = [...storiesPinned, ...take(nonOpinionPool, Math.max(0, 4 - storiesPinned.length))];
+      const railFeatures = [
+        ...railPinned,
+        ...take([...featuresArticlesRaw, ...nonOpinionPool], Math.max(0, 2 - railPinned.length), (a) => Boolean(a.image)),
+      ];
+
+      // Leo colours every photo story's band from its photo.
+      const leoBands: Record<string, BandColors | null> = {};
+      if (layout.skeleton === 'leo') {
+        await Promise.all(
+          [lead, ...stories, ...railFeatures].map(async (a) => {
+            leoBands[String(a.id)] = await getBandColors(a.image || a.imageFull);
+          }),
+        );
+      }
+
+      return (
+        <main className="min-h-screen bg-bg-main transition-colors duration-300">
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }} />
+          <ArticleScrollBar />
+          {layout.skeleton === 'leo' ? <LeoHeader liveEntries={liveStripEntries} /> : <Header liveEntries={liveStripEntries} />}
+          {layout.skeleton === 'leo' ? (
+            <LeoHomepage
+              lead={lead}
+              bands={leoBands}
+              stories={stories}
+              opinion={opinion}
+              railFeatures={railFeatures}
+              showSubdeckLead={g.showSubdeck?.lead !== false}
+              showSubdeckStories={stories.map((_, i) => g.showSubdeck?.[`left-${i}`] !== false)}
+              showSubdeckRail={railFeatures.map((_, i) => g.showSubdeck?.[`bottom-${i}`] !== false)}
+              sectionBlocks={null}
+            />
+          ) : (
+            <CancerHomepage
+              lead={lead}
+              stories={stories}
+              opinion={opinion}
+              railFeatures={railFeatures}
+              showSubdeckLead={g.showSubdeck?.lead !== false}
+              showSubdeckStories={stories.map((_, i) => g.showSubdeck?.[`left-${i}`] !== false)}
+              showSubdeckRail={railFeatures.map((_, i) => g.showSubdeck?.[`bottom-${i}`] !== false)}
+              sectionBlocks={null}
+            />
+          )}
+          <Footer />
+        </main>
+      );
+    }
+  }
 
   // --- Gemini skeleton: centered hero + cluster of 4 aux headlines ---
   if (

@@ -115,6 +115,8 @@ const Layout: CollectionConfig = {
         { label: 'Aries', value: 'aries' },
         { label: 'Taurus', value: 'taurus' },
         { label: 'Gemini', value: 'gemini' },
+        { label: 'Cancer', value: 'cancer' },
+        { label: 'Leo', value: 'leo' },
       ],
       admin: { hidden: true },
     },

@@ -30,7 +30,7 @@ interface FrontPageProps {
    * aries-style for both 'aries' and 'taurus'/legacy fallback; callers pass
    * the actual skeleton name so analytics attribute correctly.
    */
-  layoutName?: Exclude<HomepageLayoutName, "custom" | "gemini">;
+  layoutName?: Exclude<HomepageLayoutName, "custom" | "gemini" | "cancer" | "leo">;
 }
 
 interface HeroColumns {

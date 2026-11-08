@@ -50,6 +50,8 @@ import * as migration_20260922_000000_add_staff_business_manager from './2026092
 import * as migration_20261022_000000_add_sports_page_layout from './20261022_000000_add_sports_page_layout'
 import * as migration_20261022_010000_add_schools_and_game_result from './20261022_010000_add_schools_and_game_result'
 import * as migration_20261022_020000_add_article_sport from './20261022_020000_add_article_sport'
+import * as migration_20261108_000000_add_cancer_to_layout_skeleton from './20261108_000000_add_cancer_to_layout_skeleton'
+import * as migration_20261108_010000_add_leo_to_layout_skeleton from './20261108_010000_add_leo_to_layout_skeleton'
 
 export const migrations = [
   {
@@ -311,5 +313,15 @@ export const migrations = [
     up: migration_20261022_020000_add_article_sport.up,
     down: migration_20261022_020000_add_article_sport.down,
     name: '20261022_020000_add_article_sport',
+  },
+  {
+    up: migration_20261108_000000_add_cancer_to_layout_skeleton.up,
+    down: migration_20261108_000000_add_cancer_to_layout_skeleton.down,
+    name: '20261108_000000_add_cancer_to_layout_skeleton',
+  },
+  {
+    up: migration_20261108_010000_add_leo_to_layout_skeleton.up,
+    down: migration_20261108_010000_add_leo_to_layout_skeleton.down,
+    name: '20261108_010000_add_leo_to_layout_skeleton',
   },
 ];
