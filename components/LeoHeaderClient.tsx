@@ -110,12 +110,16 @@ const LEO_TOP = [
   { dy: 3, rot: 4, size: 11 },
 ];
 
-export default function LeoHeaderClient({ compact = false, mobileTight = false, logoSrcs, headerAnimation = DEFAULT_HEADER_ANIMATION, volume, edition, liveEntries, weather }: { compact?: boolean; mobileTight?: boolean; logoSrcs?: HeaderLogoSrcs; headerAnimation?: HeaderAnimationConfig; volume?: number | null; edition?: number | null; liveEntries?: LiveArticleStripEntry[]; weather?: HeaderWeather }) {
+export default function LeoHeaderClient({ compact = false, mobileTight = false, logoSrcs, headerAnimation = DEFAULT_HEADER_ANIMATION, volume, edition, liveEntries, weather, band }: { compact?: boolean; mobileTight?: boolean; logoSrcs?: HeaderLogoSrcs; headerAnimation?: HeaderAnimationConfig; volume?: number | null; edition?: number | null; liveEntries?: LiveArticleStripEntry[]; weather?: HeaderWeather; band?: { light: string; dark: string } | null }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showDarkModePrompt, setShowDarkModePrompt] = useState(false);
   const currentDate = useCurrentDate();
   const { animationKey, phase, isAnimating, navigateImmediately, triggerTransition, suckDurationMs, shootDurationMs } = useHeaderTransition();
   const { isDarkMode, toggleDarkMode } = useTheme();
+  // Header bands wear the lead photo's colour so the header belongs to the page below it.
+  const bandStyle: React.CSSProperties | undefined = band
+    ? { backgroundColor: isDarkMode ? band.dark : band.light, color: isDarkMode ? "#000" : "#fff" }
+    : undefined;
   const logoSrc = isDarkMode ? (logoSrcs?.desktopDark ?? "/logo-dark.svg") : (logoSrcs?.desktopLight ?? "/logo-light.svg");
   const mobileLogoSrc = isDarkMode ? (logoSrcs?.mobileDark ?? "/logo-dark-mobile.svg") : (logoSrcs?.mobileLight ?? "/logo-light-mobile.svg");
   const router = useRouter();
@@ -282,7 +286,7 @@ export default function LeoHeaderClient({ compact = false, mobileTight = false, 
       <header className="hidden lg:block">
         <div className={`${compact ? "fixed" : "relative"} top-0 left-0 right-0 z-50 bg-bg-main/95 backdrop-blur-md`}>
           <div className="font-meta relative mx-auto flex max-w-[1280px] items-center justify-between gap-6 px-4 pt-1.5 pb-0.5 md:px-6 xl:px-[30px]">
-            <div className="flex items-center gap-6 pt-2 text-[11px] font-medium uppercase tracking-[0.1em] text-text-main">
+            <div className="flex items-center gap-8 pt-2 text-[11px] font-medium uppercase tracking-[0.12em] text-text-muted">
               {secondaryNavItems.map((item, i) => (
                 <Link
                   key={item.label}
@@ -305,7 +309,7 @@ export default function LeoHeaderClient({ compact = false, mobileTight = false, 
 
             <div className="pointer-events-none absolute left-[33%] top-3 flex items-end gap-3 text-[11px] font-medium uppercase tracking-[0.1em] -rotate-2">
               <span className="text-text-main translate-y-1" suppressHydrationWarning>{currentDate}</span>
-              <span className="bg-accent px-2 py-1 text-[12px] font-bold text-white rotate-3 translate-y-2 dark:bg-white dark:text-black">
+              <span style={bandStyle} className="bg-accent px-2 py-1 text-[12px] font-bold text-white rotate-3 translate-y-2 dark:bg-white dark:text-black">
                 {`Vol. ${volume ? toRoman(volume) : '0'} No. ${edition ?? 0}`}
               </span>
             </div>
@@ -555,6 +559,7 @@ export default function LeoHeaderClient({ compact = false, mobileTight = false, 
                     style={{
                       transform: `translateY(${LEO_NAV[i % LEO_NAV.length].dy}px) rotate(${LEO_NAV[i % LEO_NAV.length].rot}deg)`,
                       fontSize: LEO_NAV[i % LEO_NAV.length].size,
+                      ...(LEO_NAV[i % LEO_NAV.length].band ? bandStyle : undefined),
                     }}
                     className={`relative py-0.5 font-semibold uppercase tracking-[0.08em] transition-colors ${
                       LEO_NAV[i % LEO_NAV.length].band

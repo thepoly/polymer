@@ -539,7 +539,7 @@ export default async function Home() {
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd).replace(/</g, '\\u003c') }} />
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd).replace(/</g, '\\u003c') }} />
           <ArticleScrollBar />
-          {layout.skeleton === 'leo' ? <LeoHeader liveEntries={liveStripEntries} /> : <Header liveEntries={liveStripEntries} />}
+          {layout.skeleton === 'leo' ? <LeoHeader liveEntries={liveStripEntries} band={leoBands[String(lead.id)]} /> : <Header liveEntries={liveStripEntries} />}
           {layout.skeleton === 'leo' ? (
             <LeoHomepage
               lead={lead}

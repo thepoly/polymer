@@ -70,12 +70,14 @@ type Rect = { col: number; span: number; row: number; rows: number };
  * band the photo doesn't cover. Fillers are bare stories in the leftover cells.
  */
 type Piece =
-  | { kind: "photo"; card: number; rect: Rect; up?: boolean }
+  | { kind: "photo"; card: number; rect: Rect; up?: boolean; crop?: string }
   | { kind: "band"; card: number; rect: Rect; inset?: "top" | "bottom" | "up" }
   | { kind: "text"; card: number; rect: Rect; inset?: "top" | "bottom" | "up"; place?: "above" | "below" }
   | { kind: "filler"; text: number; rect: Rect; align: "start" | "center" | "end" };
 
-type Pattern = { cards: number; fillers: number; rows: number; lastSide: Side; pieces: Piece[] };
+type Scale = "s" | "m" | "l" | "xl";
+/** `scale` sets how big the card reads: photo footprint is in the rects, type and padding follow from this. */
+type Pattern = { cards: number; fillers: number; rows: number; lastSide: Side; scale: Scale; pieces: Piece[] };
 
 const R = (col: number, span: number, row: number, rows = 1): Rect => ({ col, span, row, rows });
 
@@ -88,7 +90,7 @@ const R = (col: number, span: number, row: number, rows = 1): Rect => ({ col, sp
 const PATTERNS: Record<string, Pattern> = {
   // Lead: photo right, a wide band from the left with a big title; a bare story in the notch.
   lead: {
-    cards: 1, fillers: 1, rows: 2, lastSide: "right",
+    cards: 1, fillers: 1, rows: 2, lastSide: "right", scale: "xl",
     pieces: [
       { kind: "photo", card: 0, rect: R(6, 7, 1, 2) },
       { kind: "band", card: 0, rect: R(1, 8, 1), inset: "top" },
@@ -98,7 +100,7 @@ const PATTERNS: Record<string, Pattern> = {
   },
   // Narrow photo on the right, roomy band; two bare stories stack in the notch.
   sideRightNarrow: {
-    cards: 1, fillers: 2, rows: 3, lastSide: "right",
+    cards: 1, fillers: 2, rows: 3, lastSide: "right", scale: "m",
     pieces: [
       { kind: "photo", card: 0, rect: R(7, 6, 1, 3) },
       { kind: "band", card: 0, rect: R(1, 9, 2), inset: "bottom" },
@@ -108,7 +110,7 @@ const PATTERNS: Record<string, Pattern> = {
     ],
   },
   sideLeftNarrow: {
-    cards: 1, fillers: 2, rows: 3, lastSide: "left",
+    cards: 1, fillers: 2, rows: 3, lastSide: "left", scale: "m",
     pieces: [
       { kind: "photo", card: 0, rect: R(1, 6, 1, 3) },
       { kind: "band", card: 0, rect: R(4, 9, 2), inset: "bottom" },
@@ -119,18 +121,18 @@ const PATTERNS: Record<string, Pattern> = {
   },
   // Wide photo across most of the page, a small band hanging off its corner.
   wideRight: {
-    cards: 1, fillers: 1, rows: 3, lastSide: "right",
+    cards: 1, fillers: 1, rows: 3, lastSide: "right", scale: "l",
     pieces: [
-      { kind: "photo", card: 0, rect: R(3, 10, 1, 2) },
+      { kind: "photo", card: 0, rect: R(3, 10, 1, 2), crop: "aspect-[2/1]" },
       { kind: "band", card: 0, rect: R(1, 8, 3), inset: "up" },
       { kind: "text", card: 0, rect: R(1, 8, 3), inset: "up", place: "below" },
       { kind: "filler", text: 0, rect: R(9, 4, 3), align: "end" },
     ],
   },
   wideLeft: {
-    cards: 1, fillers: 1, rows: 3, lastSide: "left",
+    cards: 1, fillers: 1, rows: 3, lastSide: "left", scale: "l",
     pieces: [
-      { kind: "photo", card: 0, rect: R(1, 10, 1, 2) },
+      { kind: "photo", card: 0, rect: R(1, 10, 1, 2), crop: "aspect-[2/1]" },
       { kind: "band", card: 0, rect: R(5, 8, 3), inset: "up" },
       { kind: "text", card: 0, rect: R(5, 8, 3), inset: "up", place: "below" },
       { kind: "filler", text: 0, rect: R(1, 4, 3), align: "end" },
@@ -138,7 +140,7 @@ const PATTERNS: Record<string, Pattern> = {
   },
   // Photo right, band from the left tucks under it; a bare story fills the notch below the band.
   sideRight: {
-    cards: 1, fillers: 1, rows: 2, lastSide: "right",
+    cards: 1, fillers: 1, rows: 2, lastSide: "right", scale: "l",
     pieces: [
       { kind: "photo", card: 0, rect: R(5, 8, 1, 2) },
       { kind: "band", card: 0, rect: R(1, 7, 1), inset: "top" },
@@ -147,7 +149,7 @@ const PATTERNS: Record<string, Pattern> = {
     ],
   },
   sideLeft: {
-    cards: 1, fillers: 1, rows: 2, lastSide: "left",
+    cards: 1, fillers: 1, rows: 2, lastSide: "left", scale: "l",
     pieces: [
       { kind: "photo", card: 0, rect: R(1, 8, 1, 2) },
       { kind: "band", card: 0, rect: R(6, 7, 1), inset: "top" },
@@ -157,9 +159,9 @@ const PATTERNS: Record<string, Pattern> = {
   },
   // Title below: the band is wider than the photo and pokes out beside its lower half.
   belowLeft: {
-    cards: 1, fillers: 2, rows: 3, lastSide: "left",
+    cards: 1, fillers: 2, rows: 3, lastSide: "left", scale: "m",
     pieces: [
-      { kind: "photo", card: 0, rect: R(1, 8, 1, 2) },
+      { kind: "photo", card: 0, rect: R(1, 8, 1, 2), crop: "aspect-[16/10]" },
       { kind: "band", card: 0, rect: R(1, 10, 3), inset: "up" },
       { kind: "text", card: 0, rect: R(1, 8, 3), inset: "up", place: "below" },
       { kind: "filler", text: 0, rect: R(9, 4, 1), align: "start" },
@@ -167,9 +169,9 @@ const PATTERNS: Record<string, Pattern> = {
     ],
   },
   belowRight: {
-    cards: 1, fillers: 2, rows: 3, lastSide: "right",
+    cards: 1, fillers: 2, rows: 3, lastSide: "right", scale: "m",
     pieces: [
-      { kind: "photo", card: 0, rect: R(5, 8, 1, 2) },
+      { kind: "photo", card: 0, rect: R(5, 8, 1, 2), crop: "aspect-[16/10]" },
       { kind: "band", card: 0, rect: R(3, 10, 3), inset: "up" },
       { kind: "text", card: 0, rect: R(5, 8, 3), inset: "up", place: "below" },
       { kind: "filler", text: 0, rect: R(1, 4, 1), align: "start" },
@@ -178,7 +180,7 @@ const PATTERNS: Record<string, Pattern> = {
   },
   // Title above: band across the top, photo drops out of its right side; a tab of band shows left of the photo.
   aboveRight: {
-    cards: 1, fillers: 2, rows: 3, lastSide: "right",
+    cards: 1, fillers: 2, rows: 3, lastSide: "right", scale: "xl",
     pieces: [
       { kind: "band", card: 0, rect: R(1, 11, 1) },
       { kind: "text", card: 0, rect: R(1, 11, 1), place: "above" },
@@ -188,7 +190,7 @@ const PATTERNS: Record<string, Pattern> = {
     ],
   },
   aboveLeft: {
-    cards: 1, fillers: 2, rows: 3, lastSide: "left",
+    cards: 1, fillers: 2, rows: 3, lastSide: "left", scale: "xl",
     pieces: [
       { kind: "band", card: 0, rect: R(2, 11, 1) },
       { kind: "text", card: 0, rect: R(2, 11, 1), place: "above" },
@@ -200,7 +202,7 @@ const PATTERNS: Record<string, Pattern> = {
   // Two cards locked together: A's band comes out from under its photo to the right,
   // B's band runs back left under B's photo, bare stories in the two outer corners.
   zigLeft: {
-    cards: 2, fillers: 2, rows: 4, lastSide: "right",
+    cards: 2, fillers: 2, rows: 4, lastSide: "right", scale: "m",
     pieces: [
       { kind: "photo", card: 0, rect: R(1, 7, 1, 2) },
       { kind: "band", card: 0, rect: R(5, 8, 2), inset: "bottom" },
@@ -213,7 +215,7 @@ const PATTERNS: Record<string, Pattern> = {
     ],
   },
   zigRight: {
-    cards: 2, fillers: 2, rows: 4, lastSide: "left",
+    cards: 2, fillers: 2, rows: 4, lastSide: "left", scale: "m",
     pieces: [
       { kind: "photo", card: 0, rect: R(6, 7, 1, 2) },
       { kind: "band", card: 0, rect: R(1, 8, 2), inset: "bottom" },
@@ -227,16 +229,48 @@ const PATTERNS: Record<string, Pattern> = {
   },
 };
 
+// Small: a 4-column photo with a short band; bare stories take the rest of the row.
+Object.assign(PATTERNS, {
+  smallRight: {
+    cards: 1, fillers: 2, rows: 1, lastSide: "right", scale: "s",
+    pieces: [
+      { kind: "photo", card: 0, rect: R(9, 4, 1), crop: "aspect-[4/3]" },
+      { kind: "band", card: 0, rect: R(5, 6, 1), inset: "top" },
+      { kind: "text", card: 0, rect: R(5, 4, 1), inset: "top" },
+      { kind: "filler", text: 0, rect: R(1, 4, 1), align: "center" },
+    ],
+  },
+  smallLeft: {
+    cards: 1, fillers: 2, rows: 1, lastSide: "left", scale: "s",
+    pieces: [
+      { kind: "photo", card: 0, rect: R(1, 4, 1), crop: "aspect-[4/3]" },
+      { kind: "band", card: 0, rect: R(3, 6, 1), inset: "top" },
+      { kind: "text", card: 0, rect: R(5, 4, 1), inset: "top" },
+      { kind: "filler", text: 0, rect: R(9, 4, 1), align: "center" },
+    ],
+  },
+  // Hero: photo across the whole width, band comes out from under its lower-left corner.
+  hero: {
+    cards: 1, fillers: 1, rows: 3, lastSide: "left", scale: "xl",
+    pieces: [
+      { kind: "photo", card: 0, rect: R(1, 12, 1, 2), crop: "aspect-[21/9]" },
+      { kind: "band", card: 0, rect: R(1, 8, 3), inset: "up" },
+      { kind: "text", card: 0, rect: R(1, 8, 3), inset: "up", place: "below" },
+      { kind: "filler", text: 0, rect: R(9, 4, 3), align: "end" },
+    ],
+  },
+} satisfies Record<string, Pattern>);
+
 const PATTERNS_AFTER: Record<Side, string[]> = {
   // After a photo on the right, prefer the next photo on the left.
-  right: ["sideLeft", "sideLeftNarrow", "belowLeft", "aboveLeft", "zigLeft", "wideLeft"],
-  left: ["sideRight", "sideRightNarrow", "belowRight", "aboveRight", "zigRight", "wideRight"],
+  right: ["sideLeft", "sideLeftNarrow", "belowLeft", "aboveLeft", "zigLeft", "wideLeft", "smallLeft", "smallLeft", "hero"],
+  left: ["sideRight", "sideRightNarrow", "belowRight", "aboveRight", "zigRight", "wideRight", "smallRight", "smallRight", "hero"],
 };
 
 type PlacedPiece =
-  | { kind: "photo"; card: Placed; rect: Rect; priority: boolean; up?: boolean }
+  | { kind: "photo"; card: Placed; rect: Rect; priority: boolean; up?: boolean; crop?: string }
   | { kind: "band"; card: Placed; rect: Rect; inset?: "top" | "bottom" | "up" }
-  | { kind: "text"; card: Placed; rect: Rect; inset?: "top" | "bottom" | "up"; place?: "above" | "below"; size: "m" | "l" | "xl"; priority: boolean }
+  | { kind: "text"; card: Placed; rect: Rect; inset?: "top" | "bottom" | "up"; place?: "above" | "below"; size: Scale; priority: boolean }
   | { kind: "filler"; text: Placed; rect: Rect; align: "start" | "center" | "end"; size: FloatSize };
 
 /** Lay the cards out: chain patterns down the grid, zigzagging, until the cards run out. */
@@ -247,9 +281,13 @@ function tile(cards: Placed[], texts: Placed[]): PlacedPiece[] {
   let row = 1;
   let side: Side = "left"; // so the lead goes photo-right
   let first = true;
+  let lastName = "";
+  let placed = 0;
   while (cardQ.length) {
     const rng = seeded(hashString(`tile:${cardQ[0].article.id}`));
     let name: string = first ? "lead" : pick(rng, PATTERNS_AFTER[side]);
+    if (name === lastName || (name === "hero" && placed < 3)) name = pick(rng, PATTERNS_AFTER[side]);
+    if (name === lastName) name = side === "right" ? "sideLeft" : "sideRight";
     if (PATTERNS[name].cards > cardQ.length) name = side === "right" ? "sideLeft" : "sideRight";
     const pat: Pattern = PATTERNS[name];
     const batchCards = cardQ.splice(0, pat.cards);
@@ -260,18 +298,18 @@ function tile(cards: Placed[], texts: Placed[]): PlacedPiece[] {
         if (!text) continue;
         out.push({ kind: "filler", text, rect, align: piece.align, size: pick(rng, ["s", "m", "m", "l", piece.rect.span >= 5 ? "xl" : "m"] as const) });
       } else if (piece.kind === "photo") {
-        out.push({ kind: "photo", card: batchCards[piece.card], rect, priority: first, up: piece.up });
+        out.push({ kind: "photo", card: batchCards[piece.card], rect, priority: first, up: piece.up, crop: piece.crop });
       } else if (piece.kind === "band") {
         out.push({ kind: "band", card: batchCards[piece.card], rect, inset: piece.inset });
       } else {
-        // Titles run bigger when they have room: the lead, and any text piece spanning most of the width.
-        const size = first ? "xl" : piece.rect.span >= 8 ? pick(rng, ["l", "xl"] as const) : pick(rng, ["m", "m", "l"] as const);
-        out.push({ kind: "text", card: batchCards[piece.card], rect, inset: piece.inset, place: piece.place, size, priority: first });
+        out.push({ kind: "text", card: batchCards[piece.card], rect, inset: piece.inset, place: piece.place, size: pat.scale, priority: first });
       }
     }
     row += pat.rows;
     side = pat.lastSide;
     first = false;
+    lastName = name;
+    placed += pat.cards;
   }
   // Leftover bare stories: loose rows of two or three.
   while (textQ.length) {
@@ -304,17 +342,34 @@ function Photo({ piece, slot }: { piece: Extract<PlacedPiece, { kind: "photo" }>
       style={gridArea(piece.rect)}
       data-homepage-layout="leo"
       data-homepage-slot={slot ?? undefined}
-      className={`relative z-10 block min-w-0 self-start ${piece.up ? "md:-mt-16" : ""}${a.isFollytechnic ? " follytechnic" : ""}`}
+      className={`group relative z-10 block min-w-0 self-start ${piece.up ? "md:-mt-16" : ""}${a.isFollytechnic ? " follytechnic" : ""}`}
     >
-      <Image
-        src={(a.imageFull || a.image)!}
-        alt={a.imageTitle || ""}
-        width={0}
-        height={0}
-        priority={piece.priority}
-        sizes="(max-width: 768px) 100vw, 800px"
-        className="block h-auto w-full"
-      />
+      {/* A slow zoom on hover; the wrapper clips it. */}
+      {piece.crop ? (
+        <div className={`relative w-full overflow-hidden ${piece.crop}`}>
+          <Image
+            src={(a.imageFull || a.image)!}
+            alt={a.imageTitle || ""}
+            fill
+            priority={piece.priority}
+            sizes="(max-width: 768px) 100vw, 1280px"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+            style={a.imageFocus ? { objectPosition: a.imageFocus } : undefined}
+          />
+        </div>
+      ) : (
+        <div className="overflow-hidden">
+          <Image
+            src={(a.imageFull || a.image)!}
+            alt={a.imageTitle || ""}
+            width={0}
+            height={0}
+            priority={piece.priority}
+            sizes="(max-width: 768px) 100vw, 800px"
+            className="block h-auto w-full transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+          />
+        </div>
+      )}
     </TransitionLink>
   );
 }
@@ -348,29 +403,37 @@ function BandText({
       style={{ ...gridArea(piece.rect), "--band": band?.light ?? "#000", "--band-dark": band?.dark ?? "#fff" } as React.CSSProperties}
       data-homepage-layout="leo"
       data-homepage-slot={slot ?? undefined}
-      className={`group relative z-20 flex min-w-0 flex-col justify-center bg-[var(--band)] px-6 py-7 text-white dark:bg-[var(--band-dark)] dark:text-black md:bg-transparent md:px-8 md:py-8 md:dark:bg-transparent ${
+      className={`group relative z-20 flex min-w-0 flex-col justify-center bg-[var(--band)] px-6 py-7 text-white dark:bg-[var(--band-dark)] dark:text-black md:bg-transparent md:dark:bg-transparent ${
+        piece.size === "s" ? "md:px-5 md:py-5" : piece.size === "xl" ? "md:px-10 md:py-10" : "md:px-8 md:py-8"
+      } ${
         INSET[piece.inset ?? "none"]
       } ${TEXT_PAD[piece.inset === "up" ? "up" : piece.place === "above" ? "above" : "none"]}${a.isFollytechnic ? " follytechnic" : ""}`}
     >
-      <div className="font-meta font-bold uppercase text-[13px] md:text-[14px] tracking-[0.04em] leading-none">{sectionLabel(a)}</div>
+      <div className={`font-meta font-bold uppercase tracking-[0.04em] leading-none ${piece.size === "s" ? "text-[11px]" : piece.size === "xl" ? "text-[14px] md:text-[16px]" : "text-[13px] md:text-[14px]"}`}>
+        {sectionLabel(a)}
+      </div>
       <h2
         data-marauders-title={piece.priority ? true : undefined}
         className={`mt-3 font-copy font-normal leading-[1.08] tracking-[-0.015em] [overflow-wrap:anywhere] group-hover:underline decoration-1 underline-offset-4 ${
           wide ? "max-w-[22ch] " : ""
         }${
           piece.size === "xl"
-            ? "text-[32px] md:text-[40px] xl:text-[52px] leading-[1.02]"
+            ? "text-[32px] md:text-[42px] xl:text-[56px] leading-[1.0]"
             : piece.size === "l"
-              ? "text-[28px] md:text-[32px] xl:text-[38px]"
-              : "text-[24px] xl:text-[27px]"
+              ? "text-[28px] md:text-[33px] xl:text-[40px]"
+              : piece.size === "m"
+                ? "text-[24px] xl:text-[27px]"
+                : "text-[22px] leading-[1.12]"
         }`}
       >
         {a.richTitle || a.title}
       </h2>
-      {showSubdeck && a.excerpt && (
-        <p className={`mt-3 font-meta text-[16px] xl:text-[17px] leading-[1.45] [text-wrap:pretty] ${wide ? "max-w-[60ch]" : ""}`}>{a.excerpt}</p>
+      {showSubdeck && a.excerpt && piece.size !== "s" && (
+        <p className={`mt-3 font-meta leading-[1.45] [text-wrap:pretty] ${piece.size === "xl" ? "text-[17px] xl:text-[19px] max-w-[60ch]" : "text-[16px] xl:text-[17px]"} ${wide ? "max-w-[60ch]" : ""}`}>
+          {a.excerpt}
+        </p>
       )}
-      {authorText(a) && <p className="mt-4 font-ui text-[13px] md:text-[14px]">{authorText(a)}</p>}
+      {authorText(a) && <p className={`font-ui text-[13px] md:text-[14px] ${piece.size === "s" ? "mt-2" : "mt-4"}`}>{authorText(a)}</p>}
     </TransitionLink>
   );
 }
