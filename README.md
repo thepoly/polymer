@@ -2,7 +2,7 @@
 
 Polymer is the rebuilt web platform for **The Polytechnic**, RPI's independent student newspaper. This repository combines the public site and editorial CMS in a single Next.js application. From here, we:
 
-- Serve the public homepage and section pages for (poly.rpi.edu)[https://poly.rpi.edu]
+- Serve the public homepage and section pages for https://poly.rpi.edu
 - Render article pages with multiple different layouts, customizable via Payload
 - Host staff pages and public author profiles
 - Provide a Payload admin panel for publishing, media management, homepage curation, theme/SEO globals, and submission triage
@@ -16,7 +16,7 @@ Some UI elements and backend features we're incredibly proud of:
 
 ### Our front page
 
-<img width="1613" height="930" alt="image" src="https://github.com/user-attachments/assets/8bc537df-d688-47c6-9f1c-5be518ac28cb" />
+<img width="1610" height="980" alt="image" src="https://github.com/user-attachments/assets/5088b53d-a206-437c-b84d-dc5b374004b6" />
 
 ### Photofeature articles
 
