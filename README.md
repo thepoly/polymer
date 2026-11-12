@@ -1,18 +1,42 @@
 # Polymer
 
-Polymer is the rebuilt web platform for **The Polytechnic**, RPI's independent student newspaper. This repository combines the public site, editorial CMS, archive-aware search, push notifications, and deployment tooling in a single Next.js + Payload application, alongside a Capacitor-based Android shell.
+Polymer is the rebuilt web platform for **The Polytechnic**, RPI's independent student newspaper. This repository combines the public site and editorial CMS in a single Next.js application. From here, we:
 
-## What This Repo Does
+- Serve the public homepage and section pages for (poly.rpi.edu)[https://poly.rpi.edu]
+- Render article pages with multiple different layouts, customizable via Payload
+- Host staff pages and public author profiles
+- Provide a Payload admin panel for publishing, media management, homepage curation, theme/SEO globals, and submission triage
+- Provide a framework for sending FCM breaking-news push notifications to the Android app
+- Capture privacy-conscious analytics through PostHog
+- Deploy to our on-prem server with smoke checks and rollback support
 
-- Serves the public homepage and section pages for `news`, `features`, `sports`, and `opinion`
-- Renders article pages with standard, opinion, and photofeature layouts
-- Hosts a live-blog feed at `/live` for real-time event coverage
-- Hosts staff pages and public author profiles
-- Provides a Payload admin panel for publishing, media management, homepage curation, theme/SEO globals, and submission triage
-- Searches both the current Payload content store and the legacy Poly archive
-- Sends FCM breaking-news push notifications to the Android app
-- Captures privacy-conscious analytics through self-hosted PostHog
-- Deploys to a self-hosted production environment with smoke checks and rollback support
+## Gallery
+
+Some UI elements and backend features we're incredibly proud of:
+
+### Our front page
+
+<img width="1613" height="930" alt="image" src="https://github.com/user-attachments/assets/8bc537df-d688-47c6-9f1c-5be518ac28cb" />
+
+### Photofeature articles
+
+<img width="1616" height="950" alt="image" src="https://github.com/user-attachments/assets/d27f0193-ec91-4a8c-9668-dafe5aa2f710" />
+
+### Photo galleries
+
+<img width="1615" height="944" alt="image" src="https://github.com/user-attachments/assets/25e6833d-99d6-4596-9e42-2bf04516c921" />
+
+### Dark mode
+
+<img width="1614" height="923" alt="image" src="https://github.com/user-attachments/assets/f454b99c-8ef0-4366-9031-3f78e381ec0c" />
+<img width="1611" height="935" alt="image" src="https://github.com/user-attachments/assets/8880e380-be65-4ff8-8738-4b0853b65fd8" />
+
+### Graph generator
+
+A graph generator capable of generating any type of graph used by our reporters. Generates graphs consistent with our brand.
+
+<img width="1650" height="1014" alt="image" src="https://github.com/user-attachments/assets/96db489c-d7ff-462a-bd4f-b2e826d24f72" />
+
 
 ## Stack
 
@@ -78,7 +102,7 @@ Article role access:
 - delete: `admin`
 - anonymous read: published only
 
-## Local Development
+## Quickstart
 
 ### Prerequisites
 
