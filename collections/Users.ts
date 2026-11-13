@@ -252,6 +252,18 @@ export const Users: CollectionConfig = {
         },
       ],
     },
+    // Photos this staffer has picked for their staff page, in display order.
+    // Empty means the page falls back to every photo credited to them.
+    // Only their own credited photos can be chosen; Payload enforces
+    // filterOptions on save, not just in the picker.
+    {
+      name: 'portfolio',
+      type: 'upload',
+      relationTo: 'media',
+      hasMany: true,
+      label: 'Photo Portfolio',
+      filterOptions: ({ id }) => (id ? { photographer: { equals: id } } : false),
+    },
     // --- 5. PREFERENCES ---
     {
       name: 'blackTheme',

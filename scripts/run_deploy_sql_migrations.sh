@@ -59,7 +59,8 @@ VALUES
   ('20260922_000000_add_staff_business_manager', 31, NOW(), NOW()),
   ('20261022_000000_add_sports_page_layout', 32, NOW(), NOW()),
   ('20261022_010000_add_schools_and_game_result', 32, NOW(), NOW()),
-  ('20261022_020000_add_article_sport', 32, NOW(), NOW())
+  ('20261022_020000_add_article_sport', 32, NOW(), NOW()),
+  ('20261112_000000_add_user_portfolio', 33, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1572,4 +1573,27 @@ ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_sport" "public"."enu
 
 CREATE INDEX IF NOT EXISTS "articles_sport_idx" ON "articles" USING btree ("sport");
 CREATE INDEX IF NOT EXISTS "_articles_v_version_version_sport_idx" ON "_articles_v" USING btree ("version_sport");
+
+-- 20261112_000000: users.portfolio (hasMany upload → media), stored in users_rels.
+CREATE TABLE IF NOT EXISTS "users_rels" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "order" integer,
+  "parent_id" integer NOT NULL,
+  "path" varchar NOT NULL,
+  "media_id" integer
+);
+DO $$ BEGIN
+  ALTER TABLE "users_rels" ADD CONSTRAINT "users_rels_parent_fk"
+    FOREIGN KEY ("parent_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE "users_rels" ADD CONSTRAINT "users_rels_media_fk"
+    FOREIGN KEY ("media_id") REFERENCES "public"."media"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "users_rels_order_idx" ON "users_rels" USING btree ("order");
+CREATE INDEX IF NOT EXISTS "users_rels_parent_idx" ON "users_rels" USING btree ("parent_id");
+CREATE INDEX IF NOT EXISTS "users_rels_path_idx" ON "users_rels" USING btree ("path");
+CREATE INDEX IF NOT EXISTS "users_rels_media_id_idx" ON "users_rels" USING btree ("media_id");
 SQL
