@@ -60,7 +60,9 @@ VALUES
   ('20261022_000000_add_sports_page_layout', 32, NOW(), NOW()),
   ('20261022_010000_add_schools_and_game_result', 32, NOW(), NOW()),
   ('20261022_020000_add_article_sport', 32, NOW(), NOW()),
-  ('20261112_000000_add_user_portfolio', 33, NOW(), NOW())
+  ('20261112_000000_add_user_portfolio', 33, NOW(), NOW()),
+  ('20261112_000000_add_news_page_layout', 34, NOW(), NOW()),
+  ('20261112_010000_add_student_gov_updates', 34, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1599,4 +1601,51 @@ CREATE INDEX IF NOT EXISTS "users_rels_order_idx" ON "users_rels" USING btree ("
 CREATE INDEX IF NOT EXISTS "users_rels_parent_idx" ON "users_rels" USING btree ("parent_id");
 CREATE INDEX IF NOT EXISTS "users_rels_path_idx" ON "users_rels" USING btree ("path");
 CREATE INDEX IF NOT EXISTS "users_rels_media_id_idx" ON "users_rels" USING btree ("media_id");
+
+-- 20261112_000000: News section page layout (editor-pinned lead story and
+-- where its text sits). The whole layout lives in one jsonb column.
+CREATE TABLE IF NOT EXISTS "news_page_layout" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "name" varchar NOT NULL DEFAULT 'News Layout',
+  "layout" jsonb,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "news_page_layout_created_at_idx" ON "news_page_layout" USING btree ("created_at");
+ALTER TABLE "payload_locked_documents_rels" ADD COLUMN IF NOT EXISTS "news_page_layout_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_news_page_layout_fk"
+    FOREIGN KEY ("news_page_layout_id") REFERENCES "public"."news_page_layout"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_news_page_layout_id_idx"
+  ON "payload_locked_documents_rels" ("news_page_layout_id");
+
+-- 20261112_010000: Student Senate / Executive Board timeline updates (short
+-- title + blurb items shown on /news/senate, /news/executive-board and the
+-- Student Government box on /news).
+DO $$ BEGIN
+  CREATE TYPE "public"."enum_student_gov_updates_body" AS ENUM('senate', 'eboard');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE TABLE IF NOT EXISTS "student_gov_updates" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "title" varchar NOT NULL,
+  "body" "enum_student_gov_updates_body" NOT NULL,
+  "blurb" varchar NOT NULL,
+  "date" timestamp(3) with time zone NOT NULL,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "student_gov_updates_date_idx" ON "student_gov_updates" USING btree ("date");
+CREATE INDEX IF NOT EXISTS "student_gov_updates_updated_at_idx" ON "student_gov_updates" USING btree ("updated_at");
+CREATE INDEX IF NOT EXISTS "student_gov_updates_created_at_idx" ON "student_gov_updates" USING btree ("created_at");
+ALTER TABLE "payload_locked_documents_rels" ADD COLUMN IF NOT EXISTS "student_gov_updates_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_student_gov_updates_fk"
+    FOREIGN KEY ("student_gov_updates_id") REFERENCES "public"."student_gov_updates"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_student_gov_updates_id_idx"
+  ON "payload_locked_documents_rels" ("student_gov_updates_id");
 SQL

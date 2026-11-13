@@ -5,7 +5,21 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SectionPage from '@/components/SectionPage';
 import OpinionSectionPage from '@/components/Opinion/OpinionSectionPage';
-import NewsSectionPage from '@/components/News/NewsSectionPage';
+import NewsPage from '@/components/News/NewsPage';
+import {
+  DEFAULT_LEAD_TEXT_POSITION,
+  isLeadTextPosition,
+  type LeadTextPosition,
+  type NewsLayout,
+} from '@/components/News/newsLayout';
+import {
+  DEFAULT_STUDENT_GOV_LAYOUT,
+  normalizeStudentGovLayout,
+  type StudentGovLayout,
+} from '@/components/News/studentGov';
+import type { StudentGovBoxContent } from '@/components/News/StudentGovColumn';
+import { normalizeTimelinePages } from '@/components/News/timelinePage';
+import { getArticlesById, getStudentGovTimeline } from '@/lib/studentGovTimeline';
 import FeaturesSectionPage, { type FeaturesEvent, type SpotlightPhoto } from '@/components/Features/FeaturesSectionPage';
 import SportsSectionPage, { type ScoreboardDate } from '@/components/Sports/SportsSectionPage';
 import type { StandingsTeam } from '@/components/Sports/SportsStandings';
@@ -346,6 +360,83 @@ export default async function SectionPageRoute({ params }: Args) {
       }
     } catch {
       // Layout may not exist yet
+    }
+  }
+
+  // News page layout (dashboard: News Layout): pinned lead + where its text sits
+  let newsLead: ComponentArticle | null = null;
+  let newsLeadTextPosition: LeadTextPosition = DEFAULT_LEAD_TEXT_POSITION;
+  let studentGovLayout: StudentGovLayout = DEFAULT_STUDENT_GOV_LAYOUT;
+  let newsStudentGovBoxes: StudentGovBoxContent[] = [];
+  // Entries hidden in the Senate / Executive Board page editors stay out of the boxes too
+  let timelinePages = normalizeTimelinePages(null);
+  if (isNews) {
+    try {
+      const layoutResponse = await payload.find({
+        collection: 'news-page-layout',
+        limit: 1,
+        depth: 0,
+        select: { layout: true },
+      });
+      const layoutJson = layoutResponse.docs[0]?.layout as Partial<NewsLayout> | null | undefined;
+
+      if (layoutJson && isLeadTextPosition(layoutJson.leadTextPosition)) {
+        newsLeadTextPosition = layoutJson.leadTextPosition;
+      }
+      if (layoutJson?.lead) {
+        const leadResponse = await payload.find({
+          collection: 'articles',
+          where: {
+            and: [
+              { id: { equals: layoutJson.lead } },
+              { _status: { equals: 'published' } },
+            ],
+          },
+          limit: 1,
+          depth: 1,
+          select: {
+            title: true,
+            slug: true,
+            subdeck: true,
+            featuredImage: true,
+            section: true,
+            kicker: true,
+            publishedDate: true,
+            createdAt: true,
+            authors: true,
+            writeInAuthors: true,
+            isFollytechnic: true,
+          },
+        });
+        // An unpublished pin leaves the lead to auto-fill
+        newsLead = leadResponse.docs[0] ? formatArticle(leadResponse.docs[0]) : null;
+      }
+      studentGovLayout = normalizeStudentGovLayout(layoutJson?.studentGov);
+      timelinePages = normalizeTimelinePages(layoutJson?.timelinePages);
+    } catch {
+      // Table may not exist yet
+    }
+
+    // Senate and Executive Board boxes: a pinned article, or the latest
+    // timeline entries. A pin that's missing or unpublished falls back to
+    // the timeline.
+    try {
+      const pinnedIds = studentGovLayout.order
+        .map((body) => studentGovLayout[body])
+        .filter((box) => box.mode === 'article' && box.article !== null)
+        .map((box) => box.article as number);
+      const pinned = await getArticlesById(payload, pinnedIds);
+      newsStudentGovBoxes = await Promise.all(
+        studentGovLayout.order.map(async (body): Promise<StudentGovBoxContent> => {
+          const box = studentGovLayout[body];
+          const article = box.mode === 'article' && box.article !== null ? pinned.get(box.article) : undefined;
+          if (article) return { body, kind: 'article', article };
+          const hidden = new Set(timelinePages[body].hidden);
+          return { body, kind: 'timeline', items: await getStudentGovTimeline(payload, body, box.count, hidden) };
+        }),
+      );
+    } catch {
+      // Leave the column empty rather than failing the page
     }
   }
 
@@ -748,9 +839,12 @@ export default async function SectionPageRoute({ params }: Args) {
           leadTitleOverlay={sportsLeadTitleOverlay}
         />
       ) : isNews ? (
-        <NewsSectionPage
+        <NewsPage
           title={sectionTitle}
           articles={formattedArticles}
+          lead={newsLead}
+          leadTextPosition={newsLeadTextPosition}
+          studentGovBoxes={newsStudentGovBoxes}
           pinnedArticles={newsPinnedArticles}
           hasOlderArticles={hasOlderNewsArticles}
         />

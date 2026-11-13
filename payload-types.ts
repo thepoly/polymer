@@ -77,6 +77,8 @@ export interface Config {
     'opinion-page-layout': OpinionPageLayout;
     'features-page-layout': FeaturesPageLayout;
     'sports-page-layout': SportsPageLayout;
+    'news-page-layout': NewsPageLayout;
+    'student-gov-updates': StudentGovUpdate;
     schools: School;
     'staff-page-layout': StaffPageLayout;
     submissions: Submission;
@@ -99,6 +101,8 @@ export interface Config {
     'opinion-page-layout': OpinionPageLayoutSelect<false> | OpinionPageLayoutSelect<true>;
     'features-page-layout': FeaturesPageLayoutSelect<false> | FeaturesPageLayoutSelect<true>;
     'sports-page-layout': SportsPageLayoutSelect<false> | SportsPageLayoutSelect<true>;
+    'news-page-layout': NewsPageLayoutSelect<false> | NewsPageLayoutSelect<true>;
+    'student-gov-updates': StudentGovUpdatesSelect<false> | StudentGovUpdatesSelect<true>;
     schools: SchoolsSelect<false> | SchoolsSelect<true>;
     'staff-page-layout': StaffPageLayoutSelect<false> | StaffPageLayoutSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
@@ -701,6 +705,49 @@ export interface SportsPageLayout {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "news-page-layout".
+ */
+export interface NewsPageLayout {
+  id: number;
+  name: string;
+  layout?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Short Senate and Executive Board updates. They show on the timeline pages and in the Student Government box on the News page.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "student-gov-updates".
+ */
+export interface StudentGovUpdate {
+  id: number;
+  title: string;
+  /**
+   * Which timeline this update belongs to.
+   */
+  body: 'senate' | 'eboard';
+  /**
+   * A few sentences. Plain text.
+   */
+  blurb: string;
+  /**
+   * Where the update sits on the timeline. Defaults to now; change it to backfill older items.
+   */
+  date: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "staff-page-layout".
  */
 export interface StaffPageLayout {
@@ -863,6 +910,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'sports-page-layout';
         value: number | SportsPageLayout;
+      } | null)
+    | ({
+        relationTo: 'news-page-layout';
+        value: number | NewsPageLayout;
+      } | null)
+    | ({
+        relationTo: 'student-gov-updates';
+        value: number | StudentGovUpdate;
       } | null)
     | ({
         relationTo: 'schools';
@@ -1184,6 +1239,28 @@ export interface FeaturesPageLayoutSelect<T extends boolean = true> {
 export interface SportsPageLayoutSelect<T extends boolean = true> {
   name?: T;
   layout?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "news-page-layout_select".
+ */
+export interface NewsPageLayoutSelect<T extends boolean = true> {
+  name?: T;
+  layout?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "student-gov-updates_select".
+ */
+export interface StudentGovUpdatesSelect<T extends boolean = true> {
+  title?: T;
+  body?: T;
+  blurb?: T;
+  date?: T;
   updatedAt?: T;
   createdAt?: T;
 }

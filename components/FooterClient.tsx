@@ -6,7 +6,19 @@ import Link from "next/link";
 import { useTheme } from "@/components/ThemeProvider";
 import { toRoman } from "@/lib/toRoman";
 
-export default function FooterClient({ volume, edition }: { volume?: number | null; edition?: number | null }) {
+export default function FooterClient({
+  volume,
+  edition,
+  flush = false,
+  lineWeight = 1,
+}: {
+  volume?: number | null;
+  edition?: number | null;
+  /** No space above the footer's rule, for pages whose content runs right down to it */
+  flush?: boolean;
+  /** The header rule's weight in px, so the two rules match */
+  lineWeight?: number;
+}) {
   const { isDarkMode, logoSrcs } = useTheme();
   const logoSrc = isDarkMode ? logoSrcs.mobileDark : logoSrcs.mobileLight;
   const [lineVisible, setLineVisible] = useState(false);
@@ -37,11 +49,17 @@ export default function FooterClient({ volume, edition }: { volume?: number | nu
   }, []);
 
   return (
-    <footer className="safe-area-bottom mt-3 bg-bg-main">
+    <footer className={`safe-area-bottom bg-bg-main ${flush ? "" : "mt-3"}`}>
       <div className="safe-area-mobile-page-x mx-auto max-w-[1280px] md:px-6 xl:px-[30px]">
+        {/* The same line as the header's rule: same weight and colour, and
+            like its square caps it runs half its weight past each side (a
+            translate, since Chrome snaps half-pixel offsets) */}
         <div
-          className="relative -left-2 h-[1.5px] w-[calc(100%+0.5rem)] bg-rule-strong origin-left"
+          className="bg-rule-strong origin-left dark:bg-[#DDDDDD]"
           style={{
+            height: lineWeight,
+            width: `calc(100% + ${lineWeight}px)`,
+            translate: `${-lineWeight / 2}px 0`,
             transform: lineVisible ? "scaleX(1)" : "scaleX(0)",
             transition: "transform 0.9s cubic-bezier(0.4, 0, 0.2, 1)",
           }}

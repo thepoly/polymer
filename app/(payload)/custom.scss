@@ -502,3 +502,46 @@ header .status,
 
 
 
+
+/* Senate / Executive Board pages under "News Layout" in the sidebar
+   (components/Dashboard/NewsLayoutNavDropdown.tsx) */
+.nav-subpages {
+  position: relative;
+}
+.nav-subpages__toggle {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--theme-elevation-500);
+  cursor: pointer;
+}
+.nav-subpages__toggle:hover {
+  color: var(--theme-text);
+  background: var(--theme-elevation-100);
+}
+.nav-subpages__toggle svg {
+  transition: transform 0.15s ease;
+}
+.nav-subpages__toggle--open svg {
+  transform: rotate(180deg);
+}
+.nav-subpages__list {
+  display: flex;
+  flex-direction: column;
+}
+.nav__link.nav-subpages__link {
+  padding-left: 14px;
+  font-size: 0.92em;
+}
+.nav__link.nav-subpages__link .nav__link-label {
+  opacity: 0.85;
+}

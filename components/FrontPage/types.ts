@@ -30,6 +30,8 @@ export interface Article {
   imageFull: string | null;
   /** CSS object-position from the photo's focal point ("50% 30%") */
   imageFocus?: string | null;
+  /** Width ÷ height of the original upload, when known */
+  imageAspect?: number | null;
   imageCaption?: string | null;
   imagePhotographer?: string | null;
   imagePhotographerId?: string | number | null;
