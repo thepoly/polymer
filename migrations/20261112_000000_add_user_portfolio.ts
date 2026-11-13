@@ -11,6 +11,10 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
       "media_id" integer
     );
 
+    -- Production already had a users_rels table without media_id, so the
+    -- CREATE above is a no-op there and the column has to be added on its own.
+    ALTER TABLE "users_rels" ADD COLUMN IF NOT EXISTS "media_id" integer;
+
     DO $$ BEGIN
       ALTER TABLE "users_rels" ADD CONSTRAINT "users_rels_parent_fk"
         FOREIGN KEY ("parent_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
