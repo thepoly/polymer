@@ -252,17 +252,21 @@ export const Users: CollectionConfig = {
         },
       ],
     },
-    // Photos this staffer has picked for their staff page, in display order.
-    // Empty means the page falls back to every photo credited to them.
-    // Only their own credited photos can be chosen; Payload enforces
-    // filterOptions on save, not just in the picker.
+    // Photos credited to this staffer that they have taken off their staff
+    // page. The gallery is always "everything credited to them, minus these":
+    // this can only remove photos, never add one. Stored in users_rels.
     {
-      name: 'portfolio',
-      type: 'upload',
+      name: 'hiddenPhotos',
+      type: 'relationship',
       relationTo: 'media',
       hasMany: true,
       label: 'Photo Portfolio',
       filterOptions: ({ id }) => (id ? { photographer: { equals: id } } : false),
+      admin: {
+        components: {
+          Field: '@/components/admin/PortfolioField#PortfolioField',
+        },
+      },
     },
     // --- 5. PREFERENCES ---
     {

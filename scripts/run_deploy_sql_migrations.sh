@@ -1574,7 +1574,7 @@ ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_sport" "public"."enu
 CREATE INDEX IF NOT EXISTS "articles_sport_idx" ON "articles" USING btree ("sport");
 CREATE INDEX IF NOT EXISTS "_articles_v_version_version_sport_idx" ON "_articles_v" USING btree ("version_sport");
 
--- 20261112_000000: users.portfolio (hasMany upload → media), stored in users_rels.
+-- 20261112_000000: users.hiddenPhotos (hasMany → media), stored in users_rels.
 CREATE TABLE IF NOT EXISTS "users_rels" (
   "id" serial PRIMARY KEY NOT NULL,
   "order" integer,

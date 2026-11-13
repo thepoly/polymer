@@ -1,6 +1,6 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
-// users.portfolio: hasMany upload → media, stored in users_rels.
+// users.hiddenPhotos: hasMany → media, stored in users_rels.
 export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
     CREATE TABLE IF NOT EXISTS "users_rels" (

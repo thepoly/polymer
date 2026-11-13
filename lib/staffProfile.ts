@@ -190,91 +190,41 @@ export async function getPhotoArticleMap(photoIds: number[], payload?: Payload):
   return photoToArticleMap;
 }
 
-const PORTFOLIO_PHOTO_SELECT = {
-  id: true,
-  filename: true,
-  sourceUrl: true,
-  url: true,
-  title: true,
-  alt: true,
-  width: true,
-  height: true,
-  sizes: true,
-  thumbnailURL: true,
-} as const;
-
-/** The photos a staffer hand-picked for their page, in their order. */
-async function getCuratedPortfolioIds(userId: number, payload: Payload): Promise<number[]> {
-  const user = await payload.findByID({
-    collection: 'users',
-    id: userId,
-    depth: 0,
-    select: { portfolio: true },
-    disableErrors: true,
-  });
-
-  const ids = (user?.portfolio ?? [])
-    .map((entry) => getMediaRelationId(entry))
-    .filter((id): id is number => id !== null);
-
-  return [...new Set(ids)];
-}
-
 export async function getStaffPortfolioPage(userId: number, page = 1, limit = STAFF_PORTFOLIO_PAGE_SIZE) {
   const payload = await getPayload({ config });
 
-  const curatedIds = await getCuratedPortfolioIds(userId, payload);
-
-  if (curatedIds.length > 0) {
-    const start = (page - 1) * limit;
-    const pageIds = curatedIds.slice(start, start + limit);
-    const hasMore = start + limit < curatedIds.length;
-
-    const found = pageIds.length > 0
-      ? await payload.find({
-          collection: 'media',
-          where: {
-            and: [
-              { id: { in: pageIds } },
-              // A photo re-credited to someone else after it was picked
-              // drops off this page rather than staying under the wrong name.
-              { photographer: { equals: userId } },
-            ],
-          },
-          limit: pageIds.length,
-          pagination: false,
-          depth: 0,
-          select: PORTFOLIO_PHOTO_SELECT,
-        })
-      : { docs: [] };
-
-    const byId = new Map(found.docs.map((photo) => [photo.id, photo]));
-    const photos = pageIds
-      .map((id) => byId.get(id))
-      .filter((photo): photo is NonNullable<typeof photo> => Boolean(photo));
-
-    return {
-      photos: photos as StaffPortfolioPhoto[],
-      photoToArticleMap: await getPhotoArticleMap(photos.map((photo) => photo.id), payload),
-      hasMore,
-      nextPage: hasMore ? page + 1 : null,
-    };
-  }
+  // Photos the staffer has taken off their own page. The gallery is always
+  // "credited to them, minus these", so this can only ever remove photos.
+  const owner = await payload.findByID({
+    collection: 'users',
+    id: userId,
+    depth: 0,
+    select: { hiddenPhotos: true },
+    disableErrors: true,
+  });
+  const hiddenPhotoIds = (owner?.hiddenPhotos ?? [])
+    .map((entry) => getMediaRelationId(entry))
+    .filter((id): id is number => id !== null);
 
   const photos = await payload.find({
     collection: 'media',
     where: {
-      or: [
+      and: [
         {
-          photographer: {
-            equals: userId,
-          },
+          or: [
+            {
+              photographer: {
+                equals: userId,
+              },
+            },
+            {
+              photographer: {
+                equals: String(userId),
+              },
+            },
+          ],
         },
-        {
-          photographer: {
-            equals: String(userId),
-          },
-        },
+        ...(hiddenPhotoIds.length > 0 ? [{ id: { not_in: hiddenPhotoIds } }] : []),
       ],
     },
     sort: '-createdAt',
