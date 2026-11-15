@@ -2087,16 +2087,27 @@ function groupsEditor() {
   const colorName = (c) => c[0].toUpperCase() + c.slice(1);
   return h("div", { class: "groups" },
     h("span", { class: "field-label" }, "Groups"),
-    s.groups.map((g, gi) =>
-      h("div", { class: "group-row" },
+    s.groups.map((g, gi) => {
+      // The points in this group when renaming starts. They follow the name as it's typed,
+      // even through a moment where it's blank or matches another group's.
+      let members = null;
+      const membersNow = () => s.points.filter((p) => !blank(g.name) && p.group.trim() === g.name.trim());
+      return h("div", { class: "group-row" },
         h("span", { class: `swatch shape-${g.shape ?? "circle"}`, style: `background:${GROUP_SHADES[g.color]?.base ?? "#999"}` }),
         h("input", { type: "text", value: g.name, placeholder: `Group ${gi + 1}`, "aria-label": "Group name", dataset: { cell: `sg:${gi}` },
-          oninput: (e) => { g.name = e.target.value; changed(); }, onchange: () => rerender() }),
+          onfocus: () => { members = membersNow(); },
+          oninput: (e) => {
+            members ??= membersNow();
+            g.name = e.target.value;
+            for (const p of members) p.group = g.name.trim();
+            changed();
+          },
+          onchange: () => { members = null; rerender(); } }),
         select(g, "color", SCATTER_GROUP_COLORS.map((c) => [c, colorName(c)]), { onchange: rerender }),
         select(g, "shape", SCATTER_SHAPES.map((c) => [c, colorName(c)]), { onchange: rerender }),
         h("button", { class: "link", title: "Remove group", "aria-label": `Remove group ${g.name}`, onclick: () => { s.groups.splice(gi, 1); rerender(); changed(); } }, "×"),
-      )
-    ),
+      );
+    }),
     h("button", { class: "link", onclick: () => {
       const used = new Set(s.groups.map((g) => g.color));
       s.groups.push({ name: "", color: SCATTER_GROUP_COLORS.find((c) => !used.has(c)) ?? "gray", shape: "circle" });
@@ -2104,6 +2115,18 @@ function groupsEditor() {
       changed();
     } }, "+ Add group"),
   );
+}
+
+/** Turns the scatter on its side: the axes trade places, settings and all, and so does every point's x and y. */
+function swapAxes() {
+  const s = doc.scatter;
+  [s.x, s.y] = [s.y, s.x];
+  for (const p of s.points) [p.x, p.y] = [p.y, p.x];
+  // Ranges picked in the sheet for X and Y trade places too, so using them again keeps the swap.
+  [sheet.roles.x, sheet.roles.y] = [sheet.roles.y, sheet.roles.x];
+  for (const k of ["x", "y"]) if (!sheet.roles[k]) delete sheet.roles[k];
+  rerender();
+  changed();
 }
 
 function pointsEditor() {
@@ -2142,6 +2165,7 @@ function pointsEditor() {
     ),
     h("div", { class: "grid-actions" },
       h("button", { class: "link", onclick: () => { s.points.push(emptyPoint()); rerender(); changed(); focusLast("p", s.points.length - 1); } }, "+ Add point"),
+      h("button", { class: "link", onclick: swapAxes }, "Swap X and Y"),
       h("span", { class: "hint" }, "Use | in a note or axis title for a line break."),
     ),
   ];
