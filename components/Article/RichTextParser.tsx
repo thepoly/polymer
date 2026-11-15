@@ -5,6 +5,7 @@ import escapeHTML from 'escape-html';
 import { Media, User } from '@/payload-types';
 import { PhotoGallery } from './PhotoGallery';
 import { Carousel } from './Carousel';
+import { ArticleGraph } from './ArticleGraph';
 import type { CreditedImage } from './PhotoCaption';
 
 export type LexicalNode = {
@@ -212,6 +213,9 @@ const serialize = (nodes: LexicalNode[], pCount: number, isRoot: boolean): { chi
         }
         if (blockFields.blockType === 'carousel') {
           return <Carousel key={index} images={blockFields.images || []} />;
+        }
+        if (blockFields.blockType === 'graph') {
+          return <ArticleGraph key={index} name={(blockFields as { graph?: unknown }).graph} />;
         }
         return null;
       }
