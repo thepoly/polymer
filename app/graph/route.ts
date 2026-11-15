@@ -45,13 +45,6 @@ const PAGE = `<!doctype html>
       <span id="size" class="size"></span>
       <span id="edit-hint" class="size edit-hint" hidden>Drag bars and labels · double-click a label to rename</span>
       <button id="reset-layout" class="btn small" title="Put every bar and label back where the defaults put them" hidden>Reset to defaults</button>
-      <label class="zoom">View
-        <select id="view">
-          <option value="print" selected>Print</option>
-          <option value="web">Web</option>
-          <option value="phone">Phone</option>
-        </select>
-      </label>
       <label class="zoom">Zoom
         <select id="zoom">
           <option value="fit" selected>Fit</option>
@@ -61,13 +54,31 @@ const PAGE = `<!doctype html>
         </select>
       </label>
     </div>
+    <div id="canvas-tools" class="canvas-tools" role="toolbar" aria-label="Canvas"></div>
     <div id="preview-error" class="preview-error" hidden></div>
     <div id="stage" class="stage">
-      <div id="frame" class="frame">
-        <iframe id="f0" title="Graph preview" tabindex="-1"></iframe>
-        <iframe id="f1" title="Graph preview" tabindex="-1"></iframe>
-        <iframe id="live" title="Web preview" hidden></iframe>
-      </div>
+      <section class="pane" data-view="print" aria-label="Print">
+        <h3>Print</h3>
+        <div id="frame" class="frame">
+          <iframe id="f0" title="Print preview" tabindex="-1"></iframe>
+          <iframe id="f1" title="Print preview" tabindex="-1"></iframe>
+          <div class="canvas" data-view="print" tabindex="0" hidden></div>
+        </div>
+      </section>
+      <section class="pane" data-view="web" aria-label="Web">
+        <h3>Web</h3>
+        <div id="frame-web" class="frame">
+          <iframe id="live-web" title="Web preview"></iframe>
+          <div class="canvas" data-view="web" tabindex="0" hidden></div>
+        </div>
+      </section>
+      <section class="pane" data-view="phone" aria-label="Phone">
+        <h3>Phone</h3>
+        <div id="frame-phone" class="frame">
+          <iframe id="live-phone" title="Phone preview"></iframe>
+          <div class="canvas" data-view="phone" tabindex="0" hidden></div>
+        </div>
+      </section>
     </div>
   </section>
 </div>

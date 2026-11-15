@@ -17,7 +17,7 @@ function scaleFor(axis: ScatterAxis, a: number, b: number): Scale {
 const lines = (v: string | string[] | undefined) => (Array.isArray(v) ? v : v ? [v] : [])
 /** An axis's numbers: shortened on the ticks once they reach the millions ($1.5M), exact in the readout. */
 const fmtAxis = (axis: ScatterAxis, v: number, exact = false) =>
-  fmtNum(v, { prefix: axis.prefix, compact: !exact && Math.max(...axis.domain.map(Math.abs)) >= 1e6 })
+  fmtNum(v, { prefix: axis.prefix, grouping: !axis.year, compact: !exact && !axis.year && Math.max(...axis.domain.map(Math.abs)) >= 1e6 })
 const withUnit = (axis: ScatterAxis, v: number) => `${fmtAxis(axis, v, true)}${axis.unit ? ` ${axis.unit}` : ''}`
 
 type Drag = { i: number; from: [number, number]; start: [number, number]; at: [number, number] }
@@ -92,11 +92,11 @@ export function Scatter({ m, W, k, onLabelMove }: ChartProps<ScatterModel> & { o
             <div className="ig-tip-head">{picked.label ?? picked.name ?? m.othersLabel}</div>
             <div className="ig-tip-row">
               <span className="ig-tip-name">{m.x.short || lines(m.x.label).join(' ')}</span>
-              <span className="ig-tip-value">{withUnit(m.x, picked.x)}</span>
+              <span className="ig-tip-value">{picked.xText ?? withUnit(m.x, picked.x)}</span>
             </div>
             <div className="ig-tip-row">
               <span className="ig-tip-name">{m.y.short || yLabel.join(' ')}</span>
-              <span className="ig-tip-value">{withUnit(m.y, picked.y)}</span>
+              <span className="ig-tip-value">{picked.yText ?? withUnit(m.y, picked.y)}</span>
             </div>
           </>
         ),

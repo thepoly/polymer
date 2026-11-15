@@ -52,12 +52,17 @@ export type ScatterPoint = {
   /** The group the point belongs to, which sets its color and shape. */
   group?: string
   shape?: string
+  /** On a date axis, the date as given, for the readout ("Aug. 2023"). */
+  xText?: string
+  yText?: string
 }
 export type ScatterAxis = {
   label: string | string[]
   short: string
   unit: string
   prefix: string
+  /** Years print without a comma: 2023. */
+  year?: boolean
   scale: 'log' | 'linear'
   domain: [number, number]
 }
@@ -85,7 +90,11 @@ export type FlowGeometry = {
   labels: { node: FlowNode; name: string; rest: string; tx: number; ly: number; leader: string | null; twoLine: boolean }[]
 }
 
-export type Model = SlicedModel | SeriesModel | ScatterModel | FlowModel
+/** A graph rearranged by hand: its parts for each place it's shown, each in a box `size` units wide and tall. */
+export type CustomView = { size: [number, number]; parts: unknown[] }
+export type CustomModel = Head & { kind: 'custom'; views: { print?: CustomView; web?: CustomView; phone?: CustomView } }
+
+export type Model = SlicedModel | SeriesModel | ScatterModel | FlowModel | CustomModel
 
 /** The site's graph settings, as lib/graph/store reads them. */
 export type { GraphSettings } from '@/lib/graph/store'
