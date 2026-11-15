@@ -2117,6 +2117,18 @@ function groupsEditor() {
   );
 }
 
+/** Turns the scatter on its side: the axes trade places, settings and all, and so does every point's x and y. */
+function swapAxes() {
+  const s = doc.scatter;
+  [s.x, s.y] = [s.y, s.x];
+  for (const p of s.points) [p.x, p.y] = [p.y, p.x];
+  // Ranges picked in the sheet for X and Y trade places too, so using them again keeps the swap.
+  [sheet.roles.x, sheet.roles.y] = [sheet.roles.y, sheet.roles.x];
+  for (const k of ["x", "y"]) if (!sheet.roles[k]) delete sheet.roles[k];
+  rerender();
+  changed();
+}
+
 function pointsEditor() {
   const s = doc.scatter;
   const makeRow = emptyPoint;
@@ -2153,6 +2165,7 @@ function pointsEditor() {
     ),
     h("div", { class: "grid-actions" },
       h("button", { class: "link", onclick: () => { s.points.push(emptyPoint()); rerender(); changed(); focusLast("p", s.points.length - 1); } }, "+ Add point"),
+      h("button", { class: "link", onclick: swapAxes }, "Swap X and Y"),
       h("span", { class: "hint" }, "Use | in a note or axis title for a line break."),
     ),
   ];
