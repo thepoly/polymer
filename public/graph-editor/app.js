@@ -23,8 +23,10 @@ const SLICED = ["ring", "pie", "pie3d"];
 const ITEM_KINDS = [...SLICED, "bar"];
 const TABLE_KINDS = ["column", "line"];
 
-const GROUP_COLORS = ["red", "purple"];
-const SERIES_COLORS = ["red", "purple", "orange", "lavender"];
+// The brand colors, by name. These are the built-in ones; the site's graph settings
+// (/graph/settings) replace them at startup, see applySettings.
+let GROUP_COLORS = ["red", "purple", "orange", "lavender"];
+let SERIES_COLORS = ["red", "purple", "orange", "lavender"];
 // Gray is for context lines: any number of them can share it. Lines only; columns need a color each.
 const GRAY = "gray";
 const HEX = { red: "#D6001C", purple: "#6A35A0", orange: "#D9702A", lavender: "#9A64C8", gray: "#bbbbbb", ink: "#1a1a1a" };
@@ -32,8 +34,8 @@ const MAX_LINES = 10;
 const MAX_SLICES = 5;
 
 // Flow graphs (lib/graph/flow.js): any bar or band can be set to one of these, or left on Auto.
-const FLOW_COLORS = [...SERIES_COLORS, GRAY, "ink"];
-const FLOW_COLOR_OPTIONS = [["", "Auto"], ...FLOW_COLORS.map((c) => [c, c[0].toUpperCase() + c.slice(1)])];
+let FLOW_COLORS = [...SERIES_COLORS, GRAY, "ink"];
+let FLOW_COLOR_OPTIONS = [["", "Auto"], ...FLOW_COLORS.map((c) => [c, c[0].toUpperCase() + c.slice(1)])];
 const MAX_FLOW_COLUMNS = 8;
 const FLOW_DEFAULTS = { palette: "branches", colorBy: "source", align: "left", order: "auto", labels: "value" };
 
@@ -44,15 +46,43 @@ const maxSeries = () => (doc?.meta.kind === "line" ? MAX_LINES : SERIES_COLORS.l
 function defaultSeriesColors(names) {
   if (names.length <= SERIES_COLORS.length) return names.map((_, i) => SERIES_COLORS[i]);
   const lead = Math.max(0, names.findIndex((n) => /^rpi$|rensselaer/i.test(String(n).trim())));
-  return names.map((_, i) => (i === lead ? "red" : GRAY));
+  return names.map((_, i) => (i === lead ? SERIES_COLORS[0] : GRAY));
 }
 
 // Keys the editor writes. Anything else in a file (hand-tuned settings) is carried through as is.
 const KNOWN = new Set([
   "kicker", "title", "dek", "kind", "width", "items", "combine", "color", "centerLabel", "valueLabel", "sort",
   "columns", "colors", "rows", "stacked", "points", "x", "y", "prefix", "suffix", "othersLabel", "aspect", "source", "credit",
-  "flows", "nodes", "palette", "colorBy", "align", "order", "labels",
+  "flows", "nodes", "palette", "colorBy", "align", "order", "labels", "inside", "insideLabel", "groups", "trend", "markStyle", "sheet",
 ]);
+
+// Scatter groups (lib/graph/palette.js GROUP_SHADES): a group's points take its color, and a
+// focus point the darker shade of it.
+let GROUP_SHADES = {
+  purple: { base: "#9A64C8", dark: "#4A1F75" },
+  orange: { base: "#EE9B5E", dark: "#A84B0E" },
+  red: { base: "#F2845E", dark: "#A3061B" },
+  gray: { base: "#bbbbbb", dark: "#555555" },
+};
+let SCATTER_GROUP_COLORS = Object.keys(GROUP_SHADES);
+
+// The site's graph settings as stored, sent along to the web preview so it draws in the same colors.
+let graphSettings = null;
+
+/** Takes the brand colors from the site's graph settings: every picker and swatch follows them. */
+function applySettings({ settings, colors }) {
+  if (!Array.isArray(colors) || !colors.length) return;
+  graphSettings = settings ?? null;
+  const names = colors.map((c) => c.name);
+  GROUP_COLORS = names;
+  SERIES_COLORS = names;
+  for (const c of colors) HEX[c.name] = c.base;
+  FLOW_COLORS = [...names, GRAY, "ink"];
+  FLOW_COLOR_OPTIONS = [["", "Auto"], ...FLOW_COLORS.map((c) => [c, c[0].toUpperCase() + c.slice(1)])];
+  GROUP_SHADES = { ...Object.fromEntries(colors.map((c) => [c.name, { base: c.light, dark: c.dark }])), gray: { base: "#bbbbbb", dark: "#555555" } };
+  SCATTER_GROUP_COLORS = Object.keys(GROUP_SHADES);
+}
+const SCATTER_SHAPES = ["circle", "square", "triangle", "diamond"]; // lib/graph/scatter.js SHAPES
 
 // ── Small helpers ─────────────────────────────────────────
 
@@ -125,7 +155,7 @@ let doc = null; // the graph being edited
 let saved = ""; // the saved file, as JSON, to tell when the doc is dirty
 
 const emptyRows = (n, w) => Array.from({ length: n }, () => Array(w).fill(""));
-const emptyPoint = () => ({ label: "", x: "", y: "", highlight: false, labelAt: "right", note: "", _raw: {} });
+const emptyPoint = () => ({ label: "", name: "", group: "", x: "", y: "", highlight: false, labelAt: "right", note: "", _raw: {} });
 const emptyAxis = () => ({ label: "", short: "", unit: "", scale: "linear", min: "", max: "" });
 
 function blankDoc(kind = "ring") {
@@ -137,13 +167,17 @@ function blankDoc(kind = "ring") {
       kind, kicker: "", title: "", dek: "", source: "", credit: "", width: "3.5",
       centerLabel: "total", valueLabel: "Reports", sort: true, prefix: "", suffix: "", stacked: false,
       xLabel: "", yLabel: "", yMin: "", yMax: "", yZero: "auto", aspect: "", othersLabel: "",
+      dots: false, insideLabel: "", trend: false, markStyle: "solid",
       ...FLOW_DEFAULTS,
     },
     groups: [{ name: "", color: "red", ref: null, rows: emptyRows(4, 2) }],
-    table: { columns: ["Category", "Series 1"], colors: ["red"], rows: emptyRows(5, 2) },
-    scatter: { x: emptyAxis(), y: emptyAxis(), points: Array.from({ length: 4 }, emptyPoint) },
+    // inside: category → one entry per series, counted out as dots inside the columns.
+    table: { columns: ["Category", "Series 1"], colors: ["red"], rows: emptyRows(5, 2), inside: {} },
+    scatter: { x: emptyAxis(), y: emptyAxis(), points: Array.from({ length: 4 }, emptyPoint), groups: [] },
     // Rows are [from, to, amount, band color]; nodes holds each bar's color and column by name.
     flow: { rows: emptyRows(5, 4), nodes: {} },
+    // The scratch spreadsheet: rows of cells as typed. Saved with the graph, never drawn.
+    sheet: [],
   };
 }
 
@@ -168,11 +202,12 @@ function fromFile(g, name) {
   d.name = name;
   d.loadedName = name;
   d.raw = structuredClone(g);
+  d.sheet = Array.isArray(g.sheet) ? g.sheet.map((r) => (Array.isArray(r) ? r.map(str) : [])) : [];
   Object.assign(d.meta, {
     kicker: str(g.kicker), title: str(g.title), dek: str(g.dek), source: str(g.source), credit: str(g.credit),
     width: str(g.width ?? 3.5), centerLabel: g.centerLabel ?? "total", valueLabel: g.valueLabel ?? "Reports",
     sort: g.sort !== false, prefix: str(g.prefix), suffix: str(g.suffix), stacked: !!g.stacked,
-    aspect: str(g.aspect), othersLabel: str(g.othersLabel),
+    aspect: str(g.aspect), othersLabel: str(g.othersLabel), trend: !!g.trend, markStyle: g.markStyle ?? "solid",
   });
   if (g.items || g.combine) {
     d.groups = g.combine
@@ -191,7 +226,10 @@ function fromFile(g, name) {
         return g.columns.slice(1).map((_, i) => g.colors?.[i] ?? defaults[i]);
       })(),
       rows: (g.rows ?? []).map((r) => g.columns.map((_, i) => str(r?.[i]))),
+      inside: Object.fromEntries((g.inside ?? []).filter((r) => Array.isArray(r)).map((r) => [str(r[0]).trim(), r.slice(1).map(str)])),
     };
+    d.meta.dots = Array.isArray(g.inside);
+    d.meta.insideLabel = str(g.insideLabel);
   }
   if (TABLE_KINDS.includes(g.kind)) {
     Object.assign(d.meta, {
@@ -213,8 +251,9 @@ function fromFile(g, name) {
     d.scatter = {
       x: axisFrom(g.x),
       y: axisFrom(g.y),
+      groups: (g.groups ?? []).map((grp) => ({ name: str(grp.name), color: grp.color ?? "purple", shape: grp.shape ?? "circle" })),
       points: g.points.map((p) => ({
-        label: str(p.label), x: str(p.x), y: str(p.y), highlight: !!p.highlight,
+        label: str(p.label), name: str(p.name), group: str(p.group), x: str(p.x), y: str(p.y), highlight: !!p.highlight,
         labelAt: p.labelAt ?? "right", note: joinLines(p.note), _raw: p,
       })),
     };
@@ -283,6 +322,10 @@ function toFile(d) {
     if (hi !== null) out.y.max = hi; else delete out.y.max;
     if (kind === "line" && m.yZero !== "auto") out.y.zero = m.yZero === "yes"; else delete out.y.zero;
     if (kind === "column" && m.stacked) out.stacked = true;
+    if (kind === "column" && m.dots) {
+      out.inside = out.rows.map((r) => [r[0], ...out.columns.slice(1).map((_, i) => str(t.inside[r[0]]?.[i]).trim())]);
+      if (m.insideLabel.trim()) out.insideLabel = m.insideLabel.trim();
+    }
   }
 
   if (kind === "bar" || kind === "flow" || TABLE_KINDS.includes(kind)) {
@@ -339,6 +382,11 @@ function toFile(d) {
     const asp = parseNum(m.aspect);
     if (asp) out.aspect = asp;
     if (m.othersLabel) out.othersLabel = m.othersLabel;
+    if (m.trend) out.trend = true;
+    if (m.markStyle && m.markStyle !== "solid") out.markStyle = m.markStyle;
+    const groups = s.groups.filter((g) => !blank(g.name)).map((g) => ({ name: g.name.trim(), color: g.color, ...(g.shape && g.shape !== "circle" ? { shape: g.shape } : {}) }));
+    if (groups.length) out.groups = groups;
+    const groupNames = new Set(groups.map((g) => g.name));
     out.points = [];
     s.points.forEach((p) => {
       if (blank(p.label) && blank(p.x) && blank(p.y)) return;
@@ -347,9 +395,14 @@ function toFile(d) {
         return warnings.push(`${p.label.trim() ? `“${p.label.trim()}”` : "An unnamed point"} needs both an x and a y number, so it's left out.`);
       }
       const o = { ...p._raw };
-      for (const k of ["label", "x", "y", "highlight", "labelAt", "note"]) delete o[k];
+      for (const k of ["label", "name", "group", "x", "y", "highlight", "labelAt", "note"]) delete o[k];
       const pt = {};
       if (!blank(p.label)) pt.label = p.label.trim();
+      else if (!blank(p.name)) pt.name = p.name.trim();
+      if (!blank(p.group)) {
+        if (groupNames.has(p.group.trim())) pt.group = p.group.trim();
+        else warnings.push(`“${p.group.trim()}” isn't one of the groups, so ${p.label.trim() || p.name.trim() || "a point"} is drawn without one.`);
+      }
       Object.assign(pt, { x, y });
       if (p.highlight) pt.highlight = true;
       if (p.labelAt && p.labelAt !== "right") pt.labelAt = p.labelAt;
@@ -361,6 +414,8 @@ function toFile(d) {
 
   out.source = m.source;
   out.credit = m.credit;
+  const sheet = trimSheet(d.sheet);
+  if (sheet.length) out.sheet = sheet;
   return { graph: out, warnings };
 }
 
@@ -460,8 +515,8 @@ function pastePoints(rows) {
   if (body[0].slice(1).every((c) => !isNumCell(c))) header = body.shift();
   const points = body.map((r) => {
     const named = !isNumCell(r[0]);
-    const [label, x, y] = named ? [r[0], r[1], r[2]] : ["", r[0], r[1]];
-    return { ...emptyPoint(), label: label ?? "", x: x ?? "", y: y ?? "" };
+    const [label, x, y, group] = named ? [r[0], r[1], r[2], r[3]] : ["", r[0], r[1], r[2]];
+    return { ...emptyPoint(), label: label ?? "", x: x ?? "", y: y ?? "", group: str(group).trim() };
   });
   return { header, points };
 }
@@ -470,11 +525,12 @@ function pastePoints(rows) {
 const SANKEYMATIC = /^(.+?)\s*\[\s*([^\]]+?)\s*\]\s*(.+?)(?:\s+#[0-9a-f]{3,8})?$/i;
 
 /**
- * Pasted flows → [from, to, amount, color] rows. Takes spreadsheet columns (From, To,
- * Amount, and a color name if wanted), or SankeyMATIC lines. A header row is skipped.
+ * Rows of cells → [from, to, amount, color] flow rows. Takes spreadsheet columns (From, To,
+ * Amount, and a color name if wanted), or SankeyMATIC lines, one to a cell. A header row
+ * is skipped.
  */
-function pasteFlows(text) {
-  const lines = String(text).replace(/\r\n?/g, "\n").split("\n").map((l) => l.trim())
+function pasteFlows(rows) {
+  const lines = rows.filter((r) => r.length).map((r) => r.filter((c) => !blank(c)).join(" ").trim())
     .filter((l) => l && !l.startsWith("//") && !l.startsWith(":"));
   if (lines.length && lines.filter((l) => SANKEYMATIC.test(l)).length >= lines.length / 2) {
     return lines.flatMap((l) => {
@@ -482,7 +538,7 @@ function pasteFlows(text) {
       return m ? [[m[1].trim(), m[3].trim(), m[2].trim(), ""]] : [];
     });
   }
-  const body = parseClipboard(text).filter((r) => r.length >= 3);
+  const body = rows.filter((r) => r.length >= 3);
   if (body.length && !isNumCell(body[0][2])) body.shift();
   return body.map((r) => {
     const color = String(r[3] ?? "").trim().toLowerCase();
@@ -490,25 +546,70 @@ function pasteFlows(text) {
   });
 }
 
-function applyPaste(text, mode = "replace") {
-  const rows = parseClipboard(text);
-  if (!rows.some((r) => r.length)) return status("There's nothing in the paste box.", true);
+/**
+ * Rows of cells, read the way this kind of graph lays its data out, or null (with a
+ * message) when nothing usable is in them.
+ */
+function parseRows(rows, kind) {
+  if (kind === "flow") {
+    const flows = pasteFlows(rows);
+    if (!flows.length) return void status("Couldn't find any rows with a from, a to and an amount.", true);
+    return { flows };
+  }
+  if (ITEM_KINDS.includes(kind)) {
+    const groups = pasteItems(rows);
+    if (!groups.length) return void status("Couldn't find any rows with a label and a number.", true);
+    return { groups };
+  }
+  if (TABLE_KINDS.includes(kind)) {
+    const table = pasteTable(rows);
+    return table ? { table } : null;
+  }
+  return pastePoints(rows);
+}
+
+/** No two of the graph's own groups share a color: a repeat takes one that's still free. */
+function fixGroupColors() {
+  const used = new Set(doc.groups.filter((g) => g.ref).map((g) => g.refColor));
+  for (const g of doc.groups) {
+    if (g.ref) continue;
+    if (!g.color || used.has(g.color)) g.color = GROUP_COLORS.find((c) => !used.has(c)) ?? g.color ?? GROUP_COLORS[0];
+    used.add(g.color);
+  }
+}
+
+/**
+ * Puts parsed data into the graph. `mode` is "replace", "append" (more rows of the same),
+ * "group" (a new group of its own, named `name`) or "series" (new series beside the ones there).
+ */
+function applyData(data, mode = "replace", name = "") {
   const kind = doc.meta.kind;
 
   if (kind === "flow") {
-    const flows = pasteFlows(text);
-    if (!flows.length) return status("Couldn't find any rows with a from, a to and an amount.", true);
-    doc.flow.rows = mode === "append" ? doc.flow.rows.filter((r) => !r.every(blank)).concat(flows) : flows;
+    doc.flow.rows = mode === "replace" ? data.flows : doc.flow.rows.filter((r) => !r.every(blank)).concat(data.flows);
     rerender();
     return changed();
   }
 
   if (ITEM_KINDS.includes(kind)) {
-    let groups = pasteItems(rows);
-    if (!groups.length) return status("Couldn't find any rows with a label and a number.", true);
+    let groups = data.groups;
     if (mode === "append") {
       const target = doc.groups.findLast((g) => !g.ref) ?? doc.groups[0];
       target.rows = target.rows.filter((r) => !r.every(blank)).concat(groups.flatMap((g) => g.rows));
+    } else if (mode === "group") {
+      // An untouched graph starts with one empty group; the new one takes its place.
+      if (doc.groups.length === 1 && !doc.groups[0].ref && doc.groups[0].rows.every((r) => r.every(blank))) doc.groups = [];
+      const free = GROUP_COLORS.filter((c) => !doc.groups.some((o) => (o.color ?? o.refColor) === c));
+      if (groups.length > free.length) {
+        return status(doc.groups.length >= GROUP_COLORS.length
+          ? "Every color already has a group. Add a color in Settings to make room for another."
+          : `Only ${free.length} more group${free.length === 1 ? "" : "s"} fit${free.length === 1 ? "s" : ""}, one for each color.`, true);
+      }
+      if (doc.groups.length === 1 && !doc.groups[0].name.trim()) doc.groups[0].name = "Group 1";
+      groups.forEach((g, i) => {
+        doc.groups.push({ name: (groups.length === 1 && name.trim()) || g.name || `Group ${doc.groups.length + 1}`, color: free[i], ref: null, rows: g.rows });
+      });
+      if (doc.groups.length === 1 && !name.trim() && !groups[0].name) doc.groups[0].name = "";
     } else {
       if (groups.length > GROUP_COLORS.length) {
         const extra = groups.splice(GROUP_COLORS.length);
@@ -521,38 +622,72 @@ function applyPaste(text, mode = "replace") {
         ref: null,
         rows: g.rows,
       }));
-      // Two groups can't share a color.
-      if (doc.groups.length === 2 && doc.groups[0].color === doc.groups[1].color) doc.groups[1].color = doc.groups[0].color === "red" ? "purple" : "red";
+      fixGroupColors();
       if (groups.length === 1 && groups[0].name && blank(doc.meta.title)) doc.meta.title = groups[0].name;
     }
   } else if (TABLE_KINDS.includes(kind)) {
-    const t = pasteTable(rows);
-    if (!t) return;
+    const t = data.table;
     const max = maxSeries();
-    if (t.columns.length - 1 > max) {
-      status(kind === "line"
-        ? `Only ${max} lines fit; columns after that were left off.`
-        : `Only ${max} series fit in a column chart; columns after that were left off. A line chart holds ${MAX_LINES}.`, true);
-      t.columns = t.columns.slice(0, max + 1);
-      t.rows = t.rows.map((r) => r.slice(0, max + 1));
-    }
-    if (mode === "append" && t.columns.length === doc.table.columns.length) {
-      doc.table.rows = doc.table.rows.filter((r) => !r.every(blank)).concat(t.rows);
-    } else {
-      // New data, new colors: past four lines, that means RPI in red and the rest gray.
-      doc.table = { columns: t.columns, colors: defaultSeriesColors(t.columns.slice(1)), rows: t.rows };
+    const tooMany = () => status(kind === "line"
+      ? `Only ${max} lines fit; columns after that were left off.`
+      : `Only ${max} series fit in a column chart; columns after that were left off. A line chart holds ${MAX_LINES}.`, true);
+    if (mode === "series") {
+      // Each new series lines up with the rows already there by category, and adds a row for any new one.
+      const cur = doc.table;
+      const room = max - (cur.columns.length - 1);
+      if (room <= 0) return tooMany();
+      if (t.columns.length - 1 > room) tooMany();
+      const add = t.columns.slice(1, room + 1);
+      const from = cur.columns.length;
+      cur.columns.push(...add.map((c, i) => c || `Series ${from + i}`));
+      cur.rows = cur.rows.filter((r) => !r.every(blank));
+      const rowOf = new Map();
+      cur.rows.forEach((r, i) => { if (str(r[0]).trim()) rowOf.set(str(r[0]).trim(), i); });
+      cur.rows.forEach((r) => { while (r.length < cur.columns.length) r.push(""); });
+      for (const r of t.rows) {
+        const cat = str(r[0]).trim();
+        if (!cat) continue;
+        let at = rowOf.get(cat);
+        if (at === undefined) {
+          at = cur.rows.push([cat, ...Array(cur.columns.length - 1).fill("")]) - 1;
+          rowOf.set(cat, at);
+        }
+        add.forEach((_, i) => (cur.rows[at][from + i] = r[i + 1] ?? ""));
+      }
       fixSeriesColors();
+    } else {
+      if (t.columns.length - 1 > max) {
+        tooMany();
+        t.columns = t.columns.slice(0, max + 1);
+        t.rows = t.rows.map((r) => r.slice(0, max + 1));
+      }
+      if (mode === "append" && t.columns.length === doc.table.columns.length) {
+        doc.table.rows = doc.table.rows.filter((r) => !r.every(blank)).concat(t.rows);
+      } else {
+        // New data, new colors: past what the colors cover, that means RPI in red and the rest gray.
+        doc.table = { columns: t.columns, colors: defaultSeriesColors(t.columns.slice(1)), rows: t.rows, inside: doc.table.inside ?? {} };
+        fixSeriesColors();
+      }
     }
   } else {
-    const p = pastePoints(rows);
-    if (!p) return;
+    const p = data;
     const s = doc.scatter;
     if (p.header) {
       const [, xh, yh] = !isNumCell(p.header[0]) && p.header.length >= 3 ? p.header : ["", p.header[0], p.header[1]];
       if (blank(s.x.label) && xh) s.x.label = xh;
       if (blank(s.y.label) && yh) s.y.label = yh;
     }
-    s.points = mode === "append" ? s.points.filter((q) => !(blank(q.label) && blank(q.x) && blank(q.y))).concat(p.points) : p.points;
+    if (mode === "group") {
+      const group = name.trim() || `Group ${s.groups.length + 1}`;
+      p.points.forEach((q) => (q.group = group));
+    }
+    s.points = mode === "replace" ? p.points : s.points.filter((q) => !(blank(q.label) && blank(q.name) && blank(q.x) && blank(q.y))).concat(p.points);
+    // Groups named in the data and not set up yet get a color each.
+    for (const group of new Set(p.points.map((q) => q.group).filter(Boolean))) {
+      if (s.groups.some((g) => g.name.trim() === group)) continue;
+      const used = new Set(s.groups.map((g) => g.color));
+      s.groups.push({ name: group, color: SCATTER_GROUP_COLORS.find((c) => !used.has(c)) ?? "gray", shape: "circle" });
+    }
   }
   rerender();
   changed();
@@ -576,6 +711,538 @@ function pasteIntoGrid(e, grid, rowIndex, colIndex, width, makeRow, onWide, sync
   sync?.();
   rerender();
   changed();
+}
+
+// ── Sheet ─────────────────────────────────────────────────
+//
+// A spreadsheet kept with the graph. A whole sheet can be pasted in as it is; ranges of it
+// are then picked out as the labels, the values and so on, and put into the graph's data.
+// It works the way spreadsheets do: click and drag to select, Shift to extend, ⌘-click for
+// a second range, type to edit, ⌘C/⌘V/⌘Z. The file keeps it under "sheet"; nothing draws it.
+
+const SHEET_MIN_ROWS = 10, SHEET_MIN_COLS = 6, SHEET_MAX_ROWS = 2000, SHEET_MAX_COLS = 78;
+
+// What each kind of graph needs picked out of the sheet. `num` columns hold numbers, so a
+// word at the top of one is its heading; `multi` takes any number of columns.
+const SHEET_ROLES = {
+  items: [{ id: "labels", label: "Labels" }, { id: "values", label: "Values", num: true }],
+  table: [{ id: "categories", label: "Categories" }, { id: "series", label: "Series", num: true, multi: true }],
+  scatter: [{ id: "names", label: "Names" }, { id: "x", label: "X", num: true }, { id: "y", label: "Y", num: true }],
+  flow: [{ id: "from", label: "From" }, { id: "to", label: "To" }, { id: "amount", label: "Amount", num: true }],
+};
+const sheetFamily = () => (doc.meta.kind === "flow" ? "flow" : ITEM_KINDS.includes(doc.meta.kind) ? "items" : TABLE_KINDS.includes(doc.meta.kind) ? "table" : "scatter");
+const sheetRoles = () => SHEET_ROLES[sheetFamily()];
+
+// The selection is the range from anchor to focus, plus any earlier ranges kept with ⌘-click.
+// `roles` maps a role's id to the ranges picked for it.
+const freshSheet = () => ({ anchor: [0, 0], focus: [0, 0], extra: [], roles: {}, family: null, undo: [], redo: [], drag: null, open: null, scroll: [0, 0], groupName: "" });
+let sheet = freshSheet();
+let sheetHost = null; // the element the sheet is drawn into
+let sheetCells = []; // its <td>s, by row and column
+
+const colName = (c) => {
+  let out = "";
+  for (let n = c + 1; n > 0; n = Math.floor((n - 1) / 26)) out = String.fromCharCode(65 + ((n - 1) % 26)) + out;
+  return out;
+};
+const colIndex = (name) => [...name.toUpperCase()].reduce((n, ch) => n * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+const normRange = (a, b) => ({ r0: Math.min(a[0], b[0]), c0: Math.min(a[1], b[1]), r1: Math.max(a[0], b[0]), c1: Math.max(a[1], b[1]) });
+const rangeName = (r) => (r.r0 === r.r1 && r.c0 === r.c1 ? `${colName(r.c0)}${r.r0 + 1}` : `${colName(r.c0)}${r.r0 + 1}:${colName(r.c1)}${r.r1 + 1}`);
+const inRange = (r, row, col) => row >= r.r0 && row <= r.r1 && col >= r.c0 && col <= r.c1;
+
+/** "B2" or "b2:d9" → a range, or null. */
+function parseRange(text) {
+  const m = /^\s*([a-z]{1,2})(\d{1,4})(?:\s*:\s*([a-z]{1,2})(\d{1,4}))?\s*$/i.exec(text);
+  if (!m) return null;
+  const a = [Number(m[2]) - 1, colIndex(m[1])];
+  const b = m[3] ? [Number(m[4]) - 1, colIndex(m[3])] : a;
+  if (Math.min(a[0], b[0]) < 0 || Math.max(a[0], b[0]) >= SHEET_MAX_ROWS || Math.max(a[1], b[1]) >= SHEET_MAX_COLS) return null;
+  return normRange(a, b);
+}
+
+const sheetGet = (r, c) => str(doc.sheet[r]?.[c]);
+function sheetSet(r, c, v) {
+  if (r >= SHEET_MAX_ROWS || c >= SHEET_MAX_COLS) return;
+  while (doc.sheet.length <= r) doc.sheet.push([]);
+  const row = doc.sheet[r];
+  while (row.length <= c) row.push("");
+  row[c] = v;
+}
+
+/** The sheet without the empty cells at the end of each row and the empty rows at the bottom. */
+function trimSheet(cells = []) {
+  const rows = cells.map((r) => {
+    const row = r.map(str);
+    while (row.length && blank(row.at(-1))) row.pop();
+    return row;
+  });
+  while (rows.length && !rows.at(-1).length) rows.pop();
+  return rows;
+}
+
+/** How far the sheet's contents reach: [rows, columns]. */
+function sheetSize() {
+  const rows = trimSheet(doc.sheet);
+  return [rows.length, Math.max(0, ...rows.map((r) => r.length))];
+}
+
+const sheetRange = () => normRange(sheet.anchor, sheet.focus);
+const sheetRanges = () => [...sheet.extra, sheetRange()];
+
+/** Remembers the sheet as it is, so ⌘Z can come back to it. */
+function sheetSnapshot() {
+  sheet.undo.push(JSON.stringify(doc.sheet));
+  if (sheet.undo.length > 60) sheet.undo.shift();
+  sheet.redo = [];
+}
+
+function sheetUndo(redo = false) {
+  const [from, to] = redo ? [sheet.redo, sheet.undo] : [sheet.undo, sheet.redo];
+  if (!from.length) return;
+  to.push(JSON.stringify(doc.sheet));
+  doc.sheet = JSON.parse(from.pop());
+  sheetEdited();
+}
+
+/** After the sheet's cells change: redraw it, and the Save button, but not the graph. */
+function sheetEdited() {
+  renderSheet();
+  updateDirty();
+}
+
+function sheetEditor() {
+  const kind = doc.meta.kind;
+  const hasData =
+    kind === "flow" ? doc.flow.rows.some((r) => !r.every(blank))
+    : ITEM_KINDS.includes(kind) ? doc.groups.some((g) => g.ref || g.rows.some((r) => !r.every(blank)))
+    : TABLE_KINDS.includes(kind) ? doc.table.rows.some((r) => !r.every(blank))
+    : doc.scatter.points.some((p) => !blank(p.x));
+  // Roles belong to one layout of data; a different kind of graph starts over.
+  if (sheet.family !== sheetFamily()) {
+    sheet.roles = {};
+    sheet.family = sheetFamily();
+  }
+  sheetHost = h("div", { class: "sheet-host" });
+  renderSheet();
+  return h("details", { class: "paste sheet-box", open: sheet.open ?? (!hasData || sheetSize()[0] > 0), ontoggle: (e) => { sheet.open = e.target.open; } },
+    h("summary", {}, "Sheet"),
+    sheetHost,
+  );
+}
+
+/** Draws the sheet into its host: the range box, the grid, and the buttons that use a selection. */
+function renderSheet() {
+  if (!sheetHost) return;
+  const focused = sheetHost.contains(document.activeElement) && document.activeElement?.classList.contains("sheet-catch");
+  const [usedRows, usedCols] = sheetSize();
+  const rows = Math.min(SHEET_MAX_ROWS, Math.max(SHEET_MIN_ROWS, usedRows + 3, sheet.focus[0] + 2, sheet.anchor[0] + 2));
+  const cols = Math.min(SHEET_MAX_COLS, Math.max(SHEET_MIN_COLS, usedCols + 2, sheet.focus[1] + 2, sheet.anchor[1] + 2));
+
+  sheetCells = [];
+  const head = h("tr", {}, h("th", { class: "corner", dataset: { all: "1" }, "aria-label": "Select all" }),
+    Array.from({ length: cols }, (_, c) => h("th", { dataset: { col: c } }, colName(c))));
+  const body = Array.from({ length: rows }, (_, r) => {
+    const tds = Array.from({ length: cols }, (_, c) => {
+      const v = sheetGet(r, c);
+      return h("td", { class: isNumCell(v) ? "num" : null, dataset: { r, c } }, v);
+    });
+    sheetCells.push(tds);
+    return h("tr", {}, h("th", { dataset: { row: r } }, r + 1), tds);
+  });
+
+  // Keys, copy and paste go to an unseen text box, so the browser treats the grid as editable.
+  const catcher = h("textarea", { class: "sheet-catch", "aria-label": "Sheet", dataset: { cell: "sheet" }, autocomplete: "off", spellcheck: "false", onkeydown: sheetKey, onpaste: sheetPaste, oninput: sheetTyped, oncompositionend: sheetTyped });
+  const scroll = h("div", { class: "sheet-scroll", onmousedown: sheetMouseDown, onmouseover: sheetMouseOver, ondblclick: (e) => { if (e.target.closest("td")) sheetStartEdit(); }, onscroll: (e) => { sheet.scroll = [e.target.scrollTop, e.target.scrollLeft]; } },
+    h("table", { class: "sheet-grid" }, h("thead", {}, head), h("tbody", {}, body)));
+  const nameBox = h("input", { class: "sheet-name", type: "text", "aria-label": "Selected range", spellcheck: "false",
+    onkeydown: (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      const r = parseRange(e.target.value);
+      if (!r) return status("Write a range like A2 or A2:C9.", true);
+      Object.assign(sheet, { anchor: [r.r0, r.c0], focus: [r.r1, r.c1], extra: [] });
+      renderSheet();
+      sheetFocus();
+    } });
+
+  sheetHost.replaceChildren(
+    h("div", { class: "sheet-bar" },
+      nameBox,
+      h("span", { class: "spacer" }),
+      h("button", { class: "link", disabled: !sheet.undo.length, onclick: () => sheetUndo() }, "Undo"),
+      h("button", { class: "link", disabled: !usedRows, onclick: () => { sheetSnapshot(); doc.sheet = []; Object.assign(sheet, { anchor: [0, 0], focus: [0, 0], extra: [], roles: {} }); sheetEdited(); } }, "Clear"),
+    ),
+    catcher,
+    scroll,
+    h("div", { class: "sheet-tools" }),
+  );
+  scroll.scrollTop = sheet.scroll[0];
+  scroll.scrollLeft = sheet.scroll[1];
+  renderSheetTools();
+  paintSheet();
+  if (focused) sheetFocus();
+}
+
+const sheetFocus = () => $(".sheet-catch", sheetHost)?.focus({ preventScroll: true });
+
+/** The role buttons and the actions under the grid. */
+function renderSheetTools() {
+  const box = $(".sheet-tools", sheetHost);
+  if (!box) return;
+  const family = sheetFamily();
+  const roles = sheetRoles();
+  const chips = roles.map((role, i) => {
+    const picked = sheet.roles[role.id];
+    return h("span", { class: picked ? "role set" : "role", dataset: { role: i } },
+      h("button", { class: "role-pick", onclick: () => assignRole(i) }, role.label, picked && h("span", { class: "at" }, picked.map(rangeName).join(", "))),
+      picked && h("button", { class: "role-clear", "aria-label": `Clear ${role.label}`, onclick: () => { delete sheet.roles[role.id]; renderSheetTools(); paintSheet(); } }, "×"),
+    );
+  });
+  const named = family === "items" || family === "scatter";
+  box.replaceChildren(
+    h("div", { class: "roles" }, chips),
+    h("div", { class: "sheet-actions" },
+      h("button", { class: "btn small", onclick: () => sheetToGraph("replace") }, "Replace data"),
+      h("button", { class: "btn small", onclick: () => sheetToGraph("append") }, "Add to data"),
+      family === "table" && h("button", { class: "btn small", onclick: () => sheetToGraph("series") }, "Add as series"),
+      named && h("button", { class: "btn small", onclick: () => sheetToGraph("group") }, "Add as group"),
+      named && h("input", { type: "text", class: "group-name", value: sheet.groupName, placeholder: "Group name", "aria-label": "Group name", dataset: { cell: "sheet-group" }, oninput: (e) => { sheet.groupName = e.target.value; } }),
+    ),
+  );
+}
+
+/** Marks the selected cells, the active one, the cells each role holds, and the headers beside them. */
+function paintSheet() {
+  if (!sheetHost) return;
+  const ranges = sheetRanges();
+  const roles = sheetRoles().map((role) => sheet.roles[role.id] ?? []);
+  sheetCells.forEach((tds, r) => tds.forEach((td, c) => {
+    td.classList.toggle("sel", ranges.some((x) => inRange(x, r, c)));
+    td.classList.toggle("active", r === sheet.focus[0] && c === sheet.focus[1]);
+    const role = roles.findIndex((rs) => rs.some((x) => inRange(x, r, c)));
+    if (role >= 0) td.dataset.role = role; else delete td.dataset.role;
+  }));
+  for (const th of sheetHost.querySelectorAll("th[data-col]")) th.classList.toggle("on", ranges.some((x) => Number(th.dataset.col) >= x.c0 && Number(th.dataset.col) <= x.c1));
+  for (const th of sheetHost.querySelectorAll("th[data-row]")) th.classList.toggle("on", ranges.some((x) => Number(th.dataset.row) >= x.r0 && Number(th.dataset.row) <= x.r1));
+  const name = $(".sheet-name", sheetHost);
+  if (name && document.activeElement !== name) name.value = ranges.map(rangeName).join(", ");
+}
+
+/** Moves the selection, redrawing the grid first if the new cell is past its edge. */
+function sheetSelect(anchor, focus, { extra = [] } = {}) {
+  const clampCell = ([r, c]) => [Math.min(SHEET_MAX_ROWS - 1, Math.max(0, r)), Math.min(SHEET_MAX_COLS - 1, Math.max(0, c))];
+  Object.assign(sheet, { anchor: clampCell(anchor), focus: clampCell(focus), extra });
+  if (!sheetCells[sheet.focus[0]]?.[sheet.focus[1]] || !sheetCells[sheet.anchor[0]]?.[sheet.anchor[1]]) renderSheet();
+  else paintSheet();
+  sheetCells[sheet.focus[0]]?.[sheet.focus[1]]?.scrollIntoView({ block: "nearest", inline: "nearest" });
+}
+
+function sheetMouseDown(e) {
+  if (e.button !== 0 || e.target.closest(".sheet-edit")) return;
+  const td = e.target.closest("td"), th = e.target.closest("th");
+  if (!td && !th) return;
+  e.preventDefault();
+  sheetCommitEdit();
+  const lastRow = sheetCells.length - 1, lastCol = (sheetCells[0]?.length ?? 1) - 1;
+  const more = e.metaKey || e.ctrlKey;
+  const extra = more ? sheetRanges() : [];
+  if (td) {
+    const cell = [Number(td.dataset.r), Number(td.dataset.c)];
+    sheetSelect(e.shiftKey ? sheet.anchor : cell, cell, { extra: e.shiftKey ? sheet.extra : extra });
+    sheet.drag = "cell";
+  } else if (th.dataset.col != null) {
+    const c = Number(th.dataset.col);
+    sheetSelect(e.shiftKey ? [0, sheet.anchor[1]] : [0, c], [lastRow, c], { extra: e.shiftKey ? sheet.extra : extra });
+    sheet.drag = "col";
+  } else if (th.dataset.row != null) {
+    const r = Number(th.dataset.row);
+    sheetSelect(e.shiftKey ? [sheet.anchor[0], 0] : [r, 0], [r, lastCol], { extra: e.shiftKey ? sheet.extra : extra });
+    sheet.drag = "row";
+  } else {
+    sheetSelectAll();
+  }
+  sheetFocus();
+}
+
+function sheetMouseOver(e) {
+  if (!sheet.drag) return;
+  const td = e.target.closest("td"), th = e.target.closest("th");
+  const lastRow = sheetCells.length - 1, lastCol = (sheetCells[0]?.length ?? 1) - 1;
+  let focus = null;
+  if (sheet.drag === "cell" && td) focus = [Number(td.dataset.r), Number(td.dataset.c)];
+  if (sheet.drag === "col") {
+    const c = td?.dataset.c ?? th?.dataset.col;
+    if (c != null) focus = [lastRow, Number(c)];
+  }
+  if (sheet.drag === "row") {
+    const r = td?.dataset.r ?? th?.dataset.row;
+    if (r != null) focus = [Number(r), lastCol];
+  }
+  if (!focus || (focus[0] === sheet.focus[0] && focus[1] === sheet.focus[1])) return;
+  sheet.focus = focus;
+  paintSheet();
+}
+window.addEventListener("mouseup", () => { sheet.drag = null; });
+
+function sheetSelectAll() {
+  const [rows, cols] = sheetSize();
+  sheetSelect([0, 0], [Math.max(0, rows - 1), Math.max(0, cols - 1)]);
+}
+
+/** The selection as tab-separated text, the way spreadsheets copy. */
+function sheetCopyText() {
+  const r = sheetRange();
+  const lines = [];
+  for (let row = r.r0; row <= r.r1; row++) {
+    const cells = [];
+    for (let col = r.c0; col <= r.c1; col++) cells.push(sheetGet(row, col).replace(/[\t\n]/g, " "));
+    lines.push(cells.join("\t"));
+  }
+  return lines.join("\n");
+}
+
+function sheetClearSelection() {
+  sheetSnapshot();
+  for (const r of sheetRanges()) {
+    for (let row = r.r0; row <= Math.min(r.r1, doc.sheet.length - 1); row++) {
+      for (let col = r.c0; col <= r.c1; col++) if (!blank(sheetGet(row, col))) sheetSet(row, col, "");
+    }
+  }
+  sheetEdited();
+}
+
+function sheetKey(e) {
+  const mod = e.metaKey || e.ctrlKey;
+  const key = e.key;
+  const step = (dr, dc) => {
+    e.preventDefault();
+    const to = [sheet.focus[0] + dr, sheet.focus[1] + dc];
+    sheetSelect(e.shiftKey && key.startsWith("Arrow") ? sheet.anchor : to, to);
+  };
+  if (mod && key.toLowerCase() === "a") { e.preventDefault(); return sheetSelectAll(); }
+  if (mod && key.toLowerCase() === "z") { e.preventDefault(); return sheetUndo(e.shiftKey); }
+  if (mod && key.toLowerCase() === "y") { e.preventDefault(); return sheetUndo(true); }
+  if (mod && (key.toLowerCase() === "c" || key.toLowerCase() === "x")) {
+    // Put the selection in the unseen box and select it; the browser's own copy takes it from there.
+    const box = e.target;
+    box.value = sheetCopyText();
+    box.select();
+    setTimeout(() => {
+      box.value = "";
+      if (key.toLowerCase() === "x") sheetClearSelection();
+    }, 60);
+    return;
+  }
+  if (mod || e.altKey) return;
+  if (key === "ArrowUp") return step(-1, 0);
+  if (key === "ArrowDown") return step(1, 0);
+  if (key === "ArrowLeft") return step(0, -1);
+  if (key === "ArrowRight") return step(0, 1);
+  if (key === "Tab") return step(0, e.shiftKey ? -1 : 1);
+  if (key === "Enter" || key === "F2") { e.preventDefault(); return sheetStartEdit(); }
+  if (key === "Backspace" || key === "Delete") { e.preventDefault(); return sheetClearSelection(); }
+  if (key === "Escape") { e.preventDefault(); return sheetSelect(sheet.focus, sheet.focus); }
+  // Any other character lands in the unseen box, and sheetTyped opens the cell with it.
+}
+
+/** Typing with a cell selected starts writing over it, as in any spreadsheet. */
+function sheetTyped(e) {
+  if (e.isComposing) return; // an accented or composed character isn't finished yet
+  const typed = e.target.value;
+  e.target.value = "";
+  if (typed) sheetStartEdit(typed);
+}
+
+/** Pasted cells fill right and down from the top-left of the selection, growing the sheet. */
+function sheetPaste(e) {
+  e.preventDefault();
+  const rows = parseClipboard(e.clipboardData?.getData("text/plain") ?? "");
+  if (!rows.some((r) => r.length)) return;
+  sheetSnapshot();
+  const { r0, c0 } = sheetRange();
+  const width = Math.max(...rows.map((r) => r.length));
+  rows.forEach((cells, i) => cells.forEach((v, j) => sheetSet(r0 + i, c0 + j, v)));
+  Object.assign(sheet, {
+    anchor: [r0, c0],
+    focus: [Math.min(SHEET_MAX_ROWS - 1, r0 + rows.length - 1), Math.min(SHEET_MAX_COLS - 1, c0 + Math.max(1, width) - 1)],
+    extra: [],
+  });
+  if (r0 + rows.length > SHEET_MAX_ROWS || c0 + width > SHEET_MAX_COLS) status(`The sheet holds ${SHEET_MAX_ROWS} rows and ${SHEET_MAX_COLS} columns; what was past that was left off.`, true);
+  sheetEdited();
+  sheetFocus();
+}
+
+/** Opens the active cell for typing. `initial` replaces what's there; left out, it's kept. */
+function sheetStartEdit(initial) {
+  const [r, c] = sheet.focus;
+  const td = sheetCells[r]?.[c];
+  if (!td || td.querySelector(".sheet-edit")) return;
+  let done = false;
+  const finish = (save, move) => {
+    if (done) return;
+    done = true;
+    const next = input.value;
+    if (save && next !== sheetGet(r, c)) {
+      sheetSnapshot();
+      sheetSet(r, c, next);
+    }
+    if (move) Object.assign(sheet, { anchor: [Math.max(0, r + move[0]), Math.max(0, c + move[1])], focus: [Math.max(0, r + move[0]), Math.max(0, c + move[1])], extra: [] });
+    sheetEdited();
+    if (move || !save) sheetFocus();
+  };
+  const input = h("input", { class: "sheet-edit", type: "text", value: initial ?? sheetGet(r, c), "aria-label": `${colName(c)}${r + 1}`, spellcheck: "false",
+    onkeydown: (e) => {
+      if (e.key === "Enter") { e.preventDefault(); finish(true, [e.shiftKey ? -1 : 1, 0]); }
+      else if (e.key === "Tab") { e.preventDefault(); finish(true, [0, e.shiftKey ? -1 : 1]); }
+      else if (e.key === "Escape") { e.preventDefault(); finish(false, [0, 0]); }
+    },
+    onblur: () => finish(true, null),
+  });
+  td.append(input);
+  input.focus();
+  if (initial === undefined) input.select();
+  else input.setSelectionRange(input.value.length, input.value.length);
+}
+
+/** Finishes typing in a cell, if one is open, by taking the focus off it. */
+function sheetCommitEdit() {
+  $(".sheet-edit", sheetHost)?.blur();
+}
+
+/**
+ * Gives the selection to a role. One column goes to that role. A block several columns wide
+ * is dealt out left to right from that role on, and so are several ranges picked with ⌘-click,
+ * in the order they were picked. A single cell stands for its column from there down.
+ */
+function assignRole(index) {
+  const roles = sheetRoles();
+  let ranges = sheetRanges();
+  if (ranges.length === 1 && ranges[0].r0 === ranges[0].r1 && ranges[0].c0 === ranges[0].c1) {
+    const { r0, c0 } = ranges[0];
+    let r1 = r0;
+    while (r1 + 1 < doc.sheet.length && !blank(sheetGet(r1 + 1, c0))) r1++;
+    if (blank(sheetGet(r0, c0))) return status("Select the cells to use first.", true);
+    ranges = [{ r0, c0, r1, c1: c0 }];
+  }
+  // Split a wide block into its columns, unless the role it starts at takes several.
+  let parts = ranges;
+  if (ranges.length === 1 && ranges[0].c1 > ranges[0].c0 && !roles[index].multi) {
+    const b = ranges[0];
+    parts = Array.from({ length: b.c1 - b.c0 + 1 }, (_, i) => ({ ...b, c0: b.c0 + i, c1: b.c0 + i }));
+  }
+  let at = index;
+  for (let i = 0; i < parts.length && at < roles.length; i++) {
+    const role = roles[at];
+    if (role.multi) {
+      // Everything left belongs to it; neighbouring columns join back into one range.
+      const rest = parts.slice(i);
+      const joined = [];
+      for (const p of rest) {
+        const last = joined.at(-1);
+        if (last && last.r0 === p.r0 && last.r1 === p.r1 && last.c1 + 1 === p.c0) last.c1 = p.c1;
+        else joined.push({ ...p });
+      }
+      sheet.roles[role.id] = joined;
+      break;
+    }
+    sheet.roles[role.id] = [{ ...parts[i], c1: parts[i].c0 }];
+    at++;
+  }
+  renderSheetTools();
+  paintSheet();
+}
+
+/** The cells of every column a role holds, top to bottom. */
+function roleColumns(id) {
+  return (sheet.roles[id] ?? []).flatMap((r) =>
+    Array.from({ length: r.c1 - r.c0 + 1 }, (_, i) => Array.from({ length: r.r1 - r.r0 + 1 }, (_, j) => sheetGet(r.r0 + j, r.c0 + i).trim())));
+}
+
+/**
+ * The data the roles pick out, as parseRows would return it. Null if no role is set (the
+ * selection is read as a whole instead); false, with a message, if some are missing.
+ */
+function dataFromRoles() {
+  const roles = sheetRoles();
+  if (!roles.some((role) => sheet.roles[role.id])) return null;
+  const family = sheetFamily();
+  const needed = roles.filter((role) => role.num || family === "flow" || (family === "items" && role.id === "labels"));
+  const missing = needed.filter((role) => !sheet.roles[role.id]);
+  if (missing.length) {
+    status(`Pick ${missing.map((role) => role.label).join(" and ")} too.`, true);
+    return false;
+  }
+  // A word on top of a column of numbers is its heading.
+  const cols = {}, heads = {};
+  for (const role of roles.filter((x) => x.num)) {
+    cols[role.id] = roleColumns(role.id).map((col) => {
+      const headed = !blank(col[0]) && !isNumCell(col[0]) && col.slice(1).some(isNumCell);
+      (heads[role.id] ??= []).push(headed ? col[0] : "");
+      return headed ? col.slice(1) : col;
+    });
+  }
+  const length = Math.max(0, ...Object.values(cols).flat().map((col) => col.length));
+  // A text column one cell longer than the numbers has a heading of its own on top.
+  for (const role of roles.filter((x) => !x.num)) {
+    const col = roleColumns(role.id)[0] ?? [];
+    heads[role.id] = [col.length === length + 1 ? col[0] : ""];
+    cols[role.id] = [col.length === length + 1 ? col.slice(1) : col];
+  }
+  const at = (id, i, n = 0) => cols[id]?.[n]?.[i] ?? "";
+  const index = Array.from({ length }, (_, i) => i);
+
+  if (family === "flow") {
+    return { flows: index.map((i) => [at("from", i), at("to", i), at("amount", i), ""]).filter((r) => !r.slice(0, 3).every(blank)) };
+  }
+  if (family === "items") {
+    const rows = index.map((i) => [at("labels", i), at("values", i)]).filter((r) => !r.every(blank));
+    return { groups: [{ name: heads.values[0] ?? "", rows }] };
+  }
+  if (family === "table") {
+    const series = cols.series;
+    const columns = [heads.categories?.[0] || "Category", ...series.map((_, n) => tidyHeader(heads.series[n]) || `Series ${n + 1}`)];
+    const rows = index.map((i) => [sheet.roles.categories ? at("categories", i) : String(i + 1), ...series.map((_, n) => at("series", i, n))])
+      .filter((r) => !r.slice(1).every(blank) || (sheet.roles.categories && !blank(r[0])));
+    return { table: { columns, rows } };
+  }
+  const points = index.map((i) => ({ ...emptyPoint(), name: at("names", i), x: at("x", i), y: at("y", i) })).filter((p) => !(blank(p.name) && blank(p.x) && blank(p.y)));
+  return { header: ["", heads.x[0] ?? "", heads.y[0] ?? ""], points, heading: heads.y[0] ?? "" };
+}
+
+/**
+ * The selected cells as rows, for reading as a whole. Several ranges sit side by side, each
+ * one's first row beside the next one's. With just one cell selected, it's the whole sheet.
+ */
+function selectionRows() {
+  let blocks = sheetRanges();
+  if (blocks.length === 1 && blocks[0].r0 === blocks[0].r1 && blocks[0].c0 === blocks[0].c1) {
+    const [rows, cols] = sheetSize();
+    if (!rows) return [];
+    blocks = [{ r0: 0, c0: 0, r1: rows - 1, c1: cols - 1 }];
+  }
+  const height = Math.max(...blocks.map((b) => b.r1 - b.r0 + 1));
+  return Array.from({ length: height }, (_, i) => {
+    const row = blocks.flatMap((b) => Array.from({ length: b.c1 - b.c0 + 1 }, (_, j) => (i <= b.r1 - b.r0 ? sheetGet(b.r0 + i, b.c0 + j).trim() : "")));
+    while (row.length && blank(row.at(-1))) row.pop();
+    return row;
+  });
+}
+
+/** Puts the sheet's data into the graph: what the roles pick out, or else the selection read as a whole. */
+function sheetToGraph(mode) {
+  sheetCommitEdit();
+  let data = dataFromRoles();
+  if (data === false) return;
+  if (!data) {
+    const rows = selectionRows();
+    if (!rows.some((r) => r.length)) return status("The sheet is empty. Paste or type some data into it first.", true);
+    data = parseRows(rows, doc.meta.kind);
+    if (!data) return;
+  }
+  // Left unnamed, a new group takes the heading over its numbers.
+  const name = sheet.groupName.trim() || (mode === "group" ? str(data.heading ?? data.groups?.[0]?.name) : "");
+  sheet.groupName = "";
+  applyData(data, mode, name);
 }
 
 // ── Status, list ──────────────────────────────────────────
@@ -621,6 +1288,7 @@ async function openGraph(name, { force = false } = {}) {
   try {
     const g = await api("GET", `/api/graph/graphs/${encodeURIComponent(name)}`);
     doc = fromFile(g, name);
+    sheet = freshSheet();
     await loadRefs();
     saved = JSON.stringify(toFile(doc).graph);
     history.replaceState(null, "", `#${name}`);
@@ -649,6 +1317,7 @@ async function loadRefs() {
 function newGraph() {
   if (!confirmDiscard()) return;
   doc = blankDoc(doc?.meta.kind ?? "ring");
+  sheet = freshSheet();
   saved = "";
   history.replaceState(null, "", "#");
   renderAll();
@@ -1013,36 +1682,10 @@ function switchKind(kind) {
 
 // ── Data editors ──────────────────────────────────────────
 
-function pasteBox() {
-  const ta = h("textarea", { placeholder: "Copy cells in Excel, Google Sheets or Numbers and paste them here.", "aria-label": "Spreadsheet data" });
-  const kind = doc.meta.kind;
-  const how = kind === "flow"
-    ? "Columns: from, to, amount, and a color if you want one. A header row is skipped. SankeyMATIC lines like “Budget [120] Instruction” work too."
-    : ITEM_KINDS.includes(kind)
-      ? "Two columns: label, then number. A header row is skipped. Leave a blank row between blocks to make two groups."
-      : TABLE_KINDS.includes(kind)
-        ? "First column is the category (a year, a month, a name); each other column is a series. The first row names the series."
-        : "Columns: label, x, y. A header row names the axes. Points without a label show as gray context.";
-  const hasData =
-    kind === "flow" ? doc.flow.rows.some((r) => !r.every(blank))
-    : ITEM_KINDS.includes(kind) ? doc.groups.some((g) => g.ref || g.rows.some((r) => !r.every(blank)))
-    : TABLE_KINDS.includes(kind) ? doc.table.rows.some((r) => !r.every(blank))
-    : doc.scatter.points.some((p) => !blank(p.x));
-  return h("details", { class: "paste", open: !hasData },
-    h("summary", {}, "Paste from a spreadsheet"),
-    ta,
-    h("div", { class: "paste-actions" },
-      h("button", { class: "btn small", onclick: () => applyPaste(ta.value, "replace") }, "Replace data"),
-      h("button", { class: "btn small", onclick: () => applyPaste(ta.value, "append") }, "Add to data"),
-      h("span", { class: "hint" }, how)
-    ),
-  );
-}
-
 function dataEditor() {
   const kind = doc.meta.kind;
   const body = kind === "flow" ? flowEditor() : ITEM_KINDS.includes(kind) ? itemsEditor() : TABLE_KINDS.includes(kind) ? tableEditor() : pointsEditor();
-  return [pasteBox(), body, h("div", { id: "warnings" })];
+  return [sheetEditor(), body, h("div", { id: "warnings" })];
 }
 
 /** Moves item i of arr by d places. */
@@ -1105,7 +1748,7 @@ function itemsEditor() {
                 onchange: () => {
                   // Two groups can't share a color: swap with whoever had it.
                   const other = doc.groups.find((o, oi) => oi !== gi && !o.ref && o.color === g.color);
-                  if (other) other.color = GROUP_COLORS.find((c) => c !== g.color);
+                  if (other) other.color = unusedGroupColor() ?? other.color;
                   rerender();
                 },
                 title: usedByOther.includes(g.color) ? "Shared with another group" : "Group color",
@@ -1150,6 +1793,7 @@ function itemsEditor() {
       h("div", { class: "grid-actions" },
         h("button", { class: "link", onclick: () => { g.rows.push(makeRow()); rerender(); changed(); focusLast(`g${gi}`, g.rows.length - 1); } }, "+ Add row"),
         !many && h("label", { class: "hint", style: "display:inline-flex;gap:6px;align-items:center" }, "Color", select(g, "color", GROUP_COLORS.map((c) => [c, c[0].toUpperCase() + c.slice(1)]))),
+        tooMany && h("button", { class: "link", onclick: () => splitGroup(gi) }, `Move the extra ${g.rows.filter((r) => !r.every(blank)).length - MAX_SLICES} to a new group`),
         tooMany && h("button", { class: "link", onclick: () => foldOther(gi) }, `Fold the smallest into “Other” (max ${MAX_SLICES} slices)`),
       ),
     );
@@ -1166,7 +1810,7 @@ function itemsEditor() {
     h("div", { class: "grid-actions" },
       canAdd && h("button", { class: "btn small", onclick: addGroup }, "Add a group"),
       canAdd && others.length > 0 && linkSel,
-      !canAdd && h("span", { class: "hint" }, `A graph holds up to ${GROUP_COLORS.length} groups, one red and one purple.`),
+      !canAdd && h("span", { class: "hint" }, `Up to ${GROUP_COLORS.length} groups, one for each color.`),
     ),
   ];
 }
@@ -1234,10 +1878,39 @@ function focusLast(prefix, ri) {
   $(`[data-cell="${CSS.escape(`${prefix}:${ri}:0`)}"]`)?.focus();
 }
 
-function addGroup() {
+/** A brand color no group has yet, or null when every one is taken. */
+function unusedGroupColor() {
   const used = doc.groups.map((g) => g.color ?? g.refColor);
+  return GROUP_COLORS.find((c) => !used.includes(c)) ?? null;
+}
+
+function addGroup() {
   if (doc.groups.length === 1 && !doc.groups[0].name) doc.groups[0].name = "Group 1";
-  doc.groups.push({ name: `Group ${doc.groups.length + 1}`, color: GROUP_COLORS.find((c) => !used.includes(c)) ?? "purple", ref: null, rows: emptyRows(3, 2) });
+  doc.groups.push({ name: `Group ${doc.groups.length + 1}`, color: unusedGroupColor() ?? GROUP_COLORS[0], ref: null, rows: emptyRows(3, 2) });
+  rerender();
+  changed();
+}
+
+/**
+ * A group with more rows than a color has shades: the first five stay, and the rest move
+ * into new groups of up to five, each with a color of its own.
+ */
+function splitGroup(gi) {
+  const g = doc.groups[gi];
+  const rows = g.rows.filter((r) => !r.every(blank));
+  const extra = rows.slice(MAX_SLICES);
+  if (!extra.length) return;
+  const chunks = [];
+  for (let i = 0; i < extra.length; i += MAX_SLICES) chunks.push(extra.slice(i, i + MAX_SLICES));
+  const free = GROUP_COLORS.filter((c) => !doc.groups.some((o) => (o.color ?? o.refColor) === c));
+  if (chunks.length > free.length) {
+    return status(`That needs ${chunks.length} more color${chunks.length > 1 ? "s" : ""} and ${free.length || "none"} ${free.length === 1 ? "is" : "are"} free. Add one in Settings, or fold the smallest into “Other”.`, true);
+  }
+  g.rows = rows.slice(0, MAX_SLICES);
+  if (!g.name.trim()) g.name = `Group ${gi + 1}`;
+  doc.groups.splice(gi + 1, 0, ...chunks.map((chunk, i) => ({ name: "", color: free[i], ref: null, rows: chunk })));
+  doc.groups.forEach((o, i) => { if (!o.name.trim()) o.name = `Group ${i + 1}`; });
+  status(`Moved ${extra.length} row${extra.length > 1 ? "s" : ""} into ${chunks.length > 1 ? `${chunks.length} new groups` : "a new group"}.`);
   rerender();
   changed();
 }
@@ -1370,7 +2043,67 @@ function tableEditor() {
       doc.meta.kind === "line" && t.columns.length - 1 > SERIES_COLORS.length &&
         h("span", { class: "hint" }, "Past four lines, color the one the story is about and set the rest to Gray."),
     ),
+    doc.meta.kind === "column" && doc.meta.dots && dotsEditor(),
   ];
+}
+
+/**
+ * The counts drawn as dots inside each column, one row per category and one cell per series.
+ * Cells hold text such as "3rd year": the dots count its number, the readout shows it whole.
+ */
+function dotsEditor() {
+  const t = doc.table;
+  const cats = t.rows.map((r) => str(r[0]).trim()).filter(Boolean);
+  const series = t.columns.slice(1);
+  // A grid view of the map, by category; writing it back keeps entries for renamed categories out.
+  const view = cats.map((c) => series.map((_, i) => str(t.inside[c]?.[i])));
+  const sync = () => {
+    const next = {};
+    view.forEach((r, ri) => { if (cats[ri]) next[cats[ri]] = r.map(str); });
+    t.inside = next;
+  };
+  const makeRow = () => series.map(() => "");
+  return h("div", { class: "dots" },
+    h("span", { class: "field-label" }, "Dots in each column"),
+    cats.length
+      ? h("div", { class: "scroll-x" },
+          h("table", { class: "grid" },
+            h("thead", {}, h("tr", {}, h("th", {}, t.columns[0] || "Category"), series.map((c) => h("th", {}, c)))),
+            h("tbody", {}, cats.map((c, ri) =>
+              h("tr", {},
+                h("td", { class: "cat" }, c),
+                series.map((_, ci) => h("td", {}, cellInput(view, ri, ci, "dot", { width: series.length, makeRow, sync, placeholder: "e.g. 3rd year" }))),
+              )
+            ))
+          )
+        )
+      : h("span", { class: "hint" }, "Add categories to the table first."),
+  );
+}
+
+/** The scatter's named groups: each sets the color of the points in it. */
+function groupsEditor() {
+  const s = doc.scatter;
+  const colorName = (c) => c[0].toUpperCase() + c.slice(1);
+  return h("div", { class: "groups" },
+    h("span", { class: "field-label" }, "Groups"),
+    s.groups.map((g, gi) =>
+      h("div", { class: "group-row" },
+        h("span", { class: `swatch shape-${g.shape ?? "circle"}`, style: `background:${GROUP_SHADES[g.color]?.base ?? "#999"}` }),
+        h("input", { type: "text", value: g.name, placeholder: `Group ${gi + 1}`, "aria-label": "Group name", dataset: { cell: `sg:${gi}` },
+          oninput: (e) => { g.name = e.target.value; changed(); }, onchange: () => rerender() }),
+        select(g, "color", SCATTER_GROUP_COLORS.map((c) => [c, colorName(c)]), { onchange: rerender }),
+        select(g, "shape", SCATTER_SHAPES.map((c) => [c, colorName(c)]), { onchange: rerender }),
+        h("button", { class: "link", title: "Remove group", "aria-label": `Remove group ${g.name}`, onclick: () => { s.groups.splice(gi, 1); rerender(); changed(); } }, "×"),
+      )
+    ),
+    h("button", { class: "link", onclick: () => {
+      const used = new Set(s.groups.map((g) => g.color));
+      s.groups.push({ name: "", color: SCATTER_GROUP_COLORS.find((c) => !used.has(c)) ?? "gray", shape: "circle" });
+      rerender();
+      changed();
+    } }, "+ Add group"),
+  );
 }
 
 function pointsEditor() {
@@ -1384,14 +2117,19 @@ function pointsEditor() {
   const cell = (ri, ci, opts) => cellInput(view, ri, ci, "p", { width: 3, makeRow: () => ["", "", ""], sync, ...opts });
 
   return [
+    groupsEditor(),
     h("div", { class: "scroll-x" },
       h("table", { class: "grid" },
         h("thead", {}, h("tr", {},
-          h("th", {}, "Label"), h("th", { class: "num" }, "X"), h("th", { class: "num" }, "Y"),
-          h("th", { title: "Draw in the masthead red" }, "Focus"), h("th", {}, "Label side"), h("th", {}, "Note"), h("th", {}))),
+          h("th", {}, "Label"), h("th", { title: "Shown on hover for points without a label" }, "Name"), h("th", {}, "Group"),
+          h("th", { class: "num" }, "X"), h("th", { class: "num" }, "Y"),
+          h("th", { title: "Draw in the masthead red, or the dark shade of its group" }, "Focus"), h("th", {}, "Label side"), h("th", {}, "Note"), h("th", {}))),
         h("tbody", {}, s.points.map((p, ri) =>
           h("tr", {},
             h("td", {}, cell(ri, 0, { placeholder: "Label" })),
+            h("td", {}, h("input", { type: "text", value: p.name, placeholder: "Optional", "aria-label": "Name", dataset: { cell: `pname:${ri}` }, oninput: (e) => { p.name = e.target.value; changed(); } })),
+            h("td", {}, select(p, "group", [["", "—"], ...s.groups.filter((g) => !blank(g.name)).map((g) => [g.name.trim(), g.name.trim()]),
+              ...(!blank(p.group) && !s.groups.some((g) => g.name.trim() === p.group.trim()) ? [[p.group, `${p.group} (missing)`]] : [])])),
             h("td", { class: "num", style: "width:72px" }, cell(ri, 1, { num: true, placeholder: "x" })),
             h("td", { class: "num", style: "width:72px" }, cell(ri, 2, { num: true, placeholder: "y" })),
             h("td", { class: "center" }, h("input", { type: "checkbox", checked: p.highlight, "aria-label": "Focus point", onchange: (e) => { p.highlight = e.target.checked; changed(); } })),
@@ -1454,7 +2192,11 @@ function optionsEditor() {
       kind === "line"
         ? h("label", { class: "field" }, h("span", {}, "Start at zero"), select(m, "yZero", [["auto", "When it fits"], ["yes", "Always"], ["no", "Never"]]))
         : h("div")));
-    if (kind === "column") out.push(checkbox(m, "stacked", "Stack the series"));
+    if (kind === "column") {
+      out.push(checkbox(m, "stacked", "Stack the series"));
+      out.push(checkbox(m, "dots", "Dots in each column", { onchange: rerender }));
+      if (m.dots) out.push(h("div", { class: "row2" }, field(m, "insideLabel", "Dot key", { placeholder: "Year in office" }), h("div")));
+    }
   }
 
   if (kind === "scatter") {
@@ -1475,6 +2217,9 @@ function optionsEditor() {
     out.push(h("div", { class: "row2" },
       field(m, "aspect", "Plot height", { placeholder: "0.78", hint: "As a share of the plot's width." }),
       field(m, "othersLabel", "Key name for unlabeled points", { placeholder: "Others" })));
+    out.push(h("label", { class: "field" }, h("span", {}, "Dots"),
+      select(m, "markStyle", [["solid", "Solid"], ["clear", "See-through"], ["ring", "Rings"]])));
+    out.push(checkbox(m, "trend", "Trend line for each group"));
   }
   return out;
 }
@@ -1568,8 +2313,62 @@ function updateWarnings() {
 
 let previewTimer, previewSeq = 0, front = 0, lastSize = null;
 
+// ── Web preview ───────────────────────────────────────────
+//
+// The Web and Phone views show the graph as the article draws it (components/Interactive),
+// from /graph/live in a frame. The editor posts it the graph; it posts back its height.
+
+const VIEW_WIDTHS = { web: 712, phone: 375 }; // the article column plus the page's 16px gutters
+let liveReady = false, liveHeight = 0;
+
+const webView = () => $("#view").value !== "print";
+
+function setView() {
+  const web = webView();
+  const live = $("#live");
+  $("#frame").classList.toggle("web", web);
+  live.hidden = !web;
+  $("#reset-layout").hidden = web || doc?.meta.kind !== "flow";
+  if (web && !live.src) live.src = "/graph/live";
+  if (web) sendLive();
+  else schedulePreview();
+  layoutFrame();
+}
+
+function sendLive() {
+  if (!doc || !liveReady) return;
+  $("#live").contentWindow.postMessage({ type: "graph", graph: toFile(doc).graph, settings: graphSettings }, location.origin);
+}
+
+window.addEventListener("message", (e) => {
+  if (e.origin !== location.origin || e.source !== $("#live").contentWindow) return;
+  if (e.data?.type === "ready") { liveReady = true; sendLive(); }
+  if (e.data?.type === "height") { liveHeight = Number(e.data.height) || 0; layoutFrame(); }
+  if (e.data?.type === "label") moveLabel(Number(e.data.index), Number(e.data.dx), Number(e.data.dy));
+});
+
+/** A scatter label dragged on the Web preview: its offset from where it would sit, kept on the point. */
+function moveLabel(index, dx, dy) {
+  if (!doc || ![index, dx, dy].every(Number.isFinite)) return;
+  // The preview numbers the points as the file lists them, which skips blank and unfinished rows.
+  const listed = doc.scatter.points.filter((p) =>
+    !(blank(p.label) && blank(p.x) && blank(p.y)) && parseNum(p.x) !== null && parseNum(p.y) !== null);
+  const p = listed[index];
+  if (!p) return;
+  const raw = { ...p._raw };
+  delete raw.labelDx;
+  delete raw.labelDy;
+  if (dx || dy) Object.assign(raw, { labelDx: dx, labelDy: dy });
+  p._raw = raw;
+  changed();
+}
+
 function schedulePreview() {
   clearTimeout(previewTimer);
+  if (webView()) {
+    previewTimer = setTimeout(sendLive, 120);
+    return;
+  }
   $("#frame").classList.add("stale");
   previewTimer = setTimeout(runPreview, 250);
 }
@@ -1589,7 +2388,12 @@ async function runPreview(plotH = null) {
     errBox.hidden = false;
     errBox.replaceChildren(r.error);
     const g = doc.groups.findIndex((g) => !g.ref && g.rows.filter((x) => !x.every(blank)).length > MAX_SLICES);
-    if (SLICED.includes(doc.meta.kind) && g >= 0) errBox.append(h("button", { class: "btn small", onclick: () => foldOther(g) }, "Fold the smallest into “Other”"));
+    if (SLICED.includes(doc.meta.kind) && g >= 0) {
+      errBox.append(
+        h("button", { class: "btn small", onclick: () => splitGroup(g) }, "Move the extra to a new group"),
+        h("button", { class: "btn small", onclick: () => foldOther(g) }, "Fold the smallest into “Other”"),
+      );
+    }
     $("#frame").classList.add("stale");
     return;
   }
@@ -1631,6 +2435,16 @@ async function runPreview(plotH = null) {
 let previewZoom = 1;
 
 function layoutFrame() {
+  if (webView()) {
+    const w = VIEW_WIDTHS[$("#view").value];
+    const frame = $("#frame"), live = $("#live");
+    frame.style.width = `${w}px`;
+    frame.style.height = `${liveHeight}px`;
+    Object.assign(live.style, { width: `${w}px`, height: `${liveHeight}px`, transform: "none" });
+    frame.classList.remove("stale");
+    $("#size").textContent = `${$("#view").value === "phone" ? "Phone" : "Article"} width, ${w}px`;
+    return;
+  }
   if (!lastSize) return;
   const zoomSel = $("#zoom").value;
   const stage = $("#stage");
@@ -1640,7 +2454,7 @@ function layoutFrame() {
   const frame = $("#frame");
   frame.style.width = `${lastSize.w * z}px`;
   frame.style.height = `${lastSize.h * z}px`;
-  for (const f of frame.querySelectorAll("iframe")) {
+  for (const f of frame.querySelectorAll("#f0, #f1")) {
     f.style.width = `${lastSize.w}px`;
     f.style.height = `${lastSize.h}px`;
     f.style.transform = `scale(${z})`;
@@ -1805,6 +2619,7 @@ $("#export-pdf").addEventListener("click", exportPdf);
 $("#export-png").addEventListener("click", exportPng);
 $("#filter").addEventListener("input", renderList);
 $("#zoom").addEventListener("change", layoutFrame);
+$("#view").addEventListener("change", setView);
 $("#reset-layout").addEventListener("click", resetFlowLayout);
 window.addEventListener("resize", layoutFrame);
 window.addEventListener("keydown", (e) => {
@@ -1822,6 +2637,11 @@ window.addEventListener("hashchange", () => {
 });
 
 (async () => {
+  try {
+    applySettings(await api("GET", "/api/graph/settings"));
+  } catch {
+    // The built-in colors still work if the settings can't be read.
+  }
   try {
     await loadList();
   } catch (err) {

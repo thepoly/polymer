@@ -259,3 +259,70 @@ details.paste textarea {
 .exports .meta { color: var(--muted); font-size: 12px; }
 .exports.stale .card { opacity: 0.6; }
 .exports.stale .what::after { content: " · out of date, export again"; font-weight: 400; color: var(--bad); }
+
+/* Dots in each column, and scatter groups. */
+.dots { margin-top: 16px; }
+.dots > .field-label, .groups > .field-label { display: block; margin-bottom: 6px; }
+.grid td.cat { padding: 0 8px; font-weight: 600; white-space: nowrap; }
+.groups { margin-bottom: 14px; display: grid; gap: 6px; justify-items: start; }
+.group-row { display: flex; gap: 8px; align-items: center; }
+.group-row input[type="text"] { width: 180px; padding: 5px 8px; border: 1px solid var(--rule); border-radius: 3px; }
+.group-row select { padding: 5px 6px; border: 1px solid var(--rule); border-radius: 3px; }
+.frame.web #f0, .frame.web #f1 { display: none; }
+.swatch.shape-circle { border-radius: 50%; }
+.swatch.shape-square { border-radius: 0; }
+.swatch.shape-diamond { border-radius: 0; transform: rotate(45deg) scale(0.85); }
+.swatch.shape-triangle { border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+
+/* ── Sheet ───────────────────────────────────────────── */
+
+.sheet-host { position: relative; margin-top: 8px; }
+.sheet-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 6px; }
+.sheet-bar .spacer { flex: 1 1 auto; }
+.sheet-name {
+  width: 130px; padding: 3px 6px; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper);
+  font-family: ui-monospace, Menlo, monospace; font-size: 12px;
+}
+.sheet-catch { position: absolute; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; padding: 0; border: 0; resize: none; pointer-events: none; }
+.sheet-scroll { max-height: 300px; overflow: auto; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); }
+.sheet-host:focus-within .sheet-scroll { border-color: var(--faint); }
+.sheet-grid {
+  border-collapse: separate; border-spacing: 0; font-size: 12px;
+  font-variant-numeric: lining-nums tabular-nums; user-select: none; -webkit-user-select: none;
+}
+.sheet-grid th {
+  position: sticky; z-index: 1; background: var(--wash); color: var(--muted);
+  font-size: 11px; font-weight: 600; text-align: center; padding: 2px 6px; cursor: pointer;
+  border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+}
+.sheet-grid thead th { top: 0; z-index: 2; }
+.sheet-grid tbody th { left: 0; min-width: 34px; }
+.sheet-grid thead th.corner { left: 0; z-index: 3; }
+.sheet-grid th.on { background: #dfe3ea; color: var(--ink); }
+.sheet-grid td {
+  position: relative; min-width: 84px; max-width: 220px; height: 24px; padding: 3px 6px; cursor: cell;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  border-right: 1px solid var(--hair); border-bottom: 1px solid var(--hair);
+}
+.sheet-grid td.num { text-align: right; }
+.sheet-grid td[data-role="0"], .role.set[data-role="0"] { background: #dbe9ff; }
+.sheet-grid td[data-role="1"], .role.set[data-role="1"] { background: #dcf2dc; }
+.sheet-grid td[data-role="2"], .role.set[data-role="2"] { background: #ffe8cc; }
+.sheet-grid td[data-role="3"], .role.set[data-role="3"] { background: #ebdef8; }
+.sheet-grid td.sel { box-shadow: inset 0 0 0 999px rgba(26, 95, 214, 0.13); }
+.sheet-grid td.active { outline: 2px solid var(--faint); outline-offset: -2px; }
+.sheet-host:focus-within .sheet-grid td.active { outline-color: var(--focus); }
+.sheet-edit {
+  position: absolute; inset: 0; width: 100%; height: 100%; padding: 1px 4px;
+  border: 2px solid var(--focus); background: var(--paper); outline: none;
+}
+.sheet-tools { display: grid; gap: 8px; margin-top: 8px; }
+.roles, .sheet-actions { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.role { display: inline-flex; align-items: center; border: 1px solid var(--rule); border-radius: 12px; background: var(--paper); font-size: 12px; }
+.role.set { border-color: var(--faint); }
+.role-pick { border: 0; background: none; cursor: pointer; padding: 2px 9px; font-weight: 600; display: inline-flex; gap: 6px; align-items: baseline; border-radius: 12px; }
+.role-pick .at { font-family: ui-monospace, Menlo, monospace; font-weight: 400; font-size: 11.5px; }
+.role-clear { border: 0; background: none; cursor: pointer; padding: 0 8px 0 0; color: var(--muted); }
+.role-clear:hover { color: var(--ink); }
+.sheet-actions .group-name { width: 150px; padding: 3px 8px; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); }
+a.btn { text-decoration: none; color: inherit; display: inline-block; }
