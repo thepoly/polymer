@@ -2087,16 +2087,27 @@ function groupsEditor() {
   const colorName = (c) => c[0].toUpperCase() + c.slice(1);
   return h("div", { class: "groups" },
     h("span", { class: "field-label" }, "Groups"),
-    s.groups.map((g, gi) =>
-      h("div", { class: "group-row" },
+    s.groups.map((g, gi) => {
+      // The points in this group when renaming starts. They follow the name as it's typed,
+      // even through a moment where it's blank or matches another group's.
+      let members = null;
+      const membersNow = () => s.points.filter((p) => !blank(g.name) && p.group.trim() === g.name.trim());
+      return h("div", { class: "group-row" },
         h("span", { class: `swatch shape-${g.shape ?? "circle"}`, style: `background:${GROUP_SHADES[g.color]?.base ?? "#999"}` }),
         h("input", { type: "text", value: g.name, placeholder: `Group ${gi + 1}`, "aria-label": "Group name", dataset: { cell: `sg:${gi}` },
-          oninput: (e) => { g.name = e.target.value; changed(); }, onchange: () => rerender() }),
+          onfocus: () => { members = membersNow(); },
+          oninput: (e) => {
+            members ??= membersNow();
+            g.name = e.target.value;
+            for (const p of members) p.group = g.name.trim();
+            changed();
+          },
+          onchange: () => { members = null; rerender(); } }),
         select(g, "color", SCATTER_GROUP_COLORS.map((c) => [c, colorName(c)]), { onchange: rerender }),
         select(g, "shape", SCATTER_SHAPES.map((c) => [c, colorName(c)]), { onchange: rerender }),
         h("button", { class: "link", title: "Remove group", "aria-label": `Remove group ${g.name}`, onclick: () => { s.groups.splice(gi, 1); rerender(); changed(); } }, "×"),
-      )
-    ),
+      );
+    }),
     h("button", { class: "link", onclick: () => {
       const used = new Set(s.groups.map((g) => g.color));
       s.groups.push({ name: "", color: SCATTER_GROUP_COLORS.find((c) => !used.has(c)) ?? "gray", shape: "circle" });
