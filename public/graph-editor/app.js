@@ -6,6 +6,8 @@
 // the PDF through the print dialog, the PNG by drawing the page onto a canvas.
 // Served at poly.rpi.edu/graph; the API is app/api/graph/, the renderer lib/graph/.
 
+import { partsSvg, snapshotParts, paintOf, webScale } from "./parts.js";
+
 // ── Constants ─────────────────────────────────────────────
 
 const KINDS = [
@@ -17,6 +19,7 @@ const KINDS = [
   { id: "line", label: "Line", icon: '<path d="M3 18l5-6 4 3 8-10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>' },
   { id: "scatter", label: "Scatter", icon: '<circle cx="6" cy="16" r="2.4" fill="currentColor"/><circle cx="11" cy="9" r="2.4" fill="currentColor"/><circle cx="17" cy="13" r="2.4" fill="currentColor"/><circle cx="18" cy="5" r="2.4" fill="currentColor"/>' },
   { id: "flow", label: "Flow", icon: '<rect x="2.5" y="4" width="3" height="16" rx="1" fill="currentColor"/><path d="M5.5 4.5C12 4.5 12 3.5 18.5 3.5V9C12 9 12 11 5.5 11Z" fill="currentColor" opacity=".45"/><path d="M5.5 12.5C12 12.5 12 14.5 18.5 14.5V20.5C12 20.5 12 19.5 5.5 19.5Z" fill="currentColor" opacity=".45"/><rect x="18.5" y="3" width="3" height="6.5" rx="1" fill="currentColor"/><rect x="18.5" y="14" width="3" height="7" rx="1" fill="currentColor"/>' },
+  { id: "custom", label: "Custom", icon: '<rect x="3" y="4" width="8" height="6" rx="1" fill="currentColor"/><circle cx="17" cy="8" r="3.5" fill="currentColor" opacity=".45"/><path d="M4 19l5-5 4 3 7-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' },
 ];
 const KIND_LABEL = Object.fromEntries(KINDS.map((k) => [k.id, k.label]));
 const SLICED = ["ring", "pie", "pie3d"];
@@ -53,7 +56,7 @@ function defaultSeriesColors(names) {
 const KNOWN = new Set([
   "kicker", "title", "dek", "kind", "width", "items", "combine", "color", "centerLabel", "valueLabel", "sort",
   "columns", "colors", "rows", "stacked", "points", "x", "y", "prefix", "suffix", "othersLabel", "aspect", "source", "credit",
-  "flows", "nodes", "palette", "colorBy", "align", "order", "labels", "inside", "insideLabel", "groups", "trend", "markStyle", "sheet",
+  "flows", "nodes", "palette", "colorBy", "align", "order", "labels", "inside", "insideLabel", "groups", "trend", "markStyle", "sheet", "views", "size", "parts", "swatches", "from",
 ]);
 
 // Scatter groups (lib/graph/palette.js GROUP_SHADES): a group's points take its color, and a
@@ -68,11 +71,14 @@ let SCATTER_GROUP_COLORS = Object.keys(GROUP_SHADES);
 
 // The site's graph settings as stored, sent along to the web preview so it draws in the same colors.
 let graphSettings = null;
+// The brand colors with their shades, for the canvas's color picker.
+let BRAND = [];
 
 /** Takes the brand colors from the site's graph settings: every picker and swatch follows them. */
 function applySettings({ settings, colors }) {
   if (!Array.isArray(colors) || !colors.length) return;
   graphSettings = settings ?? null;
+  BRAND = colors.filter((c) => Array.isArray(c.ramp));
   const names = colors.map((c) => c.name);
   GROUP_COLORS = names;
   SERIES_COLORS = names;
@@ -130,6 +136,15 @@ function parseNum(s) {
   return /^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(t) ? Number(t) : null;
 }
 const str = (v) => (v == null ? "" : String(v));
+/** A date cell, "2023-08-01" or "2023-08", as a date axis takes it. Matches lib/graph/axis.js parseDate. */
+const isDate = (s) => {
+  const m = /^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$/.exec(String(s ?? "").trim());
+  if (!m) return false;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3] ?? 1)];
+  return mo >= 1 && mo <= 12 && d >= 1 && d <= new Date(Date.UTC(y, mo, 0)).getUTCDate();
+};
+/** A number, or on a date axis also a date, which is kept as written. */
+const axisValue = (s, axis) => (axis?.year && isDate(s) ? String(s).trim() : parseNum(s));
 const blank = (s) => String(s ?? "").trim() === "";
 
 /** Multi-line labels are written with " | " between lines in the editor. */
@@ -156,7 +171,7 @@ let saved = ""; // the saved file, as JSON, to tell when the doc is dirty
 
 const emptyRows = (n, w) => Array.from({ length: n }, () => Array(w).fill(""));
 const emptyPoint = () => ({ label: "", name: "", group: "", x: "", y: "", highlight: false, labelAt: "right", note: "", _raw: {} });
-const emptyAxis = () => ({ label: "", short: "", unit: "", scale: "linear", min: "", max: "" });
+const emptyAxis = () => ({ label: "", short: "", unit: "", scale: "linear", min: "", max: "", year: false });
 
 function blankDoc(kind = "ring") {
   return {
@@ -178,6 +193,8 @@ function blankDoc(kind = "ring") {
     flow: { rows: emptyRows(5, 4), nodes: {} },
     // The scratch spreadsheet: rows of cells as typed. Saved with the graph, never drawn.
     sheet: [],
+    // A custom graph's parts, its size, the colors added to it, and the graph it was made from.
+    custom: null,
   };
 }
 
@@ -192,6 +209,7 @@ function axisFrom(a = {}) {
     scale: a.scale === "linear" ? "linear" : "log",
     min: str(a.domain?.[0]),
     max: str(a.domain?.[1]),
+    year: !!a.year,
     raw: a,
   };
 }
@@ -202,6 +220,23 @@ function fromFile(g, name) {
   d.name = name;
   d.loadedName = name;
   d.raw = structuredClone(g);
+  if (g.kind === "custom") {
+    const views = {};
+    for (const v of ["print", "web", "phone"]) {
+      const view = g.views?.[v];
+      if (Array.isArray(view?.size) && Array.isArray(view?.parts)) views[v] = structuredClone({ size: view.size, parts: view.parts });
+    }
+    // The first custom graphs held one layout, at the top of the file; it stands in for print.
+    if (!views.print && Array.isArray(g.size) && Array.isArray(g.parts)) views.print = structuredClone({ size: g.size, parts: g.parts });
+    // A file missing a view shows another's in its place rather than nothing.
+    const any = views.print ?? views.web ?? views.phone ?? { size: [336, 336], parts: [] };
+    for (const v of ["print", "web", "phone"]) views[v] ??= structuredClone(any);
+    d.custom = {
+      views,
+      swatches: Array.isArray(g.swatches) ? [...g.swatches] : [],
+      from: g.from ? structuredClone(g.from) : null,
+    };
+  }
   d.sheet = Array.isArray(g.sheet) ? g.sheet.map((r) => (Array.isArray(r) ? r.map(str) : [])) : [];
   Object.assign(d.meta, {
     kicker: str(g.kicker), title: str(g.title), dek: str(g.dek), source: str(g.source), credit: str(g.credit),
@@ -375,6 +410,8 @@ function toFile(d) {
       }
       if (a.scale === "linear") o.scale = "linear";
       else delete o.scale;
+      if (a.year) o.year = true;
+      else delete o.year;
       return o;
     };
     out.x = axisOut(s.x);
@@ -390,9 +427,10 @@ function toFile(d) {
     out.points = [];
     s.points.forEach((p) => {
       if (blank(p.label) && blank(p.x) && blank(p.y)) return;
-      const x = parseNum(p.x), y = parseNum(p.y);
+      const x = axisValue(p.x, s.x), y = axisValue(p.y, s.y);
       if (x === null || y === null) {
-        return warnings.push(`${p.label.trim() ? `“${p.label.trim()}”` : "An unnamed point"} needs both an x and a y number, so it's left out.`);
+        const what = s.x.year || s.y.year ? "a number or a date like 2023-08-01" : "a number";
+        return warnings.push(`${p.label.trim() || p.name.trim() ? `“${p.label.trim() || p.name.trim()}”` : "An unnamed point"} needs ${what} for both x and y, so it's left out.`);
       }
       const o = { ...p._raw };
       for (const k of ["label", "name", "group", "x", "y", "highlight", "labelAt", "note"]) delete o[k];
@@ -410,6 +448,15 @@ function toFile(d) {
       if (!blank(p.note)) pt.note = splitLines(p.note);
       out.points.push(pt);
     });
+  }
+
+  if (kind === "custom" && d.custom) {
+    out.views = d.custom.views;
+    if (d.custom.swatches.length) out.swatches = d.custom.swatches;
+    if (d.custom.from) out.from = d.custom.from;
+    // Its width is its own; the default isn't 3.5in as for the other kinds.
+    if (w) out.width = w;
+    return { graph: out, warnings };
   }
 
   out.source = m.source;
@@ -1289,6 +1336,7 @@ async function openGraph(name, { force = false } = {}) {
     const g = await api("GET", `/api/graph/graphs/${encodeURIComponent(name)}`);
     doc = fromFile(g, name);
     sheet = freshSheet();
+    canvas = freshCanvas();
     await loadRefs();
     saved = JSON.stringify(toFile(doc).graph);
     history.replaceState(null, "", `#${name}`);
@@ -1316,8 +1364,9 @@ async function loadRefs() {
 
 function newGraph() {
   if (!confirmDiscard()) return;
-  doc = blankDoc(doc?.meta.kind ?? "ring");
+  doc = blankDoc(doc?.meta.kind && doc.meta.kind !== "custom" ? doc.meta.kind : "ring");
   sheet = freshSheet();
+  canvas = freshCanvas();
   saved = "";
   history.replaceState(null, "", "#");
   renderAll();
@@ -1543,6 +1592,13 @@ async function deleteGraph() {
 // ── Changes ───────────────────────────────────────────────
 
 function changed() {
+  // A pending copy shows the graph as it was; once the graph changes it's out of date.
+  if (canvas.pending && doc?.meta.kind !== "custom") {
+    canvas.pending = null;
+    canvas.sel.clear();
+  }
+  // Anything but a custom graph shows its real previews again (and the bar's buttons follow).
+  if (doc?.meta.kind !== "custom") renderCanvases();
   updateDirty();
   updateComputed();
   updateWarnings();
@@ -1618,6 +1674,22 @@ function renderEditor() {
     ))
   );
 
+  if (m.kind === "custom") {
+    const was = doc.custom?.from;
+    ed.replaceChildren(
+      section("Type", kinds),
+      section("Headline", field(m, "title", "Title", { cls: "title", placeholder: "What the graph shows", onchange: renderFileName })),
+      section("Layout",
+        h("div", { class: "grid-actions" },
+          was && h("button", { class: "btn small", onclick: () => switchKind(was.kind ?? "ring") }, `Back to ${KIND_LABEL[was.kind ?? "ring"]}`),
+        ),
+      ),
+      section("Options", h("div", { class: "row2" }, field(m, "width", "Width (inches)", { type: "number" }), h("div"))),
+      section("File", fileEditor()),
+    );
+    return;
+  }
+
   ed.replaceChildren(
     section("Type", kinds),
     section("Headline",
@@ -1638,6 +1710,18 @@ function renderEditor() {
 function switchKind(kind) {
   const from = doc.meta.kind;
   if (from === kind) return;
+  if (kind === "custom") return makeCustom();
+  if (from === "custom") {
+    // Leaving Custom means going back to the graph it was made from.
+    const was = doc.custom?.from;
+    if (!was) return status("This custom graph doesn't have the graph it was made from, so it can't change type.", true);
+    if (!confirm(`Go back to the ${KIND_LABEL[was.kind ?? "ring"]} graph this was made from? The custom layout is dropped.`)) return;
+    canvas.undo.push(canvasState());
+    canvas.redo = [];
+    revertCustom();
+    if (doc.meta.kind !== kind) switchKind(kind);
+    return;
+  }
   const itemsBlank = doc.groups.every((g) => !g.ref && g.rows.every((r) => r.every(blank)));
   const tableBlank = doc.table.rows.every((r) => r.every(blank));
   const pointsBlank = doc.scatter.points.every((p) => blank(p.label) && blank(p.x) && blank(p.y));
@@ -1716,13 +1800,13 @@ function cellInput(grid, ri, ci, prefix, { num = false, width, makeRow, onWide, 
   const v = grid[ri][ci] ?? "";
   return h("input", {
     type: "text", value: v, placeholder, inputmode: num ? "decimal" : null, list,
-    class: num && !blank(v) && parseNum(v) === null ? "bad" : null,
+    class: num && !blank(v) && parseNum(v) === null && !isDate(v) ? "bad" : null,
     dataset: { cell: `${prefix}:${ri}:${ci}` },
     "aria-label": placeholder,
     oninput: (e) => {
       grid[ri][ci] = e.target.value;
       sync?.();
-      if (num) e.target.classList.toggle("bad", !blank(e.target.value) && parseNum(e.target.value) === null);
+      if (num) e.target.classList.toggle("bad", !blank(e.target.value) && parseNum(e.target.value) === null && !isDate(e.target.value));
       changed();
     },
     onkeydown: (e) => gridKeys(e, prefix, ri, ci, grid, makeRow, sync),
@@ -2236,6 +2320,7 @@ function optionsEditor() {
           field(a, "max", "To", { cell: `ax:${name}:max`, placeholder: "auto" }),
         ),
         h("label", { class: "field" }, h("span", {}, "Scale"), select(a, "scale", [["log", "Logarithmic (for values spanning 10× or more)"], ["linear", "Linear"]])),
+        checkbox(a, "year", "Dates"),
       );
     out.push(axisBox(s.x, "X"), axisBox(s.y, "Y"));
     out.push(h("div", { class: "row2" },
@@ -2334,49 +2419,45 @@ function updateWarnings() {
 }
 
 // ── Preview ───────────────────────────────────────────────
-
-let previewTimer, previewSeq = 0, front = 0, lastSize = null;
-
-// ── Web preview ───────────────────────────────────────────
 //
-// The Web and Phone views show the graph as the article draws it (components/Interactive),
-// from /graph/live in a frame. The editor posts it the graph; it posts back its height.
+// Three previews, one under the other: Print (the PDF/PNG, rendered by the server), and Web
+// and Phone (the graph as the article draws it, components/Interactive, from /graph/live in
+// a frame each). The editor posts the live frames the graph; they post back their height.
 
-const VIEW_WIDTHS = { web: 712, phone: 375 }; // the article column plus the page's 16px gutters
-let liveReady = false, liveHeight = 0;
+const VIEWS = ["print", "web", "phone"];
+// The article column plus the page's 16px gutters, and a phone.
+const LIVE = { web: { width: 712, ready: false, height: 0 }, phone: { width: 375, ready: false, height: 0 } };
+const liveFrame = (v) => $(`#live-${v}`);
 
-const webView = () => $("#view").value !== "print";
-
-function setView() {
-  const web = webView();
-  const live = $("#live");
-  $("#frame").classList.toggle("web", web);
-  live.hidden = !web;
-  $("#reset-layout").hidden = web || doc?.meta.kind !== "flow";
-  if (web && !live.src) live.src = "/graph/live";
-  if (web) sendLive();
-  else schedulePreview();
-  layoutFrame();
-}
+let previewTimer, liveTimer, previewSeq = 0, front = 0, lastSize = null;
 
 function sendLive() {
-  if (!doc || !liveReady) return;
-  $("#live").contentWindow.postMessage({ type: "graph", graph: toFile(doc).graph, settings: graphSettings }, location.origin);
+  if (!doc || doc.meta.kind === "custom") return;
+  const graph = toFile(doc).graph;
+  for (const v of Object.keys(LIVE)) {
+    if (LIVE[v].ready) liveFrame(v).contentWindow.postMessage({ type: "graph", graph, settings: graphSettings }, location.origin);
+  }
 }
 
 window.addEventListener("message", (e) => {
-  if (e.origin !== location.origin || e.source !== $("#live").contentWindow) return;
-  if (e.data?.type === "ready") { liveReady = true; sendLive(); }
-  if (e.data?.type === "height") { liveHeight = Number(e.data.height) || 0; layoutFrame(); }
+  if (e.origin !== location.origin) return;
+  const v = Object.keys(LIVE).find((k) => e.source === liveFrame(k).contentWindow);
+  if (!v) return;
+  if (e.data?.type === "ready") {
+    LIVE[v].ready = true;
+    attachCanvasStart(liveFrame(v).contentDocument, v);
+    sendLive();
+  }
+  if (e.data?.type === "height") { LIVE[v].height = Number(e.data.height) || 0; layoutFrame(); }
   if (e.data?.type === "label") moveLabel(Number(e.data.index), Number(e.data.dx), Number(e.data.dy));
 });
 
-/** A scatter label dragged on the Web preview: its offset from where it would sit, kept on the point. */
+/** A scatter label dragged on a web preview: its offset from where it would sit, kept on the point. */
 function moveLabel(index, dx, dy) {
   if (!doc || ![index, dx, dy].every(Number.isFinite)) return;
   // The preview numbers the points as the file lists them, which skips blank and unfinished rows.
   const listed = doc.scatter.points.filter((p) =>
-    !(blank(p.label) && blank(p.x) && blank(p.y)) && parseNum(p.x) !== null && parseNum(p.y) !== null);
+    !(blank(p.label) && blank(p.x) && blank(p.y)) && axisValue(p.x, doc.scatter.x) !== null && axisValue(p.y, doc.scatter.y) !== null);
   const p = listed[index];
   if (!p) return;
   const raw = { ...p._raw };
@@ -2389,16 +2470,16 @@ function moveLabel(index, dx, dy) {
 
 function schedulePreview() {
   clearTimeout(previewTimer);
-  if (webView()) {
-    previewTimer = setTimeout(sendLive, 120);
-    return;
-  }
+  clearTimeout(liveTimer);
+  // A custom graph is drawn right here from its parts; nothing to ask the server or the frames for.
+  if (doc?.meta.kind === "custom") return renderCanvases();
+  liveTimer = setTimeout(sendLive, 120);
   $("#frame").classList.add("stale");
   previewTimer = setTimeout(runPreview, 250);
 }
 
 async function runPreview(plotH = null) {
-  if (!doc) return;
+  if (!doc || doc.meta.kind === "custom") return;
   const seq = ++previewSeq;
   let r;
   try {
@@ -2451,6 +2532,7 @@ async function runPreview(plotH = null) {
     front = i;
     layoutFrame();
     attachFlowEditing(back);
+    attachCanvasStart(back.contentDocument, "print");
     $("#frame").classList.remove("stale");
   };
   back.srcdoc = r.html;
@@ -2458,34 +2540,798 @@ async function runPreview(plotH = null) {
 
 let previewZoom = 1;
 
-function layoutFrame() {
-  if (webView()) {
-    const w = VIEW_WIDTHS[$("#view").value];
-    const frame = $("#frame"), live = $("#live");
-    frame.style.width = `${w}px`;
-    frame.style.height = `${liveHeight}px`;
-    Object.assign(live.style, { width: `${w}px`, height: `${liveHeight}px`, transform: "none" });
-    frame.classList.remove("stale");
-    $("#size").textContent = `${$("#view").value === "phone" ? "Phone" : "Article"} width, ${w}px`;
-    return;
-  }
-  if (!lastSize) return;
-  const zoomSel = $("#zoom").value;
+/**
+ * Runs a change to the previews' sizes without the view jumping: whichever preview is at
+ * the top of the scrolled area stays where it is, however the ones above it grow or shrink.
+ */
+function keepScroll(fn) {
   const stage = $("#stage");
-  const avail = stage.clientWidth - 48;
-  const z = zoomSel === "fit" ? Math.max(0.5, Math.min(2.5, avail / lastSize.w)) : Number(zoomSel);
-  previewZoom = z;
-  const frame = $("#frame");
-  frame.style.width = `${lastSize.w * z}px`;
-  frame.style.height = `${lastSize.h * z}px`;
-  for (const f of frame.querySelectorAll("#f0, #f1")) {
-    f.style.width = `${lastSize.w}px`;
-    f.style.height = `${lastSize.h}px`;
-    f.style.transform = `scale(${z})`;
-  }
-  $("#size").textContent = `Prints ${fmtIn(lastSize.widthIn)} × ${fmtIn(lastSize.heightIn)} in${zoomSel === "fit" ? ` · shown at ${Math.round(z * 100)}%` : ""}`;
+  const top = stage.getBoundingClientRect().top;
+  const panes = [...stage.querySelectorAll(".pane")];
+  const anchor = panes.find((p) => p.getBoundingClientRect().bottom > top + 1) ?? panes[0];
+  const before = anchor ? anchor.getBoundingClientRect().top : 0;
+  fn();
+  if (anchor) stage.scrollTop += anchor.getBoundingClientRect().top - before;
+}
+
+function layoutFrame() {
+  keepScroll(() => {
+    const shown = canvasViews().filter((v) => viewDoc(v));
+    const zoomSel = $("#zoom").value;
+    const avail = $("#stage").clientWidth - 48;
+
+    // Print: the frame holds the page at its own size, scaled to the zoom.
+    const frame = $("#frame");
+    if (shown.includes("print")) {
+      const c = viewDoc("print");
+      const [w, hgt] = [c.size[0] + CANVAS_PAD * 2, c.size[1] + CANVAS_PAD * 2];
+      const z = zoomSel === "fit" ? Math.max(0.5, Math.min(2.5, avail / w)) : Number(zoomSel);
+      previewZoom = z;
+      frame.style.width = `${w * z}px`;
+      frame.style.height = `${hgt * z}px`;
+      canvasEl("print").style.padding = `${CANVAS_PAD * z}px`;
+      const widthIn = doc.meta.kind === "custom" ? parseNum(doc.meta.width) || c.size[0] / 96 : lastSize?.widthIn ?? c.size[0] / 96;
+      $("#size").textContent = `Prints ${fmtIn(widthIn)} × ${fmtIn((widthIn * c.size[1]) / c.size[0])} in${zoomSel === "fit" ? ` · shown at ${Math.round(z * 100)}%` : ""}`;
+    } else if (lastSize) {
+      const z = zoomSel === "fit" ? Math.max(0.5, Math.min(2.5, avail / lastSize.w)) : Number(zoomSel);
+      previewZoom = z;
+      frame.style.width = `${lastSize.w * z}px`;
+      frame.style.height = `${lastSize.h * z}px`;
+      for (const f of frame.querySelectorAll("iframe")) {
+        f.style.width = `${lastSize.w}px`;
+        f.style.height = `${lastSize.h}px`;
+        f.style.transform = `scale(${z})`;
+      }
+      $("#size").textContent = `Prints ${fmtIn(lastSize.widthIn)} × ${fmtIn(lastSize.heightIn)} in${zoomSel === "fit" ? ` · shown at ${Math.round(z * 100)}%` : ""}`;
+    }
+
+    // Web and Phone: each at its real width, as tall as its graph.
+    for (const v of Object.keys(LIVE)) {
+      const { width, height } = LIVE[v];
+      const fr = $(`#frame-${v}`), live = liveFrame(v);
+      fr.style.width = `${width}px`;
+      if (shown.includes(v)) {
+        const c = viewDoc(v);
+        const el = canvasEl(v);
+        const svg = $("svg", el);
+        const inner = width - 32;
+        if (svg) svg.style.width = `${Math.min(inner, c.size[0] * webScale(inner))}px`;
+        fr.style.height = `${el.offsetHeight}px`;
+      } else {
+        fr.style.height = `${height}px`;
+      }
+      Object.assign(live.style, { width: `${width}px`, height: `${height}px` });
+    }
+    paintSelection();
+  });
 }
 const fmtIn = (v) => (Math.round(v * 100) / 100).toString();
+
+// ── Canvas ────────────────────────────────────────────────
+//
+// Every preview can be taken apart. Pressing on anything in one turns what's drawn into
+// parts (parts.js): each shape and each piece of text on its own, selectable. Until
+// something actually changes, that's only a "pending" copy shown in place of the preview it
+// was taken from. The first move, delete or recolor commits it: the graph becomes a Custom
+// graph, drawn from its parts in all three previews and no longer from its data. The graph
+// it was made from is kept inside it, so undoing (or picking its old type) puts it back.
+
+const CANVAS_PAD = 20; // the white margin the print preview shows around the graphic, px
+
+const freshCanvas = () => ({ view: "print", pending: null, sel: new Set(), undo: [], redo: [], drag: null, marquee: null, resize: null, editing: null, colors: false });
+let canvas = freshCanvas();
+
+// A custom graph keeps a set of parts for each preview ("views"), since print, web and phone
+// lay the same graph out differently and each has to stay exactly as it looked. Selecting
+// and editing happen in one view at a time: canvas.view, the one last pressed.
+
+/** One view's parts and size: the custom graph's, or the pending copy's if it's of that view. */
+const viewDoc = (v) => (doc?.meta.kind === "custom" ? doc.custom.views[v] : canvas.pending?.view === v ? canvas.pending : null);
+/** The view being worked in. */
+const canvasDoc = () => viewDoc(canvas.view);
+/** Which previews are taken apart: all three for a custom graph, just the one pressed for a pending copy. */
+const canvasViews = () => (doc?.meta.kind === "custom" ? VIEWS : canvas.pending ? [canvas.pending.view] : []);
+const canvasEl = (v) => $(`.canvas[data-view="${v}"]`);
+const partById = (id) => canvasDoc()?.parts.find((p) => p.id === id);
+/** Swaps the working view's list of parts for another. */
+const setParts = (parts) => { canvasDoc().parts = parts; };
+
+function renderCanvases() {
+  const shown = canvasViews();
+  for (const v of VIEWS) {
+    const el = canvasEl(v);
+    const c = viewDoc(v);
+    const on = shown.includes(v) && !!c;
+    el.hidden = !on;
+    el.closest(".frame").classList.toggle("custom", on);
+    el.closest(".pane").classList.toggle("active", on && v === canvas.view);
+    // Markup from partsSvg, which escapes and checks everything it writes.
+    el.innerHTML = on ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${Number(c.size[0])} ${Number(c.size[1])}">${partsSvg(c.parts, { ids: true, prefix: `cv-${v}` })}</svg>` : "";
+  }
+  if (shown.length) {
+    $("#preview-error").hidden = true;
+    $("#frame").classList.remove("stale");
+  }
+  layoutFrame();
+  updateCanvasTools();
+}
+
+/** Outlines the selected parts, and the box being dragged out, on every canvas showing. */
+function paintSelection() {
+  for (const v of VIEWS) {
+    const el = canvasEl(v);
+    if (!el) continue;
+    el.querySelectorAll(".sel-box, .marquee").forEach((b) => b.remove());
+    if (el.hidden || v !== canvas.view) continue;
+    const base = el.getBoundingClientRect();
+    for (const id of canvas.sel) {
+      const part = el.querySelector(`[data-part="${CSS.escape(id)}"]`);
+      if (!part) continue;
+      const r = part.getBoundingClientRect();
+      el.append(h("div", { class: "sel-box", style: `left:${r.left - base.left - 2}px;top:${r.top - base.top - 2}px;width:${r.width + 4}px;height:${r.height + 4}px` }));
+    }
+    // One box around everything selected, with a handle on each corner and side to resize by.
+    const box = selectionBox(el);
+    if (box && !canvas.drag?.moved && !canvas.editing) {
+      for (const hd of ["nw", "n", "ne", "e", "se", "s", "sw", "w"]) {
+        const x = hd.includes("w") ? box.left : hd.includes("e") ? box.right : (box.left + box.right) / 2;
+        const y = hd.includes("n") ? box.top : hd.includes("s") ? box.bottom : (box.top + box.bottom) / 2;
+        el.append(h("div", { class: "sel-box handle", dataset: { handle: hd }, style: `left:${x - base.left - 4}px;top:${y - base.top - 4}px;cursor:${hd === "n" || hd === "s" ? "ns" : hd === "e" || hd === "w" ? "ew" : hd === "nw" || hd === "se" ? "nwse" : "nesw"}-resize` }));
+      }
+    }
+    const m = canvas.marquee;
+    if (m?.v === v) {
+      el.append(h("div", { class: "marquee", style: `left:${Math.min(m.x0, m.x1) - base.left}px;top:${Math.min(m.y0, m.y1) - base.top}px;width:${Math.abs(m.x1 - m.x0)}px;height:${Math.abs(m.y1 - m.y0)}px` }));
+    }
+  }
+}
+
+/** The box around every selected part on one canvas, in page px; null with nothing selected. */
+function selectionBox(el) {
+  let box = null;
+  for (const id of canvas.sel) {
+    const r = el.querySelector(`[data-part="${CSS.escape(id)}"]`)?.getBoundingClientRect();
+    if (!r) continue;
+    box = box
+      ? { left: Math.min(box.left, r.left), top: Math.min(box.top, r.top), right: Math.max(box.right, r.right), bottom: Math.max(box.bottom, r.bottom) }
+      : { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+  }
+  return box;
+}
+
+/** The part under a point: the one pressed, or else the smallest one whose box is within reach. */
+function hitPart(el, x, y, target) {
+  const direct = target?.closest?.("[data-part]");
+  if (direct && el.contains(direct)) return direct.dataset.part;
+  let best = null, bestArea = Infinity;
+  for (const part of el.querySelectorAll("[data-part]")) {
+    const r = part.getBoundingClientRect();
+    if (x < r.left - 4 || x > r.right + 4 || y < r.top - 4 || y > r.bottom + 4) continue;
+    const area = Math.max(1, r.width) * Math.max(1, r.height);
+    if (area < bestArea) [best, bestArea] = [part.dataset.part, area];
+  }
+  return best;
+}
+
+/** How many of the graphic's units one px on screen covers in a view. */
+function unitsPerPx(v) {
+  const svg = $("svg", canvasEl(v));
+  const w = svg?.getBoundingClientRect().width;
+  return w ? viewDoc(v).size[0] / w : 1;
+}
+
+const canvasState = () => JSON.stringify(doc.meta.kind === "custom" ? doc.custom : null);
+
+/** Call before any change to the parts: remembers how things were, and makes a pending copy the graph. */
+function canvasBeginEdit() {
+  canvas.undo.push(canvasState());
+  if (canvas.undo.length > 80) canvas.undo.shift();
+  canvas.redo = [];
+  if (doc.meta.kind !== "custom") commitPending();
+}
+
+function commitPending() {
+  const p = canvas.pending;
+  if (!p) return;
+  canvas.pending = null;
+  // The graph as it stood, data, sheet and all: what Undo and the old type go back to.
+  const from = toFile(doc).graph;
+  // Each preview is taken apart as it looks right now, so none of the three changes.
+  const views = {};
+  for (const v of VIEWS) {
+    const snap = v === p.view ? p : takeSnapshot(v);
+    if (snap) views[v] = { size: snap.size, parts: snap.parts };
+  }
+  for (const v of VIEWS) views[v] ??= structuredClone(views.print ?? views[p.view]);
+  doc.custom = { views, swatches: [], from };
+  doc.meta.kind = "custom";
+  rerender();
+  status(`Now a custom graph. Undo, or pick ${KIND_LABEL[from.kind ?? "ring"]} again, to go back.`);
+}
+
+/** Back to the graph a custom one was made from, dropping the custom layout. */
+function revertCustom() {
+  const from = doc.custom?.from;
+  if (!from) return false;
+  const { name, loadedName } = doc;
+  doc = fromFile(from, name);
+  doc.loadedName = loadedName;
+  canvas.pending = null;
+  canvas.sel.clear();
+  rerender();
+  renderCanvases();
+  changed();
+  return true;
+}
+
+function canvasUndo(redo = false) {
+  const [from, to] = redo ? [canvas.redo, canvas.undo] : [canvas.undo, canvas.redo];
+  if (!from.length) return;
+  to.push(canvasState());
+  const state = JSON.parse(from.pop());
+  if (!state) return void revertCustom();
+  doc.custom = state;
+  if (doc.meta.kind !== "custom") {
+    doc.meta.kind = "custom";
+    rerender();
+  }
+  canvas.sel = new Set([...canvas.sel].filter((id) => partById(id)));
+  changed();
+}
+
+/** A pending copy nobody changed: put the real preview back. */
+function dropPending() {
+  if (!canvas.pending) return;
+  canvas.pending = null;
+  canvas.sel.clear();
+  renderCanvases();
+}
+
+/** Takes the graph drawn in a preview apart. Null if that preview has nothing drawn. */
+function takeSnapshot(view) {
+  if (view === "print") {
+    const root = [$("#f0"), $("#f1")][front]?.contentDocument?.querySelector("figure.graphic");
+    if (!root) return null;
+    const inset = parseFloat(root.ownerDocument.defaultView.getComputedStyle(root).paddingLeft) || 0;
+    return { view, ...snapshotParts(root, { inset }) };
+  }
+  const root = liveFrame(view).contentDocument?.querySelector("figure.ig");
+  if (!root) return null;
+  // On the web a unit is drawn bigger than a px; store units, so it prints at a sensible size.
+  return { view, ...snapshotParts(root, { scale: 1 / webScale(root.getBoundingClientRect().width) }) };
+}
+
+/** Follows the pointer until it lifts, wherever it goes: this page, or the frame the press began in. */
+function trackPointer(sources) {
+  const offs = [];
+  const stop = () => offs.forEach((off) => off());
+  for (const { target, map } of sources) {
+    const move = (e) => canvasPointerMove(...map(e));
+    const up = (e) => { stop(); canvasPointerUp(...map(e)); };
+    target.addEventListener("pointermove", move);
+    target.addEventListener("pointerup", up);
+    target.addEventListener("pointercancel", up);
+    offs.push(() => {
+      target.removeEventListener("pointermove", move);
+      target.removeEventListener("pointerup", up);
+      target.removeEventListener("pointercancel", up);
+    });
+  }
+}
+const here = { target: window, map: (e) => [e.clientX, e.clientY] };
+
+/** In a preview frame: pressing on something makes the pending copy and starts dragging it. */
+function attachCanvasStart(fdoc, view) {
+  if (!fdoc) return;
+  fdoc.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || !doc || doc.meta.kind === "custom") return;
+    // Flow graphs (in print) and scatter labels (on the web) have dragging of their own, kept in the data.
+    if (view === "print" && doc.meta.kind === "flow") return;
+    if (e.target.closest?.(".ig-drag")) return;
+    const snap = takeSnapshot(view);
+    if (!snap) return;
+    let id = null;
+    for (let n = e.target; n && n.nodeType === 1; n = n.parentNode) {
+      if (snap.byEl.has(n)) { id = snap.byEl.get(n); break; }
+    }
+    // Nothing directly under the pointer (the middle of a ring, a hair beside a thin line):
+    // take the smallest thing whose box is within reach.
+    if (!id) {
+      let bestArea = Infinity;
+      for (const [el, partId] of snap.byEl) {
+        const r = el.getBoundingClientRect();
+        if (e.clientX < r.left - 4 || e.clientX > r.right + 4 || e.clientY < r.top - 4 || e.clientY > r.bottom + 4) continue;
+        const area = Math.max(1, r.width) * Math.max(1, r.height);
+        if (area < bestArea) [id, bestArea] = [partId, area];
+      }
+    }
+    if (!id) return;
+    e.preventDefault();
+    // Where a point in the frame is on this page; the print frames are scaled to the zoom.
+    const frame = fdoc.defaultView.frameElement;
+    const map = (ev) => {
+      const r = frame.getBoundingClientRect();
+      const z = r.width / frame.offsetWidth || 1;
+      return [r.left + ev.clientX * z, r.top + ev.clientY * z];
+    };
+    canvas.pending = { view, size: snap.size, parts: snap.parts };
+    canvas.view = view;
+    canvas.sel = new Set([id]);
+    renderCanvases();
+    canvasEl(view).focus({ preventScroll: true });
+    const [x, y] = map(e);
+    canvas.drag = { v: view, x, y, moved: false, base: null };
+    trackPointer([here, { target: fdoc, map }]);
+  }, true);
+}
+
+function canvasPointerDown(e) {
+  const el = e.currentTarget;
+  const v = el.dataset.view;
+  if (e.button !== 0 || !viewDoc(v)) return;
+  if (e.target.closest?.(".canvas-edit")) return;
+  e.preventDefault();
+  canvasCommitText();
+  if (canvas.view !== v) {
+    // Working in another preview: what was selected in the last one is let go.
+    canvas.view = v;
+    canvas.sel.clear();
+    for (const o of VIEWS) canvasEl(o).closest(".pane").classList.toggle("active", o === v);
+  }
+  el.focus({ preventScroll: true });
+  const handle = e.target.dataset?.handle;
+  const box = handle && selectionBox(el);
+  if (box) {
+    // Sizes are worked out in the graphic's own units, from the box as it stood when the drag began.
+    const svg = $("svg", el).getBoundingClientRect();
+    const u = unitsPerPx(v);
+    canvas.resize = {
+      v, handle, x: e.clientX, y: e.clientY, scale: u, started: false,
+      box: { left: (box.left - svg.left) * u, top: (box.top - svg.top) * u, right: (box.right - svg.left) * u, bottom: (box.bottom - svg.top) * u },
+    };
+    return trackPointer([here]);
+  }
+  const id = hitPart(el, e.clientX, e.clientY, e.target);
+  if (id && e.shiftKey) {
+    if (canvas.sel.has(id)) canvas.sel.delete(id); else canvas.sel.add(id);
+  } else if (id) {
+    if (!canvas.sel.has(id)) canvas.sel = new Set([id]);
+    canvas.drag = { v, x: e.clientX, y: e.clientY, moved: false, base: null };
+  } else {
+    if (!e.shiftKey) canvas.sel.clear();
+    canvas.marquee = { v, x0: e.clientX, y0: e.clientY, x1: e.clientX, y1: e.clientY, keep: new Set(canvas.sel) };
+  }
+  paintSelection();
+  updateCanvasTools();
+  if (canvas.drag || canvas.marquee) trackPointer([here]);
+}
+
+function canvasPointerMove(x, y) {
+  const d = canvas.drag, m = canvas.marquee, rz = canvas.resize;
+  if (rz) {
+    if (!rz.started) {
+      if (Math.hypot(x - rz.x, y - rz.y) < 2) return;
+      rz.started = true;
+      canvasBeginEdit();
+      rz.orig = new Map([...canvas.sel].map((id) => [id, structuredClone(partById(id))]).filter(([, p]) => p));
+    }
+    const b = rz.box, hd = rz.handle;
+    const [w0, h0] = [b.right - b.left, b.bottom - b.top];
+    const [du, dv] = [(x - rz.x) * rz.scale, (y - rz.y) * rz.scale];
+    let sx = hd.includes("e") ? (w0 + du) / w0 : hd.includes("w") ? (w0 - du) / w0 : 1;
+    let sy = hd.includes("s") ? (h0 + dv) / h0 : hd.includes("n") ? (h0 - dv) / h0 : 1;
+    if (!(w0 > 0.5)) sx = 1;
+    if (!(h0 > 0.5)) sy = 1;
+    // A corner keeps the shape's proportions; a side stretches it one way.
+    const corner = hd.length === 2;
+    if (corner) sx = sy = Math.max(w0 > 0.5 ? sx : sy, h0 > 0.5 ? sy : sx);
+    sx = Math.max(0.02, sx);
+    sy = Math.max(0.02, sy);
+    // The side or corner opposite the handle stays put.
+    const ax = hd.includes("w") ? b.right : hd.includes("e") ? b.left : (b.left + b.right) / 2;
+    const ay = hd.includes("n") ? b.bottom : hd.includes("s") ? b.top : (b.top + b.bottom) / 2;
+    const parts = canvasDoc().parts;
+    for (const [id, orig] of rz.orig) {
+      const i = parts.findIndex((p) => p.id === id);
+      if (i >= 0) parts[i] = scalePart(structuredClone(orig), sx, sy, ax, ay, corner);
+    }
+    return renderCanvases();
+  }
+  if (m) {
+    [m.x1, m.y1] = [x, y];
+    // Everything the box touches joins what was selected before it.
+    const [l, r, t, b] = [Math.min(m.x0, x), Math.max(m.x0, x), Math.min(m.y0, y), Math.max(m.y0, y)];
+    canvas.sel = new Set(m.keep);
+    for (const part of canvasEl(m.v).querySelectorAll("[data-part]")) {
+      const p = part.getBoundingClientRect();
+      if (p.right >= l && p.left <= r && p.bottom >= t && p.top <= b) canvas.sel.add(part.dataset.part);
+    }
+    return paintSelection();
+  }
+  if (!d) return;
+  if (!d.moved) {
+    if (Math.hypot(x - d.x, y - d.y) < 3) return;
+    d.moved = true;
+    d.scale = unitsPerPx(d.v);
+    canvasBeginEdit();
+    d.base = new Map([...canvas.sel].map((id) => [id, [partById(id)?.dx ?? 0, partById(id)?.dy ?? 0]]));
+  }
+  for (const [id, [dx, dy]] of d.base) {
+    const p = partById(id);
+    if (!p) continue;
+    p.dx = Math.round((dx + (x - d.x) * d.scale) * 100) / 100;
+    p.dy = Math.round((dy + (y - d.y) * d.scale) * 100) / 100;
+  }
+  renderCanvases();
+}
+
+function canvasPointerUp() {
+  const d = canvas.drag, m = canvas.marquee, rz = canvas.resize;
+  canvas.drag = canvas.marquee = canvas.resize = null;
+  if (d?.moved || rz?.started) return changed();
+  // A press that selected nothing leaves a pending copy with no purpose.
+  if (!canvas.sel.size && canvas.pending) return dropPending();
+  if (m) paintSelection();
+  updateCanvasTools();
+}
+
+const r2 = (v) => Math.round(v * 100) / 100;
+
+/**
+ * A part scaled by sx and sy about the point (ax, ay), all in the graphic's units. Shapes
+ * that sit square to the page take the new size in their own numbers, so their outlines
+ * keep their weight; text takes it as a type size when `uniform`. Anything turned or
+ * drawn as a path carries it as a transform instead.
+ */
+function scalePart(p, sx, sy, ax, ay, uniform) {
+  const [a, b, c, d, e, f] = Array.isArray(p.m) ? p.m : [1, 0, 0, 1, 0, 0];
+  const [tx, ty] = [e + (p.dx ?? 0), f + (p.dy ?? 0)];
+  const square = Math.abs(b) < 1e-6 && Math.abs(c) < 1e-6 && a > 0 && d > 0;
+  if (!square || p.t === "path" || p.t === "poly") {
+    p.m = [a * sx, b * sy, c * sx, d * sy, sx * tx + ax * (1 - sx), sy * ty + ay * (1 - sy)].map((v, i) => +v.toFixed(i < 4 ? 5 : 2));
+    delete p.dx;
+    delete p.dy;
+    return p;
+  }
+  const X = (x) => r2(sx * (a * x + tx) + ax * (1 - sx)), Y = (y) => r2(sy * (d * y + ty) + ay * (1 - sy));
+  delete p.m;
+  delete p.dx;
+  delete p.dy;
+  if (p.sw) p.sw = +(p.sw * Math.min(a, d)).toFixed(3);
+  if (p.t === "text") {
+    const grow = uniform ? sy : 1;
+    for (const run of p.runs ?? []) {
+      if (typeof run.x === "number") run.x = X(run.x);
+      if (typeof run.y === "number") run.y = Y(run.y);
+      if (typeof run.dx === "number") run.dx = r2(run.dx * a * sx);
+      if (typeof run.dy === "number") run.dy = r2(run.dy * d * sy);
+    }
+    [p.x, p.y] = [X(p.x), Y(p.y)];
+    p.size = +(p.size * d * grow).toFixed(3);
+    if (p.ls) p.ls = r2(p.ls * d * grow);
+    if (p.sw) p.sw = +(p.sw * grow).toFixed(3);
+  } else if (p.t === "rect") {
+    [p.x, p.y, p.w, p.h] = [X(p.x), Y(p.y), r2(p.w * a * sx), r2(p.h * d * sy)];
+    if (p.rx) p.rx = r2(p.rx * Math.min(a * sx, d * sy));
+  } else if (p.t === "line") {
+    [p.x1, p.y1, p.x2, p.y2] = [X(p.x1), Y(p.y1), X(p.x2), Y(p.y2)];
+  } else {
+    // A circle stretched one way is an ellipse from then on.
+    const [rx, ry] = p.t === "circle" ? [p.r, p.r] : [p.rx, p.ry];
+    Object.assign(p, { t: "ellipse", cx: X(p.cx), cy: Y(p.cy), rx: r2(rx * a * sx), ry: r2(ry * d * sy) });
+    delete p.r;
+  }
+  return p;
+}
+
+let partSeq = 0;
+const newPartId = () => `n${Date.now().toString(36)}${(partSeq++).toString(36)}`;
+
+/** Adds a new part in the middle of the graphic and selects it. A graph that isn't custom yet becomes one. */
+function canvasAdd(kind) {
+  if (doc.meta.kind !== "custom") {
+    const snap = takeSnapshot(canvas.view) ?? takeSnapshot("print");
+    if (!snap) return status("There's nothing drawn to add to yet. Fix what the preview says first.", true);
+    canvas.pending = { view: snap.view, size: snap.size, parts: snap.parts };
+    canvas.view = snap.view;
+  }
+  canvasBeginEdit();
+  const [w, hgt] = canvasDoc().size;
+  const [cx, cy] = [r2(w / 2), r2(hgt / 2)];
+  const accent = BRAND[0]?.base ?? "#D6001C";
+  const part = {
+    text: { t: "text", x: cx, y: cy, anchor: "middle", size: 12, fill: "#000000", runs: [{ s: "Text" }] },
+    rect: { t: "rect", x: cx - 40, y: cy - 25, w: 80, h: 50, fill: accent },
+    ellipse: { t: "ellipse", cx, cy, rx: 30, ry: 30, fill: accent },
+    line: { t: "line", x1: cx - 50, y1: cy, x2: cx + 50, y2: cy, stroke: "#000000", sw: 1.5, cap: "round" },
+  }[kind];
+  part.id = newPartId();
+  canvasDoc().parts.push(part);
+  canvas.sel = new Set([part.id]);
+  changed();
+  if (kind === "text") canvasEditText(part.id, canvas.view);
+}
+
+/** Copies of the selected parts, a little down and to the right, selected in their place. */
+function canvasDuplicate() {
+  if (!canvas.sel.size || !canvasDoc()) return;
+  canvasBeginEdit();
+  const copies = canvasDoc().parts.filter((p) => canvas.sel.has(p.id)).map((p) => ({ ...structuredClone(p), id: newPartId(), dx: (p.dx ?? 0) + 8, dy: (p.dy ?? 0) + 8 }));
+  canvasDoc().parts.push(...copies);
+  canvas.sel = new Set(copies.map((p) => p.id));
+  changed();
+}
+
+/** Moves the selected parts in front of everything, or behind it, keeping their order among themselves. */
+function canvasOrder(front) {
+  if (!canvas.sel.size || !canvasDoc()) return;
+  canvasBeginEdit();
+  const parts = canvasDoc().parts;
+  const picked = parts.filter((p) => canvas.sel.has(p.id)), rest = parts.filter((p) => !canvas.sel.has(p.id));
+  setParts(front ? [...rest, ...picked] : [...picked, ...rest]);
+  changed();
+}
+
+/** Runs a change over the selected parts (of one kind, if given), as one step to undo. */
+function canvasEach(fn, only) {
+  if (!canvas.sel.size || !canvasDoc()) return;
+  canvasBeginEdit();
+  for (const id of canvas.sel) {
+    const p = partById(id);
+    if (p && (!only || only(p))) fn(p);
+  }
+  changed();
+}
+const isText = (p) => p.t === "text";
+const isShape = (p) => p.t !== "text";
+/** The size a part's text is drawn at, in the graphic's units: its own size times any scale it carries. */
+const textScale = (p) => (Array.isArray(p.m) ? Math.hypot(p.m[2], p.m[3]) || 1 : 1);
+
+/** A text part's words as typed: one line per row of it. */
+function textOf(p) {
+  return (p.runs ?? []).map((r, i) => (i && (r.x != null || r.y != null || (r.dy != null && r.dy !== 0)) ? "\n" : "") + r.s).join("");
+}
+
+/** Opens a text part for typing, in place. Enter finishes; Shift+Enter starts a new line; Escape leaves it as it was. */
+function canvasEditText(id, v) {
+  const p = partById(id);
+  const el = canvasEl(v);
+  const node = el?.querySelector(`[data-part="${CSS.escape(id)}"]`);
+  if (!p || p.t !== "text" || !node) return;
+  canvasCommitText();
+  const base = el.getBoundingClientRect(), r = node.getBoundingClientRect();
+  const px = (p.size * textScale(p)) / unitsPerPx(v);
+  const box = h("textarea", { class: "canvas-edit", "aria-label": "Text", spellcheck: "false", value: textOf(p) });
+  Object.assign(box.style, {
+    left: `${r.left - base.left - 6}px`, top: `${r.top - base.top - 4}px`,
+    minWidth: `${Math.max(120, r.width + 40)}px`, minHeight: `${Math.max(px * 1.6, r.height + 10)}px`,
+    fontSize: `${Math.max(10, px)}px`, fontWeight: p.weight ?? 400, fontStyle: p.italic ? "italic" : "normal",
+    fontFamily: p.serif ? '"Minion Pro", Georgia, serif' : '"Raleway", "Helvetica Neue", Arial, sans-serif',
+  });
+  let done = false;
+  const finish = (save) => {
+    if (done) return;
+    done = true;
+    canvas.editing = null;
+    const value = box.value.replace(/\s+$/, "");
+    box.remove();
+    if (save && value !== textOf(p)) {
+      canvasBeginEdit();
+      const q = partById(id);
+      if (!value.trim()) {
+        setParts(canvasDoc().parts.filter((x) => x.id !== id));
+        canvas.sel.delete(id);
+      } else if (q) {
+        q.runs = value.split("\n").map((line, i) => (i ? { s: line, x: q.x, dy: "1.25em" } : { s: line }));
+      }
+      return changed();
+    }
+    paintSelection();
+  };
+  box.addEventListener("keydown", (e) => {
+    e.stopPropagation();
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); finish(true); }
+    if (e.key === "Escape") { e.preventDefault(); finish(false); }
+  });
+  box.addEventListener("blur", () => finish(true));
+  canvas.editing = { finish };
+  el.append(box);
+  paintSelection();
+  box.focus();
+  box.select();
+}
+
+/** Finishes any text being typed on a canvas. */
+function canvasCommitText() {
+  canvas.editing?.finish(true);
+}
+
+function canvasDelete() {
+  if (!canvas.sel.size || !canvasDoc()) return;
+  canvasBeginEdit();
+  setParts(canvasDoc().parts.filter((p) => !canvas.sel.has(p.id)));
+  canvas.sel.clear();
+  changed();
+}
+
+function canvasKey(e) {
+  if (!canvasDoc()) return;
+  const mod = e.metaKey || e.ctrlKey;
+  const key = e.key;
+  if (mod && key.toLowerCase() === "z") { e.preventDefault(); return canvasUndo(e.shiftKey); }
+  if (mod && key.toLowerCase() === "y") { e.preventDefault(); return canvasUndo(true); }
+  if (mod && key.toLowerCase() === "d") { e.preventDefault(); return canvasDuplicate(); }
+  if (key === "Enter" && canvas.sel.size === 1 && partById([...canvas.sel][0])?.t === "text") {
+    e.preventDefault();
+    return canvasEditText([...canvas.sel][0], e.currentTarget.dataset.view);
+  }
+  if (mod && key.toLowerCase() === "a") {
+    e.preventDefault();
+    canvas.sel = new Set(canvasDoc().parts.map((p) => p.id));
+    paintSelection();
+    return updateCanvasTools();
+  }
+  if (mod || e.altKey) return;
+  if (key === "Backspace" || key === "Delete") { e.preventDefault(); return canvasDelete(); }
+  if (key === "Escape") {
+    e.preventDefault();
+    if (canvas.pending) return dropPending();
+    canvas.sel.clear();
+    paintSelection();
+    return updateCanvasTools();
+  }
+  const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[key];
+  if (!step || !canvas.sel.size) return;
+  e.preventDefault();
+  canvasBeginEdit();
+  const by = e.shiftKey ? 10 : 1;
+  for (const id of canvas.sel) {
+    const p = partById(id);
+    if (!p) continue;
+    p.dx = (p.dx ?? 0) + step[0] * by;
+    p.dy = (p.dy ?? 0) + step[1] * by;
+  }
+  changed();
+}
+
+/**
+ * Colors the selection. As the main color ("fill"), parts that share a color are linked:
+ * change one and the rest follow. As an outline ("line") it goes on just what's selected.
+ * A null color takes the fill or the outline away.
+ */
+function canvasColor(hex, target = "fill") {
+  if (!canvasDoc() || !canvas.sel.size || (hex !== null && !/^#[0-9a-f]{6}$/i.test(hex))) return;
+  canvasBeginEdit();
+  if (target === "line") {
+    for (const id of canvas.sel) {
+      const p = partById(id);
+      if (!p || p.t === "text") continue;
+      if (hex === null) {
+        // Something with no fill is only its outline; leave it that.
+        if (p.fill) { delete p.stroke; delete p.sw; }
+      } else {
+        p.stroke = hex;
+        p.sw ??= 1.5;
+      }
+    }
+    return changed();
+  }
+  const targets = new Set();
+  for (const id of canvas.sel) {
+    const p = partById(id);
+    if (!p) continue;
+    // A linked color is the same thing in every preview: a series, a group, a slice.
+    if (p.k && hex !== null) VIEWS.forEach((v) => doc.custom.views[v].parts.filter((q) => q.k === p.k).forEach((q) => targets.add(q)));
+    else targets.add(p);
+  }
+  for (const p of targets) {
+    const was = paintOf(p);
+    if (hex === null) {
+      if (p.t !== "text" && p.fill) {
+        // An empty shape still needs an outline to be seen.
+        p.stroke ??= p.fill;
+        p.sw ??= 1.5;
+        delete p.fill;
+      }
+    } else if (p.t === "text" || p.fill || target === "fill" && !p.stroke) {
+      // An outline in the same color as its fill is part of the same mark.
+      if (p.t !== "text" && p.stroke && p.stroke === was) p.stroke = hex;
+      p.fill = hex;
+    } else {
+      p.stroke = hex;
+    }
+  }
+  changed();
+}
+
+const NEUTRALS = ["#000000", "#555555", "#8A8A8A", "#BBBBBB", "#FFFFFF"];
+
+function colorPopover(target) {
+  const c = canvasDoc();
+  const swatch = (hex) => h("button", { class: "pick", style: `background:${hex}`, title: hex, "aria-label": hex, onclick: () => canvasColor(hex, target) });
+  const row = (label, colors) => h("div", { class: "pick-row" }, h("span", { class: "pick-name" }, label), colors.map(swatch));
+  const picker = h("input", { type: "color", value: "#1F6FB2", "aria-label": "Custom color" });
+  const hexBox = h("input", { type: "text", class: "pick-hex", value: "#1F6FB2", "aria-label": "Custom color, as hex", spellcheck: "false" });
+  picker.addEventListener("input", () => { hexBox.value = picker.value.toUpperCase(); });
+  hexBox.addEventListener("input", () => { if (/^#[0-9a-f]{6}$/i.test(hexBox.value.trim())) picker.value = hexBox.value.trim().toLowerCase(); });
+  const addCustom = () => {
+    const hex = hexBox.value.trim().toUpperCase();
+    if (!/^#[0-9A-F]{6}$/.test(hex)) return status("Write the color as six hex digits, like #1F6FB2.", true);
+    // Using it makes the graph custom if it wasn't; the graph then keeps the color to pick again.
+    canvasColor(hex, target);
+    if (doc.meta.kind === "custom" && !doc.custom.swatches.includes(hex)) doc.custom.swatches.push(hex);
+    changed();
+  };
+  return h("div", { class: "color-pop" },
+    BRAND.map((b) => row(b.name[0].toUpperCase() + b.name.slice(1), b.ramp)),
+    row("Neutral", NEUTRALS),
+    c?.swatches?.length ? row("Custom", c.swatches) : null,
+    h("div", { class: "pick-row" }, h("span", { class: "pick-name" }, "New"), picker, hexBox, h("button", { class: "btn small", onclick: addCustom }, "Add")),
+    h("div", { class: "pick-row" }, h("span", { class: "pick-name" }), h("button", { class: "link", onclick: () => canvasColor(null, target) }, target === "line" ? "No outline" : "No fill")),
+  );
+}
+
+/** The bar over the previews: things to add, and what can be done to the selection. */
+function updateCanvasTools() {
+  const box = $("#canvas-tools");
+  if (!doc) return box.replaceChildren();
+  const c = canvasDoc();
+  const sel = c ? [...canvas.sel].map(partById).filter(Boolean) : [];
+  const first = sel[0];
+  if (!first) canvas.colors = false;
+  const texts = sel.filter(isText), shapes = sel.filter(isShape);
+  const toggle = (label, on, fn, cls = "") => h("button", { class: `btn small ${cls}`, "aria-pressed": on ? "true" : "false", onclick: fn }, label);
+  const number = (label, value, fn, step = 1) => h("label", { class: "tool-num" }, label,
+    h("input", { type: "number", min: "0", step: String(step), value: String(value), dataset: { cell: `tool:${label}` },
+      onchange: (e) => { const v = parseFloat(e.target.value); if (Number.isFinite(v) && v >= 0) fn(v); } }));
+  const pop = (target, label, color) => h("span", { class: "tool-pop" },
+    h("button", { class: "btn small", "aria-expanded": canvas.colors === target ? "true" : "false", onclick: () => { canvas.colors = canvas.colors === target ? false : target; updateCanvasTools(); } },
+      h("span", { class: "swatch", style: `background:${color || "transparent"}` }), ` ${label}`),
+    canvas.colors === target ? colorPopover(target) : null);
+
+  box.replaceChildren(...[
+    h("span", { class: "tool-group" },
+      h("button", { class: "btn small", onclick: () => canvasAdd("text") }, "+ Text"),
+      h("button", { class: "btn small", onclick: () => canvasAdd("rect") }, "+ Box"),
+      h("button", { class: "btn small", onclick: () => canvasAdd("ellipse") }, "+ Circle"),
+      h("button", { class: "btn small", onclick: () => canvasAdd("line") }, "+ Line"),
+    ),
+    first && h("span", { class: "tool-group" },
+      pop("fill", "Color", paintOf(first)),
+      shapes.length ? pop("line", "Outline", shapes[0].stroke) : null,
+      shapes.some((p) => p.stroke) ? number("Width", +(shapes.find((p) => p.stroke).sw ?? 1).toFixed(2), (v) => canvasEach((p) => { if (v > 0) p.sw = v; else if (p.fill) { delete p.stroke; delete p.sw; } }, (p) => isShape(p) && p.stroke), 0.25) : null,
+    ),
+    texts.length ? h("span", { class: "tool-group" },
+      number("Size", +(texts[0].size * textScale(texts[0])).toFixed(1), (v) => canvasEach((p) => { if (v > 0) p.size = +(v / textScale(p)).toFixed(3); }, isText), 0.5),
+      toggle("B", (texts[0].weight ?? 400) >= 600, () => { const on = (texts[0].weight ?? 400) >= 600; canvasEach((p) => { if (on) delete p.weight; else p.weight = 700; (p.runs ?? []).forEach((r) => delete r.w); }, isText); }, "tool-b"),
+      toggle("I", !!texts[0].italic, () => { const on = !!texts[0].italic; canvasEach((p) => { if (on) delete p.italic; else p.italic = true; }, isText); }, "tool-i"),
+      toggle("Serif", !!texts[0].serif, () => { const on = !!texts[0].serif; canvasEach((p) => { if (on) delete p.serif; else p.serif = true; }, isText); }),
+      h("span", { class: "tool-seg" }, [["start", "Left"], ["middle", "Center"], ["end", "Right"]].map(([a, label]) =>
+        toggle(label, (texts[0].anchor ?? "start") === a, () => canvasEach((p) => { if (a === "start") delete p.anchor; else p.anchor = a; }, isText)))),
+    ) : null,
+    first && h("span", { class: "tool-group" },
+      h("button", { class: "btn small", onclick: () => canvasOrder(true) }, "To front"),
+      h("button", { class: "btn small", onclick: () => canvasOrder(false) }, "To back"),
+      h("button", { class: "btn small", onclick: canvasDuplicate }, "Duplicate"),
+      h("button", { class: "btn small", onclick: canvasDelete }, "Delete"),
+    ),
+    h("span", { class: "tool-group" },
+      h("button", { class: "btn small", disabled: !canvas.undo.length, onclick: () => canvasUndo() }, "Undo"),
+      h("button", { class: "btn small", disabled: !canvas.redo.length, onclick: () => canvasUndo(true) }, "Redo"),
+    ),
+  ].filter(Boolean));
+}
+
+/** The Type bar's Custom button: takes the print preview apart as it stands. */
+function makeCustom() {
+  const snap = takeSnapshot("print");
+  if (!snap) return status("There's nothing drawn to take apart yet. Fix what the preview says first.", true);
+  canvas.pending = { view: "print", size: snap.size, parts: snap.parts };
+  canvas.view = "print";
+  canvas.sel.clear();
+  canvasBeginEdit();
+  changed();
+}
 
 // ── Editing on the preview (flow graphs) ──────────────────
 //
@@ -2643,7 +3489,18 @@ $("#export-pdf").addEventListener("click", exportPdf);
 $("#export-png").addEventListener("click", exportPng);
 $("#filter").addEventListener("input", renderList);
 $("#zoom").addEventListener("change", layoutFrame);
-$("#view").addEventListener("change", setView);
+for (const v of VIEWS) {
+  canvasEl(v).addEventListener("pointerdown", canvasPointerDown);
+  canvasEl(v).addEventListener("keydown", canvasKey);
+  canvasEl(v).addEventListener("dblclick", (e) => {
+    const id = hitPart(e.currentTarget, e.clientX, e.clientY, e.target);
+    if (id && partById(id)?.t === "text") {
+      canvas.sel = new Set([id]);
+      canvasEditText(id, v);
+    }
+  });
+}
+for (const v of Object.keys(LIVE)) liveFrame(v).src = "/graph/live";
 $("#reset-layout").addEventListener("click", resetFlowLayout);
 window.addEventListener("resize", layoutFrame);
 window.addEventListener("keydown", (e) => {

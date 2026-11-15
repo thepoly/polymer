@@ -16,8 +16,20 @@ const OFFICERS: [string, number, number, number, number][] = [
   ['Stevens', 1296964, 673001, 14, 4],
   ['Lehigh', 1145854, 785941, 4, 5],
   ['MIT', 2151788, 1103532, 2, 3],
-  ['CWRU', 2148720, 708686, 4, 2],
+  ['CWRU', 2148720, 708686, 4, 1],
 ]
+
+// The day each one took office, [president, provost], from the schools' announcements.
+const STARTED: Record<string, [string, string]> = {
+  RPI: ['2022-07-01', '2023-08-01'],
+  RIT: ['2017-07-01', '2023-08-01'],
+  CMU: ['2018-03-08', '2019-01-01'],
+  WPI: ['2023-04-03', '2024-08-01'],
+  Stevens: ['2011-07-01', '2021-09-01'],
+  Lehigh: ['2021-08-16', '2020-07-01'],
+  MIT: ['2023-01-01', '2022-03-07'],
+  CWRU: ['2021-07-01', '2024-01-01'],
+}
 
 function ordinal(n: number) {
   if (n % 100 >= 11 && n % 100 <= 13) return `${n}th`
@@ -38,8 +50,8 @@ const executivePay: GraphSpec = {
 
 const payByTenure: GraphSpec = {
   kind: 'scatter',
-  title: 'Compensation by year in office',
-  x: { label: 'Year in office', short: 'Year in office', scale: 'linear', domain: [0, 15] },
+  title: 'Compensation by start date',
+  x: { label: 'Start date', short: 'Started', scale: 'linear', domain: [2010, 2025], year: true },
   y: { label: 'Total compensation', short: 'Compensation', prefix: '$', scale: 'linear', domain: [0, 3500000] },
   groups: [
     { name: 'President', color: 'purple' },
@@ -47,11 +59,11 @@ const payByTenure: GraphSpec = {
   ],
   trend: true,
   markStyle: 'ring',
-  points: OFFICERS.flatMap(([school, president, provost, pYear, vYear]) =>
+  points: OFFICERS.flatMap(([school, president, provost]) =>
     (
       [
-        ['President', president, pYear],
-        ['Provost', provost, vYear],
+        ['President', president, STARTED[school][0]],
+        ['Provost', provost, STARTED[school][1]],
       ] as const
     ).map(([group, pay, year]) => {
       const name = `${school} ${group.toLowerCase()}`

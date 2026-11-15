@@ -84,6 +84,8 @@ export function deleteGraph(name: string) {
 export function displayGraph(name: string): GraphFile {
   const graph = { ...readGraph(name) }
   delete graph.sheet
+  // A custom graph keeps the graph it was made from, sheet and all, so it can be put back.
+  delete graph.from
   return graph
 }
 

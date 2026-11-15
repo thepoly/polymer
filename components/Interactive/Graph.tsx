@@ -1,18 +1,42 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useId, useMemo } from 'react'
 import { buildGraph } from '@/lib/graph/graph.js'
+import { partsSvg, webScale } from '@/public/graph-editor/parts.js'
 import { Sliced, Bars } from './Sliced'
 import { Column, Line } from './Series'
 import { Scatter } from './Scatter'
 import { Flow } from './Flow'
-import { useWidth, type GraphSettings, type GraphSpec, type Model, type ScatterModel, type SeriesModel, type SlicedModel } from './shared'
+import { useWidth, type CustomModel, type GraphSettings, type GraphSpec, type Model, type ScatterModel, type SeriesModel, type SlicedModel } from './shared'
 import './interactive.css'
 
 // Type sizes come from the print graphics, which are set in points for a 3.5in column.
 // On screen each layout unit is drawn this many px wide, so the same proportions read
 // at web sizes.
-const scaleFor = (px: number) => (px >= 560 ? 1.35 : 1.15)
+const scaleFor = (px: number) => webScale(px) as number
+
+/**
+ * A custom graph: the parts as the editor left them, drawn as they are. Its title, key and
+ * source are parts too, so it gets no heading of its own, and nothing in it answers to the pointer.
+ */
+function Custom({ m, k, px }: { m: CustomModel; k: number; px: number }) {
+  // The layout made for this width: the web one in an article column, the phone one when narrow.
+  const view = (px >= 560 ? m.views.web : m.views.phone) ?? m.views.web ?? m.views.print ?? m.views.phone
+  const id = useId()
+  if (!view) return null
+  const [w, h] = view.size
+  return (
+    <svg
+      className="ig-chart ig-custom"
+      viewBox={`0 0 ${w} ${h}`}
+      role="img"
+      aria-label={m.title}
+      style={{ maxWidth: w * k, margin: '0 auto' }}
+      // Safe to set as markup: partsSvg escapes every string and checks every number, color and keyword.
+      dangerouslySetInnerHTML={{ __html: partsSvg(view.parts, { prefix: `ig${id}` }) as string }}
+    />
+  )
+}
 
 /**
  * One graph file, drawn live. It takes the same file the editor at /graph saves, builds
@@ -55,6 +79,15 @@ export default function Graph({
   }, [spec, settings])
 
   const m = built.m
+  if (m?.kind === 'custom') {
+    return (
+      <figure className={`ig ig-${size}`}>
+        <div className="ig-plot" ref={ref}>
+          <Custom m={m} k={k} px={px} />
+        </div>
+      </figure>
+    )
+  }
   const foot = m ? [m.source && `Source: ${m.source}`, m.credit].filter(Boolean).join(' · ') : ''
 
   return (
