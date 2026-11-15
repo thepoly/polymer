@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { graphUser, unauthorized, jsonBody, failure } from '@/lib/graph/auth'
-import { readGraph } from '@/lib/graph/store'
+import { readGraph, readSettings } from '@/lib/graph/store'
 import { buildGraph, renderGraphHtml, PX_PER_IN } from '@/lib/graph/graph.js'
 import { plotBox } from '@/lib/graph/scatter.js'
 
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   const pad = body.pad === 0 ? 0 : PNG_PAD
   try {
     // Only scatters carry a frame; the other kinds' models don't mention one.
-    const model = buildGraph(body.graph ?? {}, readGraph) as unknown as {
+    const model = buildGraph(body.graph ?? {}, readGraph, readSettings()) as unknown as {
       widthIn: number
       frame?: number | null
       plotH?: number | null

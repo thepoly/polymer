@@ -3,6 +3,7 @@ import path from 'node:path'
 import campusCrime from './seed/campus-crime.json'
 import rareEarths from './seed/rare-earths.json'
 import sexualViolence from './seed/sexual-violence.json'
+import { cleanSettings } from './palette.js'
 
 // Graph files: <GRAPH_DIR>/<name>.json, where the name is a short slug. Production sets
 // GRAPH_DIR to /var/www/polymer/shared/graphs, which persists across deploys. Never point
@@ -74,6 +75,43 @@ export function writeGraph(name: string, graph: unknown) {
 
 export function deleteGraph(name: string) {
   fs.rmSync(graphPath(name))
+}
+
+/**
+ * A graph as a page should be handed it: the file without what only the editor uses. The
+ * editor's sheet can hold working notes and figures that were never meant to be published.
+ */
+export function displayGraph(name: string): GraphFile {
+  const graph = { ...readGraph(name) }
+  delete graph.sheet
+  return graph
+}
+
+// ── Settings ──────────────────────────────────────────────
+//
+// One file for every graph: the brand colors, set at /graph/settings. It sits in a folder
+// of its own so it's never taken for a graph. With no file, the built-in colors apply.
+
+export type GraphSettings = { colors?: { name: string; base: string }[] }
+
+const SETTINGS_FILE = path.join(GRAPH_DIR, 'settings', 'graph-settings.json')
+
+export function readSettings(): GraphSettings {
+  try {
+    return cleanSettings(JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'))) as GraphSettings
+  } catch {
+    // No file yet, or one that can't be read: the built-in colors.
+    return cleanSettings(null) as GraphSettings
+  }
+}
+
+/** Checks and saves the settings, returning them as stored. Throws with a message a person can act on. */
+export function writeSettings(input: unknown): GraphSettings {
+  const settings = cleanSettings(input) as GraphSettings
+  ensureDir()
+  fs.mkdirSync(path.dirname(SETTINGS_FILE), { recursive: true })
+  fs.writeFileSync(SETTINGS_FILE, formatJson(settings) + '\n')
+  return settings
 }
 
 /**

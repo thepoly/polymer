@@ -1,0 +1,86 @@
+/* Graph settings. The look is the graph editor's (public/graph-editor/app.css). */
+
+@font-face {
+  font-family: "Raleway";
+  src: url("/fonts/raleway/Raleway-Variable.ttf") format("truetype");
+  font-weight: 300 700;
+}
+
+:root {
+  --ink: #000000;
+  --muted: #5c5c5c;
+  --faint: #8a8a8a;
+  --rule: #d4d4d4;
+  --hair: #e8e8e8;
+  --paper: #ffffff;
+  --wash: #f6f6f5;
+  --bad: #b3001a;
+  --bad-wash: #fdeeee;
+  --focus: #1a5fd6;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: "Raleway", "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink);
+  background: var(--paper);
+  font-variant-numeric: lining-nums;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+
+.appbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 10px 16px; border-bottom: 2px solid var(--ink);
+}
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brand img { height: 22px; width: auto; display: block; }
+.brand .product { font-weight: 700; font-size: 14px; padding-left: 12px; border-left: 1px solid var(--rule); color: inherit; text-decoration: none; }
+.brand a.product:hover { text-decoration: underline; text-underline-offset: 2px; }
+.actions { display: flex; align-items: center; gap: 8px; }
+.status { color: var(--muted); font-size: 12px; margin-right: 6px; }
+.status.bad { color: var(--bad); }
+
+.btn {
+  border: 1px solid var(--ink); background: var(--paper); padding: 6px 12px; border-radius: 3px;
+  cursor: pointer; font-weight: 600; white-space: nowrap;
+}
+.btn:hover { background: var(--wash); }
+.btn.primary { background: var(--ink); color: var(--paper); }
+.btn.primary:hover { background: #2b2b2b; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn.small { padding: 3px 8px; font-size: 12px; }
+.link {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  color: var(--ink); text-decoration: underline; text-underline-offset: 2px; font-weight: 600;
+}
+
+.settings { max-width: 760px; margin: 0 auto; padding: 24px 20px 60px; }
+.section > h2 {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  margin: 0 0 10px; color: var(--muted);
+}
+
+.colors { width: 100%; border-collapse: collapse; }
+.colors th {
+  text-align: left; font-size: 11.5px; font-weight: 600; color: var(--muted);
+  padding: 4px 6px; border-bottom: 1px solid var(--ink);
+}
+.colors td { padding: 6px; border-bottom: 1px solid var(--hair); vertical-align: middle; }
+.colors input[type="color"] { width: 34px; height: 26px; padding: 0; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); cursor: pointer; }
+.colors input[type="text"] { width: 100%; padding: 5px 8px; border: 1px solid var(--rule); border-radius: 3px; background: var(--paper); }
+.colors input[type="text"]:disabled { background: var(--wash); color: var(--muted); }
+.colors input.hex { width: 92px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.colors input.bad { background: var(--bad-wash); border-color: #f0b8bf; }
+.shades { display: inline-flex; border-radius: 3px; overflow: hidden; vertical-align: middle; }
+.shades span { width: 26px; height: 22px; display: block; }
+.colors .ops { white-space: nowrap; text-align: right; }
+.colors .ops button:not(.link) { border: 0; background: none; cursor: pointer; color: var(--faint); padding: 2px 5px; }
+.colors .ops button:not(.link):hover { color: var(--ink); }
+.colors .ops button:disabled { opacity: 0.3; cursor: default; }
+.colors .ops .link { margin-left: 8px; font-size: 12px; }
+.grid-actions { display: flex; gap: 12px; align-items: center; margin-top: 12px; }

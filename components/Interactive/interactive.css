@@ -1,0 +1,115 @@
+/* Interactive graphs. The look follows the print graphics in lib/graph; text inside an
+   svg is sized in pt and scales with its viewBox, text outside one is sized in px. */
+
+.ig {
+  --ig-ink: var(--foreground);
+  --ig-muted: var(--foreground-muted);
+  --ig-paper: var(--background);
+  --ig-grid: color-mix(in srgb, var(--foreground) 13%, transparent);
+  --ig-rule: color-mix(in srgb, var(--foreground) 27%, transparent);
+  width: 100%;
+  margin: 40px auto;
+  font-family: var(--font-meta);
+  font-variant-numeric: lining-nums;
+  color: var(--ig-ink);
+}
+.ig-text { max-width: 680px; }
+.ig-wide { max-width: 1040px; }
+
+.ig-kicker { font-size: 13px; font-weight: 700; }
+.ig-title { font-family: var(--font-copy); font-size: 26px; font-weight: 400; line-height: 1.1; margin-top: 3px; }
+.ig-dek { font-size: 15px; line-height: 1.38; margin-top: 6px; }
+.ig-source { margin-top: 10px; font-size: 12px; color: var(--ig-muted); }
+.ig-error { font-size: 14px; color: var(--accent-color); }
+
+.ig-plot { position: relative; margin-top: 16px; }
+.ig-chart { display: block; width: 100%; max-width: 100%; height: auto; overflow: visible; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+
+/* Marks set back while another is picked out. */
+.ig-mark { transition: opacity 0.15s ease; }
+.ig-mark[data-dim] { opacity: 0.25; }
+
+.ig-grid { stroke: var(--ig-grid); stroke-width: 0.5; }
+.ig-base { stroke: var(--ig-ink); stroke-width: 0.75; }
+.ig-trend { stroke-width: 1.5; stroke-linecap: round; pointer-events: none; }
+.ig-ring { fill: none; stroke: var(--ig-ink); stroke-width: 1.5; stroke-linejoin: round; pointer-events: none; }
+.ig-cursor { stroke: var(--ig-ink); stroke-width: 0.5; pointer-events: none; }
+.ig-tick { font-size: 6.5pt; fill: var(--ig-muted); }
+.ig-axis-title { font-size: 7pt; fill: var(--ig-ink); }
+.ig-pips { fill: #ffffff; pointer-events: none; }
+.ig-value { font-size: 7pt; font-weight: 600; fill: var(--ig-ink); pointer-events: none; }
+.ig-end { font-size: 7.5pt; font-weight: 600; fill: var(--ig-ink); cursor: default; }
+.ig-end-muted { font-weight: 400; fill: var(--ig-muted); }
+.ig-leader { stroke: var(--ig-muted); stroke-width: 0.5; fill: none; }
+.ig-halo { paint-order: stroke; stroke: var(--ig-paper); stroke-width: 2.5px; stroke-linejoin: round; }
+
+.ig-slice-labels { font-size: 7.5pt; font-weight: 700; font-variant-numeric: lining-nums tabular-nums; pointer-events: none; }
+.ig-slice-labels text { transition: opacity 0.15s ease; }
+.ig-slice-labels text[data-dim] { opacity: 0.25; }
+.ig-total { font-size: 24pt; font-weight: 700; fill: var(--ig-ink); pointer-events: none; }
+.ig-total-label { font-size: 8pt; fill: var(--ig-ink); pointer-events: none; }
+
+.ig-point-label { font-size: 8pt; font-weight: 600; fill: var(--ig-ink); pointer-events: none; }
+.ig-point-label.ig-hl { font-weight: 700; }
+.ig-note { font-size: 6.5pt; fill: var(--ig-muted); pointer-events: none; }
+
+.ig-flow-label { font-size: 7.5pt; fill: var(--ig-ink); font-variant-numeric: lining-nums tabular-nums; cursor: default; }
+.ig-flow-label .ig-name { font-weight: 600; }
+
+/* Ring and pie: the chart, with its key beside it where there's room. */
+.ig-sliced { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 20px 36px; }
+.ig-sliced .ig-chart { flex: none; }
+.ig-table { flex: 1 1 280px; border-collapse: collapse; font-size: 14px; font-variant-numeric: lining-nums tabular-nums; }
+.ig-table th { font-size: 12px; font-weight: 400; text-align: left; padding-bottom: 4px; border-bottom: 2px solid var(--ig-ink); }
+.ig-table td { padding: 6px 0; border-bottom: 1px solid var(--ig-rule); vertical-align: baseline; }
+.ig-table .ig-num { text-align: right; white-space: nowrap; width: 76px; }
+.ig-table tr { transition: opacity 0.15s ease; }
+.ig-table tr[data-dim] { opacity: 0.35; }
+.ig-table tr[data-hot] td { border-bottom-color: var(--ig-ink); }
+.ig-table .ig-group td { font-weight: 700; padding-top: 14px; border-bottom-color: var(--ig-ink); }
+.ig-table tbody:first-of-type .ig-group td { padding-top: 6px; }
+
+.ig-key { display: inline-block; flex: none; width: 16px; height: 3px; border-radius: 1.5px; margin-right: 7px; vertical-align: middle; }
+.ig-key-dot { width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; }
+.ig-key-mark { flex: none; width: 12px; height: 12px; margin-right: 7px; }
+.ig-key-block { width: 11px; height: 11px; border-radius: 2px; vertical-align: -1px; }
+
+.ig-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-bottom: 10px; font-size: 13px; }
+.ig-legend-item { display: inline-flex; align-items: center; }
+.ig-key-pip { display: inline-block; width: 7px; height: 7px; margin: 0 7px 0 2px; border-radius: 50%; background: var(--ig-paper); box-shadow: 0 0 0 2.5px var(--ig-muted); }
+
+.ig-bars { display: grid; grid-template-columns: fit-content(45%) 1fr; column-gap: 10px; row-gap: 7px; align-items: center; font-size: 14px; font-variant-numeric: lining-nums tabular-nums; }
+.ig-bar-group { grid-column: 1 / -1; font-weight: 700; padding-bottom: 3px; border-bottom: 1px solid var(--ig-ink); margin-top: 10px; }
+.ig-bar-group:first-child { margin-top: 0; }
+.ig-bar-row { display: contents; }
+.ig-bar-row > * { transition: opacity 0.15s ease; }
+.ig-bar-row[data-dim] > * { opacity: 0.3; }
+.ig-bar-label { line-height: 1.15; }
+.ig-bar-track { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.ig-bar { display: block; height: 18px; border-radius: 0 3px 3px 0; flex-grow: 0; flex-shrink: 0; min-width: 1px; }
+.ig-bar-value { white-space: nowrap; }
+
+.ig-tip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+  z-index: 2;
+  pointer-events: none;
+  min-width: 120px;
+  max-width: 260px;
+  padding: 8px 10px;
+  background: var(--ig-paper);
+  border: 1px solid var(--ig-ink);
+  font-size: 13px;
+  line-height: 1.3;
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.ig-tip-head { font-weight: 700; margin-bottom: 4px; }
+.ig-tip-row { display: flex; align-items: center; gap: 4px; }
+.ig-tip-name { flex: 1; color: var(--ig-muted); }
+.ig-tip-value { font-weight: 600; margin-left: 10px; white-space: nowrap; }
+
+/* In the editor, a label that can be moved. */
+.ig-point-label.ig-drag { pointer-events: auto; cursor: grab; touch-action: none; }
+.ig-point-label.ig-drag:active { cursor: grabbing; }

@@ -24,6 +24,7 @@ const PAGE = `<!doctype html>
   </div>
   <div class="actions">
     <span id="status" class="status" role="status" aria-live="polite"></span>
+    <a class="btn" href="/graph/settings">Settings</a>
     <button id="save" class="btn" title="Save (⌘S)">Save</button>
     <button id="export-pdf" class="btn" title="Opens the print dialog: choose Save as PDF">PDF</button>
     <button id="export-png" class="btn primary">Download PNG</button>
@@ -44,6 +45,13 @@ const PAGE = `<!doctype html>
       <span id="size" class="size"></span>
       <span id="edit-hint" class="size edit-hint" hidden>Drag bars and labels · double-click a label to rename</span>
       <button id="reset-layout" class="btn small" title="Put every bar and label back where the defaults put them" hidden>Reset to defaults</button>
+      <label class="zoom">View
+        <select id="view">
+          <option value="print" selected>Print</option>
+          <option value="web">Web</option>
+          <option value="phone">Phone</option>
+        </select>
+      </label>
       <label class="zoom">Zoom
         <select id="zoom">
           <option value="fit" selected>Fit</option>
@@ -58,6 +66,7 @@ const PAGE = `<!doctype html>
       <div id="frame" class="frame">
         <iframe id="f0" title="Graph preview" tabindex="-1"></iframe>
         <iframe id="f1" title="Graph preview" tabindex="-1"></iframe>
+        <iframe id="live" title="Web preview" hidden></iframe>
       </div>
     </div>
   </section>
