@@ -7,6 +7,7 @@ import {
   lexicalEditor,
 } from '@payloadcms/richtext-lexical'
 import { getPlainText } from '../utils/getPlainText'
+import { GraphBlock } from './blocks/GraphBlock.ts'
 
 // Mirror the PhotoGallery / Carousel blocks declared in payload.config.ts so
 // the live-article update body supports the same embedded richText features
@@ -270,7 +271,7 @@ const LiveArticles: CollectionConfig = {
           editor: lexicalEditor({
             features: ({ defaultFeatures }) => [
               ...defaultFeatures,
-              BlocksFeature({ blocks: [PhotoGalleryBlock, CarouselBlock] }),
+              BlocksFeature({ blocks: [PhotoGalleryBlock, CarouselBlock, GraphBlock] }),
               UploadFeature({
                 collections: {
                   media: {

@@ -5,6 +5,7 @@ import { buildConfig } from 'payload'
 import type { Block } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
+import { GraphBlock } from './collections/blocks/GraphBlock.ts'
 
 const PhotoGalleryBlock: Block = {
   slug: 'photo_gallery',
@@ -123,7 +124,7 @@ export default buildConfig({
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [
       ...defaultFeatures,
-      BlocksFeature({ blocks: [PhotoGalleryBlock, CarouselBlock] }),
+      BlocksFeature({ blocks: [PhotoGalleryBlock, CarouselBlock, GraphBlock] }),
       UploadFeature({
         collections: {
           media: {

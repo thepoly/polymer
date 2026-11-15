@@ -113,3 +113,7 @@
 /* In the editor, a label that can be moved. */
 .ig-point-label.ig-drag { pointer-events: auto; cursor: grab; touch-action: none; }
 .ig-point-label.ig-drag:active { cursor: grabbing; }
+
+/* A custom graph's colors are fixed where they were put, drawn for white paper. On a dark
+   page it keeps its paper, as a card, rather than black type on a dark ground. */
+html.dark .ig-custom { background: #ffffff; border-radius: 4px; padding: 14px; box-sizing: content-box; }
