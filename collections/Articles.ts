@@ -219,6 +219,15 @@ const Articles: CollectionConfig = {
           }
         }
 
+        // Sport and game result belong to sports stories only. A story moved
+        // to another section drops them, so it never keeps a hidden sport or
+        // scoreboard that would come back if it moved again.
+        if ((data.section ?? originalDoc?.section) !== 'sports') {
+          for (const field of ['sport', 'opponent', 'homeAway', 'rpiScore', 'opponentScore', 'gameStatus'] as const) {
+            if (data[field] != null || originalDoc?.[field] != null) data[field] = null
+          }
+        }
+
         // Auto-generate slug from title if not set, or sanitize existing slug
         const plainTitle = getPlainText(data.title);
         data.plainTitle = plainTitle;
