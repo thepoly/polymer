@@ -4,7 +4,7 @@ import { useId, useState, type PointerEvent } from 'react'
 import { lg, fmtNum, linearScale, logScale, textWidth, withEnds } from '@/lib/graph/axis.js'
 import { halfPath, markPath, marksUnder, splitOverlaps } from '@/lib/graph/scatter.js'
 import { crowdsRef, refYs } from '@/lib/graph/refs.js'
-import { f, pointerIn, RefLines, TickText, Tip, type ChartProps, type ScatterAxis, type ScatterModel, type TipState } from './shared'
+import { f, pointerIn, RefLines, TickText, Tip, TipBody, type ChartProps, type TipData, type ScatterAxis, type ScatterModel, type TipState } from './shared'
 
 // A scatter on log or linear axes, laid out as lib/graph/scatter.js lays it out for print.
 
@@ -20,6 +20,18 @@ const lines = (v: string | string[] | undefined) => (Array.isArray(v) ? v : v ? 
 const fmtAxis = (axis: ScatterAxis, v: number, exact = false) =>
   fmtNum(v, { prefix: axis.prefix, grouping: !axis.year, compact: !exact && !axis.year && Math.max(...axis.domain.map(Math.abs)) >= 1e6 })
 const withUnit = (axis: ScatterAxis, v: number) => `${fmtAxis(axis, v, true)}${axis.unit ? ` ${axis.unit}` : ''}`
+
+/** What a point holds, for the readout: its name, then where it sits on each axis. */
+export function pointTip(m: ScatterModel, i: number): TipData {
+  const p = m.points[i]
+  return {
+    head: p.label ?? p.name ?? m.othersLabel,
+    rows: [
+      { name: m.x.short || lines(m.x.label).join(' '), value: p.xText ?? withUnit(m.x, p.x) },
+      { name: m.y.short || lines(m.y.label).join(' '), value: p.yText ?? withUnit(m.y, p.y) },
+    ],
+  }
+}
 
 type Drag = { i: number; from: [number, number]; start: [number, number]; at: [number, number] }
 
@@ -98,25 +110,7 @@ export function Scatter({ m, W, k, onLabelMove }: ChartProps<ScatterModel> & { o
 
   const refLabelYs = refYs(m.refs, (v: number) => ys.map(v)) as number[]
   const picked = hot === null ? null : m.points[hot]
-  const tip: TipState = picked
-    ? {
-        x: posOf(hot!).x * k,
-        y: posOf(hot!).y * k,
-        body: (
-          <>
-            <div className="ig-tip-head">{picked.label ?? picked.name ?? m.othersLabel}</div>
-            <div className="ig-tip-row">
-              <span className="ig-tip-name">{m.x.short || lines(m.x.label).join(' ')}</span>
-              <span className="ig-tip-value">{picked.xText ?? withUnit(m.x, picked.x)}</span>
-            </div>
-            <div className="ig-tip-row">
-              <span className="ig-tip-name">{m.y.short || yLabel.join(' ')}</span>
-              <span className="ig-tip-value">{picked.yText ?? withUnit(m.y, picked.y)}</span>
-            </div>
-          </>
-        ),
-      }
-    : null
+  const tip: TipState = picked ? { x: posOf(hot!).x * k, y: posOf(hot!).y * k, body: <TipBody data={pointTip(m, hot!)} /> } : null
 
   return (
     <>
@@ -211,16 +205,16 @@ export function Scatter({ m, W, k, onLabelMove }: ChartProps<ScatterModel> & { o
           halves.has(n) ? (
             // Two overlapping dots of different colors each show as half, side by side.
             m.markStyle === 'ring' ? (
-              <path key={i} className="ig-mark" d={halfPath(p.shape, x, y, r - 2, halves.get(n), true)} fill="none" stroke={p.color} strokeWidth={2} strokeLinejoin="round" />
+              <path key={i} data-tip={`p${i}`} className="ig-mark" d={halfPath(p.shape, x, y, r - 2, halves.get(n), true)} fill="none" stroke={p.color} strokeWidth={2} strokeLinejoin="round" />
             ) : (
-              <path key={i} className="ig-mark" d={halfPath(p.shape, x, y, r - 1, halves.get(n))} fill={p.color} fillOpacity={m.markStyle === 'clear' ? 0.5 : 1} />
+              <path key={i} data-tip={`p${i}`} className="ig-mark" d={halfPath(p.shape, x, y, r - 1, halves.get(n))} fill={p.color} fillOpacity={m.markStyle === 'clear' ? 0.5 : 1} />
             )
           ) : m.markStyle === 'clear' ? (
-            <path key={i} className="ig-mark" d={markPath(p.shape, x, y, r - 1)} fill={p.color} fillOpacity={0.5} />
+            <path key={i} data-tip={`p${i}`} className="ig-mark" d={markPath(p.shape, x, y, r - 1)} fill={p.color} fillOpacity={0.5} />
           ) : m.markStyle === 'ring' ? (
-            <path key={i} className="ig-mark" d={markPath(p.shape, x, y, r - 2)} fill="none" stroke={p.color} strokeWidth={2} strokeLinejoin="round" />
+            <path key={i} data-tip={`p${i}`} className="ig-mark" d={markPath(p.shape, x, y, r - 2)} fill="none" stroke={p.color} strokeWidth={2} strokeLinejoin="round" />
           ) : (
-          <g key={i}>
+          <g key={i} data-tip={`p${i}`}>
             {under[n].length ? (
               <>
                 <clipPath id={`${uid}-under-${n}`}>
@@ -271,6 +265,7 @@ export function Scatter({ m, W, k, onLabelMove }: ChartProps<ScatterModel> & { o
         {/* Each point answers to exactly the dot it draws, its white edge included, on top of the labels. */}
         {marks.map(({ p, i, x, y, r }) => (
           <path key={i} d={markPath(p.shape, x, y, r)}
+            data-tip={`p${i}`}
             fill="transparent"
             stroke="transparent"
             strokeWidth={2}

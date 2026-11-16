@@ -42,6 +42,7 @@ export default function LivePreview() {
         <Graph
           spec={spec}
           settings={settings}
+          exposeTips
           onLabelMove={(index, dx, dy) => window.parent.postMessage({ type: 'label', index, dx, dy }, window.location.origin)}
         />
       ) : null}

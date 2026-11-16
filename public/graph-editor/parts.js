@@ -38,10 +38,12 @@ const JOINS = ["miter", "round", "bevel"];
 function common(p, ids) {
   const a = [];
   if (ids && p.id) a.push(`data-part="${esc(p.id)}"`);
+  if (typeof p.tip === "string" && TIP.test(p.tip)) a.push(`data-tip="${p.tip}"`);
   const move = p.dx || p.dy ? `translate(${num(p.dx)} ${num(p.dy)})` : "";
   const m = Array.isArray(p.m) && p.m.length === 6 ? `matrix(${p.m.map(num).join(" ")})` : "";
   if (move || m) a.push(`transform="${[move, m].filter(Boolean).join(" ")}"`);
-  a.push(`fill="${hex(p.fill) ?? "none"}"`);
+  // A hit area is clear but still answers to the pointer.
+  a.push(`fill="${p.hit ? "transparent" : (hex(p.fill) ?? "none")}"`);
   if (p.fo != null && num(p.fo) < 1) a.push(`fill-opacity="${num(p.fo)}"`);
   if (hex(p.stroke)) {
     a.push(`stroke="${p.stroke}"`, `stroke-width="${num(p.sw ?? 1)}"`);
@@ -54,6 +56,9 @@ function common(p, ids) {
   if (p.op != null && num(p.op) < 1) a.push(`opacity="${num(p.op)}"`);
   return a.join(" ");
 }
+
+/** A readout's key: a letter and a number ("c3", "p12"). */
+const TIP = /^[a-z]\d{1,5}$/;
 
 const offset = (v) => (typeof v === "number" || /^-?[\d.]+(em|px)?$/.test(String(v)) ? String(v) : null);
 
@@ -112,10 +117,11 @@ function partSvg(p, ids, clipId = "") {
 /**
  * The parts as SVG markup, back to front. With `ids`, each element is tagged with its part's
  * id. `prefix` starts the ids of any clips, and has to differ between drawings on one page.
+ * Clear hit areas (parts with `hit`) are drawn only with `hits`, where something answers to them.
  */
-export function partsSvg(parts, { ids = false, prefix = "clip" } = {}) {
+export function partsSvg(parts, { ids = false, prefix = "clip", hits = false } = {}) {
   const safe = String(prefix).replace(/[^A-Za-z0-9_-]/g, "") || "clip";
-  return (Array.isArray(parts) ? parts : []).map((p, i) => partSvg(p, ids, `${safe}-${i}`)).join("");
+  return (Array.isArray(parts) ? parts : []).map((p, i) => (p?.hit && !hits ? "" : partSvg(p, ids, `${safe}-${i}`))).join("");
 }
 
 // ── Colors ────────────────────────────────────────────────
@@ -181,6 +187,9 @@ export function snapshotParts(root, { scale = 1, inset = 0 } = {}) {
   const byEl = new Map();
   const add = (el, part) => {
     part.id = `p${parts.length + 1}`;
+    // Made under a mark with a readout: the part keeps the readout's key.
+    const tip = el?.closest?.("[data-tip]")?.getAttribute("data-tip");
+    if (tip && TIP.test(tip)) part.tip = tip;
     parts.push(part);
     if (el) byEl.set(el, part.id);
     return part;
@@ -281,7 +290,12 @@ export function snapshotParts(root, { scale = 1, inset = 0 } = {}) {
     if (tag === "text") return svgText(el, cs, o);
     if (!SHAPES[tag] || el.classList.contains("knockout-bg")) return;
     const part = SHAPES[tag](el);
-    if (!paint(part, cs, o)) return;
+    if (!paint(part, cs, o)) {
+      // A clear shape that's there to be pointed at becomes a hit area.
+      if (!el.hasAttribute("data-tip") || clip) return;
+      delete part.op;
+      part.hit = true;
+    }
     if (clip) part.clip = clip;
     const m = matrixOf(el);
     if (m && !isIdentity(m)) part.m = m;

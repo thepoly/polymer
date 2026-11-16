@@ -4,7 +4,7 @@ import { useId, useState, type PointerEvent } from 'react'
 import { linearScale, fmtNum, textWidth, spreadLabels, withEnds } from '@/lib/graph/axis.js'
 import { alignedScale, gapAreas, numericTicks, OVERLAY_WIDTH, refX, SHADE_OPACITY, trendLine, TREND } from '@/lib/graph/series.js'
 import { crowdsRef, refYs } from '@/lib/graph/refs.js'
-import { f, RefLines, TickText, full, pointerIn, Tip, TipRow, type ChartProps, type Fmt, type SeriesModel, type TipState } from './shared'
+import { f, RefLines, TickText, full, pointerIn, Tip, TipBody, type ChartProps, type Fmt, type SeriesModel, type TipData, type TipLine, type TipState } from './shared'
 
 // Column and line charts, laid out as lib/graph/series.js lays them out for print.
 
@@ -132,22 +132,15 @@ function Pips({ text, x, y0, y1, w }: { text: string | null; x: number; y0: numb
   )
 }
 
-/** What a category holds, for the readout. */
 /** In a readout, the gap between two shaded lines: named for the side it's on, in that side's shade. */
-function gapRow(m: SeriesModel, i: number) {
+function gapRow(m: SeriesModel, i: number): TipLine | null {
   const sh = m.shade
   if (!sh) return null
   const [a, b] = [m.series[sh.a].values[i], m.series[sh.b].values[i]]
   if (a === null || b === null) return null
   const up = a >= b
   const name = (up ? sh.above : sh.below) || `${m.series[sh.a].name} − ${m.series[sh.b].name}`
-  return (
-    <div className="ig-tip-row ig-tip-gap">
-      <span className="ig-key ig-key-block" style={{ background: m.series[up ? sh.a : sh.b].color, opacity: SHADE_OPACITY + 0.13 }} />
-      <span className="ig-tip-name">{name}</span>
-      <span className="ig-tip-value">{fmtNum(Math.abs(a - b), full(m.fmt))}</span>
-    </div>
-  )
+  return { name, value: fmtNum(Math.abs(a - b), full(m.fmt)), color: m.series[up ? sh.a : sh.b].color, key: 'shade' }
 }
 
 /** The key for a shaded gap, above the plot. */
@@ -169,32 +162,36 @@ function GapLegend({ m }: { m: SeriesModel }) {
   )
 }
 
-function readout(m: SeriesModel, i: number, total: boolean) {
+/** What a category holds, for the readout. */
+export function seriesTip(m: SeriesModel, i: number, total: boolean): TipData {
   const rows = m.series.filter((s) => s.values[i] !== null)
+  const out: TipLine[] = rows.map((s) => {
+    const note = m.inside ? insideText(m, i, m.series.indexOf(s)) : null
+    return { name: note ? `${s.name}, ${note}` : s.name, value: fmtNum(s.values[i] as number, full(m.fmt)), color: s.color, key: m.kind === 'line' ? 'line' : 'block' }
+  })
+  if (total && rows.length > 1) out.push({ name: 'Total', value: fmtNum(rows.reduce((a, s) => a + (s.values[i] as number), 0), full(m.fmt)) })
+  const gap = gapRow(m, i)
+  if (gap) out.push(gap)
+  if (m.overlay && m.overlay.values[i] !== null) {
+    out.push({ name: m.overlay.name, value: fmtNum(m.overlay.values[i] as number, full(m.overlay.fmt)), color: m.overlay.color, key: 'line' })
+  }
+  return { head: m.categories[i], rows: out }
+}
+
+/**
+ * One clear band per category, the plot's full height, each marked with its readout's key.
+ * They take no pointer here; a custom graph made from this one keeps them as the places
+ * that answer to the pointer.
+ */
+function TipBands({ xs, top, plotH, left, right }: { xs: number[]; top: number; plotH: number; left: number; right: number }) {
   return (
-    <>
-      <div className="ig-tip-head">{m.categories[i]}</div>
-      {rows.map((s) => {
-        const j = m.series.indexOf(s)
-        const note = m.inside ? insideText(m, i, j) : null
-        return (
-          <TipRow
-            key={s.name}
-            color={s.color}
-            name={note ? `${s.name}, ${note}` : s.name}
-            value={fmtNum(s.values[i] as number, full(m.fmt))}
-            line={m.kind === 'line'}
-          />
-        )
+    <g pointerEvents="none">
+      {xs.map((x, i) => {
+        const a = i === 0 ? left : (xs[i - 1] + x) / 2
+        const b = i === xs.length - 1 ? right : (x + xs[i + 1]) / 2
+        return <rect key={i} data-tip={`c${i}`} x={f(Math.min(a, b))} y={f(top)} width={f(Math.abs(b - a))} height={f(plotH)} fill="transparent" />
       })}
-      {total && rows.length > 1 ? (
-        <TipRow name="Total" value={fmtNum(rows.reduce((a, s) => a + (s.values[i] as number), 0), full(m.fmt))} />
-      ) : null}
-      {gapRow(m, i)}
-      {m.overlay && m.overlay.values[i] !== null ? (
-        <TipRow color={m.overlay.color} name={m.overlay.name} value={fmtNum(m.overlay.values[i] as number, full(m.overlay.fmt))} line />
-      ) : null}
-    </>
+    </g>
   )
 }
 
@@ -229,7 +226,7 @@ export function Column({ m, W, k }: ChartProps<SeriesModel>) {
   const H = top + plotH + bottom
   const clipId = `${useId()}-plot`
 
-  const tip: TipState = hot === null ? null : { x: centers[hot] * k, y: (top + plotH * 0.35) * k, body: readout(m, hot, m.stacked) }
+  const tip: TipState = hot === null ? null : { x: centers[hot] * k, y: (top + plotH * 0.35) * k, body: <TipBody data={seriesTip(m, hot, m.stacked)} /> }
   // Trend lines over the columns: one through the stacks' totals, or one through each series.
   const fits = (!m.trend
     ? []
@@ -276,7 +273,7 @@ export function Column({ m, W, k }: ChartProps<SeriesModel>) {
           const x0 = centers[i] - groupW / 2
           let acc = 0
           return (
-            <g key={i} clipPath={`url(#${clipId})`} onPointerEnter={() => setHot(i)} onPointerDown={() => setHot(i)} onPointerLeave={() => setHot(null)}>
+            <g key={i} data-tip={`c${i}`} clipPath={`url(#${clipId})`} onPointerEnter={() => setHot(i)} onPointerDown={() => setHot(i)} onPointerLeave={() => setHot(null)}>
               {m.series.map((s, j) => {
                 const v = s.values[i]
                 if (m.stacked) {
@@ -336,6 +333,7 @@ export function Column({ m, W, k }: ChartProps<SeriesModel>) {
           </g>
         ) : null}
         <Axes m={m} xs={centers} shown={shownLabels(m.categories, band)} left={left} plotW={plotW} top={top} plotH={plotH} H={H} />
+        <TipBands xs={centers} top={top} plotH={plotH} left={left} right={W - right} />
       </svg>
       <Tip tip={tip} width={W * k} />
     </>
@@ -406,7 +404,7 @@ export function Line({ m, W, k }: ChartProps<SeriesModel>) {
     setHot(best)
   }
 
-  const tip: TipState = hot === null ? null : { x: xs[hot] * k, y: (top + plotH * 0.35) * k, body: readout(m, hot, false) }
+  const tip: TipState = hot === null ? null : { x: xs[hot] * k, y: (top + plotH * 0.35) * k, body: <TipBody data={seriesTip(m, hot, false)} /> }
 
   const sh = m.shade
   const gaps = sh ? gapAreas(xs, m.series[sh.a].values, m.series[sh.b].values, (v: number) => scale.map(v)) as { above: boolean; d: string }[] : []
@@ -490,6 +488,7 @@ export function Line({ m, W, k }: ChartProps<SeriesModel>) {
           : null}
         <Axes m={m} xs={xs} shown={nums ? [] : shownLabels(m.categories, n > 1 ? plotW / (n - 1) : plotW)}
           ticks={nums ? (numericTicks(xLo, xHi, xAt) as { x: number; text: string }[]) : undefined} left={left} plotW={plotW} top={top} plotH={plotH} H={H} />
+        <TipBands xs={xs} top={top} plotH={plotH} left={left} right={W - right} />
       </svg>
       <Tip tip={tip} width={W * k} />
     </>

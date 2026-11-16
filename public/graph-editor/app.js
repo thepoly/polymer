@@ -230,7 +230,9 @@ function fromFile(g, name) {
     const views = {};
     for (const v of ["print", "web", "phone"]) {
       const view = g.views?.[v];
-      if (Array.isArray(view?.size) && Array.isArray(view?.parts)) views[v] = structuredClone({ size: view.size, parts: view.parts });
+      if (Array.isArray(view?.size) && Array.isArray(view?.parts)) {
+        views[v] = structuredClone({ size: view.size, parts: view.parts, ...(view.tips && typeof view.tips === "object" ? { tips: view.tips } : {}) });
+      }
     }
     // The first custom graphs held one layout, at the top of the file; it stands in for print.
     if (!views.print && Array.isArray(g.size) && Array.isArray(g.parts)) views.print = structuredClone({ size: g.size, parts: g.parts });
@@ -3160,7 +3162,7 @@ function commitPending() {
   const views = {};
   for (const v of VIEWS) {
     const snap = v === p.view ? p : takeSnapshot(v);
-    if (snap) views[v] = { size: snap.size, parts: snap.parts };
+    if (snap) views[v] = { size: snap.size, parts: snap.parts, ...(snap.tips ? { tips: snap.tips } : {}) };
   }
   for (const v of VIEWS) views[v] ??= structuredClone(views.print ?? views[p.view]);
   doc.custom = { views, swatches: [], from };
@@ -3218,7 +3220,17 @@ function takeSnapshot(view) {
   const root = liveFrame(view).contentDocument?.querySelector("figure.ig");
   if (!root) return null;
   // On the web a unit is drawn bigger than a px; store units, so it prints at a sensible size.
-  return { view, ...snapshotParts(root, { scale: 1 / webScale(root.getBoundingClientRect().width) }) };
+  return { view, ...snapshotParts(root, { scale: 1 / webScale(root.getBoundingClientRect().width) }), tips: tipsOf(root) };
+}
+
+/** The readouts a live preview's figure carries, keyed as its marks are; null if it has none. */
+function tipsOf(root) {
+  try {
+    const tips = JSON.parse(root.dataset.tips || "null");
+    return tips && typeof tips === "object" && Object.keys(tips).length ? tips : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Follows the pointer until it lifts, wherever it goes: this page, or the frame the press began in. */
@@ -3274,7 +3286,7 @@ function attachCanvasStart(fdoc, view) {
       const z = r.width / frame.offsetWidth || 1;
       return [r.left + ev.clientX * z, r.top + ev.clientY * z];
     };
-    canvas.pending = { view, size: snap.size, parts: snap.parts };
+    canvas.pending = { view, size: snap.size, parts: snap.parts, tips: snap.tips };
     canvas.view = view;
     canvas.sel = new Set([id]);
     renderCanvases();
@@ -3452,7 +3464,7 @@ function canvasAdd(kind) {
   if (doc.meta.kind !== "custom") {
     const snap = takeSnapshot(canvas.view) ?? takeSnapshot("print");
     if (!snap) return status("There's nothing drawn to add to yet. Fix what the preview says first.", true);
-    canvas.pending = { view: snap.view, size: snap.size, parts: snap.parts };
+    canvas.pending = { view: snap.view, size: snap.size, parts: snap.parts, tips: snap.tips };
     canvas.view = snap.view;
   }
   canvasBeginEdit();
@@ -3746,7 +3758,7 @@ function updateCanvasTools() {
 function makeCustom() {
   const snap = takeSnapshot("print");
   if (!snap) return status("There's nothing drawn to take apart yet. Fix what the preview says first.", true);
-  canvas.pending = { view: "print", size: snap.size, parts: snap.parts };
+  canvas.pending = { view: "print", size: snap.size, parts: snap.parts, tips: snap.tips };
   canvas.view = "print";
   canvas.sel.clear();
   canvasBeginEdit();
@@ -3938,6 +3950,141 @@ window.addEventListener("hashchange", () => {
   if (name && name !== doc?.loadedName) openGraph(name);
 });
 
+// ── Readouts for custom graphs made before they kept them ─
+//
+// A custom graph's web and phone layouts now keep the readouts of the graph they were made
+// from (view.tips), and each part made from a bar, dot or slice names its readout (part.tip).
+// Older custom graphs are brought up to date once: the original graph is drawn again off
+// screen, and every stored part that still sits exactly where its mark is drawn takes that
+// mark's readout. Nothing already in the file is changed; the server backs the file up first.
+
+/** A frame of /graph/live off screen at `width`, once it's ready for a graph. */
+function offscreenLive(width) {
+  return new Promise((resolve, reject) => {
+    const frame = document.createElement("iframe");
+    // In the window but unseen: a frame outside the window isn't laid out, so it never learns its width.
+    frame.style.cssText = `position:fixed;left:0;top:0;width:${width}px;height:2400px;border:0;opacity:0;pointer-events:none;z-index:-1`;
+    frame.setAttribute("aria-hidden", "true");
+    frame.tabIndex = -1;
+    const finish = () => {
+      clearTimeout(timer);
+      window.removeEventListener("message", onMessage);
+    };
+    const timer = setTimeout(() => {
+      finish();
+      frame.remove();
+      reject(new Error("The preview didn't load."));
+    }, 20000);
+    const onMessage = (e) => {
+      if (e.origin !== location.origin || e.source !== frame.contentWindow || e.data?.type !== "ready") return;
+      finish();
+      resolve(frame);
+    };
+    window.addEventListener("message", onMessage);
+    frame.src = "/graph/live";
+    document.body.append(frame);
+  });
+}
+
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** Draws `graph` as a live preview `width` wide, off screen, and takes it apart. Null if it can't be drawn. */
+async function freshSnapshot(graph, width) {
+  const frame = await offscreenLive(width);
+  try {
+    frame.contentWindow.postMessage({ type: "graph", graph, settings: graphSettings }, location.origin);
+    const fdoc = frame.contentDocument;
+    let root = null;
+    for (let i = 0; i < 100 && !root; i++) {
+      await pause(50);
+      root = fdoc.querySelector("figure.ig[data-tips]");
+    }
+    if (!root) return null;
+    await fdoc.fonts?.ready;
+    // The figure lays out again once it has measured its width.
+    await pause(400);
+    root = fdoc.querySelector("figure.ig[data-tips]");
+    if (!root) return null;
+    return { ...snapshotParts(root, { scale: 1 / webScale(root.getBoundingClientRect().width) }), tips: tipsOf(root) };
+  } finally {
+    frame.remove();
+  }
+}
+
+/** Where a part is drawn, as numbers and text, for telling whether two parts are the same mark. */
+function placeOf(p) {
+  const at = {
+    path: () => [String(p.d ?? "")],
+    circle: () => [p.cx, p.cy, p.r],
+    ellipse: () => [p.cx, p.cy, p.rx, p.ry],
+    rect: () => [p.x, p.y, p.w, p.h],
+    line: () => [p.x1, p.y1, p.x2, p.y2],
+    poly: () => (Array.isArray(p.pts) ? p.pts : []),
+    text: () => [p.x, p.y, ...(Array.isArray(p.runs) ? p.runs.map((r) => String(r.s)) : [])],
+  }[p.t];
+  return at ? [p.t, ...at(), ...(Array.isArray(p.m) ? p.m : [])] : null;
+}
+
+function samePlace(a, b) {
+  if (!a || !b || a.length !== b.length) return false;
+  return a.every((v, i) => (typeof v === "number" && typeof b[i] === "number" ? Math.abs(v - b[i]) <= 0.5 : v === b[i]));
+}
+
+/**
+ * One stored layout brought up to date from a fresh drawing of the same width: readout keys
+ * on the parts that match, the readouts, and the clear hit areas when the layout still lines up.
+ */
+function addTips(view, fresh) {
+  const parts = structuredClone(view.parts);
+  if (!fresh.tips) return { ...view, parts, tips: {} };
+  const marks = fresh.parts.filter((p) => p.tip && !p.hit);
+  const open = parts.map((p) => (p && !p.tip && !p.hit ? placeOf(p) : null));
+  for (const mark of marks) {
+    const where = placeOf(mark);
+    const i = open.findIndex((o) => o && samePlace(o, where));
+    if (i < 0) continue;
+    parts[i].tip = mark.tip;
+    open[i] = null;
+  }
+  // The hit areas go in only where the layout still lines up with the fresh drawing: most of
+  // what's drawn fresh found where it was.
+  const stored = parts.map((p) => (p && !p.hit ? placeOf(p) : null)).filter(Boolean);
+  const drawn = fresh.parts.filter((p) => !p.hit);
+  const found = drawn.filter((p) => stored.some((o) => samePlace(o, placeOf(p)))).length;
+  if (drawn.length && found >= drawn.length * 0.6 && !parts.some((p) => p?.hit)) {
+    fresh.parts.filter((p) => p.hit).forEach((p, i) => parts.push({ ...p, id: `hit${i + 1}` }));
+  }
+  return { ...view, parts, tips: fresh.tips };
+}
+
+/** Brings every custom graph made before readouts were kept up to date. Returns how many changed. */
+async function upgradeCustoms() {
+  let changedCount = 0;
+  for (const { name, kind } of graphs) {
+    if (kind !== "custom") continue;
+    try {
+      const g = await api("GET", `/api/graph/graphs/${encodeURIComponent(name)}`);
+      const due = ["web", "phone"].filter((v) => g.views?.[v] && Array.isArray(g.views[v].parts) && !("tips" in g.views[v]));
+      if (!g.from || typeof g.from !== "object" || !due.length) continue;
+      const views = { ...g.views };
+      for (const v of due) {
+        const fresh = await freshSnapshot(g.from, LIVE[v].width);
+        // A drawing that didn't come out the size the layout was taken at isn't the same layout;
+        // that one is left as it is, and tried again next time.
+        const size = g.views[v].size;
+        if (!fresh || !Array.isArray(size) || Math.abs(size[0] - fresh.size[0]) > 1 || Math.abs(size[1] - fresh.size[1]) > 1) continue;
+        views[v] = addTips(g.views[v], fresh);
+      }
+      if (due.every((v) => views[v] === g.views[v])) continue;
+      await api("PUT", `/api/graph/graphs/${encodeURIComponent(name)}`, { graph: { ...g, views } });
+      changedCount++;
+    } catch (err) {
+      console.warn(`Couldn't add readouts to "${name}":`, err);
+    }
+  }
+  return changedCount;
+}
+
 (async () => {
   try {
     applySettings(await api("GET", "/api/graph/settings"));
@@ -3948,6 +4095,10 @@ window.addEventListener("hashchange", () => {
     await loadList();
   } catch (err) {
     return status(`Couldn't load the graphs: ${err.message}`, true, true);
+  }
+  // Before any graph is open, so nothing open is saved over the updated files.
+  if (graphs.some((g) => g.kind === "custom") && !document.hidden) {
+    if (await upgradeCustoms()) await loadList().catch(() => {});
   }
   const want = decodeURIComponent(location.hash.slice(1));
   if (want && graphs.some((g) => g.name === want)) await openGraph(want, { force: true });
