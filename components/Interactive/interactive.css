@@ -76,6 +76,9 @@
 
 .ig-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-bottom: 10px; font-size: 13px; }
 .ig-legend-item { display: inline-flex; align-items: center; }
+.ig-legend-side { display: contents; }
+.ig-legend-split { justify-content: space-between; }
+.ig-legend-split .ig-legend-side { display: inline-flex; flex-wrap: wrap; gap: 4px 16px; }
 .ig-key-pip { display: inline-block; width: 7px; height: 7px; margin: 0 7px 0 2px; border-radius: 50%; background: var(--ig-paper); box-shadow: 0 0 0 2.5px var(--ig-muted); }
 
 .ig-bars { display: grid; grid-template-columns: fit-content(45%) 1fr; column-gap: 10px; row-gap: 7px; align-items: center; font-size: 14px; font-variant-numeric: lining-nums tabular-nums; }
@@ -109,6 +112,7 @@
 .ig-tip-row { display: flex; align-items: center; gap: 4px; }
 .ig-tip-name { flex: 1; color: var(--ig-muted); }
 .ig-tip-value { font-weight: 600; margin-left: 10px; white-space: nowrap; }
+.ig-tip-gap { margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--ig-rule); }
 
 /* In the editor, a label that can be moved. */
 .ig-point-label.ig-drag { pointer-events: auto; cursor: grab; touch-action: none; }

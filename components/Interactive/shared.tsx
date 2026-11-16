@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from 'react'
+import { REF_WIDTH } from '@/lib/graph/refs.js'
+import { monoLayout, TICK_PX } from '@/lib/graph/axis.js'
 
 // The models lib/graph builds, as the interactive charts read them.
 
@@ -20,6 +22,9 @@ export type SlicedModel = Head & {
   total: number
 }
 
+/** A line drawn across the plot at a chosen value of x or y, as lib/graph/refs.js builds it. */
+export type Ref = { axis: 'x' | 'y'; value: number | null; category: string | null; text: string | null; label: string; color: string }
+
 export type Series = { name: string; color: string; muted: boolean; values: (number | null)[] }
 export type SeriesModel = Head & {
   kind: 'line' | 'column'
@@ -27,12 +32,20 @@ export type SeriesModel = Head & {
   series: Series[]
   numericX: boolean
   stacked: boolean
+  /** A dashed least-squares line through each series. */
+  trend?: boolean
+  /** On a column chart, one series drawn as a line against its own axis on the right. */
+  overlay?: { name: string; color: string; values: (number | null)[]; fmt: Fmt; max?: number | null } | null
+  /** Lines at chosen values across the plot. */
+  refs?: Ref[]
+  /** The gap between two lines, shaded: the two series' indexes, and what each side is called. */
+  shade?: { a: number; b: number; above: string; below: string } | null
   /** What one dot inside a column stands for, for the key. */
   insideLabel?: string
   /** Text set inside each column: rows of [category, one entry per series]. */
   inside?: (string | number | null)[][]
   fmt: Fmt
-  x: { label: string }
+  x: { label: string; min?: number | null; max?: number | null }
   y: { label: string; min: number | null; max: number | null; zero: boolean | null }
 }
 
@@ -73,6 +86,10 @@ export type ScatterModel = Head & {
   othersLabel: string
   markStyle: 'solid' | 'clear' | 'ring'
   /** Named groups of points, keyed above the plot. */
+  /** How big the dots are in print, in an article and on a phone, as a share of the usual size. */
+  dotSize?: { print: number; web: number; phone: number }
+  /** Lines at chosen values across the plot. */
+  refs?: Ref[]
   groups: { name: string; color: string; shape: string; base: string; dark: string; trend?: { x0: number; y0: number; x1: number; y1: number } | null }[]
   x: ScatterAxis
   y: ScatterAxis
@@ -182,3 +199,74 @@ export function TipRow({ color, name, value, line }: { color?: string; name: str
 
 /** Readouts give the exact figure, written out with commas; only the axes shorten to $1.5M. */
 export const full = (fmt: Fmt): Fmt => ({ ...fmt, compact: false })
+
+/**
+ * Lines at chosen values across a plot from (left, top) to (right, bottom), as print draws
+ * them (lib/graph/refs.js): each named on its axis like the tick labels, in its own color.
+ * `mapX` and `mapY` place a line, or return null when they can't.
+ */
+export function RefLines({ refs, left, right, top, bottom, mapX, mapY, tick, labelX, labelY }: {
+  refs: Ref[] | undefined
+  left: number
+  right: number
+  top: number
+  bottom: number
+  mapX: (r: Ref) => number | null
+  mapY: (r: Ref) => number | null
+  /** The line's value as its axis writes it, for a line with no label. */
+  tick: (r: Ref) => string
+  /** Where the axes' tick labels sit: a y label's right edge, an x label's baseline. */
+  labelX: number
+  labelY: number
+}) {
+  return (
+    <g pointerEvents="none">
+      {(refs ?? []).map((r, i) => {
+        const pos = r.axis === 'x' ? mapX(r) : mapY(r)
+        if (pos === null || !Number.isFinite(pos)) return null
+        if (r.axis === 'x' ? pos < left - 0.5 || pos > right + 0.5 : pos < top - 0.5 || pos > bottom + 0.5) return null
+        return (
+          <g key={i}>
+            {r.axis === 'x' ? (
+              <line x1={f(pos)} x2={f(pos)} y1={f(top)} y2={f(bottom)} stroke={r.color} strokeWidth={REF_WIDTH} />
+            ) : (
+              <line x1={f(left)} x2={f(right)} y1={f(pos)} y2={f(pos)} stroke={r.color} strokeWidth={REF_WIDTH} />
+            )}
+            {r.axis === 'x' ? (
+              <TickText x={pos} y={labelY} text={r.label || tick(r)} anchor="middle" fill={r.color} />
+            ) : (
+              <TickText x={labelX} y={pos} text={r.label || tick(r)} anchor="end" baseline="central" fill={r.color} />
+            )}
+          </g>
+        )
+      })}
+    </g>
+  )
+}
+
+/**
+ * A tick label with its digits evenly spaced, as if the font were tabular (lib/graph/axis.js
+ * monoLayout); anything that isn't a number is set as is.
+ */
+export function TickText({ x, y, text, anchor = 'start', baseline, className = 'ig-tick', fill }: {
+  x: number
+  y: number
+  text: string
+  anchor?: 'start' | 'middle' | 'end'
+  baseline?: 'central'
+  className?: string
+  fill?: string
+}) {
+  const runs = monoLayout(text, TICK_PX, anchor) as [string, number][] | null
+  const style = fill ? { fill } : undefined
+  if (!runs) {
+    return <text className={className} x={f(x)} y={f(y)} textAnchor={anchor} dominantBaseline={baseline} style={style}>{text}</text>
+  }
+  return (
+    <text className={className} x={f(x)} y={f(y)} textAnchor="middle" dominantBaseline={baseline} style={style}>
+      {runs.map(([ch, dx], i) => (
+        <tspan key={i} x={f(x + dx)}>{ch}</tspan>
+      ))}
+    </text>
+  )
+}

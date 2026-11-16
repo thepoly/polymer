@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useMemo, useState } from 'react'
-import { slicePath, textOn, shadeOf } from '@/lib/graph/graph.js'
+import { slicePath, textOn, shadeOf, ringTotal } from '@/lib/graph/graph.js'
 import { fmtNum } from '@/lib/graph/axis.js'
 import { f, type ChartProps, type SlicedModel } from './shared'
 
@@ -90,6 +90,8 @@ export function Sliced({ m, W, k }: ChartProps<SlicedModel>) {
     const inner = ring ? outer * 0.55 : 0
     const labelR = ring ? (outer + inner) / 2 : outer * 0.64
     const picked = hot === null ? null : m.rows[hot]
+    const total = ringTotal(m, picked ? picked.value : m.total, inner) as { text: string; pt: number }
+    const cap = (TOTAL_CAP * total.pt) / 24
     chart = (
       <svg className="ig-chart" viewBox={`0 0 ${f(size)} ${f(size)}`} style={{ width: size * k }} role="img" aria-label={m.title} onPointerLeave={() => setHot(null)}>
         <g stroke="var(--ig-paper)" strokeWidth={2} strokeLinejoin="round">
@@ -113,10 +115,10 @@ export function Sliced({ m, W, k }: ChartProps<SlicedModel>) {
         </g>
         {ring ? (
           <>
-            <text className="ig-total" x={c} y={c + (TOTAL_CAP - LABEL_DROP) / 2} textAnchor="middle">
-              {fmtNum(picked ? picked.value : m.total, m.fmt)}
+            <text className="ig-total" x={c} y={c + (cap - LABEL_DROP) / 2} textAnchor="middle" style={{ fontSize: `${total.pt}pt` }}>
+              {total.text}
             </text>
-            <text className="ig-total-label" x={c} y={c + (TOTAL_CAP + LABEL_DROP) / 2} textAnchor="middle">
+            <text className="ig-total-label" x={c} y={c + (cap + LABEL_DROP) / 2} textAnchor="middle">
               {picked ? `${picked.pct}%` : m.centerLabel}
             </text>
           </>
