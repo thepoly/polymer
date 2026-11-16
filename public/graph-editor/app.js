@@ -56,7 +56,7 @@ function defaultSeriesColors(names) {
 const KNOWN = new Set([
   "kicker", "title", "dek", "kind", "width", "items", "combine", "color", "centerLabel", "valueLabel", "sort",
   "columns", "colors", "rows", "stacked", "points", "x", "y", "prefix", "suffix", "othersLabel", "aspect", "source", "credit",
-  "flows", "nodes", "palette", "colorBy", "align", "order", "labels", "inside", "insideLabel", "groups", "trend", "markStyle", "shade", "refs", "dotSize", "overlay", "sheet", "views", "size", "parts", "swatches", "from",
+  "flows", "nodes", "palette", "colorBy", "align", "order", "labels", "inside", "insideLabel", "groups", "trend", "key", "markStyle", "shade", "refs", "dotSize", "overlay", "sheet", "views", "size", "parts", "swatches", "from",
 ]);
 
 // Scatter groups (lib/graph/palette.js GROUP_SHADES): a group's points take its color, and a
@@ -182,7 +182,7 @@ function blankDoc(kind = "ring") {
       kind, kicker: "", title: "", dek: "", source: "", credit: "", width: "3.5",
       centerLabel: "total", valueLabel: "Reports", sort: true, prefix: "", suffix: "", stacked: false,
       xLabel: "", yLabel: "", yMin: "", yMax: "", xMin: "", xMax: "", yZero: "auto", aspect: "", othersLabel: "",
-      dots: false, insideLabel: "", trend: false, markStyle: "solid",
+      dots: false, insideLabel: "", trend: false, keyAbove: false, markStyle: "solid",
       // Shading between two lines: the two series by name, and what each side is called.
       shadeA: "", shadeB: "", shadeAbove: "", shadeBelow: "",
       // Lines at chosen values, and the scatter's dot sizes (in %) for print, web and phone.
@@ -250,7 +250,7 @@ function fromFile(g, name) {
     kicker: str(g.kicker), title: str(g.title), dek: str(g.dek), source: str(g.source), credit: str(g.credit),
     width: str(g.width ?? 3.5), centerLabel: g.centerLabel ?? "total", valueLabel: g.valueLabel ?? "Reports",
     sort: g.sort !== false, prefix: str(g.prefix), suffix: str(g.suffix), stacked: !!g.stacked,
-    aspect: str(g.aspect), othersLabel: str(g.othersLabel), trend: !!g.trend, markStyle: g.markStyle ?? "solid",
+    aspect: str(g.aspect), othersLabel: str(g.othersLabel), trend: !!g.trend, keyAbove: g.key === "above", markStyle: g.markStyle ?? "solid",
     overlay: str(g.overlay?.series), overlayColor: str(g.overlay?.color), overlayPrefix: str(g.overlay?.prefix), overlayMax: str(g.overlay?.max),
     refs: (Array.isArray(g.refs) ? g.refs : []).map((r) => ({ axis: r?.axis === "x" ? "x" : "y", value: str(r?.value), label: str(r?.label), color: str(r?.color) })),
     dotPrint: g.dotSize?.print ? str(Math.round(g.dotSize.print * 100)) : "",
@@ -384,6 +384,7 @@ function toFile(d) {
       }
     }
     if (m.trend) out.trend = true;
+    if (kind === "line" && m.keyAbove) out.key = "above";
     if (kind === "line" && m.shadeA && m.shadeB && m.shadeA !== m.shadeB) {
       const names = out.columns.slice(1);
       if (names.includes(m.shadeA) && names.includes(m.shadeB)) {
@@ -2575,6 +2576,7 @@ function optionsEditor() {
       kind === "line"
         ? h("label", { class: "field" }, h("span", {}, "Start at zero"), select(m, "yZero", [["auto", "When it fits"], ["yes", "Always"], ["no", "Never"]]))
         : h("div")));
+    if (kind === "line") out.push(checkbox(m, "keyAbove", "Key above", { onchange: rerender }));
     out.push(checkbox(m, "trend", "Trend line", { onchange: rerender }));
     if (m.trend) out.push(h("div", { id: "trend-stats", class: "trend-stats" }, trendStats()));
     if (kind === "line") {

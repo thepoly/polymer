@@ -34,6 +34,8 @@ export type SeriesModel = Head & {
   stacked: boolean
   /** A dashed least-squares line through each series. */
   trend?: boolean
+  /** A line chart's names in a key above the plot, not at the lines' ends. */
+  keyAbove?: boolean
   /** On a column chart, one series drawn as a line against its own axis on the right. */
   overlay?: { name: string; color: string; values: (number | null)[]; fmt: Fmt; max?: number | null } | null
   /** Lines at chosen values across the plot. */
