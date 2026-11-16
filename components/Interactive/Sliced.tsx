@@ -3,11 +3,18 @@
 import { Fragment, useMemo, useState } from 'react'
 import { slicePath, textOn, shadeOf, ringTotal } from '@/lib/graph/graph.js'
 import { fmtNum } from '@/lib/graph/axis.js'
-import { f, type ChartProps, type SlicedModel } from './shared'
+import { f, full, type ChartProps, type SlicedModel, type TipData } from './shared'
 
 const TAU = Math.PI * 2
 const TOTAL_CAP = 24 * (96 / 72) * 0.71
 const LABEL_DROP = 13
+
+/** What a slice or bar holds, for the readout. Rows are counted through every group in turn. */
+export function sliceTip(m: SlicedModel, i: number): TipData {
+  const r = m.rows[i]
+  const rows = [{ name: m.valueLabel || 'Value', value: fmtNum(r.value, full(m.fmt)), color: r.color, key: 'block' as const }]
+  return { head: r.label, rows: m.kind === 'bar' ? rows : [...rows, { name: 'Percent', value: `${r.pct}%` }] }
+}
 
 /** Ring, pie and tilted pie, with the key beside them. Pointing at a slice or its row picks it out. */
 export function Sliced({ m, W, k }: ChartProps<SlicedModel>) {
@@ -24,6 +31,7 @@ export function Sliced({ m, W, k }: ChartProps<SlicedModel>) {
   const mark = (i: number) => ({
     className: 'ig-mark',
     'data-dim': dim(i),
+    'data-tip': `s${i}`,
     onPointerEnter: () => setHot(i),
   })
 
@@ -152,7 +160,7 @@ export function Sliced({ m, W, k }: ChartProps<SlicedModel>) {
               const at = i++
               return (
                 <Fragment key={at}>
-                  <tr data-dim={dim(at)} data-hot={hot === at || undefined} onPointerEnter={() => setHot(at)}>
+                  <tr data-tip={`s${at}`} data-dim={dim(at)} data-hot={hot === at || undefined} onPointerEnter={() => setHot(at)}>
                     <td>
                       <span className="ig-key ig-key-block" style={{ background: r.color }} />
                       {r.label}
@@ -174,6 +182,7 @@ export function Sliced({ m, W, k }: ChartProps<SlicedModel>) {
 export function Bars({ m }: ChartProps<SlicedModel>) {
   const [hot, setHot] = useState<string | null>(null)
   const max = Math.max(...m.rows.map((r) => r.value), 0) || 1
+  let at = 0
   return (
     <div className="ig-bars" onPointerLeave={() => setHot(null)}>
       {m.groups.map((grp, gi) => (
@@ -183,7 +192,7 @@ export function Bars({ m }: ChartProps<SlicedModel>) {
             const id = `${gi}-${ri}`
             const dim = (hot !== null && hot !== id) || undefined
             return (
-              <div key={id} className="ig-bar-row" data-dim={dim} onPointerOver={() => setHot(id)}>
+              <div key={id} className="ig-bar-row" data-tip={`s${at++}`} data-dim={dim} onPointerOver={() => setHot(id)}>
                 <div className="ig-bar-label">{r.label}</div>
                 <div className="ig-bar-track">
                   <span className="ig-bar" style={{ flexBasis: `calc((100% - 56px) * ${(r.value / max).toFixed(4)})`, background: r.color }} />

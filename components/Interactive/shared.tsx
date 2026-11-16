@@ -108,7 +108,7 @@ export type FlowGeometry = {
 }
 
 /** A graph rearranged by hand: its parts for each place it's shown, each in a box `size` units wide and tall. */
-export type CustomView = { size: [number, number]; parts: unknown[] }
+export type CustomView = { size: [number, number]; parts: unknown[]; tips?: Record<string, TipData> }
 export type CustomModel = Head & { kind: 'custom'; views: { print?: CustomView; web?: CustomView; phone?: CustomView } }
 
 export type Model = SlicedModel | SeriesModel | ScatterModel | FlowModel | CustomModel
@@ -133,6 +133,8 @@ export function useWidth<T extends HTMLElement>() {
     if (!el) return
     const ro = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width))
     ro.observe(el)
+    // Measured at once too: a frame the browser isn't drawing hears from the observer late, or never.
+    setWidth(el.clientWidth - (parseFloat(getComputedStyle(el).paddingLeft) || 0) - (parseFloat(getComputedStyle(el).paddingRight) || 0))
     return () => ro.disconnect()
   }, [])
   return [ref, width] as const
@@ -194,6 +196,33 @@ export function TipRow({ color, name, value, line }: { color?: string; name: str
       <span className="ig-tip-name">{name}</span>
       <span className="ig-tip-value">{value}</span>
     </div>
+  )
+}
+
+/**
+ * A readout as data: a heading and its rows. Live charts draw it, and a custom graph keeps
+ * it beside its parts, keyed by the tip each part was made under ("c3", "p12", "s0").
+ * `key` is how a row's color is shown: a block, a line, or the faint block of a shaded gap.
+ */
+export type TipLine = { name: string; value: string; color?: string; key?: 'block' | 'line' | 'shade' }
+export type TipData = { head: string; rows: TipLine[] }
+
+export function TipBody({ data }: { data: TipData }) {
+  return (
+    <>
+      <div className="ig-tip-head">{data.head}</div>
+      {data.rows.map((r, i) =>
+        r.key === 'shade' ? (
+          <div key={i} className="ig-tip-row ig-tip-gap">
+            <span className="ig-key ig-key-block" style={{ background: r.color, opacity: 0.35 }} />
+            <span className="ig-tip-name">{r.name}</span>
+            <span className="ig-tip-value">{r.value}</span>
+          </div>
+        ) : (
+          <TipRow key={i} color={r.color} name={r.name} value={r.value} line={r.key === 'line'} />
+        ),
+      )}
+    </>
   )
 }
 

@@ -68,12 +68,34 @@ export function readGraph(name: string): GraphFile {
   return readJson(file)
 }
 
+// Every save and delete first copies the file as it stood to
+// <GRAPH_DIR>/backups/<name>/<time>.json. The newest KEEP_BACKUPS of each graph are kept.
+const BACKUP_DIR = path.join(GRAPH_DIR, 'backups')
+const KEEP_BACKUPS = 30
+
+function backUp(name: string) {
+  const file = graphPath(name)
+  if (!fs.existsSync(file)) return
+  const dir = path.join(BACKUP_DIR, name)
+  fs.mkdirSync(dir, { recursive: true })
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+  fs.copyFileSync(file, path.join(dir, `${stamp}.json`))
+  const old = fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort()
+  for (const f of old.slice(0, Math.max(0, old.length - KEEP_BACKUPS))) fs.rmSync(path.join(dir, f))
+}
+
 export function writeGraph(name: string, graph: unknown) {
   ensureDir()
-  fs.writeFileSync(graphPath(name), formatJson(graph) + '\n')
+  const text = formatJson(graph) + '\n'
+  const file = graphPath(name)
+  // Unchanged saves make no backup, so the backups stay ones worth having.
+  if (fs.existsSync(file) && fs.readFileSync(file, 'utf8') === text) return
+  backUp(name)
+  fs.writeFileSync(file, text)
 }
 
 export function deleteGraph(name: string) {
+  backUp(name)
   fs.rmSync(graphPath(name))
 }
 
