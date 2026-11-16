@@ -143,10 +143,11 @@ function gapRow(m: SeriesModel, i: number): TipLine | null {
   return { name, value: fmtNum(Math.abs(a - b), full(m.fmt)), color: m.series[up ? sh.a : sh.b].color, key: 'shade' }
 }
 
-/** The key for a shaded gap, above the plot. */
+/** The key above a line chart: each line, when the graph keys them there, then each side of a shaded gap. */
 function GapLegend({ m }: { m: SeriesModel }) {
   const sh = m.shade
-  if (!sh || (!sh.above && !sh.below)) return null
+  const lines = m.keyAbove && m.series.length > 1
+  if (!lines && (!sh || (!sh.above && !sh.below))) return null
   const item = (name: string, color: string) =>
     name ? (
       <span className="ig-legend-item">
@@ -156,8 +157,16 @@ function GapLegend({ m }: { m: SeriesModel }) {
     ) : null
   return (
     <div className="ig-legend">
-      {item(sh.above, m.series[sh.a].color)}
-      {item(sh.below, m.series[sh.b].color)}
+      {lines
+        ? m.series.map((s) => (
+            <span key={s.name} className="ig-legend-item">
+              <span className="ig-key" style={{ background: s.color }} />
+              {s.name}
+            </span>
+          ))
+        : null}
+      {sh ? item(sh.above, m.series[sh.a].color) : null}
+      {sh ? item(sh.below, m.series[sh.b].color) : null}
     </div>
   )
 }
@@ -358,7 +367,7 @@ export function Line({ m, W, k }: ChartProps<SeriesModel>) {
   const top = 8
   const bottom = 16 + (m.x.label ? 16 : 0)
 
-  const named = m.series.length > 1
+  const named = m.series.length > 1 && !m.keyAbove
   const last = m.series.map((s) => s.values.findLastIndex((v) => v !== null))
   const labelled = named ? last.filter((i) => i >= 0).length : 0
   const plotH = Math.max(Math.round(Math.min((W - 40) * 0.6, 250)), labelled * LABEL_GAP + 4)
