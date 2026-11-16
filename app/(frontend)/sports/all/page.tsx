@@ -4,9 +4,10 @@ import config from '@/payload.config';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SportsAllStories, { type SportTab } from '@/components/Sports/SportsAllStories';
-import type { FeaturedFocus } from '@/components/Sports/sportsFormat';
 import { formatArticle } from '@/utils/formatArticle';
 import { SPORTS, type SportValue } from '@/lib/sports';
+import { loadSportsLayout } from '@/lib/sportsPage';
+import { troyMonth } from '@/lib/troyTime';
 import type { Article as ComponentArticle } from '@/components/FrontPage/types';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -83,17 +84,9 @@ export default async function SportsAllStoriesPage({ searchParams }: Args) {
     .map((a) => formatArticle(a))
     .filter((a): a is ComponentArticle => a !== null);
 
-  // Stories editors reframed for the featured row keep that framing here
-  let focus: FeaturedFocus = {};
-  try {
-    const layoutResponse = await payload.find({ collection: 'sports-page-layout', limit: 1, depth: 0, select: { layout: true } });
-    const layout = layoutResponse.docs[0]?.layout as { featuredFocus?: FeaturedFocus } | null | undefined;
-    focus = layout?.featuredFocus ?? {};
-  } catch {
-    // Table may not exist yet; cards use each photo's focal point
-  }
-
-  const currentMonth = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit' }).format(new Date());
+  // Stories editors reframed for the featured row keep that framing here;
+  // the rest use each photo's focal point
+  const { featuredFocus: focus } = await loadSportsLayout(payload);
 
   return (
     <main className="min-h-screen bg-bg-main section-sports transition-colors duration-300">
@@ -104,7 +97,7 @@ export default async function SportsAllStoriesPage({ searchParams }: Args) {
         activeSport={activeSport}
         page={response.page ?? requestedPage}
         totalPages={response.totalPages}
-        currentMonth={currentMonth}
+        currentMonth={troyMonth(new Date())}
         focus={focus}
       />
       <Footer />

@@ -6,38 +6,15 @@ import Link from "next/link";
 import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import type { Article as ComponentArticle } from "@/components/FrontPage/types";
-import { cardPosition, shortDate, sportName, type FeaturedFocus } from "./sportsFormat";
+import SportsHeading from "./SportsHeading";
+import SportsByline from "./SportsByline";
+import { cardPosition, shortDate, sportName } from "./sportsFormat";
+import type { FeaturedFocus } from "@/lib/sportsLayout";
 
 const GAP = 16;
 // Carousel card widths: one and a peek on phones, then 2.25, 3 and 4 across
 const CAROUSEL_WIDTH =
   "w-[78%] sm:w-[calc((100%-16px)/2.25)] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)]";
-
-/** Byline in white for the dark card: staff names linked, joined with "&" */
-function CardByline({ article }: { article: ComponentArticle }) {
-  const authors = article.authorLinks?.length
-    ? article.authorLinks
-    : article.author
-      ? [{ name: article.author, href: null }]
-      : [];
-  return (
-    <>
-      {authors.map((a, i) => (
-        <React.Fragment key={i}>
-          {i > 0 && " & "}
-          {a.href ? (
-            // z-10 lifts the link above the card's stretched title link
-            <TransitionLink href={a.href} className="relative z-10 whitespace-nowrap text-white transition-colors hover:text-accent">
-              {a.name}
-            </TransitionLink>
-          ) : (
-            <span className="whitespace-nowrap text-white">{a.name}</span>
-          )}
-        </React.Fragment>
-      ))}
-    </>
-  );
-}
 
 /**
  * A story as a 4:5 photo card: the headline and byline on a dark shade rising
@@ -100,7 +77,12 @@ export function StoryCard({
           </TransitionLink>
         </h3>
         <div className={`font-meta uppercase leading-[1.5] tracking-[0.06em] text-white/75 ${compact ? "mt-2 text-[10px]" : "mt-3 text-[11px]"}`}>
-          <CardByline article={article} />
+          {/* In white for the dark card */}
+          <SportsByline
+            article={article}
+            linkClassName="whitespace-nowrap text-white transition-colors hover:text-accent"
+            nameClassName="whitespace-nowrap text-white"
+          />
           {date && (
             <>
               <span aria-hidden="true" className="mx-1.5 text-white/40">·</span>
@@ -210,15 +192,7 @@ export default function SportsFeatured({ articles, focus }: { articles: Componen
 
   return (
     <section aria-labelledby="sports-featured-heading" className="mt-6">
-      <div className="mb-4" style={{ borderTop: "2px solid var(--accent-color)", paddingTop: 4 }}>
-        <h2
-          id="sports-featured-heading"
-          className="font-meta uppercase text-accent dark:text-white"
-          style={{ fontSize: 21, letterSpacing: "0.08em", fontWeight: 500, margin: "0 0 2px" }}
-        >
-          More Headlines
-        </h2>
-      </div>
+      <SportsHeading id="sports-featured-heading">More Headlines</SportsHeading>
 
       {/* Clips the row without scrolling it. The padding keeps the cards'
           lift and shadow from being cut off; the negative margins give that

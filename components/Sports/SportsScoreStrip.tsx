@@ -5,6 +5,7 @@ import Image from "next/image";
 import type { GameTeam } from "@/components/FrontPage/types";
 import type { ScheduleGame, SportSchedule } from "@/lib/schedule";
 import { sportLabel } from "@/lib/sports";
+import { useScrollEdges } from "./useScrollEdges";
 
 /* ── Dates ── */
 
@@ -107,15 +108,15 @@ function GameCell({ game, rpiTeam }: { game: ScheduleGame; rpiTeam: GameTeam }) 
 
 /**
  * RPI's last two finals and next game in each standings sport (see
- * lib/schedule.ts for how gaps are filled), one group per sport. The row scrolls sideways (finger or trackpad swipe), with a fade on
- * the cut-off edge and arrows for mouse users, who can't swipe sideways.
+ * lib/schedule.ts for how gaps are filled), one group per sport. The row
+ * scrolls sideways (finger or trackpad swipe), with a fade on the cut-off edge
+ * and arrows for mouse users, who can't swipe sideways.
  */
 export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: SportSchedule[]; rpiTeam: GameTeam }) {
   const listRef = useRef<HTMLDivElement>(null);
-  const [edges, setEdges] = useState({ left: false, right: false });
-  // Visible part of the strip, as fractions of its full width, for the red
-  // progress bar along the bottom rule
-  const [view, setView] = useState({ start: 0, size: 1 });
+  // Cut-off edges for the arrows, and the visible part of the strip (as
+  // fractions of its full width) for the red progress bar on the bottom rule
+  const view = useScrollEdges(listRef);
   // The bar stays hidden until the reader first points at or scrolls the
   // strip, then fills in once and stays
   const [revealed, setRevealed] = useState(false);
@@ -127,26 +128,6 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
     el.addEventListener("scroll", reveal, { passive: true, once: true });
     return () => el.removeEventListener("scroll", reveal);
   }, [revealed]);
-
-  useEffect(() => {
-    const el = listRef.current;
-    if (!el) return;
-    const update = () => {
-      setEdges({
-        left: el.scrollLeft > 2,
-        right: el.scrollLeft + el.clientWidth < el.scrollWidth - 2,
-      });
-      setView({ start: el.scrollLeft / el.scrollWidth, size: el.clientWidth / el.scrollWidth });
-    };
-    // Fires once on observe, then on every resize
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    el.addEventListener("scroll", update, { passive: true });
-    return () => {
-      observer.disconnect();
-      el.removeEventListener("scroll", update);
-    };
-  }, []);
 
   const scrollBy = (direction: 1 | -1) =>
     listRef.current?.scrollBy({ left: direction * listRef.current.clientWidth * 0.8, behavior: "smooth" });
@@ -215,8 +196,8 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
           </div>
         ))}
       </div>
-      {edges.left && arrow("left")}
-      {edges.right && arrow("right")}
+      {view.left && arrow("left")}
+      {view.right && arrow("right")}
       {/* Red progress bar on the bottom rule, filled from the left edge to the
           end of what's in view. Hidden until the first hover or scroll. */}
       {view.size < 1 && revealed && (

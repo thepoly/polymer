@@ -10,7 +10,10 @@ import type { SportSchedule } from "@/lib/schedule";
 import SportsStandings, { type StandingsTeam } from "./SportsStandings";
 import SportsScoreStrip from "./SportsScoreStrip";
 import SportsFeatured from "./SportsFeatured";
-import { FEATURED_COUNT, shortDate, sportName, type FeaturedFocus } from "./sportsFormat";
+import SportsHeading from "./SportsHeading";
+import SportsByline from "./SportsByline";
+import { shortDate, sportName } from "./sportsFormat";
+import { FEATURED_COUNT, HEADLINE_COUNT, autoFill, type FeaturedFocus, type ScoreboardDate } from "@/lib/sportsLayout";
 
 const RPI_FALLBACK: GameTeam = {
   name: "Rensselaer Polytechnic Institute",
@@ -20,12 +23,8 @@ const RPI_FALLBACK: GameTeam = {
 };
 
 const COLUMN_GAP = "clamp(16px, 2vw, 28px)";
-const HEADLINE_COUNT = 3;
 
 /* ── Helpers ── */
-
-/** Day the lead's game was played, typed into the layout editor */
-export type ScoreboardDate = { articleId: number; date: string };
 
 // "2026-10-22" is a calendar day, not an instant, so it's read as UTC to keep
 // it from shifting a day in any time zone
@@ -34,31 +33,11 @@ const gameDayLabel = (date: string) =>
     ? new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric" })
     : null;
 
-/**
- * Author names in red, joined with "&", each linked to its staff profile
- * (write-ins stay plain text)
- */
+/** Author names in red */
 function AuthorNames({ article }: { article: ComponentArticle }) {
-  const authors = article.authorLinks?.length
-    ? article.authorLinks
-    : article.author
-      ? [{ name: article.author, href: null }]
-      : [];
   return (
     <span className="text-accent">
-      {authors.map((a, i) => (
-        <React.Fragment key={i}>
-          {i > 0 && " & "}
-          {a.href ? (
-            // z-10 lifts the link above the card's stretched title link
-            <TransitionLink href={a.href} className="relative z-10 transition-colors hover:text-text-main">
-              {a.name}
-            </TransitionLink>
-          ) : (
-            a.name
-          )}
-        </React.Fragment>
-      ))}
+      <SportsByline article={article} linkClassName="transition-colors hover:text-text-main" />
     </span>
   );
 }
@@ -123,7 +102,8 @@ function ScoreSide({
 }) {
   // When there isn't room, the logo stands in for the name, as on a broadcast
   // score bug. A hidden name is taken out of the flow but stays measurable.
-  // On phones it starts hidden so nothing overlaps before measuring.
+  // Below the sm breakpoint a side never has room, so there the logo always
+  // stands in (max-sm), whatever the measurement says.
   const canHide = Boolean(side.team.logo);
   const hidden = canHide && hideName;
   const hideClass = hidden
@@ -429,14 +409,7 @@ function HeadlineRow({ article }: { article: ComponentArticle }) {
 function SportsHeadlines({ articles }: { articles: ComponentArticle[] }) {
   return (
     <section>
-      <div style={{ borderTop: "2px solid var(--accent-color)", paddingTop: 4, marginBottom: 16 }}>
-        <h2
-          className="font-meta uppercase text-accent dark:text-white"
-          style={{ fontSize: 21, letterSpacing: "0.08em", fontWeight: 500, margin: "0 0 2px" }}
-        >
-          Headlines
-        </h2>
-      </div>
+      <SportsHeading>Headlines</SportsHeading>
       <div className="divide-y divide-rule">
         {/* Every row: photo left, text right */}
         {articles.map((a) => (
@@ -495,9 +468,9 @@ export default function SportsSectionPage({
     if (a) used.add(a.id);
   }
   const take = (): ComponentArticle | null => {
-    const next = articles.find((a) => !used.has(a.id) && a.image) ?? articles.find((a) => !used.has(a.id));
+    const next = autoFill(articles, used, (a) => Boolean(a.image));
     if (next) used.add(next.id);
-    return next ?? null;
+    return next;
   };
 
   const lead = pinnedLead ?? take();

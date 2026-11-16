@@ -25,8 +25,14 @@ import {
   type Phase,
   type StandingsOverride,
 } from '@/lib/standingsSchedule';
-import type { ScoreboardDate } from '@/components/Sports/SportsSectionPage';
-import { FEATURED_COUNT, type FeaturedFocus } from '@/components/Sports/sportsFormat';
+import {
+  FEATURED_COUNT,
+  HEADLINE_COUNT,
+  parseSportsLayout,
+  type FeaturedFocus,
+  type ScoreboardDate,
+  type SportsLayout,
+} from '@/lib/sportsLayout';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -47,25 +53,6 @@ type ArticleData = {
   writeInAuthors?: Array<{ name: string }>;
 };
 
-// Stored shape (see collections/SportsPageLayout.ts)
-type SportsLayout = {
-  lead: number | null;
-  showScoreboard: boolean;
-  /** Day the lead's game was played, shown under the scoreboard */
-  scoreboardDate: ScoreboardDate | null;
-  belowLead: number | null;
-  /** Second wide card, shown only when the scoreboard isn't */
-  belowLead2: number | null;
-  headlines: (number | null)[];
-  featured: (number | null)[];
-  featuredFocus: FeaturedFocus;
-  /** RPI scores banner at the top; off shows the plain "Sports | Contact" header */
-  showScoreStrip: boolean;
-  /** Lead title overlaps its photo on desktop; off puts a plain title below */
-  leadTitleOverlay: boolean;
-  standingsOverrides: StandingsOverride[];
-};
-
 // Editor state keeps every slot group as an array so drag/drop is uniform
 type SlotLayout = {
   lead: (number | null)[];
@@ -83,8 +70,6 @@ const pointerThenCenter: CollisionDetection = (args) => {
   if (pointerCollisions.length > 0) return pointerCollisions;
   return closestCenter(args);
 };
-
-const HEADLINE_COUNT = 3;
 
 const EMPTY_SLOTS: SlotLayout = {
   lead: [null],
@@ -744,22 +729,20 @@ export function SportsLayoutEditor() {
         docIdRef.current = id;
 
         if (layoutData) {
-          const savedLayout = layoutData.layout as Partial<SportsLayout> | undefined;
-          if (savedLayout && typeof savedLayout === 'object') {
-            setSlots({
-              lead: [savedLayout.lead ?? null],
-              belowLead: [savedLayout.belowLead ?? null, savedLayout.belowLead2 ?? null],
-              headlines: padArray(savedLayout.headlines, HEADLINE_COUNT),
-              featured: padArray(savedLayout.featured, FEATURED_COUNT),
-            });
-            setShowScoreboard(savedLayout.showScoreboard ?? true);
-            setScoreboardDate(savedLayout.scoreboardDate ?? null);
-            setFeaturedFocus(savedLayout.featuredFocus ?? {});
-            setShowScoreStrip(savedLayout.showScoreStrip ?? true);
-            setLeadTitleOverlay(savedLayout.leadTitleOverlay ?? true);
-            // Expired overrides are dropped; the next save clears them for good
-            setStandingsOverrides(activeOverrides(savedLayout.standingsOverrides, new Date()));
-          }
+          const savedLayout = parseSportsLayout(layoutData.layout);
+          setSlots({
+            lead: [savedLayout.lead],
+            belowLead: [savedLayout.belowLead, savedLayout.belowLead2],
+            headlines: savedLayout.headlines,
+            featured: savedLayout.featured,
+          });
+          setShowScoreboard(savedLayout.showScoreboard);
+          setScoreboardDate(savedLayout.scoreboardDate);
+          setFeaturedFocus(savedLayout.featuredFocus);
+          setShowScoreStrip(savedLayout.showScoreStrip);
+          setLeadTitleOverlay(savedLayout.leadTitleOverlay);
+          // Expired overrides are dropped; the next save clears them for good
+          setStandingsOverrides(activeOverrides(savedLayout.standingsOverrides, new Date()));
         }
       } catch (err) {
         setError('Failed to load data');
@@ -1125,14 +1108,4 @@ export function SportsLayoutEditor() {
       </div>
     </DndContext>
   );
-}
-
-// ---------------------------------------------------------------------------
-// Utility
-// ---------------------------------------------------------------------------
-
-function padArray(arr: (number | null)[] | undefined, len: number): (number | null)[] {
-  const result = [...(arr || [])];
-  while (result.length < len) result.push(null);
-  return result.slice(0, len);
 }

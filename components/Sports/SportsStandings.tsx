@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import type { SportStandings, StandingsRow } from "@/lib/standings";
 import { MAX_TABS } from "@/lib/standingsSchedule";
+import SportsHeading from "./SportsHeading";
+import { useScrollEdges } from "./useScrollEdges";
 
 export type StandingsTeam = { logo: string | null; url: string | null };
 
@@ -65,25 +67,7 @@ function SportTabs({
   onSelect: (sport: SportStandings["sport"]) => void;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
-  const [edges, setEdges] = useState({ left: false, right: false });
-
-  useEffect(() => {
-    const el = listRef.current;
-    if (!el) return;
-    const update = () =>
-      setEdges({
-        left: el.scrollLeft > 2,
-        right: el.scrollLeft + el.clientWidth < el.scrollWidth - 2,
-      });
-    // Fires once on observe, then on every resize
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    el.addEventListener("scroll", update, { passive: true });
-    return () => {
-      observer.disconnect();
-      el.removeEventListener("scroll", update);
-    };
-  }, []);
+  const edges = useScrollEdges(listRef);
 
   // Keep the selected tab in view without scrolling the page itself
   useEffect(() => {
@@ -187,14 +171,7 @@ export default function SportsStandings({
 
   return (
     <section aria-label="Conference standings">
-      <div style={{ borderTop: "2px solid var(--accent-color)", paddingTop: 4, marginBottom: 10 }}>
-        <h2
-          className="font-meta uppercase text-accent dark:text-white"
-          style={{ fontSize: 21, letterSpacing: "0.08em", fontWeight: 500, margin: "0 0 2px" }}
-        >
-          Standings
-        </h2>
-      </div>
+      <SportsHeading gap={10}>Standings</SportsHeading>
 
       <SportTabs standings={standings} activeSport={current.sport} onSelect={setActive} />
 

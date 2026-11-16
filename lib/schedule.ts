@@ -3,10 +3,11 @@
 // same platform as the conference standings pages). It isn't an official API:
 // if a fetch fails or the feed changes, the last good data keeps showing, and
 // a sport with no usable games is left out of the strip.
+import { fetchSidearm } from './sidearm'
 import type { SportValue } from './sports'
+import { troyDay } from './troyTime'
 
 const SITE = 'https://rpiathletics.com'
-const REFRESH_SECONDS = 60 * 60
 /** Windows always fetched, in months from today: one back, two ahead */
 const BASE_MONTHS = [-1, 0, 1, 2]
 /** Furthest back to look for a sport's last finals (holds spring sports over the summer) */
@@ -16,7 +17,9 @@ const SEASON_GAP_DAYS = 60
 const CELLS = 3
 
 // Sidearm's sport codes (global_sport_shortname) → ours. The conference sites
-// use the same codes in their standings URLs.
+// use mostly the same codes in their standings URLs, but not always (field
+// hockey is "fhockey" here and "fhock" there), so lib/standings.ts keeps its
+// own list.
 const FEED_SPORTS: Record<string, SportValue> = {
   mhockey: 'mens-ice-hockey',
   whockey: 'womens-ice-hockey',
@@ -106,16 +109,6 @@ export type SportSchedule = {
 // Last good response per window, for when a refresh fails
 const lastGood = new Map<string, FeedEvent[]>()
 
-/** Today as YYYY-MM-DD in Troy, the feed's time zone */
-function localDay(now: Date): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/New_York',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now)
-}
-
 /** "2026-10" plus n months */
 function addMonths(day: string, n: number): string {
   const d = new Date(Date.UTC(Number(day.slice(0, 4)), Number(day.slice(5, 7)) - 1 + n, 1))
@@ -155,11 +148,7 @@ function startTime(time: string | null | undefined): string | null {
 async function fetchWindow(month: string): Promise<FeedEvent[]> {
   const url = `${SITE}/services/responsive-calendar.ashx?type=month&sport=0&date=${month.slice(5, 7)}/15/${month.slice(0, 4)}`
   try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'The Polytechnic (poly.rpi.edu) sports desk' },
-      next: { revalidate: REFRESH_SECONDS },
-      signal: AbortSignal.timeout(8000),
-    })
+    const res = await fetchSidearm(url)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const days = (await res.json()) as { events?: FeedEvent[] | null }[]
     if (!Array.isArray(days)) throw new Error('calendar response not recognised')
@@ -245,7 +234,8 @@ function pickGames(games: ScheduleGame[]): ScheduleGame[] {
  */
 export async function getSportsSchedule(sports: SportValue[], now = new Date()): Promise<SportSchedule[]> {
   if (sports.length === 0) return []
-  const today = localDay(now)
+  // Troy is the feed's time zone
+  const today = troyDay(now)
   const wanted = new Set(sports)
   const bySport = new Map<SportValue, Map<number, ScheduleGame>>(sports.map((s) => [s, new Map()]))
 
