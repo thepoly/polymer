@@ -11,7 +11,6 @@ import { formatArticle } from '@/utils/formatArticle'
 import { getSportsSchedule, type SportSchedule } from './schedule'
 import { parseSportsLayout, type SportsLayout } from './sportsLayout'
 import { getSportsStandings } from './standings'
-import { STANDINGS_SPORTS } from './standingsSchedule'
 
 /** Sport + game-result fields sports stories carry (opponent populates at depth 1) */
 export const SPORTS_GAME_SELECT = {
@@ -121,29 +120,24 @@ export async function loadSportsPage(payload: Payload): Promise<SportsPageData> 
   const layout = await loadSportsLayout(payload)
   const pin = await loadPinned(payload, layout)
 
-  // Standings for the sports the calendar (and any editor override) picks.
-  // The score strip follows the standings' sports, but which ones those are
-  // is only known once the tables are in, so the schedule is fetched for
-  // every standings sport alongside them and narrowed afterwards; a slow
-  // feed then costs one wait instead of two in a row. When editors switch
-  // the strip off, RPI Athletics isn't contacted at all, and a failure
-  // falls back to the plain header rather than an error page.
-  const [standings, allSchedules] = await Promise.all([
-    getSportsStandings({ overrides: layout.standingsOverrides }),
+  // Standings for the sports the calendar (and any editor override) picks,
+  // and the score strip: RPI's recent finals and next game in each of those
+  // sports, in the card's order. Which sports those are is only known once
+  // the tables are in, so the schedule starts loading alongside them and is
+  // handed the answer when it arrives; a slow feed then costs one wait
+  // instead of two in a row. When editors switch the strip off, RPI
+  // Athletics isn't contacted at all, and a failure falls back to the plain
+  // header rather than an error page.
+  const standingsLoading = getSportsStandings({ overrides: layout.standingsOverrides })
+  const [standings, schedule] = await Promise.all([
+    standingsLoading,
     layout.showScoreStrip
-      ? getSportsSchedule(STANDINGS_SPORTS.map((s) => s.sport)).catch((err: Error) => {
+      ? getSportsSchedule(standingsLoading.then((tables) => tables.map((t) => t.sport))).catch((err: Error) => {
           console.warn(`[schedule] ${err.message}`)
           return [] as SportSchedule[]
         })
       : Promise.resolve([] as SportSchedule[]),
   ])
-
-  // Score strip: RPI's recent finals and next game in each standings sport,
-  // in the standings card's order
-  const scheduleBySport = new Map(allSchedules.map((s) => [s.sport, s]))
-  const schedule = standings
-    .map((s) => scheduleBySport.get(s.sport))
-    .filter((s): s is SportSchedule => s !== undefined)
 
   const teamNames = [...new Set(standings.flatMap((s) => s.rows.map((r) => r.team)))]
   const opponentNames = [...new Set(schedule.flatMap((s) => s.games.map((g) => g.opponent.name)))]

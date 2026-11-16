@@ -118,8 +118,16 @@ function addMonths(day: string, n: number): string {
 const dayNumber = (date: string) =>
   Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10))) / 86_400_000
 
-const absolute = (url: string | null | undefined) =>
-  url ? (url.startsWith('/') ? `${SITE}${url}` : url) : null
+/** A link from the feed as an absolute http(s) URL; anything else is dropped */
+function absolute(url: string | null | undefined): string | null {
+  if (!url) return null
+  try {
+    const parsed = new URL(url, SITE)
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.href : null
+  } catch {
+    return null
+  }
+}
 
 const parseScore = (s: string | null | undefined) => (s && /^\d+$/.test(s.trim()) ? Number(s) : null)
 
@@ -188,7 +196,7 @@ function toGame(e: FeedEvent, today: string): ScheduleGame | null {
     opponent: {
       name,
       shortName: shortSchoolName(name),
-      logo: image?.filename ? `${SITE}${image.path ?? '/images/logos'}/${encodeURIComponent(image.filename)}` : null,
+      logo: image?.filename ? absolute(`${image.path ?? '/images/logos'}/${encodeURIComponent(image.filename)}`) : null,
       rank: e.opponent.prefix?.trim() || null,
     },
     result,
@@ -231,11 +239,23 @@ function pickGames(games: ScheduleGame[]): ScheduleGame[] {
 /**
  * Each sport's three games for the score strip, in the order given (the
  * standings card's sports). Sports with no games are left out.
+ *
+ * The sports may be a promise. The months every sport needs don't depend on
+ * the answer, so they load while the caller is still working out which sports
+ * to show, and only the look-back for those sports waits for it.
  */
-export async function getSportsSchedule(sports: SportValue[], now = new Date()): Promise<SportSchedule[]> {
-  if (sports.length === 0) return []
+export async function getSportsSchedule(
+  sportsWanted: SportValue[] | Promise<SportValue[]>,
+  now = new Date(),
+): Promise<SportSchedule[]> {
+  if (Array.isArray(sportsWanted) && sportsWanted.length === 0) return []
   // Troy is the feed's time zone
   const today = troyDay(now)
+  const [sports, baseWindows] = await Promise.all([
+    sportsWanted,
+    Promise.all(BASE_MONTHS.map((n) => fetchWindow(addMonths(today, n)))),
+  ])
+  if (sports.length === 0) return []
   const wanted = new Set(sports)
   const bySport = new Map<SportValue, Map<number, ScheduleGame>>(sports.map((s) => [s, new Map()]))
 
@@ -248,7 +268,7 @@ export async function getSportsSchedule(sports: SportValue[], now = new Date()):
     }
   }
 
-  ;(await Promise.all(BASE_MONTHS.map((n) => fetchWindow(addMonths(today, n))))).forEach(add)
+  baseWindows.forEach(add)
 
   // Look further back when a sport is short of finals and no season break
   // shows before its earliest game yet; a sport with no games at all needs

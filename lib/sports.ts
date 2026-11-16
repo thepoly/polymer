@@ -33,3 +33,10 @@ export type SportValue = (typeof SPORTS)[number]['value']
 
 export const sportLabel = (value: string | null | undefined): string | null =>
   SPORTS.find((s) => s.value === value)?.label ?? null
+
+/**
+ * The sport as a story's label ("Men's Hockey"). "General" stories aren't about
+ * one team, so they have none.
+ */
+export const sportKicker = (value: string | null | undefined): string | null =>
+  value === 'general' ? null : sportLabel(value)

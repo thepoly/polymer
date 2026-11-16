@@ -1,5 +1,5 @@
 import type { Article as ComponentArticle } from "@/components/FrontPage/types";
-import { sportLabel } from "@/lib/sports";
+import { sportKicker, sportLabel } from "@/lib/sports";
 import type { FeaturedFocus } from "@/lib/sportsLayout";
 import { TROY_TIME_ZONE } from "@/lib/troyTime";
 
@@ -15,8 +15,13 @@ export const shortDate = (article: ComponentArticle, withYear = false) => {
   });
 };
 
-/** The story's sport ("Men's Hockey"); kicker for stories not labelled yet */
-export const sportName = (article: ComponentArticle) => sportLabel(article.sport) ?? article.kicker;
+/**
+ * The story's label on the sports pages: its sport ("Men's Hockey"), else its
+ * kicker. The "General" option's own name, which used to be filled in as the
+ * kicker, isn't a label.
+ */
+export const sportName = (article: ComponentArticle) =>
+  sportKicker(article.sport) ?? (article.kicker === sportLabel("general") ? null : article.kicker);
 
 /** Where a card's photo is framed: the editor's choice, else its focal point */
 export const cardPosition = (article: ComponentArticle, focus: FeaturedFocus) => {

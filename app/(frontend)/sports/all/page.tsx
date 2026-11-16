@@ -11,8 +11,7 @@ import { troyMonth } from '@/lib/troyTime';
 import type { Article as ComponentArticle } from '@/components/FrontPage/types';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-
-export const revalidate = 60;
+import { unstable_cache } from 'next/cache';
 
 const PER_PAGE = 24;
 // Far past any real archive; bigger numbers would overflow the query offset
@@ -28,6 +27,41 @@ type Args = { searchParams: Promise<{ sport?: string; page?: string }> };
 
 const isSport = (value: string | undefined): value is SportValue => SPORTS.some((s) => s.value === value);
 
+// Tabs: each sport with stories, most stories first. This page renders on
+// every request (it reads the query string), and the count has to look at
+// every labelled sports story, so it is shared between requests for a minute.
+const getSportTabs = unstable_cache(
+  async (): Promise<SportTab[]> => {
+    const payload = await getPayload({ config });
+    const response = await payload.find({
+      collection: 'articles',
+      where: {
+        and: [
+          { section: { equals: 'sports' } },
+          { _status: { equals: 'published' } },
+          { sport: { exists: true } },
+        ],
+      },
+      pagination: false,
+      depth: 0,
+      select: { sport: true },
+    });
+    const counts = new Map<SportValue, number>();
+    for (const doc of response.docs) {
+      const sport = doc.sport as SportValue | null | undefined;
+      if (sport) counts.set(sport, (counts.get(sport) ?? 0) + 1);
+    }
+    return (
+      [...counts.entries()]
+        .map(([sport, count]) => ({ sport, count }))
+        // Ties keep the sports list's order
+        .sort((a, b) => b.count - a.count || SPORTS.findIndex((s) => s.value === a.sport) - SPORTS.findIndex((s) => s.value === b.sport))
+    );
+  },
+  ['sports-all-tabs'],
+  { revalidate: 60 },
+);
+
 export default async function SportsAllStoriesPage({ searchParams }: Args) {
   const params = await searchParams;
   const activeSport = isSport(params.sport) ? params.sport : null;
@@ -38,24 +72,7 @@ export default async function SportsAllStoriesPage({ searchParams }: Args) {
   const payload = await getPayload({ config });
 
   const published: Where[] = [{ section: { equals: 'sports' } }, { _status: { equals: 'published' } }];
-
-  // Tabs: each sport with stories, most stories first (just the sport column)
-  const sportsResponse = await payload.find({
-    collection: 'articles',
-    where: { and: published },
-    pagination: false,
-    depth: 0,
-    select: { sport: true },
-  });
-  const counts = new Map<SportValue, number>();
-  for (const doc of sportsResponse.docs) {
-    const sport = doc.sport as SportValue | null | undefined;
-    if (sport) counts.set(sport, (counts.get(sport) ?? 0) + 1);
-  }
-  const tabs: SportTab[] = [...counts.entries()]
-    .map(([sport, count]) => ({ sport, count }))
-    // Ties keep the sports list's order
-    .sort((a, b) => b.count - a.count || SPORTS.findIndex((s) => s.value === a.sport) - SPORTS.findIndex((s) => s.value === b.sport));
+  const tabs = await getSportTabs();
 
   const response = await payload.find({
     collection: 'articles',

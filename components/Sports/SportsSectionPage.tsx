@@ -13,7 +13,14 @@ import SportsFeatured from "./SportsFeatured";
 import SportsHeading from "./SportsHeading";
 import SportsByline from "./SportsByline";
 import { shortDate, sportName } from "./sportsFormat";
-import { FEATURED_COUNT, HEADLINE_COUNT, autoFill, type FeaturedFocus, type ScoreboardDate } from "@/lib/sportsLayout";
+import {
+  FEATURED_COUNT,
+  HEADLINE_COUNT,
+  autoFill,
+  hasFinalScore,
+  type FeaturedFocus,
+  type ScoreboardDate,
+} from "@/lib/sportsLayout";
 
 const RPI_FALLBACK: GameTeam = {
   name: "Rensselaer Polytechnic Institute",
@@ -254,13 +261,14 @@ function ScoreboardBar({
 
 function SportsLeadStory({
   article,
-  showScoreboard,
+  game,
   gameDate,
   titleOverlay,
   rpiTeam,
 }: {
   article: ComponentArticle;
-  showScoreboard: boolean;
+  /** The game for the scoreboard; null leaves the scoreboard out */
+  game: GameResult | null;
   /** Day the game was played, for the scoreboard; else the publish date */
   gameDate: string | null;
   /** Desktop: title box overlapping the photo's foot, else a plain title below it */
@@ -278,9 +286,9 @@ function SportsLeadStory({
     // (or, with the overlay off, a plain title under it). Phones reorder to
     // scoreboard, title, photo either way.
     <article className="group flex flex-col">
-      {showScoreboard && article.game && (
+      {game && (
         <div className="order-1 pt-4 lg:pt-0">
-          <ScoreboardBar game={article.game} rpiTeam={rpiTeam} sport={sport} date={scoreboardDate} />
+          <ScoreboardBar game={game} rpiTeam={rpiTeam} sport={sport} date={scoreboardDate} />
         </div>
       )}
 
@@ -478,10 +486,12 @@ export default function SportsSectionPage({
     (a): a is ComponentArticle => a !== null,
   );
   const belowLead = pinnedBelowLead ?? take();
+  // The scoreboard needs a finished game: an opponent and both scores. A
+  // preview story has no result yet, so it gets no scoreboard.
+  const scoreboardGame = showScoreboard && lead?.game && hasFinalScore(lead.game) ? lead.game : null;
   // Without the scoreboard the left column is shorter, so a second wide card
   // (mirrored: text left, photo right) fills the space
-  const scoreboardShown = showScoreboard && Boolean(lead?.game);
-  const belowLead2 = scoreboardShown ? null : (pinnedBelowLead2 ?? take());
+  const belowLead2 = scoreboardGame ? null : (pinnedBelowLead2 ?? take());
   // Featured row: pinned cards keep their places, the rest fill from what's left
   const featured = Array.from({ length: FEATURED_COUNT }, (_, i) => pinnedFeatured[i] ?? take()).filter(
     (a): a is ComponentArticle => a !== null,
@@ -532,7 +542,7 @@ export default function SportsSectionPage({
           {lead && (
             <SportsLeadStory
               article={lead}
-              showScoreboard={showScoreboard}
+              game={scoreboardGame}
               // Only for the article it was entered for, never one that auto-filled the slot
               gameDate={scoreboardDate && String(scoreboardDate.articleId) === String(lead.id) ? scoreboardDate.date : null}
               titleOverlay={leadTitleOverlay}

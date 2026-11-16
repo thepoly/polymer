@@ -206,7 +206,7 @@ export default function SportsStandings({
                   <TeamCell row={row} team={teams[row.team]} />
                 </td>
                 <td className="py-2 text-right">{row.conf}</td>
-                {current.hasPoints && <td className="py-2 text-right">{row.pts}</td>}
+                {current.hasPoints && <td className="py-2 text-right">{row.pts ?? "–"}</td>}
                 <td className="py-2 pr-1 text-right text-text-muted">{row.overall}</td>
               </tr>
             ))}

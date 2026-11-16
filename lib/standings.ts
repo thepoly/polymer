@@ -127,11 +127,12 @@ function parseStandings(html: string, conference: Conference) {
     const overall = values[overallCol]
     if (!team || !RECORD.test(conf ?? '') || !RECORD.test(overall ?? '')) return null
     const group = groups[groups.length - 1]
+    const pts = ptsCol >= 0 && values[ptsCol]?.trim() ? Number(values[ptsCol]) : NaN
     const row: StandingsRow = {
       rank: group.rows.length + 1,
       team,
       conf,
-      pts: ptsCol >= 0 && values[ptsCol] !== undefined ? Number(values[ptsCol]) : null,
+      pts: Number.isFinite(pts) ? pts : null,
       overall,
       isRpi: team === 'RPI',
     }
