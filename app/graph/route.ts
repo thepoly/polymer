@@ -34,6 +34,7 @@ const PAGE = `<!doctype html>
 <div class="layout">
   <nav class="sidebar" aria-label="Graphs">
     <button id="new" class="btn wide">New graph</button>
+    <button id="paste-graph" class="btn wide">Paste graph</button>
     <input id="filter" class="filter" type="search" placeholder="Find a graph" aria-label="Find a graph">
     <ul id="graph-list" class="graph-list"></ul>
   </nav>

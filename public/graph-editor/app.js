@@ -56,7 +56,7 @@ function defaultSeriesColors(names) {
 const KNOWN = new Set([
   "kicker", "title", "dek", "kind", "width", "items", "combine", "color", "centerLabel", "valueLabel", "sort",
   "columns", "colors", "rows", "stacked", "points", "x", "y", "prefix", "suffix", "othersLabel", "aspect", "source", "credit",
-  "flows", "nodes", "palette", "colorBy", "align", "order", "labels", "inside", "insideLabel", "groups", "trend", "markStyle", "sheet", "views", "size", "parts", "swatches", "from",
+  "flows", "nodes", "palette", "colorBy", "align", "order", "labels", "inside", "insideLabel", "groups", "trend", "markStyle", "shade", "refs", "dotSize", "overlay", "sheet", "views", "size", "parts", "swatches", "from",
 ]);
 
 // Scatter groups (lib/graph/palette.js GROUP_SHADES): a group's points take its color, and a
@@ -181,8 +181,14 @@ function blankDoc(kind = "ring") {
     meta: {
       kind, kicker: "", title: "", dek: "", source: "", credit: "", width: "3.5",
       centerLabel: "total", valueLabel: "Reports", sort: true, prefix: "", suffix: "", stacked: false,
-      xLabel: "", yLabel: "", yMin: "", yMax: "", yZero: "auto", aspect: "", othersLabel: "",
+      xLabel: "", yLabel: "", yMin: "", yMax: "", xMin: "", xMax: "", yZero: "auto", aspect: "", othersLabel: "",
       dots: false, insideLabel: "", trend: false, markStyle: "solid",
+      // Shading between two lines: the two series by name, and what each side is called.
+      shadeA: "", shadeB: "", shadeAbove: "", shadeBelow: "",
+      // Lines at chosen values, and the scatter's dot sizes (in %) for print, web and phone.
+      refs: [], dotPrint: "", dotWeb: "", dotPhone: "",
+      // A column chart's line on a right-hand axis: which series, its color, and its numbers' prefix.
+      overlay: "", overlayColor: "", overlayPrefix: "", overlayMax: "",
       ...FLOW_DEFAULTS,
     },
     groups: [{ name: "", color: "red", ref: null, rows: emptyRows(4, 2) }],
@@ -243,6 +249,12 @@ function fromFile(g, name) {
     width: str(g.width ?? 3.5), centerLabel: g.centerLabel ?? "total", valueLabel: g.valueLabel ?? "Reports",
     sort: g.sort !== false, prefix: str(g.prefix), suffix: str(g.suffix), stacked: !!g.stacked,
     aspect: str(g.aspect), othersLabel: str(g.othersLabel), trend: !!g.trend, markStyle: g.markStyle ?? "solid",
+    overlay: str(g.overlay?.series), overlayColor: str(g.overlay?.color), overlayPrefix: str(g.overlay?.prefix), overlayMax: str(g.overlay?.max),
+    refs: (Array.isArray(g.refs) ? g.refs : []).map((r) => ({ axis: r?.axis === "x" ? "x" : "y", value: str(r?.value), label: str(r?.label), color: str(r?.color) })),
+    dotPrint: g.dotSize?.print ? str(Math.round(g.dotSize.print * 100)) : "",
+    dotWeb: g.dotSize?.web ? str(Math.round(g.dotSize.web * 100)) : "",
+    dotPhone: g.dotSize?.phone ? str(Math.round(g.dotSize.phone * 100)) : "",
+    shadeA: str(g.shade?.between?.[0]), shadeB: str(g.shade?.between?.[1]), shadeAbove: str(g.shade?.above), shadeBelow: str(g.shade?.below),
   });
   if (g.items || g.combine) {
     d.groups = g.combine
@@ -269,7 +281,7 @@ function fromFile(g, name) {
   if (TABLE_KINDS.includes(g.kind)) {
     Object.assign(d.meta, {
       xLabel: joinLines(g.x?.label), yLabel: joinLines(g.y?.label),
-      yMin: str(g.y?.min), yMax: str(g.y?.max),
+      yMin: str(g.y?.min), yMax: str(g.y?.max), xMin: str(g.x?.min), xMax: str(g.x?.max),
       yZero: g.y?.zero === true ? "yes" : g.y?.zero === false ? "no" : "auto",
     });
   }
@@ -286,7 +298,8 @@ function fromFile(g, name) {
     d.scatter = {
       x: axisFrom(g.x),
       y: axisFrom(g.y),
-      groups: (g.groups ?? []).map((grp) => ({ name: str(grp.name), color: grp.color ?? "purple", shape: grp.shape ?? "circle" })),
+      // Each group has its own trend line switch; an older file's graph-wide "trend" turns them all on.
+      groups: (g.groups ?? []).map((grp) => ({ name: str(grp.name), color: grp.color ?? "purple", shape: grp.shape ?? "circle", trend: typeof grp.trend === "boolean" ? grp.trend : !!g.trend })),
       points: g.points.map((p) => ({
         label: str(p.label), name: str(p.name), group: str(p.group), x: str(p.x), y: str(p.y), highlight: !!p.highlight,
         labelAt: p.labelAt ?? "right", note: joinLines(p.note), _raw: p,
@@ -351,19 +364,41 @@ function toFile(d) {
       out.rows.push(row);
     });
     out.x = { ...(d.raw.x ?? {}), label: splitLines(m.xLabel) };
+    const [xlo, xhi] = [parseNum(m.xMin), parseNum(m.xMax)];
+    if (kind === "line" && xlo !== null) out.x.min = xlo; else delete out.x.min;
+    if (kind === "line" && xhi !== null) out.x.max = xhi; else delete out.x.max;
     out.y = { ...(d.raw.y ?? {}), label: splitLines(m.yLabel) };
     const [lo, hi] = [parseNum(m.yMin), parseNum(m.yMax)];
     if (lo !== null) out.y.min = lo; else delete out.y.min;
     if (hi !== null) out.y.max = hi; else delete out.y.max;
     if (kind === "line" && m.yZero !== "auto") out.y.zero = m.yZero === "yes"; else delete out.y.zero;
     if (kind === "column" && m.stacked) out.stacked = true;
+    if (kind === "column" && m.overlay) {
+      if (out.columns.slice(1).includes(m.overlay)) {
+        const max = parseNum(m.overlayMax);
+        out.overlay = { series: m.overlay, ...(m.overlayColor ? { color: m.overlayColor } : {}), ...(m.overlayPrefix ? { prefix: m.overlayPrefix } : {}), ...(max !== null ? { max } : {}) };
+      } else {
+        warnings.push(`The line on the right is “${m.overlay}”, which isn't one of the series any more. Pick it again under Options.`);
+      }
+    }
+    if (m.trend) out.trend = true;
+    if (kind === "line" && m.shadeA && m.shadeB && m.shadeA !== m.shadeB) {
+      const names = out.columns.slice(1);
+      if (names.includes(m.shadeA) && names.includes(m.shadeB)) {
+        out.shade = { between: [m.shadeA, m.shadeB] };
+        if (m.shadeAbove.trim()) out.shade.above = m.shadeAbove.trim();
+        if (m.shadeBelow.trim()) out.shade.below = m.shadeBelow.trim();
+      } else {
+        warnings.push("The shading is between two lines that aren't in the table any more. Pick them again under Options.");
+      }
+    }
     if (kind === "column" && m.dots) {
       out.inside = out.rows.map((r) => [r[0], ...out.columns.slice(1).map((_, i) => str(t.inside[r[0]]?.[i]).trim())]);
       if (m.insideLabel.trim()) out.insideLabel = m.insideLabel.trim();
     }
   }
 
-  if (kind === "bar" || kind === "flow" || TABLE_KINDS.includes(kind)) {
+  if (ITEM_KINDS.includes(kind) || kind === "flow" || TABLE_KINDS.includes(kind)) {
     if (m.prefix) out.prefix = m.prefix;
     if (m.suffix) out.suffix = m.suffix;
   }
@@ -402,12 +437,11 @@ function toFile(d) {
     const s = d.scatter;
     const axisOut = (a) => {
       const o = { ...(a.raw ?? {}), label: splitLines(a.label), short: a.short, unit: a.unit };
+      // Either end can be set on its own; the other follows the data.
       const [lo, hi] = [parseNum(a.min), parseNum(a.max)];
-      if (lo !== null && hi !== null) o.domain = [lo, hi];
-      else {
-        delete o.domain;
-        if (lo !== null || hi !== null) warnings.push("Set both the low and high end of an axis range, or neither.");
-      }
+      if (lo !== null || hi !== null) o.domain = [lo, hi];
+      else delete o.domain;
+      if (lo !== null && hi !== null && lo >= hi) warnings.push("An axis's low end has to be below its high end.");
       if (a.scale === "linear") o.scale = "linear";
       else delete o.scale;
       if (a.year) o.year = true;
@@ -419,9 +453,8 @@ function toFile(d) {
     const asp = parseNum(m.aspect);
     if (asp) out.aspect = asp;
     if (m.othersLabel) out.othersLabel = m.othersLabel;
-    if (m.trend) out.trend = true;
     if (m.markStyle && m.markStyle !== "solid") out.markStyle = m.markStyle;
-    const groups = s.groups.filter((g) => !blank(g.name)).map((g) => ({ name: g.name.trim(), color: g.color, ...(g.shape && g.shape !== "circle" ? { shape: g.shape } : {}) }));
+    const groups = s.groups.filter((g) => !blank(g.name)).map((g) => ({ name: g.name.trim(), color: g.color, ...(g.shape && g.shape !== "circle" ? { shape: g.shape } : {}), ...(g.trend ? { trend: true } : {}) }));
     if (groups.length) out.groups = groups;
     const groupNames = new Set(groups.map((g) => g.name));
     out.points = [];
@@ -457,6 +490,30 @@ function toFile(d) {
     // Its width is its own; the default isn't 3.5in as for the other kinds.
     if (w) out.width = w;
     return { graph: out, warnings };
+  }
+
+  if (TABLE_KINDS.includes(kind) || kind === "scatter") {
+    const refs = [];
+    for (const r of m.refs) {
+      if (blank(r.value)) continue;
+      const v = r.value.trim();
+      // A number stays a number; a date or a category name stays as written.
+      const value = parseNum(v) !== null && !isDate(v) ? parseNum(v) : v;
+      if (r.axis === "y" && typeof value !== "number") {
+        warnings.push(`The y line at “${v}” needs a number, so it's left out.`);
+        continue;
+      }
+      refs.push({ axis: r.axis, value, ...(r.label.trim() ? { label: r.label.trim() } : {}), ...(r.color ? { color: r.color } : {}) });
+    }
+    if (refs.length) out.refs = refs;
+  }
+  if (kind === "scatter") {
+    const size = {};
+    for (const [k, key] of [["print", "dotPrint"], ["web", "dotWeb"], ["phone", "dotPhone"]]) {
+      const v = parseNum(m[key]);
+      if (v !== null && v > 0 && v !== 100) size[k] = Math.round(v) / 100;
+    }
+    if (Object.keys(size).length) out.dotSize = size;
   }
 
   out.source = m.source;
@@ -1591,6 +1648,89 @@ async function deleteGraph() {
 
 // ── Changes ───────────────────────────────────────────────
 
+/** Least squares through points [x, y]: slope, intercept and R², or null under two points. */
+function regression(pts) {
+  const n = pts.length;
+  if (n < 2) return null;
+  const mx = pts.reduce((a, [x]) => a + x, 0) / n, my = pts.reduce((a, [, y]) => a + y, 0) / n;
+  const sxx = pts.reduce((a, [x]) => a + (x - mx) ** 2, 0);
+  const syy = pts.reduce((a, [, y]) => a + (y - my) ** 2, 0);
+  if (!sxx) return null;
+  const sxy = pts.reduce((a, [x, y]) => a + (x - mx) * (y - my), 0);
+  const slope = sxy / sxx;
+  return { slope, intercept: my - slope * mx, r2: syy ? (sxy * sxy) / (sxx * syy) : 1, n };
+}
+
+/** A coefficient to six decimal places, however large: 2,073.881201. */
+const fmtReg = (v) => v.toLocaleString("en-US", { minimumFractionDigits: 6, maximumFractionDigits: 6 });
+
+/**
+ * Each series' trend line as an equation, with its R². x is the category when every
+ * category is a number (a year), and otherwise the row's place, 1 to n. A stacked column
+ * chart has one, through the totals.
+ */
+function trendStats() {
+  if (doc.meta.kind === "scatter") return scatterTrendStats();
+  const t = doc.table, m = doc.meta;
+  const rows = t.rows.filter((r) => !blank(r[0]));
+  const numeric = rows.length && rows.every((r) => isNumCell(r[0]));
+  const xOf = (r, i) => (numeric ? parseNum(r[0]) : i + 1);
+  const series = t.columns.slice(1).map((name, j) => ({ name: name.trim() || `Series ${j + 1}`, pts: rows.map((r, i) => [xOf(r, i), parseNum(r[j + 1])]).filter(([, y]) => y !== null) }));
+  const lines = m.kind === "column" && m.stacked && series.length > 1
+    ? [{ name: "Total", pts: rows.map((r, i) => [xOf(r, i), series.reduce((a, _, j) => a + Math.max(0, parseNum(r[j + 1]) ?? 0), 0)]) }]
+    : series;
+  return lines.map(({ name, pts }) => {
+    const r = regression(pts);
+    if (!r) return h("div", {}, `${name}: needs two values`);
+    const sign = r.intercept < 0 ? "−" : "+";
+    return h("div", { class: "trend-row" },
+      lines.length > 1 && h("span", { class: "trend-name" }, name),
+      h("span", { class: "trend-eq" }, `y = ${fmtReg(r.slope)}x ${sign} ${fmtReg(Math.abs(r.intercept))}`),
+      h("span", { class: "trend-r2" }, `R² = ${r.r2.toFixed(6)}`),
+    );
+  });
+}
+
+function updateTrendStats() {
+  const box = $("#trend-stats");
+  if (box && doc && (TABLE_KINDS.includes(doc.meta.kind) || doc.meta.kind === "scatter")) box.replaceChildren(...trendStats());
+}
+
+/** A date cell as a year with its fraction (Aug. 1, 2023 → 2023.583), as lib/graph/axis.js dateValue places it. */
+function dateYears(s) {
+  const m = /^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$/.exec(String(s ?? "").trim());
+  if (!m) return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3] ?? 1)];
+  return y + (mo - 1 + (d - 1) / new Date(Date.UTC(y, mo, 0)).getUTCDate()) / 12;
+}
+
+/**
+ * A scatter's trend lines as equations, one per group, fitted the way they're drawn: on a
+ * log axis through the logs (base 10), and with dates as years and their fractions.
+ */
+function scatterTrendStats() {
+  const s = doc.scatter;
+  const value = (v, axis) => {
+    const n = axis.year && isDate(v) ? dateYears(v) : parseNum(v);
+    if (n === null) return null;
+    if (axis.scale === "log") return n > 0 ? Math.log10(n) : null;
+    return n;
+  };
+  const xl = s.x.scale === "log" ? "log₁₀ x" : "x", yl = s.y.scale === "log" ? "log₁₀ y" : "y";
+  const groups = s.groups.filter((g) => !blank(g.name) && g.trend);
+  return groups.map((g) => {
+    const pts = s.points.filter((p) => p.group.trim() === g.name.trim()).map((p) => [value(p.x, s.x), value(p.y, s.y)]).filter(([x, y]) => x !== null && y !== null);
+    const r = regression(pts);
+    if (!r) return h("div", { class: "trend-row" }, h("span", { class: "trend-name" }, g.name), "needs two points");
+    const sign = r.intercept < 0 ? "−" : "+";
+    return h("div", { class: "trend-row" },
+      h("span", { class: "trend-name" }, g.name),
+      h("span", { class: "trend-eq" }, `${yl} = ${fmtReg(r.slope)}${xl === "x" ? "x" : ` · ${xl}`} ${sign} ${fmtReg(Math.abs(r.intercept))}`),
+      h("span", { class: "trend-r2" }, `R² = ${r.r2.toFixed(6)}`),
+    );
+  });
+}
+
 function changed() {
   // A pending copy shows the graph as it was; once the graph changes it's out of date.
   if (canvas.pending && doc?.meta.kind !== "custom") {
@@ -1600,6 +1740,7 @@ function changed() {
   // Anything but a custom graph shows its real previews again (and the bar's buttons follow).
   if (doc?.meta.kind !== "custom") renderCanvases();
   updateDirty();
+  updateTrendStats();
   updateComputed();
   updateWarnings();
   updateFlowTools();
@@ -1707,6 +1848,37 @@ function renderEditor() {
   updateWarnings();
 }
 
+/**
+ * A column or line table → scatter points. When every category is a number (years), it's
+ * the x and each series' values are y, one group per series. Otherwise the category names
+ * each point, and the first two series are x and y (or, with one series, x counts the rows).
+ */
+function tableToScatter() {
+  const t = doc.table, s = doc.scatter;
+  const rows = t.rows.filter((r) => !r.every(blank));
+  const series = t.columns.slice(1).map((c, j) => ({ name: c.trim() || `Series ${j + 1}`, color: t.colors[j], j: j + 1 }));
+  const numeric = rows.length > 0 && rows.every((r) => isNumCell(r[0]));
+  const axis = (label, short) => ({ ...emptyAxis(), label, short, scale: "linear" });
+  if (numeric) {
+    const many = series.length > 1;
+    s.points = series.flatMap((se) => rows.filter((r) => !blank(r[se.j])).map((r) => ({
+      ...emptyPoint(), name: many ? `${se.name}, ${str(r[0]).trim()}` : str(r[0]).trim(), group: se.name, x: str(r[0]).trim(), y: str(r[se.j]),
+    })));
+    // Every series is a group, so its dots take its color (one series too, rather than gray).
+    s.groups = series.map((se, i) => ({ name: se.name, color: SCATTER_GROUP_COLORS.includes(se.color) ? se.color : SCATTER_GROUP_COLORS[i % SCATTER_GROUP_COLORS.length], shape: "circle" }));
+    s.x = { ...axis(t.columns[0].trim(), t.columns[0].trim()), year: rows.every((r) => /^\d{4}$/.test(str(r[0]).trim())) };
+    s.y = axis(many ? "" : series[0]?.name ?? "", many ? "Value" : series[0]?.name ?? "");
+  } else {
+    const [a, b] = series;
+    s.points = rows.map((r, i) => ({ ...emptyPoint(), label: str(r[0]).trim(), x: b ? str(r[a.j]) : String(i + 1), y: b ? str(r[b.j]) : str(r[a?.j ?? 1]) }));
+    s.groups = [];
+    s.x = axis(b ? a.name : "", b ? a.name : "");
+    s.y = axis(b ? b.name : a?.name ?? "", b ? b.name : a?.name ?? "");
+  }
+  // The table's $ or % goes on the values' axis.
+  if (doc.meta.prefix || doc.meta.suffix) s.y.raw = { ...(s.y.raw ?? {}), ...(doc.meta.prefix ? { prefix: doc.meta.prefix } : {}) };
+}
+
 function switchKind(kind) {
   const from = doc.meta.kind;
   if (from === kind) return;
@@ -1724,7 +1896,9 @@ function switchKind(kind) {
   }
   const itemsBlank = doc.groups.every((g) => !g.ref && g.rows.every((r) => r.every(blank)));
   const tableBlank = doc.table.rows.every((r) => r.every(blank));
-  const pointsBlank = doc.scatter.points.every((p) => blank(p.label) && blank(p.x) && blank(p.y));
+  // Points that can't be drawn (no x and y number), such as a conversion that went wrong,
+  // count as nothing, so switching to Scatter again can carry the data over afresh.
+  const pointsBlank = !doc.scatter.points.some((p) => parseNum(p.x) !== null && parseNum(p.y) !== null);
 
   // Carry the data across when the new type's own data is still empty.
   if (ITEM_KINDS.includes(kind) && itemsBlank) {
@@ -1741,7 +1915,7 @@ function switchKind(kind) {
     }
   }
   if (kind === "scatter" && pointsBlank) {
-    if (TABLE_KINDS.includes(from) && !tableBlank) doc.scatter.points = doc.table.rows.map((r) => ({ ...emptyPoint(), label: r[0], x: r[1] ?? "", y: r[2] ?? "" }));
+    if (TABLE_KINDS.includes(from) && !tableBlank) tableToScatter();
     if (ITEM_KINDS.includes(from) && !itemsBlank) doc.scatter.points = doc.groups.flatMap((g) => g.rows).map(([label, x]) => ({ ...emptyPoint(), label, x }));
   }
   // Rows of a ring or bar become one split: the title (or "Total") into each row. Groups
@@ -1779,12 +1953,64 @@ const move = (arr, i, d) => {
   [arr[i], arr[j]] = [arr[j], arr[i]];
 };
 
-const rowOps = (arr, i, makeRow) =>
-  h("td", { class: "ops" },
+// A row being dragged by its grip: the list it belongs to and where it started.
+let rowDrag = null;
+
+/** Lets a grid row be dragged by its grip to another place in the same list. */
+function dragRows(td, arr, i) {
+  queueMicrotask(() => {
+    const tr = td.parentElement;
+    if (!tr) return;
+    const edge = (e) => (e.clientY - tr.getBoundingClientRect().top < tr.offsetHeight / 2 ? "above" : "below");
+    tr.addEventListener("dragover", (e) => {
+      if (rowDrag?.arr !== arr) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      tr.dataset.drop = edge(e);
+    });
+    tr.addEventListener("dragleave", () => delete tr.dataset.drop);
+    tr.addEventListener("drop", (e) => {
+      if (rowDrag?.arr !== arr) return;
+      e.preventDefault();
+      delete tr.dataset.drop;
+      const from = rowDrag.from;
+      let to = edge(e) === "above" ? i : i + 1;
+      if (from < to) to--;
+      rowDrag = null;
+      if (to === from) return;
+      const [row] = arr.splice(from, 1);
+      arr.splice(to, 0, row);
+      rerender();
+      changed();
+    });
+  });
+  return h("span", {
+    class: "grip", draggable: "true", title: "Drag to move", "aria-label": "Drag to move row",
+    ondragstart: (e) => {
+      rowDrag = { arr, from: i };
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", String(i));
+      const tr = td.parentElement;
+      if (tr) e.dataTransfer.setDragImage(tr, 12, tr.offsetHeight / 2);
+      tr?.classList.add("dragging-row");
+    },
+    ondragend: () => {
+      rowDrag = null;
+      document.querySelectorAll(".dragging-row, [data-drop]").forEach((el) => { el.classList.remove("dragging-row"); delete el.dataset.drop; });
+    },
+  }, "⠿");
+}
+
+const rowOps = (arr, i, makeRow) => {
+  const td = h("td", { class: "ops" });
+  td.append(
+    dragRows(td, arr, i),
     h("button", { title: "Move up", "aria-label": "Move row up", onclick: () => { move(arr, i, -1); rerender(); changed(); } }, "↑"),
     h("button", { title: "Move down", "aria-label": "Move row down", onclick: () => { move(arr, i, 1); rerender(); changed(); } }, "↓"),
     h("button", { class: "del", title: "Delete row", "aria-label": "Delete row", onclick: () => { arr.splice(i, 1); if (!arr.length) arr.push(makeRow()); rerender(); changed(); } }, "×"),
   );
+  return td;
+};
 
 /** Enter moves down a column, adding a row at the bottom; Shift+Enter moves up. */
 function gridKeys(e, prefix, ri, ci, grid, makeRow, sync) {
@@ -2041,6 +2267,21 @@ function foldOther(gi) {
   changed();
 }
 
+/**
+ * Puts the table's rows in order by their first column: by number when every one is a
+ * number (years), and otherwise A to Z; or the reverse. Empty rows go to the bottom.
+ */
+function sortTableRows(descending = false) {
+  const t = doc.table;
+  const filled = t.rows.filter((r) => !r.every(blank)), empty = t.rows.filter((r) => r.every(blank));
+  const numeric = filled.every((r) => isNumCell(r[0]));
+  const dir = descending ? -1 : 1;
+  filled.sort((a, b) => dir * (numeric ? parseNum(a[0]) - parseNum(b[0]) : str(a[0]).localeCompare(str(b[0]), "en", { numeric: true })));
+  t.rows = [...filled, ...empty];
+  rerender();
+  changed();
+}
+
 /** Every series gets a color: no two share one, except gray, which lines share as context. */
 function fixSeriesColors() {
   const t = doc.table;
@@ -2121,6 +2362,8 @@ function tableEditor() {
     ),
     h("div", { class: "grid-actions" },
       h("button", { class: "link", onclick: () => { t.rows.push(makeRow()); rerender(); changed(); focusLast("t", t.rows.length - 1); } }, "+ Add row"),
+      h("button", { class: "link", onclick: () => sortTableRows(false) }, `Sort by ${t.columns[0]?.trim() || "category"} ↑`),
+      h("button", { class: "link", onclick: () => sortTableRows(true) }, "↓"),
       t.columns.length - 1 < maxSeries()
         ? h("button", { class: "link", onclick: addSeries }, "+ Add series")
         : h("span", { class: "hint" }, doc.meta.kind === "line" ? `Up to ${MAX_LINES} lines.` : `Up to ${SERIES_COLORS.length} series. A line chart holds ${MAX_LINES}.`),
@@ -2189,6 +2432,7 @@ function groupsEditor() {
           onchange: () => { members = null; rerender(); } }),
         select(g, "color", SCATTER_GROUP_COLORS.map((c) => [c, colorName(c)]), { onchange: rerender }),
         select(g, "shape", SCATTER_SHAPES.map((c) => [c, colorName(c)]), { onchange: rerender }),
+        checkbox(g, "trend", "Trend line", { onchange: rerender }),
         h("button", { class: "link", title: "Remove group", "aria-label": `Remove group ${g.name}`, onclick: () => { s.groups.splice(gi, 1); rerender(); changed(); } }, "×"),
       );
     }),
@@ -2257,6 +2501,28 @@ function pointsEditor() {
 
 // ── Options ───────────────────────────────────────────────
 
+/** Lines at chosen values: each one's axis, value, label and color. */
+function refsEditor() {
+  const m = doc.meta;
+  const colorOptions = [["", "Ink"], ["gray", "Gray"], ...GROUP_COLORS.map((c) => [c, c[0].toUpperCase() + c.slice(1)])];
+  const xDates = m.kind === "scatter" && doc.scatter.x.year;
+  return h("div", { class: "refs" },
+    h("span", { class: "field-label" }, "Lines"),
+    m.refs.map((r, i) =>
+      h("div", { class: "ref-row" },
+        select(r, "axis", [["y", "Y ="], ["x", "X ="]]),
+        h("input", { type: "text", value: r.value, placeholder: r.axis === "y" ? "50000" : xDates ? "2020-03-15" : m.kind === "scatter" ? "2020" : "2020", "aria-label": "Value", dataset: { cell: `ref:${i}:v` },
+          oninput: (e) => { r.value = e.target.value; changed(); } }),
+        h("input", { type: "text", value: r.label, placeholder: "Label", "aria-label": "Label", dataset: { cell: `ref:${i}:l` },
+          oninput: (e) => { r.label = e.target.value; changed(); } }),
+        select(r, "color", colorOptions),
+        h("button", { class: "link", title: "Remove line", "aria-label": "Remove line", onclick: () => { m.refs.splice(i, 1); rerender(); changed(); } }, "×"),
+      )
+    ),
+    h("button", { class: "link", onclick: () => { m.refs.push({ axis: "y", value: "", label: "", color: "" }); rerender(); changed(); } }, "+ Add line"),
+  );
+}
+
 function optionsEditor() {
   const m = doc.meta, kind = m.kind;
   const widthField = field(m, "width", "Width (inches)", { type: "number", hint: "The printed width. 3.5 is about two columns.", list: "widths" });
@@ -2270,7 +2536,7 @@ function optionsEditor() {
   }
   if (ITEM_KINDS.includes(kind)) out.push(checkbox(m, "sort", "Sort largest first"));
 
-  if (kind === "bar" || kind === "flow" || TABLE_KINDS.includes(kind)) {
+  if (ITEM_KINDS.includes(kind) || kind === "flow" || TABLE_KINDS.includes(kind)) {
     out.push(h("div", { class: "row2" },
       field(m, "prefix", "Before numbers", { placeholder: "$" }),
       field(m, "suffix", "After numbers", { placeholder: "%" })));
@@ -2294,13 +2560,41 @@ function optionsEditor() {
     out.push(h("div", { class: "row2" },
       field(m, "yLabel", "Y-axis title", { placeholder: "Referrals" }),
       field(m, "xLabel", "X-axis title", { placeholder: "Optional" })));
+    // A line chart of numbers (years) can also start and end where it's told across.
+    if (kind === "line" && doc.table.rows.filter((r) => !blank(r[0])).every((r) => isNumCell(r[0]))) {
+      out.push(h("div", { class: "row3" },
+        field(m, "xMin", "X from", { placeholder: "auto" }),
+        field(m, "xMax", "X to", { placeholder: "auto" }),
+        h("div")));
+    }
     out.push(h("div", { class: "row3" },
       field(m, "yMin", "Y from", { placeholder: kind === "column" ? "0" : "auto" }),
       field(m, "yMax", "Y to", { placeholder: "auto" }),
       kind === "line"
         ? h("label", { class: "field" }, h("span", {}, "Start at zero"), select(m, "yZero", [["auto", "When it fits"], ["yes", "Always"], ["no", "Never"]]))
         : h("div")));
+    out.push(checkbox(m, "trend", "Trend line", { onchange: rerender }));
+    if (m.trend) out.push(h("div", { id: "trend-stats", class: "trend-stats" }, trendStats()));
+    if (kind === "line") {
+      const lines = doc.table.columns.slice(1).map((c) => c.trim()).filter(Boolean);
+      const pick = (key, label) => h("label", { class: "field" }, h("span", {}, label),
+        select(m, key, [["", "—"], ...lines.map((c) => [c, c]), ...(m[key] && !lines.includes(m[key]) ? [[m[key], `${m[key]} (missing)`]] : [])], { onchange: rerender }));
+      out.push(h("div", { class: "row2" }, pick("shadeA", "Shade from"), pick("shadeB", "Down to")));
+      if (m.shadeA && m.shadeB) {
+        out.push(h("div", { class: "row2" },
+          field(m, "shadeAbove", "Name when above", { placeholder: "Surplus" }),
+          field(m, "shadeBelow", "Name when below", { placeholder: "Deficit" })));
+      }
+    }
     if (kind === "column") {
+      const names = doc.table.columns.slice(1).map((c) => c.trim()).filter(Boolean);
+      out.push(h("div", { class: "row3" },
+        h("label", { class: "field" }, h("span", {}, "Line on right axis"),
+          select(m, "overlay", [["", "None"], ...names.map((c) => [c, c]), ...(m.overlay && !names.includes(m.overlay) ? [[m.overlay, `${m.overlay} (missing)`]] : [])], { onchange: rerender })),
+        m.overlay ? h("label", { class: "field" }, h("span", {}, "Line color"),
+          select(m, "overlayColor", [["", "Ink"], ["gray", "Gray"], ...GROUP_COLORS.map((c) => [c, c[0].toUpperCase() + c.slice(1)])])) : h("div"),
+        m.overlay ? field(m, "overlayPrefix", "Right axis before numbers", { placeholder: "$" }) : h("div")));
+      if (m.overlay) out.push(h("div", { class: "row3" }, field(m, "overlayMax", "Right axis to", { placeholder: "auto" }), h("div"), h("div")));
       out.push(checkbox(m, "stacked", "Stack the series"));
       out.push(checkbox(m, "dots", "Dots in each column", { onchange: rerender }));
       if (m.dots) out.push(h("div", { class: "row2" }, field(m, "insideLabel", "Dot key", { placeholder: "Year in office" }), h("div")));
@@ -2328,8 +2622,14 @@ function optionsEditor() {
       field(m, "othersLabel", "Key name for unlabeled points", { placeholder: "Others" })));
     out.push(h("label", { class: "field" }, h("span", {}, "Dots"),
       select(m, "markStyle", [["solid", "Solid"], ["clear", "See-through"], ["ring", "Rings"]])));
-    out.push(checkbox(m, "trend", "Trend line for each group"));
+    out.push(h("div", { class: "row3" },
+      field(m, "dotPrint", "Dot size, print (%)", { type: "number", placeholder: "100" }),
+      field(m, "dotWeb", "Dot size, web (%)", { type: "number", placeholder: "100" }),
+      field(m, "dotPhone", "Dot size, phone (%)", { type: "number", placeholder: "100" })));
+    if (s.groups.some((g) => g.trend && !blank(g.name))) out.push(h("div", { class: "field" }, h("span", {}, "Trend lines"), h("div", { id: "trend-stats", class: "trend-stats" }, trendStats())));
   }
+  if (TABLE_KINDS.includes(kind) || kind === "scatter") out.push(refsEditor());
+
   return out;
 }
 
@@ -2351,11 +2651,131 @@ function fileEditor() {
         nameInput,
         h("span", { class: "hint", id: "file-hint" }),
       ),
+      h("button", { class: "btn small", onclick: copyGraph }, "Copy as text"),
       doc.loadedName && h("button", { class: "btn small", onclick: () => openGraph(doc.loadedName) }, "Revert"),
       doc.loadedName && h("button", { class: "btn small danger", onclick: deleteGraph }, "Delete"),
     ),
   ];
 }
+
+// ── Copy and paste between editors ────────────────────────
+//
+// A whole graph as one line of text, to carry from one copy of the editor to another (from
+// a laptop's localhost to the live site, say) through the clipboard. It holds the graph file
+// as saved, its name, and the brand colors it uses that aren't built in, so the other side
+// can add any it lacks. The JSON is base64-encoded so nothing on the way can curl its quotes.
+
+const CLIP_PREFIX = "polygraph1:";
+const BUILT_IN_COLORS = new Set(["red", "purple", "orange", "lavender", "gray", "ink", ""]);
+
+const toBase64 = (s) => {
+  const bytes = new TextEncoder().encode(s);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+};
+const fromBase64 = (s) => new TextDecoder().decode(Uint8Array.from(atob(s), (c) => c.charCodeAt(0)));
+
+/** Every brand color a graph file names, wherever it names one. */
+function colorsIn(g) {
+  const names = new Set();
+  const add = (c) => { if (typeof c === "string") names.add(c); };
+  add(g.color);
+  (g.colors ?? []).forEach(add);
+  (g.combine ?? []).forEach((c) => add(c?.color));
+  (g.groups ?? []).forEach((c) => add(c?.color));
+  (g.refs ?? []).forEach((r) => add(r?.color));
+  add(g.overlay?.color);
+  (g.flows ?? []).forEach((r) => add(Array.isArray(r) ? r[3] : null));
+  (g.nodes ?? []).forEach((n) => add(n?.color));
+  if (g.from) colorsIn(g.from).forEach((c) => names.add(c));
+  return [...names].filter((c) => !BUILT_IN_COLORS.has(c));
+}
+
+async function copyGraph() {
+  if (!doc) return;
+  const { graph } = toFile(doc);
+  const colors = colorsIn(graph).map((name) => BRAND.find((c) => c.name === name)).filter(Boolean).map((c) => ({ name: c.name, base: c.base }));
+  const text = CLIP_PREFIX + toBase64(JSON.stringify({ name: doc.name || slugify(doc.meta.title), graph, colors }));
+  try {
+    await navigator.clipboard.writeText(text);
+    status(`Copied “${doc.meta.title || doc.name || "this graph"}”. Paste it into the other editor with Paste graph.`);
+  } catch {
+    // No clipboard access: show the text, selected, to copy by hand.
+    textDialog("Copy this text", text, null);
+  }
+}
+
+/** A small window with a text box: to show text to copy, or (with `onUse`) to take pasted text. */
+function textDialog(title, text, onUse) {
+  const box = h("textarea", { class: "clip-text", "aria-label": title, spellcheck: "false", readonly: onUse ? null : true }, text);
+  const dlg = h("dialog", { class: "clip-dialog" },
+    h("h2", {}, title),
+    box,
+    h("div", { class: "grid-actions" },
+      onUse && h("button", { class: "btn primary small", onclick: () => { const v = box.value; dlg.close(); onUse(v); } }, "Open graph"),
+      h("button", { class: "btn small", onclick: () => dlg.close() }, onUse ? "Cancel" : "Done"),
+    ),
+  );
+  dlg.addEventListener("close", () => dlg.remove());
+  document.body.append(dlg);
+  dlg.showModal();
+  box.focus();
+  if (!onUse) box.select();
+}
+
+async function pasteGraph() {
+  if (!confirmDiscard()) return;
+  let text = "";
+  try {
+    text = await navigator.clipboard.readText();
+  } catch {
+    // Reading the clipboard wasn't allowed; it can still be pasted into a box.
+  }
+  if (text.trim().startsWith(CLIP_PREFIX)) return openPasted(text);
+  textDialog("Paste a graph", "", openPasted);
+}
+
+/** Opens copied graph text as a new, unsaved graph, first offering to add any colors this site lacks. */
+async function openPasted(text) {
+  let data;
+  try {
+    const t = String(text).trim();
+    data = t.startsWith(CLIP_PREFIX) ? JSON.parse(fromBase64(t.slice(CLIP_PREFIX.length))) : { graph: JSON.parse(t) };
+  } catch {
+    return status("That isn't a copied graph. Use Copy as text in the other editor, then paste it here.", true);
+  }
+  const graph = data?.graph;
+  if (!graph || typeof graph !== "object" || Array.isArray(graph)) return status("That isn't a copied graph.", true);
+
+  // Colors the graph uses that this site's settings don't have yet.
+  const have = new Set(BRAND.map((c) => c.name));
+  const missing = (Array.isArray(data.colors) ? data.colors : []).filter((c) => c && !have.has(c.name) && /^#[0-9a-f]{6}$/i.test(c.base));
+  const unknown = colorsIn(graph).filter((n) => !have.has(n) && !missing.some((c) => c.name === n));
+  if (missing.length && confirm(`This graph uses colors this site doesn't have yet: ${missing.map((c) => `${c.name} (${c.base})`).join(", ")}. Add them to the graph settings?`)) {
+    try {
+      const current = await api("GET", "/api/graph/settings");
+      const colors = [...(current.settings?.colors ?? []), ...missing.map((c) => ({ name: c.name, base: c.base.toUpperCase() }))];
+      applySettings(await api("PUT", "/api/graph/settings", { settings: { colors } }));
+    } catch (err) {
+      status(`Couldn't add the colors: ${err.message}`, true);
+    }
+  }
+  if (unknown.length) status(`It names colors this site doesn't have: ${unknown.join(", ")}. Add them in Settings.`, true);
+
+  const name = validCopyName(data.name);
+  doc = fromFile(graph, name);
+  doc.loadedName = null;
+  sheet = freshSheet();
+  canvas = freshCanvas();
+  saved = "";
+  history.replaceState(null, "", "#");
+  renderAll();
+  const taken = graphs.some((g) => g.name === name);
+  status(`Opened “${graph.title || name || "the graph"}”. Save to keep it${taken ? `; a graph called “${name}” already exists here, so saving asks before replacing it` : ""}.`);
+}
+
+const validCopyName = (n) => (typeof n === "string" && /^[a-z0-9][a-z0-9-]{0,79}$/.test(n) ? n : "");
 
 function renderFileName() {
   const input = $("#file-name");
@@ -3484,6 +3904,7 @@ function updateFlowTools() {
 // ── Start ─────────────────────────────────────────────────
 
 $("#new").addEventListener("click", newGraph);
+$("#paste-graph").addEventListener("click", pasteGraph);
 $("#save").addEventListener("click", () => save());
 $("#export-pdf").addEventListener("click", exportPdf);
 $("#export-png").addEventListener("click", exportPng);
