@@ -18,8 +18,8 @@ const isAdminOrEIC: Access = ({ req: { user } }) => {
 
 /**
  * Short Student Senate / Executive Board updates that aren't full articles.
- * They appear only on the timeline pages (/news/senate,
- * /news/executive-board) and as bullet points in the Student Government box
+ * They appear only on the timeline pages (/news/student-government/senate,
+ * /news/student-government/e-board) and as bullet points in the Student Government box
  * on /news, mixed in date order with articles carrying the matching kicker.
  */
 const StudentGovUpdates: CollectionConfig = {

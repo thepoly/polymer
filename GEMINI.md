@@ -51,7 +51,8 @@ Collections:
 - `articles`: drafts/publish enabled (`versions.drafts: true`); `publishedDate` set on first publish; `lastModifiedBy` stamped on every change; `opinionType` derived from kicker
 - `live-articles`: live-blog entries with append-only updates
 - `layout`: homepage curation (lead, slots, top-4, layout template, sections, volume/issue) — drafts enabled
-- `opinion-page-layout`, `features-page-layout`, `sports-page-layout`, `staff-page-layout`: per-section page composition
+- `opinion-page-layout`, `features-page-layout`, `sports-page-layout`, `news-page-layout`, `staff-page-layout`: per-section page composition
+- `student-gov-updates`, `student-gov-terms`: Student Senate / Executive Board timeline updates and terms (GM Week to GM Week); see `docs/news-section.md`
 - `users`: staff/auth/roles + slug, headshot, retired flag
 - `media`: uploaded assets (alt, title, caption, source URL, photographer)
 - `job-titles`: staff position metadata

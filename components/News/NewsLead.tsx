@@ -4,7 +4,44 @@ import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import type { Article as ComponentArticle } from "@/components/FrontPage/types";
 import { Byline } from "@/components/FrontPage/Byline";
-import type { LeadTextPosition } from "./newsLayout";
+import { newsBylineDate, type LeadTextPosition } from "./newsLayout";
+import type { FrameStyle } from "./timelinePage";
+
+/** How the lead photo is framed on computers and tablets (≥768px) and on phones */
+export type LeadFrames = { desktop: FrameStyle; mobile: FrameStyle };
+
+/** CSS variables the lead photo reads its framing from */
+const frameVars = (frames: LeadFrames) =>
+  ({
+    "--pos-d": frames.desktop.position,
+    "--zoom-d": frames.desktop.zoom,
+    "--pos-m": frames.mobile.position,
+    "--zoom-m": frames.mobile.zoom,
+  }) as React.CSSProperties;
+
+// Phones use the -m framing, wider screens the -d one; zoom scales toward the kept point
+const FRAME_CLASS =
+  "object-cover [object-position:var(--pos-m)] [transform-origin:var(--pos-m)] [transform:scale(var(--zoom-m))] md:[object-position:var(--pos-d)] md:[transform-origin:var(--pos-d)] md:[transform:scale(var(--zoom-d))]";
+
+/**
+ * Height limits for the photo while BalanceColumns squares off the page
+ * (width ÷ height, widest then tallest): stacked and overlay photos run from
+ * 16:9 to 4:3, a photo beside the text from 16:9 to square (it still follows
+ * longer text up to 4:5, but balancing alone stops at square so the text
+ * beside it isn't left with a blank under it).
+ */
+const FLEX_STACKED = "1.7778,1.3333";
+const FLEX_BESIDE = "1.7778,1";
+
+/**
+ * A zoomed photo is drawn larger than its box, so it needs a sharper copy:
+ * scales the widths in a `sizes` list, leaving the "(max-width: …)" parts
+ */
+const zoomedSizes = (sizes: string, frames: LeadFrames) => {
+  const zoom = Math.max(frames.desktop.zoom, frames.mobile.zoom);
+  if (zoom <= 1) return sizes;
+  return sizes.replace(/(?<!: )\b(\d+)(vw|px)/g, (_, n, unit) => `${Math.round(Number(n) * zoom)}${unit}`);
+};
 
 /** "Name/The Polytechnic" for staff photographers; write-in credits as typed */
 function photoCredit(article: ComponentArticle): string | null {
@@ -15,19 +52,99 @@ function photoCredit(article: ComponentArticle): string | null {
 }
 
 /**
+ * "Overlay": the text sits on the bottom of the photo, white over a dark
+ * gradient, on tablet and desktop. Phones put it under the photo in the
+ * usual colours, since a headline over a small photo would cover it.
+ */
+function OverlayLead({ article, image, frames }: { article: ComponentArticle; image: string; frames: LeadFrames }) {
+  const credit = photoCredit(article);
+  return (
+    <TransitionLink href={getArticleUrl(article)} className="group block">
+      <article className="@container">
+        <div className="relative">
+          {/* 3:2, until BalanceColumns sets another height on desktop (cqw = 1% of the lead's width) */}
+          <div
+            data-balance-flex={FLEX_STACKED}
+            suppressHydrationWarning
+            className="relative -mx-4 aspect-[3/2] overflow-hidden sm:mx-0 lg:aspect-auto lg:h-[var(--balance-h,66.667cqw)]"
+          >
+            <Image
+              src={article.imageFull || image}
+              alt={article.imageTitle || ""}
+              fill
+              priority
+              className={FRAME_CLASS}
+              style={frameVars(frames)}
+              sizes={zoomedSizes("(max-width: 1024px) 100vw, 840px", frames)}
+            />
+            {/* Dark from the bottom up to just past the text, clear above */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 hidden bg-[linear-gradient(to_top,rgba(0,0,0,0.88)_0%,rgba(0,0,0,0.62)_32%,rgba(0,0,0,0.18)_58%,rgba(0,0,0,0)_72%)] md:block"
+            />
+            {/* Hover: the whole photo darkens a little */}
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 bg-black opacity-0 transition-opacity duration-300 group-hover:opacity-[0.18]"
+            />
+          </div>
+          <div className="mt-4 md:absolute md:inset-x-0 md:bottom-0 md:mt-0 md:px-8 md:pb-7 md:text-white">
+            {article.kicker && (
+              <span className="mb-2 block font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] md:text-white md:dark:text-white">
+                {article.kicker}
+              </span>
+            )}
+            <h2
+              className="max-w-[24ch] font-copy font-medium text-text-main transition-colors group-hover:text-accent md:text-white md:group-hover:text-white"
+              style={{ fontSize: "clamp(30px, 5cqw, 44px)", lineHeight: 1.06 }}
+            >
+              {article.richTitle || article.title}
+            </h2>
+            <Byline
+              author={article.author}
+              date={newsBylineDate(article)}
+              variant="features"
+              className="mt-3 text-[13px] md:[&_span]:text-white"
+            />
+            {article.excerpt && (
+              <p className="mt-3 max-w-[60ch] font-meta text-[17px] font-medium leading-[1.5] text-text-main md:text-white/90">
+                {article.excerpt}
+              </p>
+            )}
+          </div>
+        </div>
+        {credit && <p className="mt-1.5 font-meta text-[12px] italic text-text-muted">{credit}</p>}
+      </article>
+    </TransitionLink>
+  );
+}
+
+/**
  * Lead story at the top left of /news, two thirds of the page wide.
  *
  * `position` puts the text (kicker, headline, byline, subdeck) north, south,
- * east or west of the photo on tablet and desktop. Phones always stack the
- * text under the photo, since a side-by-side layout doesn't fit.
+ * east or west of the photo, or over it, on tablet and desktop. Phones always
+ * stack the text under the photo, since a side-by-side layout doesn't fit.
+ *
+ * `frames` is how the photo is cropped (the point kept in view and the zoom),
+ * set in the News Layout editor or taken from the photo's focal point. It
+ * matters because the photo's shape isn't fixed: on desktop BalanceColumns
+ * may make it shorter or taller to square the page off.
  */
 export default function NewsLead({
   article,
-  position,
+  position: chosen,
+  frames,
 }: {
   article: ComponentArticle;
   position: LeadTextPosition;
+  frames: LeadFrames;
 }) {
+  // Overlay needs a photo to sit on; without one the text goes under it
+  if (chosen === "overlay" && article.image) {
+    return <OverlayLead article={article} image={article.image} frames={frames} />;
+  }
+  const position = chosen === "overlay" ? "south" : chosen;
   const sideBySide = position === "east" || position === "west";
   const credit = photoCredit(article);
 
@@ -42,8 +159,10 @@ export default function NewsLead({
         className="font-copy font-medium text-text-main transition-colors group-hover:text-accent"
         style={{
           // Scales with the lead's own width (cqw), not the window's, so
-          // tablets, where the lead runs full width, get a full-size headline
-          fontSize: "clamp(30px, 5.4cqw, 46px)",
+          // tablets, where the lead runs full width, get a full-size headline.
+          // BalanceColumns may set it larger (--balance-scale, at half rate)
+          // when the lead's column has to run deeper.
+          fontSize: "calc(clamp(30px, 5.4cqw, 46px) * (1 + (var(--balance-scale, 1) - 1) * 0.5))",
           lineHeight: 1.06,
         }}
       >
@@ -51,14 +170,14 @@ export default function NewsLead({
       </h2>
       <Byline
         author={article.author}
-        date={article.date}
+        date={newsBylineDate(article)}
         variant="features"
         className="mt-3 text-[13px]"
       />
       {article.excerpt && (
         <p
           className="mt-3 font-meta font-medium leading-[1.5] text-text-main"
-          style={{ fontSize: sideBySide ? 18 : 17 }}
+          style={{ fontSize: `calc(${sideBySide ? 18 : 17}px * (1 + (var(--balance-scale, 1) - 1) * 0.5))` }}
         >
           {article.excerpt}
         </p>
@@ -71,14 +190,18 @@ export default function NewsLead({
       className={sideBySide ? "@container m-0 flex flex-col md:h-full" : "m-0"}
     >
       <div
+        data-balance-flex={sideBySide ? FLEX_BESIDE : FLEX_STACKED}
+        suppressHydrationWarning
         className={
           sideBySide
             ? // Side by side, the photo stretches to the height of the text so
               // neither column leaves a gap. It never gets shorter than a 3:2
-              // landscape frame or taller than 4:5 portrait (cqw = 1% of the
-              // photo column's width). Phones keep a plain 3:2 frame.
-              "relative -mx-4 aspect-[3/2] overflow-hidden sm:mx-0 md:aspect-auto md:min-h-[66.667cqw] md:max-h-[125cqw] md:flex-1"
-            : "relative -mx-4 aspect-[3/2] overflow-hidden sm:mx-0"
+              // landscape frame (or the height BalanceColumns asks for) or
+              // taller than 4:5 portrait (cqw = 1% of the photo column's
+              // width). Phones keep a plain 3:2 frame.
+              "relative -mx-4 aspect-[3/2] overflow-hidden sm:mx-0 md:aspect-auto md:min-h-[var(--balance-h,66.667cqw)] md:max-h-[125cqw] md:flex-1"
+            : // Stacked: 3:2, until BalanceColumns sets another height on desktop
+              "relative -mx-4 aspect-[3/2] overflow-hidden sm:mx-0 lg:aspect-auto lg:h-[var(--balance-h,66.667cqw)]"
         }
       >
         <Image
@@ -86,13 +209,14 @@ export default function NewsLead({
           alt={article.imageTitle || ""}
           fill
           priority
-          className="object-cover"
-          style={article.imageFocus ? { objectPosition: article.imageFocus } : undefined}
-          sizes={
+          className={FRAME_CLASS}
+          style={frameVars(frames)}
+          sizes={zoomedSizes(
             sideBySide
               ? "(max-width: 768px) 100vw, (max-width: 1280px) 36vw, 460px"
-              : "(max-width: 1024px) 100vw, 840px"
-          }
+              : "(max-width: 1024px) 100vw, 840px",
+            frames,
+          )}
         />
       </div>
       {credit && (

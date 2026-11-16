@@ -40,6 +40,10 @@ type SeedNewsArticle = {
   subdeck: string
   writeIn?: string
   paragraphs: string[]
+  /** Defaults to news */
+  section?: 'news' | 'opinion'
+  /** Publish this many days ago instead of the default spread */
+  daysAgo?: number
 }
 
 const ARTICLES: SeedNewsArticle[] = [
@@ -317,6 +321,43 @@ const ARTICLES: SeedNewsArticle[] = [
       'Students will be able to build practice schedules in the new system two weeks before registration opens.',
     ],
   },
+  // Archive-style Student Government stories, for the timeline pages and
+  // the archive finder: an old all-caps kicker (on the timeline by itself),
+  // stories filed under other kickers or in opinion (found and added by
+  // hand), and a Faculty Senate story the finder should skip.
+  {
+    slug: 'archive-senate-passes-student-life-fee-reform',
+    title: 'Senate passes student life fee reform',
+    kicker: 'STUDENT SENATE',
+    subdeck: 'The reform caps yearly increases and gives clubs a say in how the fee is spent.',
+    daysAgo: 2600,
+    paragraphs: ['The Student Senate voted 20-2 to reform how the student life fee is set.'],
+  },
+  {
+    slug: 'archive-senate-addresses-campus-safety-concerns',
+    title: 'Senate addresses safety concerns on campus, urging the Institute to respond',
+    kicker: 'Press Release',
+    subdeck: 'A statement from the Student Senate after a week of reported incidents near campus.',
+    daysAgo: 720,
+    paragraphs: ['The Student Senate released a statement asking the Institute for a public response.'],
+  },
+  {
+    slug: 'archive-top-hat-a-senate-that-listens',
+    title: 'Top Hat: A Senate that listens',
+    kicker: 'Top Hat',
+    section: 'opinion',
+    subdeck: 'The Grand Marshal on what the Senate has done this term, and what comes next.',
+    daysAgo: 400,
+    paragraphs: ['This term the Senate set out to listen first.'],
+  },
+  {
+    slug: 'archive-faculty-senate-reviews-grading-policy',
+    title: 'Faculty Senate reviews grading policy',
+    kicker: 'Faculty Senate',
+    subdeck: 'Faculty discussed changes to pass/no credit deadlines.',
+    daysAgo: 500,
+    paragraphs: ['The Faculty Senate met to discuss grading.'],
+  },
 ]
 
 // Short Senate / Executive Board updates for the timeline pages. Dates are
@@ -395,6 +436,69 @@ const UPDATES: { body: 'senate' | 'eboard'; title: string; blurb: string; daysAg
     blurb: 'Clubs that run summer programs can now apply for a share of the reserve fund.',
     daysAgo: 200,
   },
+  // Earlier terms (GM Week to GM Week), so the shelf has past spines with
+  // something in them, the 56th Senate shows the summer recess and the
+  // 2023–24 E-Board shows its mid-term change of President of the Union
+  {
+    body: 'senate',
+    title: 'Senate closes out its term with a final budget review',
+    blurb: 'Senators reviewed spending across the year and passed recommendations on to the next Senate.',
+    daysAgo: 250,
+  },
+  {
+    body: 'senate',
+    title: 'Senate backs a study-space pilot in the library',
+    blurb: 'The resolution asks the Institute to keep two floors open until 2 a.m. during finals.',
+    daysAgo: 300,
+  },
+  {
+    body: 'senate',
+    title: 'Fall committee chairs confirmed',
+    blurb: 'The Senate confirmed chairs for the Facilities, Student Life and Academic Affairs committees.',
+    daysAgo: 430,
+  },
+  {
+    body: 'senate',
+    title: 'Senate sets its summer working groups',
+    blurb: 'Three working groups will meet over the summer and report back in September.',
+    daysAgo: 560,
+  },
+  {
+    body: 'senate',
+    title: 'New Senate sworn in',
+    blurb: 'Senators elected at GM Week took their seats and elected a vice chair.',
+    daysAgo: 590,
+  },
+  {
+    body: 'senate',
+    title: 'Senate debates dining hall hours',
+    blurb: 'A proposal to extend weekend dining hours was sent back to committee.',
+    daysAgo: 800,
+  },
+  {
+    body: 'eboard',
+    title: 'Executive Board approves winter club budgets',
+    blurb: 'Most clubs received what they asked for; two appeals will be heard in January.',
+    daysAgo: 330,
+  },
+  {
+    body: 'eboard',
+    title: 'Executive Board meets over the summer',
+    blurb: 'With enough members confirmed, the board kept meeting through July to handle club requests.',
+    daysAgo: 480,
+  },
+  {
+    body: 'eboard',
+    title: 'Executive Board resumes under a new President of the Union',
+    blurb: 'The board met for the first time since the appointment and reviewed pending club budgets.',
+    daysAgo: 1000,
+  },
+  {
+    body: 'eboard',
+    title: 'Executive Board reviews reserve fund requests',
+    blurb: 'Five clubs asked for reserve money for spring events; three were approved.',
+    daysAgo: 1060,
+  },
 ]
 
 // Fixture photos uploaded by `pnpm db:seed`; alternated across articles.
@@ -448,7 +552,7 @@ async function main() {
       // otherwise stamp now) and skips PostHog events and breaking-news pushes.
       context: { legacyImport: true },
       data: {
-        section: 'news',
+        section: a.section ?? 'news',
         // @ts-expect-error richText jsonb accepted directly by local API
         title: richTextDoc([a.title]),
         slug: a.slug,
@@ -459,7 +563,7 @@ async function main() {
         featuredImage: photoIds[i % photoIds.length],
         // @ts-expect-error richText jsonb accepted directly by local API
         content: richTextDoc(a.paragraphs),
-        publishedDate: new Date(Date.now() - (i * 2 + 1) * DAY_MS).toISOString(),
+        publishedDate: new Date(Date.now() - (a.daysAgo ?? i * 2 + 1) * DAY_MS).toISOString(),
         _status: 'published',
       },
     })

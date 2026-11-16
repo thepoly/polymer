@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { TimelinePageEditor } from '../TimelinePageEditor';
+import { TimelinePageEditor, pannedFrame } from '../TimelinePageEditor';
 import {
   DndContext,
   DragOverlay,
@@ -25,6 +25,16 @@ import {
   DEFAULT_LEAD_TEXT_POSITION,
   LEAD_TEXT_POSITIONS,
   isLeadTextPosition,
+  FEATURED_SLOTS,
+  SECONDARY_SLOTS,
+  normalizeFeatured,
+  normalizeLeadFrame,
+  normalizeSecondary,
+  normalizeTopicCards,
+  normalizeTopicPicks,
+  type TopicCardStyle,
+  type TopicPicks,
+  type LeadFrame,
   type LeadTextPosition,
   type NewsLayout,
 } from '@/components/News/newsLayout';
@@ -36,6 +46,8 @@ import {
   type StudentGovBoxConfig,
   type StudentGovLayout,
 } from '@/components/News/studentGov';
+import { MAX_ZOOM, MIN_ZOOM, type PhotoFrame } from '@/components/News/timelinePage';
+import { NEWS_TOPICS, TOPIC_CARDS, type NewsTopicKey } from '@/components/News/newsTopics';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,7 +61,10 @@ type ArticleData = {
   section: string;
   publishedDate: string | null;
   createdAt: string;
-  featuredImage?: { url?: string | null; alt?: string | null } | number | null;
+  featuredImage?:
+    | { url?: string | null; alt?: string | null; focalX?: number | null; focalY?: number | null }
+    | number
+    | null;
   subdeck?: string | null;
   kicker?: string | null;
   authors?: Array<number | { firstName: string; lastName: string }>;
@@ -95,12 +110,20 @@ const extractDocId = (): string | null => {
 // Slot
 // ---------------------------------------------------------------------------
 
-function DraggableSlotArticle({ article, slotId }: { article: ArticleData; slotId: string }) {
+function DraggableSlotArticle({
+  article,
+  slotId,
+  showImage,
+}: {
+  article: ArticleData;
+  slotId: string;
+  showImage: boolean;
+}) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `slot-article-${slotId}`,
     data: { article, source: 'slot', slotId },
   });
-  const imageUrl = getImageUrl(article);
+  const imageUrl = showImage ? getImageUrl(article) : null;
   const author = getAuthorString(article);
 
   return (
@@ -126,15 +149,18 @@ function DropSlot({
   article,
   emptyHint,
   onClear,
+  needsImage = true,
 }: {
   slotId: string;
   label: string;
   article: ArticleData | null;
   emptyHint: string;
   onClear: () => void;
+  /** Whether the page shows this slot's photo: previews it and flags a story without one */
+  needsImage?: boolean;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: `drop-${slotId}`, data: { slotId } });
-  const missingImage = article !== null && !getImageUrl(article);
+  const missingImage = needsImage && article !== null && !getImageUrl(article);
 
   return (
     <div ref={setNodeRef} className={`fle-slot ${isOver ? 'fle-slot-over' : ''} ${article ? 'fle-slot-filled' : ''}`}>
@@ -152,7 +178,7 @@ function DropSlot({
         </div>
       </div>
       {article ? (
-        <DraggableSlotArticle article={article} slotId={slotId} />
+        <DraggableSlotArticle article={article} slotId={slotId} showImage={needsImage} />
       ) : (
         <div className="fle-slot-empty">
           <div className="fle-slot-empty-inner">
@@ -174,7 +200,21 @@ function DropSlot({
 // ---------------------------------------------------------------------------
 
 function PositionDiagram({ position }: { position: LeadTextPosition }) {
-  const photo = <div style={{ flex: '1 1 0', minWidth: 0, minHeight: 0, background: 'currentColor', opacity: 0.35, borderRadius: 2 }} />;
+  if (position === 'overlay') {
+    // Text lines in white over the bottom of the photo
+    return (
+      <div style={{ position: 'relative', width: 84, height: 60, borderRadius: 2, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'currentColor', opacity: 0.35 }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.75), rgba(0,0,0,0) 70%)' }} />
+        <div style={{ position: 'absolute', left: 5, right: 5, bottom: 5, display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <div style={{ height: 3, width: '35%', background: '#fff', borderRadius: 1 }} />
+          <div style={{ height: 5, width: '85%', background: '#fff', borderRadius: 1 }} />
+          <div style={{ height: 3, width: '70%', background: '#fff', opacity: 0.6, borderRadius: 1 }} />
+        </div>
+      </div>
+    );
+  }
+  const photo =<div style={{ flex: '1 1 0', minWidth: 0, minHeight: 0, background: 'currentColor', opacity: 0.35, borderRadius: 2 }} />;
   const text = (
     <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', gap: 3, padding: 2, width: position === 'east' || position === 'west' ? '42%' : undefined }}>
       <div style={{ height: 3, width: '40%', background: '#C41E3A', borderRadius: 1 }} />
@@ -230,6 +270,293 @@ function PositionPicker({ value, onChange }: { value: LeadTextPosition; onChange
       </div>
       <span style={{ fontSize: '0.62rem', opacity: 0.5 }}>
         Applies on desktop and tablets. On phones the text always sits under the photo.
+      </span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Topic row card style
+// ---------------------------------------------------------------------------
+
+/** One choice in a row of two or more buttons */
+function ChoiceRow<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <span style={{ fontSize: '0.72rem', fontWeight: 600 }}>{label}</span>
+      <div role="radiogroup" aria-label={label} style={{ display: 'flex', gap: 6, maxWidth: 420 }}>
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            role="radio"
+            aria-checked={opt.value === value}
+            onClick={() => onChange(opt.value)}
+            style={{ ...smallButtonStyle(opt.value === value), flex: 'none', padding: '6px 12px', whiteSpace: 'nowrap' }}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * How the topic row's cards look: headlines over the photo, or under it,
+ * and when under it, whether the subdeck shows too
+ */
+function TopicCardsEditor({ value, onChange }: { value: TopicCardStyle; onChange: (next: TopicCardStyle) => void }) {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
+      <ChoiceRow
+        label="Headlines"
+        value={value.overlay ? 'over' : 'under'}
+        options={[
+          { value: 'over', label: 'Over the photo' },
+          { value: 'under', label: 'Under the photo' },
+        ]}
+        onChange={(v) => onChange({ ...value, overlay: v === 'over' })}
+      />
+      {!value.overlay && (
+        <ChoiceRow
+          label="Subdeck"
+          value={value.subdeck ? 'show' : 'hide'}
+          options={[
+            { value: 'show', label: 'Show' },
+            { value: 'hide', label: 'Hide' },
+          ]}
+          onChange={(v) => onChange({ ...value, subdeck: v === 'show' })}
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Stories under the lead
+// ---------------------------------------------------------------------------
+
+const SUB_SLOT_IDS = Array.from({ length: SECONDARY_SLOTS }, (_, i) => `sub-${i}`);
+const FEATURED_SLOT_IDS = Array.from({ length: FEATURED_SLOTS }, (_, i) => `feat-${i}`);
+/** "topic-academia-2": third chosen story on the Academia tab */
+const topicSlotId = (key: NewsTopicKey, index: number) => `topic-${key}-${index}`;
+const parseTopicSlot = (slotId: string): { key: NewsTopicKey; index: number } | null => {
+  const m = /^topic-([a-z]+)-(\d+)$/.exec(slotId);
+  const topic = m ? NEWS_TOPICS.find((t) => t.key === m[1]) : undefined;
+  return m && topic ? { key: topic.key, index: Number(m[2]) } : null;
+};
+
+/** Fields the editor needs for each article, for the REST API's `select` */
+const ARTICLE_SELECT_QUERY =
+  '&select[title]=true&select[plainTitle]=true&select[slug]=true&select[section]=true&select[publishedDate]=true' +
+  '&select[createdAt]=true&select[featuredImage]=true&select[subdeck]=true&select[kicker]=true' +
+  '&select[authors]=true&select[writeInAuthors]=true';
+
+/** Slot label, saying whether the lead's current layout shows that slot */
+function subSlotLabel(index: number, position: LeadTextPosition): string {
+  const beside = position === 'east' || position === 'west';
+  const name = index === 0 ? 'First story under the lead' : 'Second story under the lead';
+  if (index === 1 && !beside) return `${name} (not shown with this text position)`;
+  if (index === 0 && (position === 'north' || position === 'south')) return `${name} (only when there's room)`;
+  return name;
+}
+
+// ---------------------------------------------------------------------------
+// Lead photo crop: what stays in view as the photo's shape changes
+// ---------------------------------------------------------------------------
+
+const PREVIEW_WIDTH = 150;
+
+/** One shape the lead photo can take, with the photo framed as the page would. Drag to reposition. */
+function LeadCropPreview({
+  src,
+  label,
+  ratio,
+  frame,
+  onFrame,
+}: {
+  src: string;
+  label: string;
+  /** Width ÷ height of the box */
+  ratio: number;
+  frame: PhotoFrame;
+  onFrame: (frame: PhotoFrame) => void;
+}) {
+  const imgRef = useRef<HTMLImageElement>(null);
+  // Pointer and framing when the grab started
+  const drag = useRef<{ x: number; y: number; frame: PhotoFrame } | null>(null);
+  const [grabbing, setGrabbing] = useState(false);
+  const endDrag = () => {
+    drag.current = null;
+    setGrabbing(false);
+  };
+  const position = `${frame.x}% ${frame.y}%`;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, width: PREVIEW_WIDTH }}>
+      <span style={{ fontSize: '0.62rem', fontWeight: 600, opacity: 0.7 }}>{label}</span>
+      <div
+        title="Drag the photo to reposition it"
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          width: PREVIEW_WIDTH,
+          height: Math.round(PREVIEW_WIDTH / ratio),
+          borderRadius: 2,
+          background: '#111',
+          touchAction: 'none',
+          userSelect: 'none',
+          cursor: grabbing ? 'grabbing' : 'grab',
+        }}
+        onPointerDown={(e) => {
+          if (!imgRef.current?.naturalWidth) return;
+          e.currentTarget.setPointerCapture(e.pointerId);
+          drag.current = { x: e.clientX, y: e.clientY, frame };
+          setGrabbing(true);
+        }}
+        onPointerMove={(e) => {
+          const start = drag.current;
+          const img = imgRef.current;
+          if (!start || !img) return;
+          const rect = e.currentTarget.getBoundingClientRect();
+          onFrame(
+            pannedFrame(
+              start.frame,
+              e.clientX - start.x,
+              e.clientY - start.y,
+              { width: rect.width, height: rect.height },
+              { width: img.naturalWidth, height: img.naturalHeight },
+            ),
+          );
+        }}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onLostPointerCapture={endDrag}
+      >
+        <img
+          ref={imgRef}
+          src={src}
+          alt=""
+          draggable={false}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: position,
+            transformOrigin: position,
+            transform: `scale(${frame.zoom})`,
+            pointerEvents: 'none',
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ZoomSlider({ label, frame, onFrame }: { label: string; frame: PhotoFrame; onFrame: (f: PhotoFrame) => void }) {
+  return (
+    <label style={{ display: 'flex', flexDirection: 'column', gap: 2, fontSize: '0.62rem', fontWeight: 600, width: PREVIEW_WIDTH }}>
+      <span style={{ opacity: 0.7 }}>
+        {label} zoom {Math.round(frame.zoom * 100)}%
+      </span>
+      <input
+        type="range"
+        min={MIN_ZOOM}
+        max={MAX_ZOOM}
+        step={0.05}
+        value={frame.zoom}
+        aria-label={`${label} zoom`}
+        onChange={(e) => onFrame({ ...frame, zoom: Number(e.target.value) })}
+        style={{ width: '100%', accentColor: '#c41e3a' }}
+      />
+    </label>
+  );
+}
+
+/**
+ * Crop of the lead photo. The page changes the photo's height on computers to
+ * line its two columns up, so the editor shows the shortest and tallest shapes
+ * it can take; both follow one "computer" framing. Phones always show 3:2 and
+ * can be framed apart. The framing is kept per story.
+ */
+function LeadCropEditor({
+  article,
+  position,
+  frame,
+  onChange,
+}: {
+  article: ArticleData;
+  position: LeadTextPosition;
+  frame: LeadFrame | null;
+  onChange: (next: LeadFrame | null) => void;
+}) {
+  const src = getImageUrl(article);
+  if (!src) return null;
+  const media = typeof article.featuredImage === 'object' ? article.featuredImage : null;
+  // The photo's own focal point, not zoomed: the framing when nothing is set
+  const base: PhotoFrame = {
+    x: typeof media?.focalX === 'number' ? media.focalX : 50,
+    y: typeof media?.focalY === 'number' ? media.focalY : 50,
+    zoom: 1,
+  };
+  const own = frame && frame.article === article.id ? frame : null;
+  const desktop = own?.desktop ?? base;
+  const mobile = own?.mobile ?? desktop;
+  const set = (next: { desktop: PhotoFrame | null; mobile: PhotoFrame | null }) =>
+    onChange(next.desktop || next.mobile ? { article: article.id, ...next } : null);
+  const setDesktop = (f: PhotoFrame | null) => set({ desktop: f, mobile: own?.mobile ?? null });
+  const setMobile = (f: PhotoFrame | null) => set({ desktop: own?.desktop ?? null, mobile: f });
+  const beside = position === 'east' || position === 'west';
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <span style={{ fontSize: '0.72rem', fontWeight: 600 }}>Lead photo crop</span>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <LeadCropPreview src={src} label="Computer, at its shortest" ratio={16 / 9} frame={desktop} onFrame={setDesktop} />
+          <ZoomSlider label="Computer" frame={desktop} onFrame={setDesktop} />
+          {own?.desktop && (
+            <button type="button" className="tpe-btn" onClick={() => setDesktop(null)}>
+              Reset
+            </button>
+          )}
+        </div>
+        <LeadCropPreview
+          src={src}
+          label="Computer, at its tallest"
+          ratio={beside ? 4 / 5 : 4 / 3}
+          frame={desktop}
+          onFrame={setDesktop}
+        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <LeadCropPreview src={src} label="Phone" ratio={3 / 2} frame={mobile} onFrame={setMobile} />
+          <ZoomSlider label="Phone" frame={mobile} onFrame={setMobile} />
+          {own?.mobile ? (
+            <button type="button" className="tpe-btn" onClick={() => setMobile(null)}>
+              Match computer
+            </button>
+          ) : (
+            <span style={{ fontSize: '0.6rem', opacity: 0.5 }}>Same as computer</span>
+          )}
+        </div>
+      </div>
+      <span style={{ fontSize: '0.62rem', opacity: 0.5, maxWidth: 520 }}>
+        On computers the page makes this photo shorter or taller so the two columns end on the same line, so it&rsquo;s
+        cropped differently from day to day. Drag a photo to choose what stays in view, and zoom in to crop tighter.
+        Unset, it follows the photo&rsquo;s focal point. The crop is kept for this story only.
       </span>
     </div>
   );
@@ -303,7 +630,7 @@ function StudentGovBoxEditor({
       {config.mode === 'timeline' ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.7rem' }}>
-            Show the latest
+            Always show the latest
             <select
               value={config.count}
               onChange={(e) => onChange({ ...config, count: e.target.value === '2' ? 2 : 3 })}
@@ -321,6 +648,11 @@ function StudentGovBoxEditor({
             </select>
             entries
           </label>
+          {config.count === 2 && (
+            <span style={{ fontSize: '0.62rem', opacity: 0.5 }}>
+              A third is added on computers when this column would end short of the lead&rsquo;s.
+            </span>
+          )}
           <span style={{ fontSize: '0.62rem', opacity: 0.5 }}>
             Newest articles with the &ldquo;{meta.kicker}&rdquo; kicker and {meta.label} updates, mixed by date.
           </span>
@@ -473,6 +805,13 @@ export function NewsLayoutEditor() {
 function NewsPageEditor() {
   const [lead, setLead] = useState<number | null>(null);
   const [leadTextPosition, setLeadTextPosition] = useState<LeadTextPosition>(DEFAULT_LEAD_TEXT_POSITION);
+  const [leadFrame, setLeadFrame] = useState<LeadFrame | null>(null);
+  const [secondary, setSecondary] = useState<(number | null)[]>(() => normalizeSecondary(null));
+  const [featured, setFeatured] = useState<(number | null)[]>(() => normalizeFeatured(null));
+  const [topicCards, setTopicCards] = useState<TopicCardStyle>(() => normalizeTopicCards(null));
+  const [topicPicks, setTopicPicks] = useState<Record<NewsTopicKey, TopicPicks>>(() => normalizeTopicPicks(null));
+  const [activeTopic, setActiveTopic] = useState<NewsTopicKey>(NEWS_TOPICS[0].key);
+  const [bulletsHeadlinesOnly, setBulletsHeadlinesOnly] = useState(false);
   const [studentGov, setStudentGov] = useState<StudentGovLayout>(DEFAULT_STUDENT_GOV_LAYOUT);
   const [articles, setArticles] = useState<ArticleData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -486,18 +825,26 @@ function NewsPageEditor() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const articleMap = new Map(articles.map((a) => [a.id, a]));
-  // Slots: "lead-0", "gov-senate", "gov-eboard". A box's pin only counts
+  // Slots: "lead-0", "sub-0", "sub-1", "feat-0" to "feat-3", "gov-senate", "gov-eboard". A box's pin only counts
   // while the box is in article mode.
   const slotArticleId = (slotId: string): number | null => {
     if (slotId === 'lead-0') return lead;
+    if (slotId.startsWith('sub-')) return secondary[Number(slotId.slice(4))] ?? null;
+    if (slotId.startsWith('feat-')) return featured[Number(slotId.slice(5))] ?? null;
     if (slotId === 'gov-senate' || slotId === 'gov-eboard') {
       const box = studentGov[slotId === 'gov-senate' ? 'senate' : 'eboard'];
       return box.mode === 'article' ? box.article : null;
     }
+    // A topic's picks only count while the tab is set to chosen stories
+    const topic = parseTopicSlot(slotId);
+    if (topic) return topicPicks[topic.key].manual ? topicPicks[topic.key].articles[topic.index] ?? null : null;
     return null;
   };
+  const topicSlotIds = NEWS_TOPICS.flatMap((t) => Array.from({ length: TOPIC_CARDS }, (_, i) => topicSlotId(t.key, i)));
   const usedIds = new Set<number>(
-    ['lead-0', 'gov-senate', 'gov-eboard'].map(slotArticleId).filter((id): id is number => id !== null),
+    ['lead-0', ...SUB_SLOT_IDS, ...FEATURED_SLOT_IDS, 'gov-senate', 'gov-eboard', ...topicSlotIds]
+      .map(slotArticleId)
+      .filter((id): id is number => id !== null),
   );
 
   // ---- Fetch ----
@@ -506,12 +853,10 @@ function NewsPageEditor() {
       try {
         const artRes = await fetch(
           '/api/articles?where[section][equals]=news&where[_status][equals]=published&sort=-publishedDate&limit=100&depth=1' +
-            '&select[title]=true&select[plainTitle]=true&select[slug]=true&select[section]=true&select[publishedDate]=true' +
-            '&select[createdAt]=true&select[featuredImage]=true&select[subdeck]=true&select[kicker]=true' +
-            '&select[authors]=true&select[writeInAuthors]=true',
+            ARTICLE_SELECT_QUERY,
         );
         const artData = await artRes.json();
-        setArticles(artData.docs || []);
+        const loaded: ArticleData[] = artData.docs || [];
 
         let id = extractDocId();
         let layoutData: Record<string, unknown> | null = null;
@@ -550,8 +895,37 @@ function NewsPageEditor() {
           setLeadTextPosition(
             isLeadTextPosition(savedLayout.leadTextPosition) ? savedLayout.leadTextPosition : DEFAULT_LEAD_TEXT_POSITION,
           );
+          setLeadFrame(normalizeLeadFrame(savedLayout.leadFrame));
+          setSecondary(normalizeSecondary(savedLayout.secondary));
+          setFeatured(normalizeFeatured(savedLayout.featured));
+          setTopicCards(normalizeTopicCards(savedLayout.topicCards));
+          const picks = normalizeTopicPicks(savedLayout.topicPicks);
+          setTopicPicks(picks);
+          setBulletsHeadlinesOnly(savedLayout.bulletsHeadlinesOnly === true);
           setStudentGov(normalizeStudentGovLayout(savedLayout.studentGov));
+
+          // Placed stories older than the newest hundred aren't in the list,
+          // which would show their slots as empty: fetch them too
+          const gov = normalizeStudentGovLayout(savedLayout.studentGov);
+          const placedIds = [
+            savedLayout.lead ?? null,
+            ...normalizeSecondary(savedLayout.secondary),
+            ...normalizeFeatured(savedLayout.featured),
+            gov.senate.article,
+            gov.eboard.article,
+            ...NEWS_TOPICS.flatMap((t) => picks[t.key].articles),
+          ].filter((id): id is number => typeof id === 'number');
+          const have = new Set(loaded.map((a) => a.id));
+          const missing = [...new Set(placedIds)].filter((id) => !have.has(id));
+          if (missing.length > 0) {
+            const extraRes = await fetch(
+              `/api/articles?where[id][in]=${missing.join(',')}&where[_status][equals]=published&limit=${missing.length}&depth=1` +
+                ARTICLE_SELECT_QUERY,
+            );
+            if (extraRes.ok) loaded.push(...(((await extraRes.json()).docs || []) as ArticleData[]));
+          }
         }
+        setArticles(loaded);
       } catch (err) {
         setError('Failed to load data');
         console.error(err);
@@ -574,6 +948,11 @@ function NewsPageEditor() {
     markDirty();
   }, [markDirty]);
 
+  const changeLeadFrame = useCallback((next: LeadFrame | null) => {
+    setLeadFrame(next);
+    markDirty();
+  }, [markDirty]);
+
   const changeBox = useCallback((body: StudentGovBody, next: StudentGovBoxConfig) => {
     setStudentGov((prev) => ({ ...prev, [body]: next }));
     markDirty();
@@ -587,10 +966,32 @@ function NewsPageEditor() {
   const setSlotArticle = (slotId: string, id: number | null) => {
     if (slotId === 'lead-0') {
       setLead(id);
+    } else if (slotId.startsWith('sub-')) {
+      const index = Number(slotId.slice(4));
+      setSecondary((prev) => prev.map((current, i) => (i === index ? id : current)));
+    } else if (slotId.startsWith('feat-')) {
+      const index = Number(slotId.slice(5));
+      setFeatured((prev) => prev.map((current, i) => (i === index ? id : current)));
     } else if (slotId === 'gov-senate' || slotId === 'gov-eboard') {
       const body: StudentGovBody = slotId === 'gov-senate' ? 'senate' : 'eboard';
       setStudentGov((prev) => ({ ...prev, [body]: { ...prev[body], article: id } }));
+    } else {
+      const topic = parseTopicSlot(slotId);
+      if (topic) {
+        setTopicPicks((prev) => ({
+          ...prev,
+          [topic.key]: {
+            ...prev[topic.key],
+            articles: prev[topic.key].articles.map((current, i) => (i === topic.index ? id : current)),
+          },
+        }));
+      }
     }
+    markDirty();
+  };
+
+  const setTopicManual = (key: NewsTopicKey, manual: boolean) => {
+    setTopicPicks((prev) => ({ ...prev, [key]: { ...prev[key], manual } }));
     markDirty();
   };
 
@@ -632,7 +1033,7 @@ function NewsPageEditor() {
       // The Senate / Executive Board editors save into the same JSON, so
       // merge over the latest copy instead of replacing it
       const latest = await fetch(`/api/news-page-layout/${docIdRef.current}?depth=0`).then((r) => r.json());
-      const layout: NewsLayout = { ...(latest?.layout ?? {}), lead, leadTextPosition, studentGov };
+      const layout: NewsLayout = { ...(latest?.layout ?? {}), lead, leadTextPosition, leadFrame, secondary, featured, topicCards, topicPicks, bulletsHeadlinesOnly, studentGov };
       const res = await fetch(`/api/news-page-layout/${docIdRef.current}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -659,6 +1060,8 @@ function NewsPageEditor() {
   }
 
   const leadArticle = lead !== null ? articleMap.get(lead) ?? null : null;
+  // With no lead pinned, the page leads with the newest story that has a photo
+  const shownLead = leadArticle ?? articles.find((a) => getImageUrl(a)) ?? null;
 
   return (
     <DndContext sensors={sensors} collisionDetection={pointerThenCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -704,6 +1107,33 @@ function NewsPageEditor() {
                   onClear={() => changeLead(null)}
                 />
                 <PositionPicker value={leadTextPosition} onChange={changePosition} />
+                {shownLead && (
+                  <LeadCropEditor
+                    article={shownLead}
+                    position={leadTextPosition}
+                    frame={leadFrame}
+                    onChange={changeLeadFrame}
+                  />
+                )}
+                <div className="fle-column-header">
+                  <span className="fle-column-title">Under the lead</span>
+                </div>
+                {SUB_SLOT_IDS.map((slotId, i) => (
+                  <DropSlot
+                    key={slotId}
+                    slotId={slotId}
+                    label={subSlotLabel(i, leadTextPosition)}
+                    article={secondary[i] !== null ? articleMap.get(secondary[i] as number) ?? null : null}
+                    emptyHint="Drop article (empty uses the next newest story)"
+                    needsImage={false}
+                    onClear={() => setSlotArticle(slotId, null)}
+                  />
+                ))}
+                <span style={{ fontSize: '0.62rem', opacity: 0.5 }}>
+                  These run as headlines with no photo. How many show follows the lead&rsquo;s text position: two
+                  beside the photo, one over it, and one above or below it only when the lead ends well short of the
+                  Student Government column.
+                </span>
               </div>
               <div className="fle-column">
                 <div className="fle-column-header">
@@ -727,6 +1157,117 @@ function NewsPageEditor() {
                     onChange={(next) => changeBox(body, next)}
                   />
                 ))}
+                <ChoiceRow
+                  label="Bullets (both boxes)"
+                  value={bulletsHeadlinesOnly ? 'headlines' : 'summaries'}
+                  options={[
+                    { value: 'summaries', label: 'With summaries' },
+                    { value: 'headlines', label: 'Headlines only' },
+                  ]}
+                  onChange={(v) => {
+                    setBulletsHeadlinesOnly(v === 'headlines');
+                    markDirty();
+                  }}
+                />
+                <span style={{ fontSize: '0.62rem', opacity: 0.5 }}>
+                  Headlines only drops the summaries and sets the headlines larger. The column gets shorter, so the
+                  story strips under the lead only appear when there&rsquo;s room for them.
+                </span>
+              </div>
+              {/* Featured row: runs the full width under the two columns, as on the page */}
+              <div className="fle-column" style={{ gridColumn: '1 / -1' }}>
+                <div className="fle-column-header">
+                  <span className="fle-column-title">Featured</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${FEATURED_SLOTS}, minmax(0, 1fr))`, gap: 10 }}>
+                  {FEATURED_SLOT_IDS.map((slotId, i) => (
+                    <DropSlot
+                      key={slotId}
+                      slotId={slotId}
+                      label={`Featured ${i + 1}`}
+                      article={featured[i] !== null ? articleMap.get(featured[i] as number) ?? null : null}
+                      emptyHint="Drop article"
+                      onClear={() => setSlotArticle(slotId, null)}
+                    />
+                  ))}
+                </div>
+                <span style={{ fontSize: '0.62rem', opacity: 0.5 }}>
+                  Four cards with photos, left to right. An empty slot uses the next newest story with a photo that
+                  isn&rsquo;t already on the page.
+                </span>
+              </div>
+              {/* Topic row: Administration, Academia, Campus Infrastructure, Interview */}
+              <div className="fle-column" style={{ gridColumn: '1 / -1' }}>
+                <div className="fle-column-header">
+                  <span className="fle-column-title">Topic row</span>
+                </div>
+                <TopicCardsEditor
+                  value={topicCards}
+                  onChange={(next) => {
+                    setTopicCards(next);
+                    markDirty();
+                  }}
+                />
+                {/* Stories per tab: the six newest, or chosen ones */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600 }}>Stories</span>
+                  <div role="tablist" aria-label="Topic" style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {NEWS_TOPICS.map((t) => (
+                      <button
+                        key={t.key}
+                        type="button"
+                        role="tab"
+                        aria-selected={t.key === activeTopic}
+                        onClick={() => setActiveTopic(t.key)}
+                        style={{ ...smallButtonStyle(t.key === activeTopic), flex: 'none', padding: '6px 12px', whiteSpace: 'nowrap' }}
+                      >
+                        {t.label}
+                        <span style={{ marginLeft: 6, fontWeight: 400, opacity: 0.6 }}>
+                          {topicPicks[t.key].manual ? 'chosen' : 'newest'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {(() => {
+                  const topic = NEWS_TOPICS.find((t) => t.key === activeTopic) ?? NEWS_TOPICS[0];
+                  const picks = topicPicks[topic.key];
+                  return (
+                    <>
+                      <ChoiceRow
+                        label={`${topic.label} tab`}
+                        value={picks.manual ? 'manual' : 'newest'}
+                        options={[
+                          { value: 'newest', label: `Six newest` },
+                          { value: 'manual', label: 'Choose stories' },
+                        ]}
+                        onChange={(v) => setTopicManual(topic.key, v === 'manual')}
+                      />
+                      {picks.manual ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+                          {Array.from({ length: TOPIC_CARDS }, (_, i) => {
+                            const id = picks.articles[i];
+                            return (
+                              <DropSlot
+                                key={topicSlotId(topic.key, i)}
+                                slotId={topicSlotId(topic.key, i)}
+                                label={`${topic.label} ${i + 1}`}
+                                article={id != null ? articleMap.get(id) ?? null : null}
+                                emptyHint="Drop article (empty uses the next newest)"
+                                onClear={() => setSlotArticle(topicSlotId(topic.key, i), null)}
+                              />
+                            );
+                          })}
+                        </div>
+                      ) : null}
+                      <span style={{ fontSize: '0.62rem', opacity: 0.5 }}>
+                        {picks.manual
+                          ? `Six cards, left to right and top to bottom. Any story can go here, whatever its kicker. An empty slot uses the next newest ${topic.label} story that isn't already on the page.`
+                          : `Shows the six newest ${topic.label} stories (by kicker) that aren't already higher up the page. Choose stories to pick them yourself; picks are kept if you switch back.`}
+                      </span>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>

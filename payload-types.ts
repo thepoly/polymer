@@ -79,6 +79,7 @@ export interface Config {
     'sports-page-layout': SportsPageLayout;
     'news-page-layout': NewsPageLayout;
     'student-gov-updates': StudentGovUpdate;
+    'student-gov-terms': StudentGovTerm;
     schools: School;
     'staff-page-layout': StaffPageLayout;
     submissions: Submission;
@@ -103,6 +104,7 @@ export interface Config {
     'sports-page-layout': SportsPageLayoutSelect<false> | SportsPageLayoutSelect<true>;
     'news-page-layout': NewsPageLayoutSelect<false> | NewsPageLayoutSelect<true>;
     'student-gov-updates': StudentGovUpdatesSelect<false> | StudentGovUpdatesSelect<true>;
+    'student-gov-terms': StudentGovTermsSelect<false> | StudentGovTermsSelect<true>;
     schools: SchoolsSelect<false> | SchoolsSelect<true>;
     'staff-page-layout': StaffPageLayoutSelect<false> | StaffPageLayoutSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
@@ -747,6 +749,64 @@ export interface StudentGovUpdate {
   createdAt: string;
 }
 /**
+ * Senate and Executive Board terms, GM Week to GM Week. Timeline entries are sorted into terms by date; each covered term is a spine on its page’s shelf.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "student-gov-terms".
+ */
+export interface StudentGovTerm {
+  id: number;
+  /**
+   * Filled in from the body, number and first meeting.
+   */
+  name?: string | null;
+  /**
+   * The term’s URL: /senate/57 or /e-board/2026-27.
+   */
+  slug?: string | null;
+  body: 'senate' | 'eboard';
+  /**
+   * 57 for the 57th Senate.
+   */
+  number?: number | null;
+  /**
+   * The new body’s first meeting after GM Week. The term runs until the next term’s first meeting; entries from GM Week up to then still belong to the outgoing term.
+   */
+  startsOn: string;
+  /**
+   * When the election that produced this term was decided (the runoff, if there was one).
+   */
+  gmWeekOn?: string | null;
+  /**
+   * Linked from the GM Week marker at the top of the previous term.
+   */
+  gmWeekStory?: (number | null) | Article;
+  /**
+   * Untick for terms before the digital archive’s coverage starts.
+   */
+  hasCoverage?: boolean | null;
+  /**
+   * The Grand Marshal (Senate) or President of the Union (E-Board). Add a second row when the leader changed mid-term. Leave empty if unknown.
+   */
+  leaders?:
+    | {
+        name: string;
+        /**
+         * 160 for the 160th Grand Marshal.
+         */
+        ordinal?: number | null;
+        how?: ('elected' | 'runoff' | 'appointed') | null;
+        /**
+         * Only needed for a mid-term change: adds a divider to the stream on this date.
+         */
+        startedOn?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "staff-page-layout".
  */
@@ -918,6 +978,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'student-gov-updates';
         value: number | StudentGovUpdate;
+      } | null)
+    | ({
+        relationTo: 'student-gov-terms';
+        value: number | StudentGovTerm;
       } | null)
     | ({
         relationTo: 'schools';
@@ -1261,6 +1325,31 @@ export interface StudentGovUpdatesSelect<T extends boolean = true> {
   body?: T;
   blurb?: T;
   date?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "student-gov-terms_select".
+ */
+export interface StudentGovTermsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  body?: T;
+  number?: T;
+  startsOn?: T;
+  gmWeekOn?: T;
+  gmWeekStory?: T;
+  hasCoverage?: T;
+  leaders?:
+    | T
+    | {
+        name?: T;
+        ordinal?: T;
+        how?: T;
+        startedOn?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

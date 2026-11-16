@@ -19,24 +19,55 @@ export const STUDENT_GOV: Record<
     label: string;
     /** Full name: timeline page title */
     title: string;
-    /** Articles with this kicker belong on the timeline */
+    /** The kicker as editors write it now */
     kicker: string;
+    /**
+     * News articles whose whole kicker matches go on the timeline on their
+     * own. Any capitalisation: the archive has "STUDENT SENATE", "SENATE",
+     * "EXECUTIVE BOARD", "E-BOARD" and so on. "Faculty Senate" doesn't match.
+     */
+    kickerPattern: RegExp;
+    /** Words a matching kicker contains, to narrow the database query first */
+    kickerQuery: string[];
+    /**
+     * What the archive finder searches for when no search is typed: stories
+     * about this body filed under other kickers, which editors add by hand
+     */
+    archiveTerms: string[];
+    /** Finder results to leave out unless their kicker matches */
+    archiveExclude: RegExp | null;
     href: string;
+    /** When and where the body meets, beside the top month on its timeline */
+    meets: string;
   }
 > = {
   senate: {
     label: "Senate",
     title: "Student Senate",
     kicker: SENATE_KICKER,
-    href: "/news/senate",
+    kickerPattern: /^\s*(student\s+)?senate\s*$/i,
+    kickerQuery: ["senate"],
+    archiveTerms: ["student senate", "senate", "senator", "grand marshal"],
+    archiveExclude: /faculty senate/i,
+    href: "/news/student-government/senate",
+    meets: "Mondays · 7 p.m. · Shelnutt Gallery",
   },
   eboard: {
     label: "Executive Board",
     title: "Executive Board",
     kicker: EBOARD_KICKER,
-    href: "/news/executive-board",
+    kickerPattern: /^\s*(executive\s+board|e-?board)\s*$/i,
+    kickerQuery: ["board"],
+    archiveTerms: ["executive board", "e-board", "eboard", "president of the union"],
+    archiveExclude: null,
+    href: "/news/student-government/e-board",
+    meets: "Tuesdays · 7 p.m. · Union 3202",
   },
 };
+
+/** True when a kicker puts an article on this body's timeline by itself */
+export const matchesKicker = (body: StudentGovBody, kicker: string | null | undefined) =>
+  Boolean(kicker && STUDENT_GOV[body].kickerPattern.test(kicker));
 
 /** Anchor for an update on its timeline page, so bullets can link to it */
 export const updateAnchor = (id: number | string) => `update-${id}`;
@@ -57,7 +88,10 @@ export type StudentGovBoxConfig = {
   mode: StudentGovBoxMode;
   /** Pinned story for "article" mode */
   article: number | null;
-  /** Bullets shown in "timeline" mode */
+  /**
+   * Entries always shown in "timeline" mode. With 2, a third appears when
+   * the column would otherwise end short of the lead's.
+   */
   count: 2 | 3;
 };
 
@@ -67,6 +101,9 @@ export type StudentGovLayout = {
   senate: StudentGovBoxConfig;
   eboard: StudentGovBoxConfig;
 };
+
+/** Most entries a box shows; the editor's `count` is how many it always shows */
+export const STUDENT_GOV_BOX_MAX = 3;
 
 export const DEFAULT_BOX: StudentGovBoxConfig = { mode: "timeline", article: null, count: 3 };
 

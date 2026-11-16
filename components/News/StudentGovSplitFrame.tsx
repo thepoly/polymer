@@ -1,13 +1,17 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { scrollByWheel, streamWheel, wheelDeltaY } from "./wheelScroll";
 
 /**
  * Frame for the split timeline page. On desktop (≥860px) it fills the window
  * below the site header exactly, so the photo panel shows in full and the
- * stream scrolls inside its own column (`[data-timeline-scroller]`). When the
- * stream reaches its end, scrolling carries on to the page and the footer;
- * scrolling over the photo panel moves the page. Phones scroll normally.
+ * stream scrolls inside its own column (`[data-timeline-scroller]`). Scrolling
+ * down over the stream scrolls the stream; once it's at its end, the next
+ * swipe or wheel turn carries the page down to the footer (the one that
+ * reached the end, momentum and all, stops there). Scrolling back up brings the page back
+ * first, until the frame is in place again, then the stream. Phones scroll
+ * normally.
  *
  * The stream's scrollbar is hidden and replaced by a thin red line at its
  * right that fills from the top as the stream is scrolled.
@@ -32,6 +36,60 @@ export default function StudentGovSplitFrame({ className, children }: { classNam
       observer.disconnect();
       window.removeEventListener("resize", measure);
     };
+  }, []);
+
+  // Wheel and trackpad over the stream. Down: the stream scrolls; once it's
+  // at its end, the page carries on down to the footer. Up while the page is
+  // scrolled down: the page comes back first, so the stream never scrolls with
+  // its top cut off under the header.
+  //
+  // The page is moved here, not left to the browser. A browser keeps a whole
+  // swipe on whatever it started on, and on a trackpad a swipe's momentum
+  // runs on after the fingers lift, so swipe after swipe stays on the stream
+  // even once it has nothing left to scroll. Moving the page by hand works
+  // inside such a swipe too. The browser's own scroll is cancelled where it
+  // can be, so the page is never moved twice; where it can't be (mid-swipe),
+  // it only ever goes to the stream, which is already at its end.
+  //
+  // Sideways movement needs care too. A browser hands a whole trackpad swipe
+  // to whatever can scroll the way its first tiny movement goes, and swipes
+  // start with a little drift. If that drift is sideways and nothing under
+  // the pointer can scroll sideways (the shelf already at that end, or the
+  // cards, which never do), the swipe goes to the page, and the rest of it
+  // scrolls the page down to the footer. So a mostly sideways event is
+  // stopped unless the shelf under it can actually slide that way.
+  useEffect(() => {
+    const scroller = ref.current?.querySelector<HTMLElement>("[data-timeline-scroller]");
+    if (!scroller) return;
+    const desktop = window.matchMedia("(min-width: 860px)");
+    const onWheel = (e: WheelEvent) => {
+      // Phones and narrow windows scroll the page; ctrl + wheel zooms. Already
+      // handled (the shelf passes vertical swipes on to the stream itself).
+      if (!desktop.matches || e.ctrlKey || e.defaultPrevented || (e.deltaX === 0 && e.deltaY === 0)) return;
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) {
+        const row = (e.target as Element | null)?.closest?.<HTMLElement>("[data-shelf-row]");
+        const canSlide =
+          row !== null &&
+          row !== undefined &&
+          (e.deltaX > 0 ? row.scrollLeft < row.scrollWidth - row.clientWidth - 1 : e.deltaX < 0 && row.scrollLeft > 1);
+        if (!canSlide) e.preventDefault();
+        return;
+      }
+      const dy = wheelDeltaY(e);
+      const { atEnd: streamAtEnd, hold } = streamWheel(scroller, dy, e.timeStamp);
+      // Still the swipe that ran the stream down to its end: stop there
+      if (hold) {
+        if (e.cancelable) e.preventDefault();
+        return;
+      }
+      const pageMax = document.documentElement.scrollHeight - window.innerHeight;
+      const toPage = (dy < 0 && window.scrollY > 0) || (dy > 0 && streamAtEnd && window.scrollY < pageMax - 1);
+      if (!toPage) return;
+      if (e.cancelable) e.preventDefault();
+      scrollByWheel(window, dy);
+    };
+    scroller.addEventListener("wheel", onWheel, { passive: false });
+    return () => scroller.removeEventListener("wheel", onWheel);
   }, []);
 
   // Scroll progress line

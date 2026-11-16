@@ -696,3 +696,58 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+/* ---- Main column: stream, then the archive finder ---- */
+.tpe-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.tpe-finder-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.tpe-finder-bar .tpe-input {
+  flex: 1 1 260px;
+}
+.tpe-finder-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* ---- Add an update: one horizontal row above the stream ---- */
+.tpe-form-row {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+.tpe-form-row .tpe-form-title {
+  flex: 1 1 200px;
+}
+.tpe-form-row .tpe-form-blurb {
+  flex: 2 1 320px;
+}
+.tpe-form-row .tpe-form-date {
+  flex: 0 1 210px;
+}
+/* Same height for every field, so labels and boxes line up; the blurb
+   box can still be dragged taller */
+.tpe-form-row .tpe-input {
+  box-sizing: border-box;
+  height: 38px;
+}
+.tpe-form-row .tpe-form-blurb textarea {
+  resize: vertical;
+  min-height: 38px;
+}
+.tpe-form-row > .tpe-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}

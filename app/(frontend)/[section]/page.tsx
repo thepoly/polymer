@@ -9,17 +9,29 @@ import NewsPage from '@/components/News/NewsPage';
 import {
   DEFAULT_LEAD_TEXT_POSITION,
   isLeadTextPosition,
+  normalizeFeatured,
+  normalizeLeadFrame,
+  normalizeSecondary,
+  normalizeTopicCards,
+  normalizeTopicPicks,
+  type LeadFrame,
   type LeadTextPosition,
   type NewsLayout,
 } from '@/components/News/newsLayout';
 import {
   DEFAULT_STUDENT_GOV_LAYOUT,
+  STUDENT_GOV_BOX_MAX,
   normalizeStudentGovLayout,
+  type StudentGovBody,
   type StudentGovLayout,
 } from '@/components/News/studentGov';
-import type { StudentGovBoxContent } from '@/components/News/StudentGovColumn';
+import type { StudentGovBoxContent, StudentGovSession } from '@/components/News/StudentGovColumn';
 import { normalizeTimelinePages } from '@/components/News/timelinePage';
 import { getArticlesById, getStudentGovTimeline } from '@/lib/studentGovTimeline';
+import { getNewsTopicArticles } from '@/lib/newsTopics';
+import { NEWS_TOPICS, type NewsTopicKey } from '@/components/News/newsTopics';
+import { getStoredTerms } from '@/lib/studentGovTerms';
+import { ordinal, resolveTerms, termYearLabel, troyDayKey } from '@/components/News/studentGovTerms';
 import FeaturesSectionPage, { type FeaturesEvent, type SpotlightPhoto } from '@/components/Features/FeaturesSectionPage';
 import SportsSectionPage, { type ScoreboardDate } from '@/components/Sports/SportsSectionPage';
 import type { StandingsTeam } from '@/components/Sports/SportsStandings';
@@ -366,6 +378,17 @@ export default async function SectionPageRoute({ params }: Args) {
   // News page layout (dashboard: News Layout): pinned lead + where its text sits
   let newsLead: ComponentArticle | null = null;
   let newsLeadTextPosition: LeadTextPosition = DEFAULT_LEAD_TEXT_POSITION;
+  let newsLeadFrame: LeadFrame | null = null;
+  // Stories pinned under the lead, by slot; null where nothing is pinned or the pin is unpublished
+  let newsSecondaryPins: (ComponentArticle | null)[] = [];
+  // Stories pinned in the Featured row, by slot
+  let newsFeaturedPins: (ComponentArticle | null)[] = [];
+  // Tabbed topic row under Featured
+  let newsTopics: Record<NewsTopicKey, ComponentArticle[]> | null = null;
+  let newsTopicCards = normalizeTopicCards(null);
+  // Topic tabs the editor chose stories for, by slot; other tabs show the newest
+  let newsTopicPins: Partial<Record<NewsTopicKey, (ComponentArticle | null)[]>> = {};
+  let newsBulletsHeadlinesOnly = false;
   let studentGovLayout: StudentGovLayout = DEFAULT_STUDENT_GOV_LAYOUT;
   let newsStudentGovBoxes: StudentGovBoxContent[] = [];
   // Entries hidden in the Senate / Executive Board page editors stay out of the boxes too
@@ -383,6 +406,23 @@ export default async function SectionPageRoute({ params }: Args) {
       if (layoutJson && isLeadTextPosition(layoutJson.leadTextPosition)) {
         newsLeadTextPosition = layoutJson.leadTextPosition;
       }
+      newsLeadFrame = normalizeLeadFrame(layoutJson?.leadFrame);
+      const secondaryIds = normalizeSecondary(layoutJson?.secondary);
+      const featuredIds = normalizeFeatured(layoutJson?.featured);
+      newsTopicCards = normalizeTopicCards(layoutJson?.topicCards);
+      const topicPicks = normalizeTopicPicks(layoutJson?.topicPicks);
+      const manualTopics = NEWS_TOPICS.filter((t) => topicPicks[t.key].manual).map((t) => t.key);
+      newsBulletsHeadlinesOnly = layoutJson?.bulletsHeadlinesOnly === true;
+      const pinnedById = await getArticlesById(
+        payload,
+        [...secondaryIds, ...featuredIds, ...manualTopics.flatMap((key) => topicPicks[key].articles)].filter(
+          (id): id is number => id !== null,
+        ),
+      );
+      const pinnedOrNull = (id: number | null) => (id !== null ? pinnedById.get(id) ?? null : null);
+      newsSecondaryPins = secondaryIds.map(pinnedOrNull);
+      newsFeaturedPins = featuredIds.map(pinnedOrNull);
+      newsTopicPins = Object.fromEntries(manualTopics.map((key) => [key, topicPicks[key].articles.map(pinnedOrNull)]));
       if (layoutJson?.lead) {
         const leadResponse = await payload.find({
           collection: 'articles',
@@ -425,18 +465,42 @@ export default async function SectionPageRoute({ params }: Args) {
         .map((body) => studentGovLayout[body])
         .filter((box) => box.mode === 'article' && box.article !== null)
         .map((box) => box.article as number);
-      const pinned = await getArticlesById(payload, pinnedIds);
+      const [pinned, storedTerms] = await Promise.all([
+        getArticlesById(payload, pinnedIds),
+        getStoredTerms(payload),
+      ]);
+      const now = new Date();
+      const today = troyDayKey(now);
+      // The term in session: the newest that has started
+      const sessionOf = (body: StudentGovBody, entryDates: string[]): StudentGovSession | null => {
+        const term = resolveTerms(storedTerms, body, entryDates, now)
+          .filter((t) => t.startsOn <= today)
+          .at(-1);
+        if (!term) return null;
+        return {
+          kicker: body === 'senate' && term.number !== null ? `The ${ordinal(term.number)}` : 'Rensselaer Union',
+          year: termYearLabel(term.startYear),
+        };
+      };
       newsStudentGovBoxes = await Promise.all(
         studentGovLayout.order.map(async (body): Promise<StudentGovBoxContent> => {
           const box = studentGovLayout[body];
           const article = box.mode === 'article' && box.article !== null ? pinned.get(box.article) : undefined;
-          if (article) return { body, kind: 'article', article };
-          const hidden = new Set(timelinePages[body].hidden);
-          return { body, kind: 'timeline', items: await getStudentGovTimeline(payload, body, box.count, hidden) };
+          if (article) return { body, kind: 'article', article, session: sessionOf(body, []) };
+          const { hidden, included } = timelinePages[body];
+          // One more than the editor's count: the page shows it when the column has room
+          const items = await getStudentGovTimeline(payload, body, STUDENT_GOV_BOX_MAX, { hidden: new Set(hidden), included });
+          return { body, kind: 'timeline', items, min: box.count, session: sessionOf(body, items.map((item) => item.date)) };
         }),
       );
     } catch {
       // Leave the column empty rather than failing the page
+    }
+
+    try {
+      newsTopics = await getNewsTopicArticles(payload);
+    } catch {
+      // Leave the topic row out rather than failing the page
     }
   }
 
@@ -844,6 +908,13 @@ export default async function SectionPageRoute({ params }: Args) {
           articles={formattedArticles}
           lead={newsLead}
           leadTextPosition={newsLeadTextPosition}
+          leadFrame={newsLeadFrame}
+          secondaryPins={newsSecondaryPins}
+          featuredPins={newsFeaturedPins}
+          topics={newsTopics}
+          topicCards={newsTopicCards}
+          topicPins={newsTopicPins}
+          bulletsHeadlinesOnly={newsBulletsHeadlinesOnly}
           studentGovBoxes={newsStudentGovBoxes}
           pinnedArticles={newsPinnedArticles}
           hasOlderArticles={hasOlderNewsArticles}

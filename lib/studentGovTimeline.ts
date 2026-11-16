@@ -1,10 +1,11 @@
 import type { Payload } from 'payload'
 import { formatArticle } from '@/utils/formatArticle'
 import type { Article as ComponentArticle } from '@/components/FrontPage/types'
-import { STUDENT_GOV, type StudentGovBody, type TimelineItem } from '@/components/News/studentGov'
+import { STUDENT_GOV, matchesKicker, type StudentGovBody, type TimelineItem } from '@/components/News/studentGov'
 import { entryKey } from '@/components/News/timelinePage'
+import { dropDuplicateStories } from '@/components/News/studentGovTerms'
 
-const ARTICLE_SELECT = {
+export const ARTICLE_SELECT = {
   title: true,
   slug: true,
   subdeck: true,
@@ -20,26 +21,36 @@ const ARTICLE_SELECT = {
 
 /**
  * Newest-first timeline for the Student Senate or Executive Board: published
- * news articles carrying the body's kicker, mixed with its updates
- * (collection `student-gov-updates`).
+ * news articles whose kicker matches the body in any capitalisation, the
+ * articles added from the archive finder (`included`, any kicker or
+ * section), and the body's updates (collection `student-gov-updates`).
  */
 export async function getStudentGovTimeline(
   payload: Payload,
   body: StudentGovBody,
   limit: number,
-  /** `entryKey`s hidden in the page editor; left out of the result */
-  hidden: ReadonlySet<string> = new Set(),
+  {
+    hidden = new Set(),
+    included = [],
+  }: {
+    /** `entryKey`s hidden in the page editor; left out of the result */
+    hidden?: ReadonlySet<string>
+    /** Article ids added from the archive in the page editor */
+    included?: readonly number[]
+  } = {},
 ): Promise<TimelineItem[]> {
-  // Fetch enough to still fill `limit` after dropping hidden entries
-  const fetchLimit = limit + hidden.size
-  const [articles, updates] = await Promise.all([
+  const meta = STUDENT_GOV[body]
+  // Fetch enough to still fill `limit` after dropping hidden entries and
+  // kickers that only contain the word ("School Board", "Faculty Senate")
+  const fetchLimit = Math.max(limit, 50) + hidden.size
+  const [articles, extra, updates] = await Promise.all([
     payload.find({
       collection: 'articles',
       where: {
         and: [
           { section: { equals: 'news' } },
-          { kicker: { equals: STUDENT_GOV[body].kicker } },
           { _status: { equals: 'published' } },
+          { or: meta.kickerQuery.map((word) => ({ kicker: { like: word } })) },
         ],
       },
       sort: '-publishedDate',
@@ -47,6 +58,15 @@ export async function getStudentGovTimeline(
       depth: 1,
       select: ARTICLE_SELECT,
     }),
+    included.length > 0
+      ? payload.find({
+          collection: 'articles',
+          where: { and: [{ id: { in: [...included] } }, { _status: { equals: 'published' } }] },
+          limit: included.length,
+          depth: 1,
+          select: ARTICLE_SELECT,
+        })
+      : Promise.resolve({ docs: [] }),
     payload
       .find({
         collection: 'student-gov-updates',
@@ -60,7 +80,10 @@ export async function getStudentGovTimeline(
   ])
 
   const items: TimelineItem[] = []
-  for (const doc of articles.docs) {
+  const seen = new Set<number>()
+  for (const doc of [...articles.docs.filter((d) => matchesKicker(body, d.kicker)), ...extra.docs]) {
+    if (seen.has(doc.id)) continue
+    seen.add(doc.id)
     const article = formatArticle(doc)
     if (!article) continue
     items.push({
@@ -74,7 +97,15 @@ export async function getStudentGovTimeline(
     items.push({ kind: 'update', id: doc.id, date: doc.date, title: doc.title, blurb: doc.blurb })
   }
 
-  return items
+  // One copy of each story (the archive has duplicates), chosen before hidden
+  // entries drop out so the page matches the dashboard editor
+  const unique = dropDuplicateStories(items, (item) =>
+    item.kind === 'article'
+      ? { id: Number(item.id), title: item.article.title, date: item.date, hasImage: Boolean(item.article.image) }
+      : null,
+  )
+
+  return unique
     .filter((item) => !hidden.has(entryKey(item.kind, item.id)))
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, limit)

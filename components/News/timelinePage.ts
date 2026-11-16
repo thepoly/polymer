@@ -158,14 +158,23 @@ export function resolveStream(
 }
 
 export type TimelinePageConfig = {
+  /**
+   * The photo panel shows one photo for a whole term (year): the term's own,
+   * else the default, else none (plain red). Article photos are never used.
+   */
   photos: {
-    /** Shown for any month without its own photo */
+    /** For any term without its own photo */
     default: TimelinePhoto | null;
-    /** Photo for one month, keyed "2026-11" */
-    months: Record<string, TimelinePhoto>;
+    /** One term's photo, keyed by term slug ("senate-56", "eboard-2025-26") */
+    terms: Record<string, TimelinePhoto>;
   };
   /** Entries left off the page (and the /news box), as `entryKey`s */
   hidden: string[];
+  /**
+   * Article ids added from the archive finder: stories about this body filed
+   * under another kicker (or another section). Shown like kicker matches.
+   */
+  included: number[];
   /** Size, photo placement and position of entries, keyed by `entryKey` */
   entries: Record<string, TimelineEntryLayout>;
 };
@@ -176,8 +185,9 @@ export type TimelinePagesLayout = Record<StudentGovBody, TimelinePageConfig>;
 export const entryKey = (kind: "article" | "update", id: number | string) => `${kind}-${id}`;
 
 export const EMPTY_TIMELINE_PAGE: TimelinePageConfig = {
-  photos: { default: null, months: {} },
+  photos: { default: null, terms: {} },
   hidden: [],
+  included: [],
   entries: {},
 };
 
@@ -198,7 +208,7 @@ function normalizeEntryLayout(raw: unknown): TimelineEntryLayout | null {
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 
-function normalizeFrame(raw: unknown): PhotoFrame | null {
+export function normalizeFrame(raw: unknown): PhotoFrame | null {
   if (!raw || typeof raw !== "object") return null;
   const f = raw as { x?: unknown; y?: unknown; zoom?: unknown };
   if (typeof f.x !== "number" || typeof f.y !== "number") return null;
@@ -249,11 +259,12 @@ export function photoFrames(photo: TimelinePhoto, fallback: string): { desktop: 
 export function normalizeTimelinePage(raw: unknown): TimelinePageConfig {
   const value = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const photos = (value.photos && typeof value.photos === "object" ? value.photos : {}) as Record<string, unknown>;
-  const months: Record<string, TimelinePhoto> = {};
-  if (photos.months && typeof photos.months === "object") {
-    for (const [key, photo] of Object.entries(photos.months as Record<string, unknown>)) {
+  // Older saves had a photo per month ("months"); those are dropped
+  const terms: Record<string, TimelinePhoto> = {};
+  if (photos.terms && typeof photos.terms === "object") {
+    for (const [slug, photo] of Object.entries(photos.terms as Record<string, unknown>)) {
       const p = normalizePhoto(photo);
-      if (p && /^\d{4}-\d{2}$/.test(key)) months[key] = p;
+      if (p && /^(senate|eboard)-[\w-]+$/.test(slug)) terms[slug] = p;
     }
   }
   const entries: Record<string, TimelineEntryLayout> = {};
@@ -264,8 +275,11 @@ export function normalizeTimelinePage(raw: unknown): TimelinePageConfig {
     }
   }
   return {
-    photos: { default: normalizePhoto(photos.default), months },
+    photos: { default: normalizePhoto(photos.default), terms },
     hidden: Array.isArray(value.hidden) ? value.hidden.filter((h): h is string => typeof h === "string") : [],
+    included: Array.isArray(value.included)
+      ? [...new Set(value.included.filter((id): id is number => typeof id === "number" && Number.isInteger(id)))]
+      : [],
     entries,
   };
 }
@@ -276,7 +290,8 @@ export function normalizeTimelinePages(raw: unknown): TimelinePagesLayout {
 }
 
 // ---------------------------------------------------------------------------
-// School years: August 1 to July 31, in Troy's time zone
+// Months, in Troy's time zone. Terms (GM Week to GM Week) are in
+// studentGovTerms.ts.
 // ---------------------------------------------------------------------------
 
 const TZ = "America/New_York";
@@ -288,24 +303,6 @@ export function troyYearMonth(date: Date | string): { year: number; month: numbe
   );
   const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
   return { year: get("year"), month: get("month") };
-}
-
-/** School year a date belongs to, named by the year it starts (Nov 2026 → 2026) */
-export function schoolYearOf(date: Date | string): number {
-  const { year, month } = troyYearMonth(date);
-  return month >= 8 ? year : year - 1;
-}
-
-/** "2026–27" */
-export const schoolYearLabel = (start: number) => `${start}–${String(start + 1).slice(-2)}`;
-
-/** "2026-11" month keys of a school year, August first */
-export function schoolYearMonthKeys(start: number): string[] {
-  return Array.from({ length: 12 }, (_, i) => {
-    const month = ((7 + i) % 12) + 1;
-    const year = month >= 8 ? start : start + 1;
-    return `${year}-${String(month).padStart(2, "0")}`;
-  });
 }
 
 /** "2026-11" for a date in Troy */

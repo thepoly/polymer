@@ -3,8 +3,9 @@ import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import { Byline } from "@/components/FrontPage/Byline";
-import StudentGovMonthPanel, { type PanelMonth } from "./StudentGovMonthPanel";
+import StudentGovMonthPanel, { type PanelMonth, type PanelPhoto } from "./StudentGovMonthPanel";
 import StudentGovSplitFrame from "./StudentGovSplitFrame";
+import StudentGovBackLink from "./StudentGovBackLink";
 import {
   STUDENT_GOV,
   STUDENT_GOV_BODIES,
@@ -22,6 +23,20 @@ import {
   type ResolvedEntryLayout,
   type TimelineEntryLayout,
 } from "./timelinePage";
+import { formatDay, troyDayKey } from "./studentGovTerms";
+
+/** Markers at the term's edges and at leader changes, built in lib/studentGovPage */
+export type StreamMarkers = {
+  /** GM Week that ended this term: top of a past term */
+  gmWeek: { day: string; text: string; href: string | null } | null;
+  /**
+   * Dated lines placed in the stream by day: mid-term leader changes
+   * ("Philipps appointed 135th President of the Union") and, for the Senate,
+   * "2026 Summer recess · No meetings" at June 1. `hideDay` places the line
+   * by its day without printing the day.
+   */
+  dividers: { day: string; text: string; hideDay?: boolean }[];
+};
 
 /** One month of the stream, with what the left panel shows for it */
 export type TimelineMonth = PanelMonth & {
@@ -163,32 +178,111 @@ function UpdateCard({ item, layout }: { item: UpdateItem; layout: Layout }) {
   );
 }
 
-const PILL =
-  "inline-flex h-11 items-center border border-text-main px-5 font-meta text-[12px] font-bold uppercase tracking-[0.1em] text-text-main transition-colors hover:border-accent hover:text-accent";
+/** The GM Week that ended a past term, at its top; ruled like the month headers */
+function GmWeekMarker({ day, text, href }: { day: string; text: string; href: string | null }) {
+  const content = (
+    <>
+      <time dateTime={day}>{formatDay(day)}</time>
+      <span aria-hidden="true"> &mdash; </span>
+      {text}
+      {href && <span aria-hidden="true">&nbsp;&rsaquo;</span>}
+    </>
+  );
+  return (
+    <div className="border-b-2 border-accent pb-2.5 text-accent">
+      <p className="font-meta text-[13px] font-bold uppercase leading-[1.4] tracking-[0.14em]">
+        <span>GM Week &middot; </span>
+        {href ? (
+          <TransitionLink href={href} className="hover:underline">
+            {content}
+          </TransitionLink>
+        ) : (
+          content
+        )}
+      </p>
+    </div>
+  );
+}
+
+/** A lighter rule: a leader change or the Senate's summer recess (June 1) */
+function ThinMarker({ day, text }: { day: string | null; text: string }) {
+  return (
+    <p className="border-b border-[var(--rule-color)] pb-2 font-meta text-[12px] font-bold uppercase tracking-[0.12em] text-text-muted">
+      {day && (
+        <>
+          <time dateTime={day}>{formatDay(day)}</time>
+          <span aria-hidden="true"> &middot; </span>
+        </>
+      )}
+      {text}
+    </p>
+  );
+}
+
+
+type Divider = StreamMarkers["dividers"][number];
+
+/**
+ * Where each leader-change divider goes: before the first entry older than
+ * the change, inside that entry's month, or before the month's heading when
+ * the change happened in a later month with no entries. Changes older than
+ * every entry go at the end.
+ */
+function placeDividers(months: TimelineMonth[], dividers: Divider[]) {
+  const beforeItem = new Map<string, Divider[]>();
+  const beforeMonth = new Map<string, Divider[]>();
+  const atEnd: Divider[] = [];
+  const add = (map: Map<string, Divider[]>, key: string, d: Divider) => map.set(key, [...(map.get(key) ?? []), d]);
+  for (const d of dividers) {
+    let placed = false;
+    for (const month of months) {
+      const index = month.items.findIndex((item) => troyDayKey(item.date) < d.day);
+      if (index === -1) continue;
+      const item = month.items[index];
+      if (index === 0 && d.day.slice(0, 7) !== month.key) add(beforeMonth, month.key, d);
+      else add(beforeItem, entryKey(item.kind, item.id), d);
+      placed = true;
+      break;
+    }
+    if (!placed) atEnd.push(d);
+  }
+  return { beforeItem, beforeMonth, atEnd };
+}
 
 /**
  * Split-screen timeline page: a sticky duotone photo panel on the left that
- * follows the month being read, and on the right one school year's entries
- * as a staggered stream. Each entry's size, photo placement and position can
- * be set in the page editor (`entries`); otherwise the newest article is a
- * full-width lead and the rest zig-zag.
+ * follows the month being read, and on the right one term's entries (GM Week
+ * to GM Week) as a staggered stream, from the GM Week that ended the term
+ * down to its first meeting. Each entry's size, photo placement and position
+ * can be set in the page editor (`entries`); otherwise the newest article is
+ * a full-width lead and the rest zig-zag.
  */
 export default function StudentGovSplitTimeline({
   body,
   months,
   entries,
-  yearLabel,
+  termLabel,
   current,
-  olderYears,
+  otherHref,
+  markers,
+  photo,
+  shelf,
 }: {
   body: StudentGovBody;
   months: TimelineMonth[];
   entries: Record<string, TimelineEntryLayout>;
-  /** "2026–27" */
-  yearLabel: string;
-  /** Link back to the current school year, when showing an older one */
-  current: { href: string; label: string } | null;
-  olderYears: { href: string; label: string }[];
+  /** "57th Senate · 2026–27" / "2026–27" */
+  termLabel: string;
+  /** Link back to the term in session, when showing an older one */
+  /** The term in session, when this page is a past one: its page and name ("57th Senate") */
+  current: { href: string; name: string } | null;
+  /** The other body's timeline for the same term */
+  otherHref: string;
+  markers: StreamMarkers;
+  /** The term's panel photo, or null for plain red */
+  photo: PanelPhoto | null;
+  /** The body's shelf of terms, at the very end of the stream */
+  shelf?: React.ReactNode;
 }) {
   const meta = STUDENT_GOV[body];
   const other = STUDENT_GOV[STUDENT_GOV_BODIES.find((b) => b !== body) as StudentGovBody];
@@ -204,6 +298,7 @@ export default function StudentGovSplitTimeline({
     .flatMap((m) => m.items)
     .map((item) => entryKey(item.kind, item.id))
     .find((key) => layouts.get(key)?.image !== "none");
+  const dividers = placeDividers(months, markers.dividers);
 
   return (
     // Same column as the desktop header (max 1280px, same side padding), so the
@@ -214,16 +309,11 @@ export default function StudentGovSplitTimeline({
     <StudentGovSplitFrame className="mx-auto flex w-full max-w-[1280px] flex-col min-[860px]:h-[calc(100dvh-var(--split-top,142px))] min-[860px]:min-h-[480px] min-[860px]:flex-row min-[860px]:overflow-hidden lg:px-6 xl:px-[30px]">
       <StudentGovMonthPanel
         title={meta.title}
+        termLabel={termLabel}
         otherTitle={other.title}
-        otherHref={other.href}
-        months={months.map(({ key, short, year, articles, updates, photo }) => ({
-          key,
-          short,
-          year,
-          articles,
-          updates,
-          photo,
-        }))}
+        otherHref={otherHref}
+        months={months.map(({ key, short }) => ({ key, short }))}
+        photo={photo}
       />
 
       <div
@@ -231,69 +321,82 @@ export default function StudentGovSplitTimeline({
         tabIndex={0}
         role="region"
         aria-label={`${meta.title} stream`}
-        className="min-w-0 flex-1 px-4 pt-5 pb-8 outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent sm:px-6 min-[860px]:h-full min-[860px]:overflow-y-auto min-[860px]:px-10 min-[860px]:pt-6 min-[860px]:pb-14 lg:pr-6 xl:pl-[72px]"
+        // With a shelf, the stream ends at the foot of its books (no bottom padding)
+        className={`min-w-0 flex-1 px-4 pt-5 outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent sm:max-[859px]:px-6 min-[860px]:h-full min-[860px]:overflow-y-auto min-[860px]:px-10 min-[860px]:pt-6 lg:pr-6 xl:pl-[72px] ${shelf ? "pb-0" : "pb-8 min-[860px]:pb-14"}`}
       >
-        <div className="flex max-w-[800px] flex-col gap-10">
+        <div className="flex max-w-[800px] flex-col gap-7">
           {current && (
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="font-meta text-[13px] font-bold uppercase tracking-[0.14em] text-text-main">
-                {yearLabel} school year
-              </p>
-              <TransitionLink href={current.href} className={PILL}>
-                &lsaquo; Back to {current.label}
-              </TransitionLink>
+              <p className="font-meta text-[13px] font-bold uppercase tracking-[0.14em] text-text-main">{termLabel}</p>
+              <StudentGovBackLink href={current.href} name={current.name} />
             </div>
           )}
 
-          {months.length === 0 && (
-            <p className="font-meta text-[16px] text-text-muted">Nothing yet in the {yearLabel} school year.</p>
+          {markers.gmWeek && (
+            <GmWeekMarker day={markers.gmWeek.day} text={markers.gmWeek.text} href={markers.gmWeek.href} />
           )}
 
-          {months.map((month) => (
-            <section
-              key={month.key}
-              id={monthSectionId(month.key)}
-              data-timeline-month={month.key}
-              aria-labelledby={`${monthSectionId(month.key)}-heading`}
-              className="flex scroll-mt-6 flex-col gap-10"
-            >
-              <div className="border-b-2 border-text-main pb-2.5">
-                <h2
-                  id={`${monthSectionId(month.key)}-heading`}
-                  className="font-meta text-[13px] font-bold uppercase tracking-[0.14em] text-text-main"
-                >
-                  {month.label}
-                </h2>
-              </div>
+          {months.length === 0 && (
+            <p className="font-meta text-[16px] text-text-muted">Nothing on the timeline for {termLabel} yet.</p>
+          )}
 
-              {month.items.map((item) => {
-                const key = entryKey(item.kind, item.id);
-                const layout = layouts.get(key) as Layout;
-                return item.kind === "article" ? (
-                  <ArticleCard key={key} item={item} layout={layout} priority={key === firstPhotoKey} />
-                ) : (
-                  <UpdateCard key={key} item={item} layout={layout} />
-                );
-              })}
-            </section>
+          {months.map((month, monthIndex) => {
+            // The term in session shows when the body meets beside its top month
+            const meets = !current && monthIndex === 0 ? meta.meets : null;
+            return (
+              <React.Fragment key={month.key}>
+                {(dividers.beforeMonth.get(month.key) ?? []).map((d) => (
+                  <ThinMarker key={`${d.day}-${d.text}`} day={d.hideDay ? null : d.day} text={d.text} />
+                ))}
+                <section
+                  id={monthSectionId(month.key)}
+                  data-timeline-month={month.key}
+                  aria-labelledby={`${monthSectionId(month.key)}-heading`}
+                  className="flex scroll-mt-6 flex-col gap-7"
+                >
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b-2 border-text-main pb-2.5">
+                    <h2
+                      id={`${monthSectionId(month.key)}-heading`}
+                      className="font-meta text-[13px] font-bold uppercase tracking-[0.14em] text-text-main"
+                    >
+                      {month.label}
+                    </h2>
+                    {meets && (
+                      <p className="font-meta text-[12px] font-bold uppercase tracking-[0.12em] text-text-main">
+                        <span className="sr-only">Meets </span>
+                        {meets}
+                      </p>
+                    )}
+                  </div>
+
+                  {month.items.map((item) => {
+                    const key = entryKey(item.kind, item.id);
+                    const layout = layouts.get(key) as Layout;
+                    return (
+                      <React.Fragment key={key}>
+                        {(dividers.beforeItem.get(key) ?? []).map((d) => (
+                          <ThinMarker key={`${d.day}-${d.text}`} day={d.hideDay ? null : d.day} text={d.text} />
+                        ))}
+                        {item.kind === "article" ? (
+                          <ArticleCard item={item} layout={layout} priority={key === firstPhotoKey} />
+                        ) : (
+                          <UpdateCard item={item} layout={layout} />
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </section>
+              </React.Fragment>
+            );
+          })}
+
+          {dividers.atEnd.map((d) => (
+            <ThinMarker key={`${d.day}-${d.text}`} day={d.hideDay ? null : d.day} text={d.text} />
           ))}
 
-          {olderYears.length > 0 && (
-            <nav aria-label="Previous school years" className="mt-4 border-t border-[var(--rule-color)] pt-8">
-              <h2 className="font-meta text-[13px] font-bold uppercase tracking-[0.14em] text-text-main">
-                Explore previous years
-              </h2>
-              <ul className="mt-4 flex flex-wrap gap-3">
-                {olderYears.map((y) => (
-                  <li key={y.href}>
-                    <TransitionLink href={y.href} className={PILL}>
-                      {y.label} &rsaquo;
-                    </TransitionLink>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          )}
+          {/* On desktop the shelf reaches left to the photo panel: the negative
+              margin cancels the stream's left padding at each breakpoint */}
+          {shelf && <div className="min-[860px]:-ml-10 xl:-ml-[72px]">{shelf}</div>}
         </div>
       </div>
     </StudentGovSplitFrame>

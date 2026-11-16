@@ -46,9 +46,17 @@ const NewsPageLayout: CollectionConfig = {
     // JSON blob storing the full layout, so new page components can add keys
     // without a migration. Shape: `NewsLayout` in components/News/newsLayout.ts
     //   lead: number | null,                 // top-left story, two thirds wide
-    //   leadTextPosition: 'north' | 'south' | 'east' | 'west',
+    //   leadTextPosition: 'north' | 'south' | 'east' | 'west' | 'overlay',
     //                                        // where the lead's text sits
-    //                                        // relative to its photo
+    //                                        // relative to its photo (or on it)
+    //   secondary: (number | null)[],       // stories pinned under the lead
+    //   featured: (number | null)[],        // stories pinned in the Featured row
+    //   topicCards: { overlay, subdeck },    // topic row card style
+    //   topicPicks: { [topic]: { manual, articles: (number | null)[] } },
+    //                                        // per topic tab: six newest, or chosen
+    //   bulletsHeadlinesOnly: boolean,       // Senate / E-Board bullets without summaries
+    //   leadFrame: { article, desktop, mobile } | null,
+    //                                        // crop of that story's lead photo
     {
       name: 'layout',
       type: 'json',

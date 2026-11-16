@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useStepNav } from '@payloadcms/ui';
 import '../FeaturesLayoutEditor/features-layout-editor.css';
 import './timeline-page-editor.css';
-import { STUDENT_GOV, type StudentGovBody } from '@/components/News/studentGov';
+import { STUDENT_GOV, matchesKicker, type StudentGovBody } from '@/components/News/studentGov';
 import {
   EMPTY_TIMELINE_PAGE,
   ENTRY_IMAGES,
@@ -18,9 +18,6 @@ import {
   monthKeyOf,
   normalizeTimelinePages,
   resolveStream,
-  schoolYearLabel,
-  schoolYearMonthKeys,
-  schoolYearOf,
   type EntrySize,
   type ResolvedEntryLayout,
   type TimelineEntryLayout,
@@ -30,6 +27,17 @@ import {
   MIN_ZOOM,
   type PhotoFrame,
 } from '@/components/News/timelinePage';
+import {
+  normalizeTerm,
+  resolveTerms,
+  termFullName,
+  termHref,
+  termIndexOf,
+  dropDuplicateStories,
+  storyKey,
+  troyDayKey,
+  type StudentGovTerm,
+} from '@/components/News/studentGovTerms';
 
 // ---------------------------------------------------------------------------
 // Types and helpers
@@ -48,22 +56,72 @@ type MediaDoc = {
 };
 
 type StreamEntry =
-  | { kind: 'article'; id: number; date: string; title: string; subdeck: string | null; image: MediaDoc | null }
+  | {
+      kind: 'article';
+      id: number;
+      date: string;
+      title: string;
+      subdeck: string | null;
+      image: MediaDoc | null;
+      kicker: string | null;
+      section: string | null;
+      /** Added from the archive finder rather than matched by kicker */
+      included: boolean;
+    }
   | { kind: 'update'; id: number; date: string; title: string; blurb: string };
 
 type ArticleDoc = {
   id: number;
   plainTitle?: string | null;
   subdeck?: string | null;
+  kicker?: string | null;
+  section?: string | null;
   publishedDate?: string | null;
   createdAt: string;
   featuredImage?: MediaDoc | number | null;
 };
 
+const ARTICLE_FIELDS = ['plainTitle', 'subdeck', 'kicker', 'section', 'publishedDate', 'createdAt', 'featuredImage'];
+
+/**
+ * Payload REST query string from a `where` object and options, e.g.
+ * { where: { and: [{ kicker: { like: 'senate' } }] } } →
+ * where[and][0][kicker][like]=senate
+ */
+function restQuery(where: unknown, options: Record<string, string | number> = {}): string {
+  const parts: string[] = [];
+  const walk = (value: unknown, path: string) => {
+    if (Array.isArray(value)) value.forEach((v, i) => walk(v, `${path}[${i}]`));
+    else if (value && typeof value === 'object') {
+      for (const [k, v] of Object.entries(value)) walk(v, `${path}[${k}]`);
+    } else parts.push(`${encodeURIComponent(path)}=${encodeURIComponent(String(value))}`);
+  };
+  walk(where, 'where');
+  for (const [k, v] of Object.entries(options)) parts.push(`${k}=${encodeURIComponent(String(v))}`);
+  for (const f of ARTICLE_FIELDS) parts.push(`${encodeURIComponent(`select[${f}]`)}=true`);
+  return parts.join('&');
+}
+
+/** What the duplicate check needs from an entry; updates are never duplicates */
+const articleInfo = (e: StreamEntry) =>
+  e.kind === 'article' ? { id: e.id, title: e.title, date: e.date, hasImage: Boolean(e.image) } : null;
+
+const toEntry = (a: ArticleDoc, included: boolean): StreamEntry => ({
+  kind: 'article',
+  id: a.id,
+  date: a.publishedDate || a.createdAt,
+  title: a.plainTitle || 'Untitled',
+  subdeck: a.subdeck ?? null,
+  image: a.featuredImage && typeof a.featuredImage === 'object' ? a.featuredImage : null,
+  kicker: a.kicker ?? null,
+  section: a.section ?? null,
+  included,
+});
+
 type UpdateDoc = { id: number; title: string; blurb: string; date: string };
 
-/** Which photo the panel editor is working on */
-type PhotoTarget = 'default' | string;
+/** Which photo the panel editor is working on: the picked term's, or the default */
+type PhotoTarget = 'term' | 'default';
 
 
 const mediaThumb = (m: MediaDoc | null | undefined) => m?.sizes?.card?.url || m?.thumbnailURL || m?.url || null;
@@ -228,7 +286,7 @@ const zoomLabel = (zoom: number) => `${Math.round(zoom * 100)}%`;
  * by (dx, dy) pixels is therefore a change of dx / (box width − drawn width)
  * in x (and the same for y). An axis with no spare photo can't move.
  */
-function pannedFrame(
+export function pannedFrame(
   start: PhotoFrame,
   dx: number,
   dy: number,
@@ -397,7 +455,7 @@ function ScreenFrameEditor({
 function PhotoPanel({
   title,
   config,
-  year,
+  term,
   media,
   entries,
   onChange,
@@ -405,67 +463,46 @@ function PhotoPanel({
   /** Page title drawn on the previews ("Student Senate") */
   title: string;
   config: TimelinePageConfig;
-  year: number;
+  /** The term picked in the Stream's Term menu */
+  term: { slug: string; name: string };
   media: Map<number, MediaDoc>;
+  /** That term's entries, newest first */
   entries: StreamEntry[];
   onChange: (next: TimelinePageConfig['photos'], picked?: MediaDoc) => void;
 }) {
-  const [target, setTarget] = useState<PhotoTarget>('default');
+  const [target, setTarget] = useState<PhotoTarget>('term');
   const [picking, setPicking] = useState(false);
-  const months = schoolYearMonthKeys(year);
   const photos = config.photos;
 
-  // Newest article photo in each month: what a month uses with no photo set
-  const articlePhoto = useMemo(() => {
-    const map = new Map<string, MediaDoc>();
-    for (const e of entries) {
-      if (e.kind === 'article' && e.image && !map.has(monthKeyOf(e.date))) map.set(monthKeyOf(e.date), e.image);
-    }
-    return map;
-  }, [entries]);
-
-  const own = target === 'default' ? photos.default : photos.months[target] ?? null;
+  const own = target === 'default' ? photos.default : photos.terms[term.slug] ?? null;
   const ownMedia = own ? media.get(own.media) ?? null : null;
 
-  // What shows when this slot has no photo of its own
-  let fallback: { media: MediaDoc | null; photo: TimelinePhoto | null; note: string } = {
+  // What shows when this slot has no photo of its own: the default for a
+  // term, else plain red (article photos are never used)
+  let fallback: { media: MediaDoc | null; note: string } = {
     media: null,
-    photo: null,
-    note: 'No photo yet: the panel shows plain red',
+    note:
+      target === 'default'
+        ? 'No default set: terms without their own photo show plain red'
+        : 'No photo yet: the panel shows plain red',
   };
-  if (target !== 'default') {
-    if (photos.default) {
-      fallback = { media: media.get(photos.default.media) ?? null, photo: photos.default, note: 'Using the default photo' };
-    } else if (articlePhoto.get(target)) {
-      fallback = { media: articlePhoto.get(target) ?? null, photo: null, note: "Using this month's newest article photo" };
-    } else {
-      fallback = { media: null, photo: null, note: 'Borrows the photo from the next newer month' };
-    }
-  } else {
-    const firstArticle = entries.find((e) => e.kind === 'article' && e.image);
-    if (firstArticle && firstArticle.kind === 'article') {
-      fallback = { media: firstArticle.image, photo: null, note: 'No default set: each month uses its newest article photo' };
-    }
+  if (target === 'term' && photos.default) {
+    fallback = { media: media.get(photos.default.media) ?? null, note: 'Using the default photo' };
   }
 
   const shown = own ? ownMedia : fallback.media;
-  const targetLabel = target === 'default' ? 'Default photo' : monthKeyLabel(target, 'long');
-  // Month drawn on the previews: the slot's month, or the newest one for the default
-  const previewMonth =
-    target !== 'default'
-      ? monthKeyLabel(target, 'short')
-      : entries[0]
-        ? monthKeyLabel(monthKeyOf(entries[0].date), 'short')
-        : monthKeyLabel(months[0], 'short');
+  const targetLabel = target === 'default' ? 'Default photo (terms without their own)' : `${term.name} photo`;
+  // Month drawn on the previews: the term's newest
+  const previewMonth = entries[0] ? monthKeyLabel(monthKeyOf(entries[0].date), 'short') : '';
 
   const setOwn = (next: TimelinePhoto | null, picked?: MediaDoc) => {
     if (target === 'default') {
       onChange({ ...photos, default: next }, picked);
     } else {
-      const nextMonths = { ...photos.months };
-      if (next) nextMonths[target] = next;
-      else delete nextMonths[target];
-      onChange({ ...photos, months: nextMonths }, picked);
+      const nextTerms = { ...photos.terms };
+      if (next) nextTerms[term.slug] = next;
+      else delete nextTerms[term.slug];
+      onChange({ ...photos, terms: nextTerms }, picked);
     }
   };
 
@@ -475,13 +512,13 @@ function PhotoPanel({
         <span className="fle-column-title">Panel photo</span>
       </div>
       <p className="tpe-help">
-        The photo behind the title on the left of the page. Set a default, and optionally a different photo for any
-        month: it swaps in as readers scroll to that month.
+        The photo behind the title on the left of the page: one for the whole term. Set it for the term picked in
+        the Stream&rsquo;s Term menu, and a default for terms without their own.
       </p>
 
       <div className="tpe-slot-chips" role="tablist" aria-label="Photo for">
-        {(['default', ...months] as PhotoTarget[]).map((key) => {
-          const p = key === 'default' ? photos.default : photos.months[key];
+        {(['term', 'default'] as PhotoTarget[]).map((key) => {
+          const p = key === 'default' ? photos.default : photos.terms[term.slug];
           const thumb = p ? mediaThumb(media.get(p.media)) : null;
           return (
             <button
@@ -493,7 +530,7 @@ function PhotoPanel({
               onClick={() => setTarget(key)}
             >
               {thumb ? <Thumb src={thumb} alt="" /> : <span className="tpe-chip-dot" aria-hidden="true" />}
-              {key === 'default' ? 'Default' : monthKeyLabel(key, 'short')}
+              {key === 'default' ? 'Default' : term.name}
             </button>
           );
         })}
@@ -527,7 +564,7 @@ function PhotoPanel({
 
       <div className="tpe-row">
         <button type="button" className="tpe-btn tpe-btn-primary" onClick={() => setPicking(true)}>
-          {own ? 'Change photo' : target === 'default' ? 'Choose default photo' : `Choose a photo for ${monthKeyLabel(target, 'short')}`}
+          {own ? 'Change photo' : target === 'default' ? 'Choose default photo' : `Choose a photo for the ${term.name}`}
         </button>
         {own && (
           <button type="button" className="tpe-btn tpe-btn-danger" onClick={() => setOwn(null)}>
@@ -600,24 +637,248 @@ function AddUpdate({ body, onCreated }: { body: StudentGovBody; onCreated: (u: U
       <p className="tpe-help">
         A short item for the {STUDENT_GOV[body].title} stream that isn&rsquo;t an article. Saves right away.
       </p>
-      <form className="tpe-form" onSubmit={submit}>
-        <label>
+      {/* One row: title, blurb, date, button (wraps on narrow windows) */}
+      <form className="tpe-form tpe-form-row" onSubmit={submit}>
+        <label className="tpe-form-title">
           <span>Title</span>
           <input className="tpe-input" value={title} onChange={(e) => setTitle(e.target.value)} required />
         </label>
-        <label>
+        <label className="tpe-form-blurb">
           <span>Blurb</span>
-          <textarea className="tpe-input" rows={4} value={blurb} onChange={(e) => setBlurb(e.target.value)} required />
+          <textarea className="tpe-input" rows={1} value={blurb} onChange={(e) => setBlurb(e.target.value)} required />
         </label>
-        <label>
-          <span>Date (leave empty for now)</span>
+        <label className="tpe-form-date">
+          <span>Date (empty = now)</span>
           <input className="tpe-input" type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} />
         </label>
         <button type="submit" className="tpe-btn tpe-btn-primary" disabled={busy || !title.trim() || !blurb.trim()}>
           {busy ? 'Adding…' : 'Add update'}
         </button>
-        {message && <p className={message.ok ? 'tpe-ok' : 'tpe-error'}>{message.text}</p>}
       </form>
+      {message && <p className={message.ok ? 'tpe-ok' : 'tpe-error'}>{message.text}</p>}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Archive finder
+// ---------------------------------------------------------------------------
+
+const FINDER_PAGE = 40;
+
+const longDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'America/New_York',
+  });
+
+/**
+ * Searches the published archive (back to the oldest term) for stories about
+ * this body that aren't on its timeline: filed under another kicker or in
+ * another section. With nothing typed it looks for the body's usual words in
+ * titles, subdecks and kickers; it can also search article text. "Add" puts
+ * a story on the timeline in the term it was published.
+ */
+function ArchiveFinder({
+  body,
+  from,
+  onTimeline,
+  onTimelineStories,
+  termName,
+  onAdd,
+}: {
+  body: StudentGovBody;
+  /** The oldest term's first meeting ("2016-04-28"); nothing older is searched */
+  from: string;
+  /** Article ids already on the timeline (kicker matches and earlier additions) */
+  onTimeline: ReadonlySet<number>;
+  /** `storyKey`s of what's on the timeline, to skip the archive's duplicate copies */
+  onTimelineStories: ReadonlySet<string>;
+  /** "49th Senate · 2018–19" for a date, or null before the oldest term */
+  termName: (date: string) => string | null;
+  onAdd: (a: ArticleDoc) => void;
+}) {
+  const meta = STUDENT_GOV[body];
+  const [query, setQuery] = useState('');
+  const [searchText, setSearchText] = useState(false);
+  const [results, setResults] = useState<ArticleDoc[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  // Busy from the start: suggestions load as soon as the finder opens
+  const [busy, setBusy] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searched, setSearched] = useState<{ terms: string[]; text: boolean }>({
+    terms: meta.archiveTerms,
+    text: false,
+  });
+  const [added, setAdded] = useState<string | null>(null);
+
+  // Fetches one page; every state change happens after the request returns
+  const search = useCallback(
+    async (terms: string[], text: boolean, nextPage: number) => {
+      try {
+        const fields = ['plainTitle', 'subdeck', 'kicker', ...(text ? ['plainContent'] : [])];
+        const where = {
+          and: [
+            { _status: { equals: 'published' } },
+            { publishedDate: { greater_than_equal: `${from}T00:00:00.000Z` } },
+            { or: terms.flatMap((t) => fields.map((f) => ({ [f]: { like: t } }))) },
+          ],
+        };
+        const res = await fetch(
+          `/api/articles?${restQuery(where, { sort: '-publishedDate', limit: FINDER_PAGE, page: nextPage, depth: 1 })}`,
+        );
+        if (!res.ok) throw new Error(String(res.status));
+        const data = await res.json();
+        const docs = (data.docs || []) as ArticleDoc[];
+        setResults((prev) => (nextPage === 1 ? docs : [...prev, ...docs]));
+        setTotal(data.totalDocs ?? docs.length);
+        setHasMore(Boolean(data.hasNextPage));
+        setPage(nextPage);
+        setSearched({ terms, text });
+        setError(null);
+      } catch {
+        setError('The search failed. Try again.');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [from],
+  );
+
+  useEffect(() => {
+    void search(meta.archiveTerms, false, 1);
+  }, [search, meta.archiveTerms]);
+
+  const start = (terms: string[], text: boolean) => {
+    setBusy(true);
+    setAdded(null);
+    void search(terms, text, 1);
+  };
+
+  const exclude = meta.archiveExclude;
+  // One copy of each story, like the timeline
+  const visible = dropDuplicateStories(results, (a) => ({
+    id: a.id,
+    title: a.plainTitle || 'Untitled',
+    date: a.publishedDate || a.createdAt,
+    hasImage: Boolean(a.featuredImage),
+  })).filter((a) => {
+    if (onTimeline.has(a.id)) return false;
+    if (onTimelineStories.has(storyKey(a.plainTitle || 'Untitled', a.publishedDate || a.createdAt))) return false;
+    // "Faculty Senate" stories, unless they also mention the Student Senate
+    if (exclude && !matchesKicker(body, a.kicker)) {
+      const text = `${a.plainTitle ?? ''} ${a.kicker ?? ''}`;
+      if (exclude.test(text) && !/student senate/i.test(text)) return false;
+    }
+    return true;
+  });
+
+  return (
+    <section className="fle-column tpe-card">
+      <div className="fle-column-header">
+        <span className="fle-column-title">Archive finder</span>
+      </div>
+      <p className="tpe-help">
+        Stories about the {meta.title} filed under another kicker or section, from {longDate(`${from}T12:00:00Z`)}{' '}
+        on. News articles with a {meta.title} kicker (any capitals) are on the timeline already; anything you add here
+        joins them in the term it was published. Press <strong>Activate</strong> to save.
+      </p>
+      <form
+        className="tpe-finder-bar"
+        onSubmit={(e) => {
+          e.preventDefault();
+          start(query.trim() ? [query.trim()] : meta.archiveTerms, searchText);
+        }}
+      >
+        <input
+          className="tpe-input"
+          type="search"
+          value={query}
+          placeholder={meta.archiveTerms.join(', ')}
+          aria-label="Search the archive"
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <label className="tpe-finder-check">
+          <input type="checkbox" checked={searchText} onChange={(e) => setSearchText(e.target.checked)} />
+          <span>Article text too</span>
+        </label>
+        <button type="submit" className="tpe-btn tpe-btn-primary" disabled={busy}>
+          {busy ? 'Searching…' : 'Search'}
+        </button>
+      </form>
+      <p className="tpe-muted">
+        {busy && results.length === 0
+          ? 'Searching the archive…'
+          : `${total} ${total === 1 ? 'story mentions' : 'stories mention'} ${searched.terms
+              .map((t) => `“${t}”`)
+              .join(' or ')}${searched.text ? ' (text included)' : ''}; ${visible.length} of the ${
+              results.length
+            } loaded ${visible.length === 1 ? "isn't" : "aren't"} on the timeline yet.`}
+      </p>
+      {added && <p className="tpe-ok">{added}</p>}
+      {error && <p className="tpe-error">{error}</p>}
+      <ol className="tpe-entries">
+        {visible.map((a) => {
+          const date = a.publishedDate || a.createdAt;
+          const thumb = mediaThumb(a.featuredImage && typeof a.featuredImage === 'object' ? a.featuredImage : null);
+          const term = termName(date);
+          return (
+            <li key={a.id} className="tpe-entry">
+              <div className="tpe-entry-main">
+                {thumb ? (
+                  <Thumb className="tpe-entry-thumb" src={thumb} alt="" />
+                ) : (
+                  <span className="tpe-entry-thumb tpe-entry-thumb-empty" />
+                )}
+                <div className="tpe-entry-text">
+                  <div className="tpe-entry-meta">
+                    <span>{longDate(date)}</span>
+                    <span className="tpe-kind-article">{a.section ?? 'article'}</span>
+                    {a.kicker && <span>{a.kicker}</span>}
+                    <span className={`tpe-badge ${term ? '' : 'tpe-badge-muted'}`}>{term ?? 'Before the oldest term'}</span>
+                  </div>
+                  <div className="tpe-entry-title">{a.plainTitle || 'Untitled'}</div>
+                  {a.subdeck && <div className="tpe-entry-sub">{a.subdeck}</div>}
+                </div>
+                <div className="tpe-entry-actions">
+                  <button
+                    type="button"
+                    className="tpe-btn tpe-btn-primary"
+                    disabled={!term}
+                    title={term ? undefined : 'Older than the oldest term on the shelf'}
+                    onClick={() => {
+                      onAdd(a);
+                      setAdded(`Added “${a.plainTitle || 'Untitled'}” to the ${term}.`);
+                    }}
+                  >
+                    Add
+                  </button>
+                  <Link className="tpe-btn" href={`/newsroom/collections/articles/${a.id}`} target="_blank">
+                    Open &#8599;
+                  </Link>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+      {hasMore && (
+        <button
+          type="button"
+          className="tpe-btn"
+          disabled={busy}
+          onClick={() => {
+            setBusy(true);
+            void search(searched.terms, searched.text, page + 1);
+          }}
+        >
+          {busy ? 'Loading…' : `Load ${FINDER_PAGE} more`}
+        </button>
+      )}
     </section>
   );
 }
@@ -837,6 +1098,7 @@ function StreamRow({
   onToggleLayout,
   onLayout,
   onToggleHidden,
+  onRemove,
   onUpdateSaved,
   onDelete,
 }: {
@@ -851,6 +1113,8 @@ function StreamRow({
   onToggleLayout: () => void;
   onLayout: (next: TimelineEntryLayout | null) => void;
   onToggleHidden: () => void;
+  /** Take an article added from the archive back off the timeline */
+  onRemove: () => void;
   onUpdateSaved: (u: UpdateDoc) => void;
   onDelete: () => void;
 }) {
@@ -868,6 +1132,11 @@ function StreamRow({
               {entry.kind === 'article' ? 'Article' : 'Update'}
             </span>
             {isLead && <span className="tpe-badge">Lead</span>}
+            {entry.kind === 'article' && entry.included && (
+              <span className="tpe-badge" title={[entry.section, entry.kicker].filter(Boolean).join(' · ')}>
+                From archive
+              </span>
+            )}
             {hidden && <span className="tpe-badge tpe-badge-muted">Hidden</span>}
             {layout?.custom && <span className="tpe-badge tpe-badge-layout">{describeLayout(entry, layout)}</span>}
           </div>
@@ -884,9 +1153,15 @@ function StreamRow({
           >
             Layout
           </button>
-          <button type="button" className="tpe-btn" onClick={onToggleHidden}>
-            {hidden ? 'Show' : 'Hide'}
-          </button>
+          {entry.kind === 'article' && entry.included ? (
+            <button type="button" className="tpe-btn" onClick={onRemove} title="Back to the archive finder">
+              Remove
+            </button>
+          ) : (
+            <button type="button" className="tpe-btn" onClick={onToggleHidden}>
+              {hidden ? 'Show' : 'Hide'}
+            </button>
+          )}
           {entry.kind === 'update' ? (
             <>
               <button
@@ -1017,7 +1292,7 @@ function StreamPreview({
 // ---------------------------------------------------------------------------
 
 /**
- * Dashboard editor for /news/senate or /news/executive-board: the left
+ * Dashboard editor for the Senate or Executive Board timeline: the left
  * panel's photos, new updates, and the stream (each entry's size, photo
  * placement and position; hide entries; edit or delete updates). Photos,
  * hidden entries and layouts are saved with "Activate" into `news-page-layout` → `timelinePages[body]`;
@@ -1029,8 +1304,10 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
   const [config, setConfig] = useState<TimelinePageConfig>(EMPTY_TIMELINE_PAGE);
   const [entries, setEntries] = useState<StreamEntry[]>([]);
   const [media, setMedia] = useState<Map<number, MediaDoc>>(new Map());
-  const [year, setYear] = useState<number>(() => schoolYearOf(new Date()));
-  const [currentYear] = useState<number>(() => schoolYearOf(new Date()));
+  // Terms as entered (Student Gov Terms); the stream shows one term at a time
+  const [storedTerms, setStoredTerms] = useState<StudentGovTerm[]>([]);
+  const [termSlug, setTermSlug] = useState<string | null>(null);
+  const [now] = useState(() => new Date());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(true);
@@ -1050,33 +1327,6 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
   useEffect(() => {
     (async () => {
       try {
-        const kicker = encodeURIComponent(meta.kicker);
-        const [articleData, updateData] = await Promise.all([
-          fetch(
-            `/api/articles?where[section][equals]=news&where[kicker][equals]=${kicker}&where[_status][equals]=published` +
-              '&sort=-publishedDate&limit=1000&depth=1&select[plainTitle]=true&select[subdeck]=true' +
-              '&select[publishedDate]=true&select[createdAt]=true&select[featuredImage]=true',
-          ).then((r) => r.json()),
-          fetch(`/api/student-gov-updates?where[body][equals]=${body}&sort=-date&limit=1000&depth=0`).then((r) => r.json()),
-        ]);
-        const list: StreamEntry[] = [
-          ...((articleData.docs || []) as ArticleDoc[]).map(
-            (a): StreamEntry => ({
-              kind: 'article',
-              id: a.id,
-              date: a.publishedDate || a.createdAt,
-              title: a.plainTitle || 'Untitled',
-              subdeck: a.subdeck ?? null,
-              image: a.featuredImage && typeof a.featuredImage === 'object' ? a.featuredImage : null,
-            }),
-          ),
-          ...((updateData.docs || []) as UpdateDoc[]).map(
-            (u): StreamEntry => ({ kind: 'update', id: u.id, date: u.date, title: u.title, blurb: u.blurb }),
-          ),
-        ];
-        list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        setEntries(list);
-
         let id = extractDocId();
         let doc: { id: number; layout?: unknown } | null = null;
         if (id) {
@@ -1104,7 +1354,53 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
         const page = normalizeTimelinePages(layout.timelinePages)[body];
         setConfig(page);
 
-        const mediaIds = [page.photos.default, ...Object.values(page.photos.months)]
+        // Kicker matches (any capitalisation; the query narrows, the pattern
+        // decides), articles added from the archive, updates and terms
+        const [articleData, includedData, updateData, termData] = await Promise.all([
+          fetch(
+            `/api/articles?${restQuery(
+              {
+                and: [
+                  { section: { equals: 'news' } },
+                  { _status: { equals: 'published' } },
+                  { or: meta.kickerQuery.map((word) => ({ kicker: { like: word } })) },
+                ],
+              },
+              { sort: '-publishedDate', limit: 2000, depth: 1 },
+            )}`,
+          ).then((r) => r.json()),
+          page.included.length > 0
+            ? fetch(
+                `/api/articles?${restQuery(
+                  { and: [{ id: { in: page.included.join(',') } }, { _status: { equals: 'published' } }] },
+                  { limit: page.included.length, depth: 1 },
+                )}`,
+              ).then((r) => r.json())
+            : Promise.resolve({ docs: [] }),
+          fetch(`/api/student-gov-updates?where[body][equals]=${body}&sort=-date&limit=1000&depth=0`).then((r) => r.json()),
+          fetch(`/api/student-gov-terms?where[body][equals]=${body}&sort=startsOn&limit=500&depth=0`)
+            .then((r) => (r.ok ? r.json() : { docs: [] }))
+            .catch(() => ({ docs: [] })),
+        ]);
+        setStoredTerms(
+          ((termData.docs || []) as Record<string, unknown>[])
+            .map(normalizeTerm)
+            .filter((t): t is StudentGovTerm => t !== null),
+        );
+        const matched = ((articleData.docs || []) as ArticleDoc[]).filter((a) => matchesKicker(body, a.kicker));
+        const matchedIds = new Set(matched.map((a) => a.id));
+        const list: StreamEntry[] = [
+          ...matched.map((a) => toEntry(a, false)),
+          ...((includedData.docs || []) as ArticleDoc[]).filter((a) => !matchedIds.has(a.id)).map((a) => toEntry(a, true)),
+          ...((updateData.docs || []) as UpdateDoc[]).map(
+            (u): StreamEntry => ({ kind: 'update', id: u.id, date: u.date, title: u.title, blurb: u.blurb }),
+          ),
+        ];
+        list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        // One copy of each story, picked the same way as the page
+        setEntries(dropDuplicateStories(list, articleInfo));
+
+        const mediaIds = [page.photos.default, ...Object.values(page.photos.terms)]
           .filter((p): p is TimelinePhoto => p !== null)
           .map((p) => p.media);
         if (mediaIds.length > 0) {
@@ -1120,7 +1416,7 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
         setLoading(false);
       }
     })();
-  }, [body, meta.kicker]);
+  }, [body, meta.kickerQuery]);
 
   // ---- Mutations ----
   const update = useCallback((fn: (prev: TimelinePageConfig) => TimelinePageConfig) => {
@@ -1133,6 +1429,21 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
       ...prev,
       hidden: prev.hidden.includes(key) ? prev.hidden.filter((h) => h !== key) : [...prev.hidden, key],
     }));
+
+  // Archive finder: put a story filed under another kicker on the timeline,
+  // or take it back off. Saved with "Activate" like the rest of the page.
+  const addFromArchive = (a: ArticleDoc) => {
+    update((prev) => ({ ...prev, included: [...prev.included.filter((id) => id !== a.id), a.id] }));
+    setEntries((prev) =>
+      [...prev.filter((e) => !(e.kind === 'article' && e.id === a.id)), toEntry(a, true)].sort(
+        (x, y) => new Date(y.date).getTime() - new Date(x.date).getTime(),
+      ),
+    );
+  };
+  const removeFromArchive = (id: number) => {
+    update((prev) => ({ ...prev, included: prev.included.filter((i) => i !== id) }));
+    setEntries((prev) => prev.filter((e) => !(e.kind === 'article' && e.id === id && e.included)));
+  };
 
   const setEntryLayout = (key: string, next: TimelineEntryLayout | null) =>
     update((prev) => {
@@ -1203,13 +1514,41 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
   }, [saved]);
 
   // ---- Derived ----
-  const years = useMemo(() => {
-    const set = new Set<number>([currentYear]);
-    for (const e of entries) set.add(schoolYearOf(e.date));
-    return [...set].sort((a, b) => b - a);
-  }, [entries, currentYear]);
+  // Same terms the page uses (stand-ins when none are entered), oldest first
+  const terms = useMemo(
+    () => resolveTerms(storedTerms, body, entries.map((e) => e.date), now),
+    [storedTerms, body, entries, now],
+  );
+  const started = useMemo(() => terms.filter((t) => t.startsOn <= troyDayKey(now)), [terms, now]);
+  const currentTerm = started[started.length - 1];
+  const term = started.find((t) => t.slug === termSlug) ?? currentTerm;
+  const termIdx = terms.indexOf(term);
 
-  const yearEntries = useMemo(() => entries.filter((e) => schoolYearOf(e.date) === year), [entries, year]);
+  // Archive finder: search back to the oldest term on the shelf, skipping
+  // what's already on the timeline
+  const archiveFrom = started.find((t) => t.hasCoverage)?.startsOn ?? started[0]?.startsOn ?? '2016-01-01';
+  const onTimeline = useMemo(
+    () => new Set(entries.flatMap((e) => (e.kind === 'article' ? [e.id] : []))),
+    [entries],
+  );
+  // Stories on the timeline by title and day, so the finder skips their
+  // duplicate copies too
+  const onTimelineStories = useMemo(
+    () => new Set(entries.flatMap((e) => (e.kind === 'article' ? [storyKey(e.title, e.date)] : []))),
+    [entries],
+  );
+  const termNameFor = useCallback(
+    (date: string) => {
+      const i = termIndexOf(terms, date);
+      return i >= 0 && terms[i].startsOn <= troyDayKey(now) ? termFullName(terms[i]) : null;
+    },
+    [terms, now],
+  );
+
+  const yearEntries = useMemo(
+    () => entries.filter((e) => termIndexOf(terms, e.date) === termIdx),
+    [entries, terms, termIdx],
+  );
   const hidden = useMemo(() => new Set(config.hidden), [config.hidden]);
   // Same layout the page uses: visible entries only, newest article as lead
   const layouts = useMemo(
@@ -1267,7 +1606,10 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
         </div>
         <div className="fle-toolbar-right">
           {error && <span className="fle-toolbar-error">{error}</span>}
-          <a className="tpe-btn" href={meta.href} target="_blank" rel="noreferrer">
+          <a className="tpe-btn" href="/newsroom/collections/student-gov-terms" target="_blank" rel="noreferrer">
+            Terms &#8599;
+          </a>
+          <a className="tpe-btn" href={termHref(term, term === currentTerm)} target="_blank" rel="noreferrer">
             View page &#8599;
           </a>
           <button
@@ -1281,72 +1623,87 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
       </div>
 
       <div className="tpe-body">
-        <section className="fle-column tpe-card tpe-stream">
-          <div className="fle-column-header">
-            <span className="fle-column-title">Stream</span>
-            <label className="tpe-year">
-              <span>School year</span>
-              <select className="tpe-input" value={year} onChange={(e) => setYear(Number(e.target.value))}>
-                {years.map((y) => (
-                  <option key={y} value={y}>
-                    {schoolYearLabel(y)}
-                    {y === currentYear ? ' (current)' : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <p className="tpe-help">
-            Everything on the page for {schoolYearLabel(year)} (August 1 to July 31), newest first: {visibleCount} shown
-            {visibleCount !== yearEntries.length ? `, ${yearEntries.length - visibleCount} hidden` : ''}. Articles join
-            the stream when they&rsquo;re published with the &ldquo;{meta.kicker}&rdquo; kicker. Use{' '}
-            <strong>Layout</strong> to set any entry&rsquo;s size, photo placement and position; anything left alone
-            follows the default (newest article full width, the rest zig-zagging). Hidden entries also drop out of
-            the /news box.
-          </p>
-          {byMonth.length === 0 ? (
-            <p className="tpe-muted">Nothing in {schoolYearLabel(year)} yet.</p>
-          ) : (
-            byMonth.map((group) => (
-              <div key={group.key} className="tpe-month">
-                <h3 className="tpe-month-title">
-                  {monthKeyLabel(group.key, 'long')}
-                  {config.photos.months[group.key] && <span className="tpe-badge">Own photo</span>}
-                </h3>
-                <ol className="tpe-entries">
-                  {group.items.map((entry) => {
-                    const key = entryKey(entry.kind, entry.id);
-                    const layout = layouts.get(key);
-                    return (
-                      <StreamRow
-                        key={key}
-                        rowId={rowId(key)}
-                        entry={entry}
-                        isLead={Boolean(layout?.isLead)}
-                        hidden={hidden.has(key)}
-                        layout={layout}
-                        saved={config.entries[key]}
-                        layoutOpen={layoutOpen === key && Boolean(layout)}
-                        onToggleLayout={() => setLayoutOpen(layoutOpen === key ? null : key)}
-                        onLayout={(next) => setEntryLayout(key, next)}
-                        onToggleHidden={() => toggleHidden(key)}
-                        onUpdateSaved={upsertUpdate}
-                        onDelete={() => deleteUpdate(entry.id)}
-                      />
-                    );
-                  })}
-                </ol>
-              </div>
-            ))
-          )}
-        </section>
+        <div className="tpe-main">
+          {/* Top left: new updates are the most frequent edit */}
+          <AddUpdate body={body} onCreated={upsertUpdate} />
+          <section className="fle-column tpe-card tpe-stream">
+            <div className="fle-column-header">
+              <span className="fle-column-title">Stream</span>
+              <label className="tpe-year">
+                <span>Term</span>
+                <select className="tpe-input" value={term.slug} onChange={(e) => setTermSlug(e.target.value)}>
+                  {[...started].reverse().map((t) => (
+                    <option key={t.slug} value={t.slug}>
+                      {termFullName(t)}
+                      {t === currentTerm ? ' (in session)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <p className="tpe-help">
+              Everything on the page for the {termFullName(term)} (its first meeting
+              {term.approximate ? ', taken as April 1 until terms are entered,' : ''} to the next term&rsquo;s), newest
+              first: {visibleCount} shown
+              {visibleCount !== yearEntries.length ? `, ${yearEntries.length - visibleCount} hidden` : ''}. News
+              articles join the stream when they&rsquo;re published with the &ldquo;{meta.kicker}&rdquo; kicker (any
+              capitals); stories under other kickers can be added from the <strong>Archive finder</strong> below. Use{' '}
+              <strong>Layout</strong> to set any entry&rsquo;s size, photo placement and position; anything left alone
+              follows the default (newest article full width, the rest zig-zagging). Hidden entries also drop out of
+              the /news box.
+            </p>
+            {byMonth.length === 0 ? (
+              <p className="tpe-muted">Nothing in the {termFullName(term)} yet.</p>
+            ) : (
+              byMonth.map((group) => (
+                <div key={group.key} className="tpe-month">
+                  <h3 className="tpe-month-title">
+                    {monthKeyLabel(group.key, 'long')}
+                  </h3>
+                  <ol className="tpe-entries">
+                    {group.items.map((entry) => {
+                      const key = entryKey(entry.kind, entry.id);
+                      const layout = layouts.get(key);
+                      return (
+                        <StreamRow
+                          key={key}
+                          rowId={rowId(key)}
+                          entry={entry}
+                          isLead={Boolean(layout?.isLead)}
+                          hidden={hidden.has(key)}
+                          layout={layout}
+                          saved={config.entries[key]}
+                          layoutOpen={layoutOpen === key && Boolean(layout)}
+                          onToggleLayout={() => setLayoutOpen(layoutOpen === key ? null : key)}
+                          onLayout={(next) => setEntryLayout(key, next)}
+                          onToggleHidden={() => toggleHidden(key)}
+                          onRemove={() => removeFromArchive(entry.id)}
+                          onUpdateSaved={upsertUpdate}
+                          onDelete={() => deleteUpdate(entry.id)}
+                        />
+                      );
+                    })}
+                  </ol>
+                </div>
+              ))
+            )}
+          </section>
+          <ArchiveFinder
+            body={body}
+            from={archiveFrom}
+            onTimeline={onTimeline}
+            onTimelineStories={onTimelineStories}
+            termName={termNameFor}
+            onAdd={addFromArchive}
+          />
+        </div>
 
         <div className="tpe-side">
           <StreamPreview months={byMonth} layouts={layouts} selected={layoutOpen} onSelect={selectFromPreview} />
           <PhotoPanel
             title={meta.title}
             config={config}
-            year={year}
+            term={{ slug: term.slug, name: termFullName(term) }}
             media={media}
             entries={yearEntries}
             onChange={(photos, picked) => {
@@ -1354,7 +1711,6 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
               update((prev) => ({ ...prev, photos }));
             }}
           />
-          <AddUpdate body={body} onCreated={upsertUpdate} />
         </div>
       </div>
     </div>
