@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useState, useEffect, useSyncExternalStore } from "react";
+import { startTransition, useState, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { toRoman } from "@/lib/toRoman";
 import Image from "next/image";
 import Link from "next/link";
@@ -20,6 +20,19 @@ import type { ThemeLogoSrcs, HeaderAnimationConfig } from "@/lib/getTheme";
 import LiveStrip, { type LiveArticleStripEntry } from "@/components/LiveStrip";
 import { HEADER_WAVE_CONVERGE, HEADER_WAVE_SVG_H, generateWaveFleet } from "@/lib/headerWaveFleet";
 const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
+
+/** Where the section bar sat, from the left edge of the section links */
+type SectionBarSpot = { left: number; width: number };
+/**
+ * The section bar on the page before this one, so the next page's bar can
+ * slide over from it. Each page draws its own header, so this lives outside
+ * the component: it survives moving between pages, not a reload. Undefined
+ * until a header has drawn on a desktop-width screen; null when that page
+ * wasn't in a section (the bar then grows in where it lands).
+ */
+let lastSectionBar: SectionBarSpot | null | undefined;
+const SECTION_BAR_SLIDE_MS = 420;
+const SECTION_BAR_EASING = "cubic-bezier(0.65, 0, 0.35, 1)";
 
 function formatCurrentDate() {
   return new Date().toLocaleDateString("en-US", {
@@ -102,6 +115,89 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
   const router = useRouter();
   const pathname = usePathname();
   const currentPath = pathname ?? "";
+  // The section you're in (its front page or anything under it)
+  const activeSectionHref =
+    primaryNavItems.find((item) => currentPath === item.href || currentPath.startsWith(`${item.href}/`))?.href ?? null;
+  const sectionNavRef = useRef<HTMLElement>(null);
+
+  // Slide the section bar over from where it was on the last page. The bar
+  // rests inside the active link (plain CSS); this only animates it in.
+  useLayoutEffect(() => {
+    const nav = sectionNavRef.current;
+    const bar = nav?.querySelector<HTMLElement>("[data-section-bar]") ?? null;
+    // Layout offsets, not the on-screen box: they leave out the slide's own
+    // transform, so a measure taken mid-slide is still where the bar rests.
+    // The bar sits in its link, and the link in the nav (both positioned).
+    const measure = (): SectionBarSpot | null => {
+      if (!nav || !bar) return null;
+      const link = bar.offsetParent as HTMLElement | null;
+      return { left: (link?.offsetLeft ?? 0) + bar.offsetLeft, width: bar.offsetWidth };
+    };
+    // Below desktop width the section links are hidden: nothing to slide,
+    // and a slide on the next page would start from a bogus spot
+    if (!nav || nav.getBoundingClientRect().width === 0) {
+      lastSectionBar = undefined;
+      return;
+    }
+    const here = measure();
+    const previous = lastSectionBar;
+    lastSectionBar = here;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const overlay = nav.querySelector<HTMLElement>("[data-section-ink]");
+    // From the last page's bar, or (from a page outside the sections) a
+    // point in the middle of this one, so it grows out both ways
+    const from: SectionBarSpot | null =
+      previous === null && here ? { left: here.left + here.width / 2, width: 0 } : (previous ?? null);
+    if (
+      bar && overlay && here && here.width > 0 && from && !reduceMotion &&
+      (from.left !== here.left || from.width !== here.width)
+    ) {
+      const timing = {
+        duration: previous === null ? SECTION_BAR_SLIDE_MS * 0.75 : SECTION_BAR_SLIDE_MS,
+        easing: SECTION_BAR_EASING,
+      };
+      // The bar: drawn where it was, then eased to where it rests
+      bar.animate(
+        [
+          { transformOrigin: "left", transform: `translateX(${from.left - here.left}px) scaleX(${from.width / here.width})` },
+          { transformOrigin: "left", transform: "translateX(0) scaleX(1)" },
+        ],
+        timing,
+      );
+      // The red ink: a red copy of the links over the black ones, cut to
+      // the bar's span on the same timing, so every letter is red exactly
+      // while the bar is under it. Both edges move in straight lines on the
+      // same easing as the bar's, so they stay together all the way.
+      const navWidth = nav.clientWidth;
+      const ink = (spot: SectionBarSpot) =>
+        `inset(0px ${navWidth - spot.left - spot.width}px 0px ${spot.left}px)`;
+      nav.dataset.sliding = "";
+      overlay
+        .animate([{ clipPath: ink(from) }, { clipPath: ink(here) }], timing)
+        .finished.catch(() => {})
+        .finally(() => {
+          delete nav.dataset.sliding;
+        });
+    }
+
+    if (!bar) return;
+    // Measure again once the web font is in and on resize, so the next
+    // page slides from where the bar really is
+    let cancelled = false;
+    const save = () => {
+      if (cancelled) return;
+      const spot = measure();
+      if (spot && spot.width > 0) lastSectionBar = spot;
+    };
+    document.fonts?.ready.then(save);
+    window.addEventListener("resize", save);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("resize", save);
+    };
+  }, [activeSectionHref]);
+
   const shouldEnableAnimatedHeaderTransition =
     headerAnimation.enabled !== false &&
     (phase !== "idle" || shouldRenderAnimatedHeader(currentPath));
@@ -540,19 +636,57 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                 />
               </Link>
 
-              <nav className="font-meta relative mr-4 flex flex-wrap items-center justify-end gap-x-7 gap-y-1.5 pb-0">
-                {primaryNavItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    onClick={(e) => handleLinkClick(e, item.href)}
-                    onMouseEnter={() => prefetchLink(item.href)}
-                    onFocus={() => prefetchLink(item.href)}
-                    className="relative py-0.5 text-[16px] font-semibold uppercase tracking-[0.08em] text-text-main hover:text-accent transition-colors"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+              <nav ref={sectionNavRef} className="group/sections font-meta relative mr-4 flex flex-wrap items-center justify-end gap-x-7 gap-y-1.5 pb-0">
+                {/* Red copy of the links, shown only while the bar slides:
+                    cut to the bar's span, it turns each letter red as the bar
+                    passes under (see above). Same layout as the links. */}
+                <div
+                  aria-hidden="true"
+                  data-section-ink
+                  className="pointer-events-none absolute inset-0 z-10 hidden flex-wrap items-center justify-end gap-x-7 gap-y-1.5 group-data-[sliding]/sections:flex"
+                >
+                  {primaryNavItems.map((item) => (
+                    <span
+                      key={item.label}
+                      className="py-0.5 text-[16px] font-semibold uppercase tracking-[0.08em] text-accent"
+                    >
+                      {item.label}
+                    </span>
+                  ))}
+                </div>
+                {primaryNavItems.map((item) => {
+                  // The section you're in is set in red with a bar on the
+                  // rule, in place of a big title on the section page itself.
+                  // The bar slides over between sections (see above); while
+                  // it does, the red comes from the copy above instead.
+                  const active = item.href === activeSectionHref;
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      onClick={(e) => handleLinkClick(e, item.href)}
+                      onMouseEnter={() => prefetchLink(item.href)}
+                      onFocus={() => prefetchLink(item.href)}
+                      // No color fade on the active link: it swaps with the
+                      // red copy the instant a slide ends
+                      className={`relative py-0.5 text-[16px] font-semibold uppercase tracking-[0.08em] ${
+                        active
+                          ? "text-accent group-data-[sliding]/sections:text-text-main"
+                          : "text-text-main transition-colors hover:text-accent"
+                      }`}
+                    >
+                      {item.label}
+                      {active && (
+                        <span
+                          aria-hidden="true"
+                          data-section-bar
+                          className="pointer-events-none absolute -bottom-[4px] left-0 right-0 h-[4px] bg-accent"
+                        />
+                      )}
+                    </Link>
+                  );
+                })}
               </nav>
             </div>
             {liveEntries && liveEntries.length > 0 && (

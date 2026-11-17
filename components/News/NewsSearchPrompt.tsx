@@ -25,13 +25,14 @@ const WAVE_PATH = (() => {
 /**
  * The foot of /news: "Missed something?", centred. A search box limited to
  * News (it goes to the site search as /search?q=…&section=news) on a red
- * underline, and a link to every past News story (/news/more-in-news).
+ * underline, a link to every past News story (/news/more-in-news), and the
+ * News contact email (the page has no header row for these any more).
  *
  * Like the header search, the underline turns into a travelling rainbow wave
  * while you type, and stays rainbow once the search is submitted. Works
  * without scripts: the search is a plain form and the underline stays red.
  */
-export default function NewsSearchPrompt() {
+export default function NewsSearchPrompt({ contactHref }: { contactHref?: string }) {
   const [isTyping, setIsTyping] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -161,13 +162,24 @@ export default function NewsSearchPrompt() {
         </button>
       </form>
 
-      <TransitionLink
-        href="/news/more-in-news"
-        className="group mt-5 inline-flex min-h-11 items-center gap-1.5 font-meta text-[15px] font-medium text-accent underline-offset-4 hover:underline"
-      >
-        Browse back issues
-        <ArrowRight aria-hidden="true" className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={2} />
-      </TransitionLink>
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6">
+        <TransitionLink
+          href="/news/more-in-news"
+          className="group inline-flex min-h-11 items-center gap-1.5 font-meta text-[15px] font-medium text-accent underline-offset-4 hover:underline"
+        >
+          Browse back issues
+          <ArrowRight aria-hidden="true" className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={2} />
+        </TransitionLink>
+        {contactHref && (
+          <a
+            href={contactHref}
+            className="group inline-flex min-h-11 items-center gap-1.5 font-meta text-[15px] font-medium text-accent underline-offset-4 hover:underline"
+          >
+            Contact News
+            <ArrowRight aria-hidden="true" className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={2} />
+          </a>
+        )}
+      </div>
     </section>
   );
 }

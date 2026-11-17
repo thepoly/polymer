@@ -1,6 +1,5 @@
 import React from "react";
 import type { Article as ComponentArticle } from "@/components/FrontPage/types";
-import TransitionLink from "@/components/TransitionLink";
 import BalanceColumns from "@/components/BalanceColumns";
 import NewsFeatured, { FeaturedCard, OverlayCard } from "./NewsFeatured";
 import NewsTopicTabs from "./NewsTopicTabs";
@@ -158,36 +157,17 @@ export default function NewsPage({
     // Side padding matches the site header's, so the page lines up with the
     // rule under the logo at every width
     <div className="mx-auto max-w-[1280px] px-4 pt-5 pb-8 md:px-6 xl:px-[30px]">
-      {/* Header: title, then Archive and Contact (same as the previous layout) */}
-      <div className="mt-6 mb-8 flex flex-col items-center gap-4 text-center sm:mb-10 lg:flex-row lg:items-center lg:gap-6 lg:text-left">
-        <h1
-          className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[44px] sm:text-[52px] lg:text-[60px]"
-          style={{ fontWeight: 400, lineHeight: 1 }}
-        >
-          {title}
-        </h1>
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[24px] sm:text-[28px] lg:justify-start lg:text-[36px]">
-          <span className="hidden h-10 w-px shrink-0 bg-[var(--foreground-muted)] lg:block" />
-          <TransitionLink
-            href="/news/more-in-news"
-            className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
-            style={{ fontWeight: 300 }}
-          >
-            Archive
-          </TransitionLink>
-          <span className="font-meta text-text-muted lg:hidden" aria-hidden="true">
-            &middot;
-          </span>
-          <span className="hidden h-10 w-px shrink-0 bg-[var(--foreground-muted)] lg:block" />
-          <a
-            href={NEWS_CONTACT_MAILTO}
-            className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
-            style={{ fontWeight: 300 }}
-          >
-            Contact
-          </a>
-        </div>
-      </div>
+      {/* Title. On desktop the masthead already marks News (red, with a bar
+          on the rule), so the title is for screen readers only and the lead
+          starts right under the header. The mobile header has no section
+          links, so the title shows there, small. Archive and Contact are at
+          the foot of the page (NewsSearchPrompt). */}
+      <h1
+        className="mt-2 mb-6 text-center font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[32px] sm:text-[40px] lg:sr-only"
+        style={{ fontWeight: 400, lineHeight: 1 }}
+      >
+        {title}
+      </h1>
 
       {/* Top block: lead takes two thirds, right column the rest. On desktop
           the two columns are squared off to end on the same line: the shorter
@@ -250,7 +230,7 @@ export default function NewsPage({
         </NewsTopicTabs>
       )}
 
-      <NewsSearchPrompt />
+      <NewsSearchPrompt contactHref={NEWS_CONTACT_MAILTO} />
     </div>
   );
 }
