@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { TimelinePageEditor, pannedFrame } from '../TimelinePageEditor';
-import { readNewsLayout } from '../newsLayoutRequests';
+import { activateNewsLayout, readNewsLayout } from '../newsLayoutRequests';
 import {
   DndContext,
   DragOverlay,
@@ -1045,12 +1045,7 @@ function NewsPageEditor() {
       // merge over the latest copy instead of replacing it
       const latest = await readNewsLayout(docIdRef.current);
       const layout: NewsLayout = { ...(latest?.layout ?? {}), lead, leadTextPosition, leadFrame, secondary, secondaryPhotos, featured, topicCards, topicPicks, bulletsHeadlinesOnly, studentGov };
-      const res = await fetch(`/api/news-page-layout/${docIdRef.current}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ layout }),
-      });
-      if (!res.ok) throw new Error('Save failed');
+      await activateNewsLayout(docIdRef.current, layout, latest.updatedAt);
       setSaved(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save');

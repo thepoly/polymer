@@ -1,5 +1,19 @@
 export type NewsLayoutDocument = { layout: Record<string, unknown>; updatedAt: string }
 
+export async function activateNewsLayout(id: string, layout: object, updatedAt: string): Promise<void> {
+  const response = await fetch(`/api/news-page-layout/${encodeURIComponent(id)}/activate`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ layout, updatedAt }),
+  })
+  if (!response.ok) {
+    if (response.status === 409) {
+      throw new Error('The layout changed while saving. Your changes are still here; activate again to retry.')
+    }
+    throw new Error('Failed to save')
+  }
+}
+
 /** Never treat an error response or malformed document as an empty layout. */
 export async function readNewsLayout(id: string): Promise<NewsLayoutDocument> {
   const response = await fetch(`/api/news-page-layout/${encodeURIComponent(id)}?depth=0`, { cache: 'no-store' })

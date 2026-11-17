@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useStepNav } from '@payloadcms/ui';
-import { readNewsLayout } from '../newsLayoutRequests';
+import { activateNewsLayout, readNewsLayout } from '../newsLayoutRequests';
 import '../FeaturesLayoutEditor/features-layout-editor.css';
 import './timeline-page-editor.css';
 import { STUDENT_GOV, matchesKicker, type StudentGovBody } from '@/components/News/studentGov';
@@ -1491,12 +1491,7 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
       const prevLayout = (latest?.layout ?? {}) as Record<string, unknown>;
       const pages = normalizeTimelinePages(prevLayout.timelinePages);
       const layout = { ...prevLayout, timelinePages: { ...pages, [body]: config } };
-      const res = await fetch(`/api/news-page-layout/${docIdRef.current}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ layout }),
-      });
-      if (!res.ok) throw new Error('Save failed');
+      await activateNewsLayout(docIdRef.current, layout, latest.updatedAt);
       setSaved(true);
     } catch (err) {
       console.error(err);

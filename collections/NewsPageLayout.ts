@@ -1,8 +1,10 @@
 import type { CollectionConfig } from 'payload'
 import { canEditNews } from '../lib/canEditNews'
+import { activateNewsLayout } from '../lib/activateNewsLayout'
 
 const NewsPageLayout: CollectionConfig = {
   slug: 'news-page-layout',
+  endpoints: [{ path: '/:id/activate', method: 'patch', handler: activateNewsLayout }],
   labels: {
     singular: 'News Layout',
     plural: 'News Layout',

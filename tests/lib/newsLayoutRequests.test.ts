@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { readNewsLayout } from '@/components/Dashboard/newsLayoutRequests'
+import { activateNewsLayout, readNewsLayout } from '@/components/Dashboard/newsLayoutRequests'
 
 afterEach(() => vi.unstubAllGlobals())
 const document = { id: 1, updatedAt: '2026-11-17T12:00:00.000Z', layout: { timelinePages: { senate: { hidden: ['update-1'] } } } }
@@ -28,4 +28,12 @@ describe('reading the layout before activation', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json({ ...document, layout: null })))
     expect((await readNewsLayout('1')).layout).toEqual({})
   })
+})
+
+it('sends the revision and keeps a conflict actionable without retrying a stale layout', async () => {
+  const fetch = vi.fn().mockResolvedValue(Response.json({}, { status: 409 }))
+  vi.stubGlobal('fetch', fetch)
+  await expect(activateNewsLayout('1', document.layout, document.updatedAt)).rejects.toThrow('activate again')
+  expect(fetch).toHaveBeenCalledTimes(1)
+  expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ layout: document.layout, updatedAt: document.updatedAt })
 })
