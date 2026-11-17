@@ -107,8 +107,8 @@ function GameCell({ game, rpiTeam }: { game: ScheduleGame; rpiTeam: GameTeam }) 
 
 /**
  * RPI's last two finals and next game in each standings sport (see
- * lib/schedule.ts for how gaps are filled), one group per sport. The row scrolls sideways (finger or trackpad swipe), with a fade on
- * the cut-off edge and arrows for mouse users, who can't swipe sideways.
+ * lib/schedule.ts for how gaps are filled), one group per sport. The row scrolls sideways (finger or trackpad swipe), with arrows
+ * on the cut-off edge for mouse users, who can't swipe sideways.
  */
 export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: SportSchedule[]; rpiTeam: GameTeam }) {
   const listRef = useRef<HTMLDivElement>(null);
@@ -152,11 +152,13 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
     listRef.current?.scrollBy({ left: direction * listRef.current.clientWidth * 0.8, behavior: "smooth" });
 
   // A full-height tab built into the strip's edge, for mouse users (touch
-  // devices swipe and see only the fade). Red chevron; fills red on hover.
+  // devices swipe). Red chevron; fills red on hover.
   const arrow = (side: "left" | "right") => (
     <div
-      // Stops inside the rules so they run the full width
-      className={`pointer-events-none absolute top-px bottom-px flex lg:top-0 ${side === "left" ? "left-0" : "right-0 flex-row-reverse"}`}
+      // Stops inside the rules so they run the full width. Hangs 1px past the
+      // strip's end: at fractional zoom (125%, 175%) the scroller can paint a
+      // device pixel beyond a flush tab, leaving a sliver of the next cell.
+      className={`pointer-events-none absolute top-px bottom-px flex lg:top-0 ${side === "left" ? "-left-px" : "-right-px"}`}
     >
       <button
         type="button"
@@ -178,11 +180,6 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
           <path d={side === "left" ? "M10 3.5 5.5 8 10 12.5" : "M6 3.5 10.5 8 6 12.5"} />
         </svg>
       </button>
-      {/* Softens the cut-off cell next to the tab */}
-      <div
-        className="w-8"
-        style={{ background: `linear-gradient(to ${side === "left" ? "right" : "left"}, var(--background), transparent)` }}
-      />
     </div>
   );
 

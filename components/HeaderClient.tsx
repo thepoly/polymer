@@ -678,10 +678,13 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                     >
                       {item.label}
                       {active && (
+                        // z-20: the bar hangs below the header into whatever
+                        // comes next (the sports score strip starts on the
+                        // rule), which would otherwise paint over its lower half
                         <span
                           aria-hidden="true"
                           data-section-bar
-                          className="pointer-events-none absolute -bottom-[4px] left-0 right-0 h-[4px] bg-accent"
+                          className="pointer-events-none absolute -bottom-[4px] left-0 right-0 z-20 h-[4px] bg-accent"
                         />
                       )}
                     </Link>
