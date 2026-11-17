@@ -34,6 +34,9 @@ import React, { useLayoutEffect, useRef, useSyncExternalStore } from "react";
  *   of the column (options, type) has to.
  * - `data-balance-trim`: content the taller column can drop (summaries) when
  *   nothing else brings the columns together.
+ * - `data-balance-art-first`: on a column, when it's the short one, its
+ *   flexible boxes grow before its type does (step 2 comes after step 3 for
+ *   its own boxes), so its type only grows when the art can't close the gap.
  *
  * Every one of those elements needs `suppressHydrationWarning`: they're
  * changed before React hydrates.
@@ -247,6 +250,11 @@ function balance(root: HTMLElement | null) {
     let now = measure();
     fill(now.shortCol, height(now.tallCol), reach);
     now = measure();
+    // A column marked art-first grows its own flexible boxes before its type
+    if (now.gap > TOLERANCE && now.shortCol.hasAttribute("data-balance-art-first")) {
+      flexBy(now.shortCol, now.gap);
+      now = measure();
+    }
     if (now.gap > TOLERANCE) {
       scaleTo(now.shortCol, height(now.tallCol), true);
       now = flexClose();

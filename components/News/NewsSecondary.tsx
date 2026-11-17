@@ -11,9 +11,9 @@ const STRIP_PHOTO_SIZES = "(max-width: 640px) 30vw, (max-width: 1024px) 26vw, 22
 
 /**
  * One story under the lead, as a horizontal strip: kicker, headline, byline
- * and subdeck on the left, and the story's photo, cropped square, on the
- * right, its top level with the kicker. A story without a photo runs its
- * text the lead's full width.
+ * and subdeck on the left, and the story's photo on the right, its top level
+ * with the kicker and its height the text's (16:10 at the shortest, square at
+ * the tallest). A story without a photo runs its text the lead's full width.
  *
  * Its type follows the column's `--balance-scale` (BalanceColumns): the
  * headline by the full scale, the subdeck by six tenths of it, so the strip
@@ -66,15 +66,21 @@ function Strip({ article, optional, photo }: { article: ComponentArticle; option
             )}
           </div>
           {image && (
-            <div className="relative aspect-square overflow-hidden">
-              <Image
-                src={image}
-                alt={article.imageTitle || ""}
-                fill
-                className="object-cover"
-                style={article.imageFocus ? { objectPosition: article.imageFocus } : undefined}
-                sizes={STRIP_PHOTO_SIZES}
-              />
+            // The photo follows the text's height, from 16:10 up to square, so a
+            // short subdeck doesn't leave a gap under it beside a tall photo.
+            // The cell stretches to the row; the box inside is held to those
+            // shapes by its own width (cqw).
+            <div className="@container self-stretch">
+              <div className="relative h-full min-h-[62.5cqw] max-h-[100cqw] overflow-hidden">
+                <Image
+                  src={image}
+                  alt={article.imageTitle || ""}
+                  fill
+                  className="object-cover"
+                  style={article.imageFocus ? { objectPosition: article.imageFocus } : undefined}
+                  sizes={STRIP_PHOTO_SIZES}
+                />
+              </div>
             </div>
           )}
         </article>

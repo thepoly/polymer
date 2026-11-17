@@ -76,7 +76,9 @@ Each step runs only if a gap remains.
 1. **Count.** The short column shows its optional content, in order, each
    piece only if it fits whole.
 2. **Type, up.** The short column's type is scaled up, in steps of 2%, to the
-   largest step at which it's still no taller than the other column.
+   largest step at which it's still no taller than the other column. A
+   column marked `data-balance-art-first` grows its own flexible boxes first
+   (step 3 for its own art), so its type only grows by what they can't take.
 3. **Art.** Type moves in jumps (lines rewrap), so what's left is closed by a
    flexible box, normally the lead photo: the short column's grows, or else
    the tall column's shrinks, within the limits the box sets. This is the
@@ -126,6 +128,7 @@ Wrap the two columns in `<BalanceColumns when="(min-width: 1024px)">`
 | `data-balance-fold="widest"` | A flexible box near the top of the page | Kept short enough that the bottom of its nearest `data-balance-fold-end` is on the first screen as the page loads, going as wide as `widest` (e.g. `2` for 2:1) if it has to. This outranks squaring off, so on a short window the other column may end lower. Also follows changes to the window's height on computers (not on touch screens, where the toolbars change it while scrolling) |
 | `data-balance-fold-end` | Around a fold-held box (the whole lead story) | What has to fit on the first screen. Without one, just the box |
 | `data-balance-trim` | Summaries and the like | Dropped by the taller column as a last resort |
+| `data-balance-art-first` | A column | When it's the short one, its flexible boxes grow before its type does |
 
 Give the type a rate that matches its rank: on `/news` the strips under the
 lead take the full scale and the lead's own headline half of it, so the lead
@@ -141,7 +144,7 @@ First use: the top of `/news`
 | | Lead's column | Student Government column |
 | --- | --- | --- |
 | Options | With the lead's text above or below its photo: one strip (`reach`), shown if the column is short by a whole strip, or by enough that the Student Government column can grow to meet it | A third docket entry in a box set to two |
-| Type | 1 to 1.5: strips in full, lead text at half. With the text above or below the photo, 1 to 1.25, and the lead's headline and subdeck stop at 48px and 18px | 0.9 to 1.45: docket entries and pinned stories; nameplates stay one size |
+| Type | 1 to 1.5: strips in full, lead text at half. Art first (`data-balance-art-first`): the lead photo grows before the type does, so the type only grows when the photo can't (held to the first screen, on a short window). With the text above or below the photo, 1 to 1.25, and the lead's headline and subdeck stop at 48px and 18px | 0.9 to 1.45: docket entries and pinned stories; nameplates stay one size |
 | Flexible box | The lead photo: 16:9 to 5:4, or up to square beside its text. Above, under or behind its text it's also held to the first screen (`data-balance-fold="2"`), as wide as 2:1 | Pinned stories' photos: 3:2 down to 2:1, sharing the change so both boxes keep one shape |
 | Trims | None | Entries' and pinned stories' summaries |
 

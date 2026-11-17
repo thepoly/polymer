@@ -187,6 +187,9 @@ export default function NewsPage({
       >
         <div
           data-balance-col
+          // The lead photo grows before the strips' type does, so the type
+          // only grows when the photo can't (held to the first screen, say)
+          data-balance-art-first
           data-balance-scale={position === "north" || position === "south" ? STACKED_LEAD_COLUMN_SCALE : LEAD_COLUMN_SCALE}
           suppressHydrationWarning
           className="flex flex-col lg:border-r lg:border-[var(--rule-color)] lg:pr-[clamp(16px,2vw,24px)]"
