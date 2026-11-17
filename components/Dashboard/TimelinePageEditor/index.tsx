@@ -1503,14 +1503,6 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
     }
   };
 
-  // Warn before leaving with unsaved photo/stream changes
-  useEffect(() => {
-    if (saved) return;
-    const onBeforeUnload = (e: BeforeUnloadEvent) => e.preventDefault();
-    window.addEventListener('beforeunload', onBeforeUnload);
-    return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, [saved]);
-
   // ---- Derived ----
   // Same terms the page uses (stand-ins when none are entered), oldest first
   const terms = useMemo(

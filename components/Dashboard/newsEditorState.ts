@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
+import { installNewsEditorNavigation } from './newsEditorNavigation'
 
 /** A completed request only acknowledges the edits included in that request. */
 export function createNewsEditorState() {
@@ -26,5 +27,6 @@ export function createNewsEditorState() {
 export function useNewsEditorState() {
   const [state] = useState(createNewsEditorState)
   const saved = useSyncExternalStore(state.subscribe, state.isSaved, () => true)
+  useEffect(() => installNewsEditorNavigation(state.isSaved), [state])
   return { ...state, saved }
 }
