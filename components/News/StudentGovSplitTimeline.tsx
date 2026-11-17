@@ -8,7 +8,6 @@ import StudentGovSplitFrame from "./StudentGovSplitFrame";
 import StudentGovBackLink from "./StudentGovBackLink";
 import {
   STUDENT_GOV,
-  STUDENT_GOV_BODIES,
   monthSectionId,
   updateAnchor,
   type StudentGovBody,
@@ -111,6 +110,7 @@ function ArticleCard({ item, layout, priority }: { item: ArticleItem; layout: La
 
   return (
     <TransitionLink
+      data-swipe
       href={getArticleUrl(article)}
       style={{ ...placement(layout), ...imageVars }}
       className={`group flex flex-col overflow-hidden ${CARD} ${CARD_DIRECTION[image]} ${PLACEMENT_CLASS}`}
@@ -154,6 +154,7 @@ function ArticleCard({ item, layout, priority }: { item: ArticleItem; layout: La
 function UpdateCard({ item, layout }: { item: UpdateItem; layout: Layout }) {
   return (
     <article
+      data-swipe
       id={updateAnchor(item.id)}
       style={placement(layout)}
       className={`scroll-mt-6 bg-[#f6f1f1] dark:bg-white/[0.06] ${PLACEMENT_CLASS} ${
@@ -189,7 +190,7 @@ function GmWeekMarker({ day, text, href }: { day: string; text: string; href: st
     </>
   );
   return (
-    <div className="border-b-2 border-accent pb-2.5 text-accent">
+    <div data-swipe className="border-b-2 border-accent pb-2.5 text-accent">
       <p className="font-meta text-[13px] font-bold uppercase leading-[1.4] tracking-[0.14em]">
         <span>GM Week &middot; </span>
         {href ? (
@@ -207,7 +208,7 @@ function GmWeekMarker({ day, text, href }: { day: string; text: string; href: st
 /** A lighter rule: a leader change or the Senate's summer recess (June 1) */
 function ThinMarker({ day, text }: { day: string | null; text: string }) {
   return (
-    <p className="border-b border-[var(--rule-color)] pb-2 font-meta text-[12px] font-bold uppercase tracking-[0.12em] text-text-muted">
+    <p data-swipe className="border-b border-[var(--rule-color)] pb-2 font-meta text-[12px] font-bold uppercase tracking-[0.12em] text-text-muted">
       {day && (
         <>
           <time dateTime={day}>{formatDay(day)}</time>
@@ -266,7 +267,7 @@ export default function StudentGovSplitTimeline({
   otherHref,
   markers,
   photo,
-  shelf,
+  terms,
 }: {
   body: StudentGovBody;
   months: TimelineMonth[];
@@ -281,11 +282,10 @@ export default function StudentGovSplitTimeline({
   markers: StreamMarkers;
   /** The term's panel photo, or null for plain red */
   photo: PanelPhoto | null;
-  /** The body's shelf of terms, at the very end of the stream */
-  shelf?: React.ReactNode;
+  /** The body's list of terms, at the very end of the stream */
+  terms?: React.ReactNode;
 }) {
   const meta = STUDENT_GOV[body];
-  const other = STUDENT_GOV[STUDENT_GOV_BODIES.find((b) => b !== body) as StudentGovBody];
   const layouts = resolveStream(
     months.flatMap((m) => m.items).map((item) => ({
       kind: item.kind,
@@ -310,7 +310,7 @@ export default function StudentGovSplitTimeline({
       <StudentGovMonthPanel
         title={meta.title}
         termLabel={termLabel}
-        otherTitle={other.title}
+        body={body}
         otherHref={otherHref}
         months={months.map(({ key, short }) => ({ key, short }))}
         photo={photo}
@@ -321,12 +321,11 @@ export default function StudentGovSplitTimeline({
         tabIndex={0}
         role="region"
         aria-label={`${meta.title} stream`}
-        // With a shelf, the stream ends at the foot of its books (no bottom padding)
-        className={`min-w-0 flex-1 px-4 pt-5 outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent sm:max-[859px]:px-6 min-[860px]:h-full min-[860px]:overflow-y-auto min-[860px]:px-10 min-[860px]:pt-6 lg:pr-6 xl:pl-[72px] ${shelf ? "pb-0" : "pb-8 min-[860px]:pb-14"}`}
+        className="min-w-0 flex-1 px-4 pt-5 pb-8 outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent sm:max-[859px]:px-6 min-[860px]:h-full min-[860px]:overflow-y-auto min-[860px]:px-10 min-[860px]:pt-6 min-[860px]:pb-14 lg:pr-6 xl:pl-[72px]"
       >
         <div className="flex max-w-[800px] flex-col gap-7">
           {current && (
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div data-swipe className="flex flex-wrap items-center justify-between gap-3">
               <p className="font-meta text-[13px] font-bold uppercase tracking-[0.14em] text-text-main">{termLabel}</p>
               <StudentGovBackLink href={current.href} name={current.name} />
             </div>
@@ -337,7 +336,7 @@ export default function StudentGovSplitTimeline({
           )}
 
           {months.length === 0 && (
-            <p className="font-meta text-[16px] text-text-muted">Nothing on the timeline for {termLabel} yet.</p>
+            <p data-swipe className="font-meta text-[16px] text-text-muted">Nothing on the timeline for {termLabel} yet.</p>
           )}
 
           {months.map((month, monthIndex) => {
@@ -354,7 +353,7 @@ export default function StudentGovSplitTimeline({
                   aria-labelledby={`${monthSectionId(month.key)}-heading`}
                   className="flex scroll-mt-6 flex-col gap-7"
                 >
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b-2 border-text-main pb-2.5">
+                  <div data-swipe className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b-2 border-text-main pb-2.5">
                     <h2
                       id={`${monthSectionId(month.key)}-heading`}
                       className="font-meta text-[13px] font-bold uppercase tracking-[0.14em] text-text-main"
@@ -394,9 +393,8 @@ export default function StudentGovSplitTimeline({
             <ThinMarker key={`${d.day}-${d.text}`} day={d.hideDay ? null : d.day} text={d.text} />
           ))}
 
-          {/* On desktop the shelf reaches left to the photo panel: the negative
-              margin cancels the stream's left padding at each breakpoint */}
-          {shelf && <div className="min-[860px]:-ml-10 xl:-ml-[72px]">{shelf}</div>}
+          {/* Set off from the last entry: the list is about the body, not this term */}
+          {terms && <div className="mt-10">{terms}</div>}
         </div>
       </div>
     </StudentGovSplitFrame>

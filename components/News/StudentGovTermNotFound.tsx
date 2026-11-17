@@ -13,7 +13,7 @@ export default function StudentGovTermNotFound({ body }: { body: StudentGovBody 
       <div className="mx-auto max-w-[720px] px-4 pt-20 pb-24 text-center md:px-6">
         <p className="font-meta text-[12px] font-bold uppercase tracking-[0.16em] text-accent">{meta.title}</p>
         <h1 className="mt-3 font-copy text-[40px] font-semibold leading-[1.05] text-text-main">
-          We don&rsquo;t have that {body === "senate" ? "Senate" : "year"} on the shelf
+          We don&rsquo;t have a timeline for that {body === "senate" ? "Senate" : "year"}
         </h1>
         <p className="mt-4 font-meta text-[15px] leading-[1.55] text-text-muted">
           It may be from before the digital archive begins, or the address may be mistyped.

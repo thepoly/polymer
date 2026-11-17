@@ -9,16 +9,15 @@ import StudentGovSplitTimeline, {
   type StreamMarkers,
   type TimelineMonth,
 } from '@/components/News/StudentGovSplitTimeline'
-import StudentGovShelf, { type ShelfVolume } from '@/components/News/StudentGovShelf'
+import StudentGovTermList, { type TermRow } from '@/components/News/StudentGovTermList'
 import type { PanelPhoto } from '@/components/News/StudentGovMonthPanel'
 import { STUDENT_GOV, type StudentGovBody, type TimelineItem } from '@/components/News/studentGov'
 import {
   electedLine,
   leaderChangeLine,
-  leaderLine,
+  leaderNames,
   ordinal,
   resolveTerms,
-  spineFoot,
   termFullName,
   termHref,
   termIndexOf,
@@ -39,7 +38,6 @@ import {
 } from '@/components/News/timelinePage'
 import { getArticlesById, getStudentGovTimeline } from '@/lib/studentGovTimeline'
 import { getStoredTerms } from '@/lib/studentGovTerms'
-import { spineDetailsFor } from '@/components/News/shelfDetails'
 import { getArticleUrl } from '@/utils/getArticleUrl'
 import { focalObjectPosition } from '@/utils/focalPoint'
 import type { Article as ComponentArticle } from '@/components/FrontPage/types'
@@ -47,53 +45,6 @@ import type { Media } from '@/payload-types'
 
 // Every entry a body has had; the page then shows one term at a time
 const TIMELINE_LIMIT = 1000
-
-/**
- * Spine size (px), from the term's article count (updates don't count) on a
- * fixed scale: the minimum with no articles, growing evenly to the maximum
- * at FULL_SPINE_AT articles and staying there. Fixed rather than relative to
- * the busiest term, so a busy term never shrinks the others and no two
- * books differ by more than these ranges.
- */
-const SPINE_HEIGHT = [240, 290] as const
-// Narrow and tall; 38px still fits the widest foot ("PU 136", 34px)
-const SPINE_WIDTH = [38, 60] as const
-const FULL_SPINE_AT = 30
-/**
- * Past terms cycle mostly through whites with red lettering and bright reds,
- * with blush and rose pinks, a pale grey and a single oxblood for depth,
- * ordered so neighbours always differ in tone or hue; the term in session is
- * RPI red, so the newest past term beside it is white. `ink` sets the
- * lettering where it's tinted; otherwise it's near-black or near-white to suit
- * the colour.
- */
-// In order of use: the newest past term gets the first. Fourteen past terms
-// use the first fourteen; the rest come in once there are more terms.
-const SPINE_COLORS: { color: string; ink?: string }[] = [
-  { color: '#f7f4f0', ink: '#c8102e' }, // white, red lettering
-  { color: '#e8112d' }, // bright scarlet
-  { color: '#fbfaf7', ink: '#d6001c' }, // paper white, RPI red lettering
-  { color: '#f0384d' }, // bright coral red
-  { color: '#f4c9cf', ink: '#8a0b20' }, // blush pink, deep red lettering
-  { color: '#c8102e' }, // tangy red
-  { color: '#fdf8f3', ink: '#a50f2d' }, // cream white, cherry lettering
-  { color: '#7a0c1f', ink: '#fbe9e6' }, // oxblood, blush lettering
-  { color: '#e9e7e4', ink: '#b5002c' }, // pale grey, crimson lettering
-  { color: '#e4002b' }, // vivid red
-  { color: '#f2eee9', ink: '#c8102e' }, // soft white, red lettering
-  { color: '#ec6f80', ink: '#5c0a18' }, // bright rose, deep maroon lettering
-  { color: '#d00d2f' }, // tangy red (RPI red, a touch less orange)
-  { color: '#f9f1ee', ink: '#b5002c' }, // rosy white, crimson lettering
-  { color: '#b5002c' }, // crimson
-  { color: '#fbe9e6', ink: '#a50f2d' }, // blush white, cherry lettering
-  { color: '#d8354b' }, // coral red
-  { color: '#d9d6d2', ink: '#3a3533' }, // light grey
-  { color: '#cc1434' }, // tangy red, cooler
-  { color: '#ffffff', ink: '#d6001c' }, // pure white, RPI red lettering
-  { color: '#c0244e' }, // raspberry
-]
-const CURRENT_SPINE = { color: '#d6001c' }
-const spine = (s: { color: string; ink?: string }) => ({ color: s.color, ink: s.ink ?? null })
 
 /**
  * Title for a timeline page. `segment` is the term's part of the URL ("56",
@@ -237,8 +188,8 @@ function otherBodyHref(other: StudentGovBody, stored: StudentGovTerm[], term: St
 
 /**
  * Shared page body for the Senate and Executive Board timelines: one term
- * (`segment` from the URL, or the term in session), then that body's shelf
- * of every covered term.
+ * (`segment` from the URL, or the term in session), then a list of that
+ * body's covered terms.
  */
 export async function StudentGovTimelinePage({ body, segment }: { body: StudentGovBody; segment?: string }) {
   const payload = await getPayload({ config })
@@ -263,11 +214,12 @@ export async function StudentGovTimelinePage({ body, segment }: { body: StudentG
     if (i >= 0) termItems[i].push(item)
   }
 
-  const shelfIndexes = terms.map((_, i) => i).filter((i) => i <= currentIndex && terms[i].hasCoverage).reverse()
+  // Terms that have started and are covered, newest first: the ones with pages
+  const listedIndexes = terms.map((_, i) => i).filter((i) => i <= currentIndex && terms[i].hasCoverage).reverse()
 
   let viewedIndex = currentIndex
   if (segment !== undefined) {
-    const found = shelfIndexes.find((i) => termSegment(terms[i]) === segment)
+    const found = listedIndexes.find((i) => termSegment(terms[i]) === segment)
     if (found === undefined) notFound()
     if (found === currentIndex) redirect(STUDENT_GOV[body].href)
     viewedIndex = found
@@ -295,52 +247,34 @@ export async function StudentGovTimelinePage({ body, segment }: { body: StudentG
 
   const markers = streamMarkers(body, term, next, today, gmWeekHref)
 
-  // Shelf: newest on the left, sized by each term's articles
-  const volumes: ShelfVolume[] = shelfIndexes.map((i, n) => {
+  // Terms list: newest first
+  const termRows: TermRow[] = listedIndexes.map((i) => {
     const t = terms[i]
     const list = termItems[i]
     const articles = list.filter((item) => item.kind === 'article').length
-    const scale = Math.min(1, articles / FULL_SPINE_AT)
     const isCurrent = i === currentIndex
-    const short = termShortName(t)
-    const year = termYearLabel(t.startYear)
     return {
       key: t.slug,
-      spineText: body === 'senate' ? short : year,
-      foot: spineFoot(t),
-      title:
-        body === 'senate'
-          ? t.number !== null
-            ? `${ordinal(t.number)} Student Senate`
-            : `${year} Student Senate`
-          : `${year} Executive Board`,
-      ariaName:
-        body === 'senate' && t.number !== null
-          ? `${ordinal(t.number)} Student Senate, ${year}`
-          : `Executive Board, ${year}`,
-      year,
-      leader: leaderLine(t),
+      // "57th Senate" (years beside it) / "2026–27"
+      name: termShortName(t),
+      years: body === 'senate' && t.number !== null ? termYearLabel(t.startYear) : null,
+      leaders: leaderNames(t),
+      articles,
+      updates: list.length - articles,
       href: termHref(t, isCurrent),
       isCurrent,
       isViewed: i === viewedIndex,
-      height: Math.round(SPINE_HEIGHT[0] + (SPINE_HEIGHT[1] - SPINE_HEIGHT[0]) * scale),
-      width: Math.round(SPINE_WIDTH[0] + (SPINE_WIDTH[1] - SPINE_WIDTH[0]) * scale),
-      ...spine(
-        // The cycle starts at the first past term, after the one in session
-        isCurrent ? CURRENT_SPINE : SPINE_COLORS[(n - (shelfIndexes[0] === currentIndex ? 1 : 0)) % SPINE_COLORS.length],
-      ),
-      // The term in session is always a new book, whatever the lists say
-      details: isCurrent ? {} : spineDetailsFor(t),
     }
   })
 
   const other: StudentGovBody = body === 'senate' ? 'eboard' : 'senate'
+  const otherHref = otherBodyHref(other, stored, term, today)
 
   return (
     <main className="min-h-screen bg-bg-main transition-colors duration-300">
       <Header />
-      {/* Keyed by term: opening another term from the shelf starts its
-          stream at the top, with a fresh panel and shelf, rather than keeping
+      {/* Keyed by term: opening another term from the list starts its
+          stream at the top, with a fresh panel and list, rather than keeping
           this term's scroll position */}
       <StudentGovSplitTimeline
         key={term.slug}
@@ -356,18 +290,10 @@ export async function StudentGovTimelinePage({ body, segment }: { body: StudentG
                 name: body === 'senate' ? termShortName(current) : `${termShortName(current)} E-Board`,
               }
         }
-        otherHref={otherBodyHref(other, stored, term, today)}
+        otherHref={otherHref}
         markers={markers}
         photo={photo}
-        shelf={
-          volumes.length > 0 && (
-            <StudentGovShelf
-              body={body}
-              volumes={volumes}
-              tail={body === 'senate' ? '… earlier Senates in the print archive' : '… earlier boards in the print archive'}
-            />
-          )
-        }
+        terms={termRows.length > 0 && <StudentGovTermList body={body} rows={termRows} otherHref={otherHref} />}
       />
       {/* The photo panel runs right down to the footer's rule */}
       <Footer flush />

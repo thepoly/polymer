@@ -749,7 +749,7 @@ export interface StudentGovUpdate {
   createdAt: string;
 }
 /**
- * Senate and Executive Board terms, GM Week to GM Week. Timeline entries are sorted into terms by date; each covered term is a spine on its page’s shelf.
+ * Senate and Executive Board terms, GM Week to GM Week. Timeline entries are sorted into terms by date; each listed term has its own page and a row in the Terms list at the foot of the timeline.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "student-gov-terms".
@@ -782,7 +782,7 @@ export interface StudentGovTerm {
    */
   gmWeekStory?: (number | null) | Article;
   /**
-   * Untick for terms before the digital archive’s coverage starts.
+   * Untick for terms before the digital archive’s coverage starts: the term leaves the Terms list and its page 404s.
    */
   hasCoverage?: boolean | null;
   /**

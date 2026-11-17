@@ -19,10 +19,9 @@ import { useTheme } from "@/components/ThemeProvider";
 import type { ThemeLogoSrcs, HeaderAnimationConfig } from "@/lib/getTheme";
 import LiveStrip, { type LiveArticleStripEntry } from "@/components/LiveStrip";
 import { HEADER_WAVE_CONVERGE, HEADER_WAVE_SVG_H, generateWaveFleet } from "@/lib/headerWaveFleet";
+import { BAR_SLIDE_MS, measureBar, slideBar, type BarSpot } from "@/components/slidingBar";
 const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
 
-/** Where the section bar sat, from the left edge of the section links */
-type SectionBarSpot = { left: number; width: number };
 /**
  * The section bar on the page before this one, so the next page's bar can
  * slide over from it. Each page draws its own header, so this lives outside
@@ -30,9 +29,7 @@ type SectionBarSpot = { left: number; width: number };
  * until a header has drawn on a desktop-width screen; null when that page
  * wasn't in a section (the bar then grows in where it lands).
  */
-let lastSectionBar: SectionBarSpot | null | undefined;
-const SECTION_BAR_SLIDE_MS = 420;
-const SECTION_BAR_EASING = "cubic-bezier(0.65, 0, 0.35, 1)";
+let lastSectionBar: BarSpot | null | undefined;
 
 function formatCurrentDate() {
   return new Date().toLocaleDateString("en-US", {
@@ -124,15 +121,8 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
   // rests inside the active link (plain CSS); this only animates it in.
   useLayoutEffect(() => {
     const nav = sectionNavRef.current;
-    const bar = nav?.querySelector<HTMLElement>("[data-section-bar]") ?? null;
-    // Layout offsets, not the on-screen box: they leave out the slide's own
-    // transform, so a measure taken mid-slide is still where the bar rests.
-    // The bar sits in its link, and the link in the nav (both positioned).
-    const measure = (): SectionBarSpot | null => {
-      if (!nav || !bar) return null;
-      const link = bar.offsetParent as HTMLElement | null;
-      return { left: (link?.offsetLeft ?? 0) + bar.offsetLeft, width: bar.offsetWidth };
-    };
+    const bar = nav?.querySelector<HTMLElement>("[data-slide-bar]") ?? null;
+    const measure = (): BarSpot | null => (nav && bar ? measureBar(bar) : null);
     // Below desktop width the section links are hidden: nothing to slide,
     // and a slide on the next page would start from a bogus spot
     if (!nav || nav.getBoundingClientRect().width === 0) {
@@ -143,43 +133,12 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
     const previous = lastSectionBar;
     lastSectionBar = here;
 
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const overlay = nav.querySelector<HTMLElement>("[data-section-ink]");
     // From the last page's bar, or (from a page outside the sections) a
-    // point in the middle of this one, so it grows out both ways
-    const from: SectionBarSpot | null =
+    // point in the middle of this one, so it grows out both ways. The red
+    // ink comes from a red copy of the links (see slidingBar.ts).
+    const from: BarSpot | null =
       previous === null && here ? { left: here.left + here.width / 2, width: 0 } : (previous ?? null);
-    if (
-      bar && overlay && here && here.width > 0 && from && !reduceMotion &&
-      (from.left !== here.left || from.width !== here.width)
-    ) {
-      const timing = {
-        duration: previous === null ? SECTION_BAR_SLIDE_MS * 0.75 : SECTION_BAR_SLIDE_MS,
-        easing: SECTION_BAR_EASING,
-      };
-      // The bar: drawn where it was, then eased to where it rests
-      bar.animate(
-        [
-          { transformOrigin: "left", transform: `translateX(${from.left - here.left}px) scaleX(${from.width / here.width})` },
-          { transformOrigin: "left", transform: "translateX(0) scaleX(1)" },
-        ],
-        timing,
-      );
-      // The red ink: a red copy of the links over the black ones, cut to
-      // the bar's span on the same timing, so every letter is red exactly
-      // while the bar is under it. Both edges move in straight lines on the
-      // same easing as the bar's, so they stay together all the way.
-      const navWidth = nav.clientWidth;
-      const ink = (spot: SectionBarSpot) =>
-        `inset(0px ${navWidth - spot.left - spot.width}px 0px ${spot.left}px)`;
-      nav.dataset.sliding = "";
-      overlay
-        .animate([{ clipPath: ink(from) }, { clipPath: ink(here) }], timing)
-        .finished.catch(() => {})
-        .finally(() => {
-          delete nav.dataset.sliding;
-        });
-    }
+    if (from) slideBar(nav, from, previous === null ? BAR_SLIDE_MS * 0.75 : BAR_SLIDE_MS);
 
     if (!bar) return;
     // Measure again once the web font is in and on resize, so the next
@@ -642,7 +601,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                     passes under (see above). Same layout as the links. */}
                 <div
                   aria-hidden="true"
-                  data-section-ink
+                  data-slide-ink
                   className="pointer-events-none absolute inset-0 z-10 hidden flex-wrap items-center justify-end gap-x-7 gap-y-1.5 group-data-[sliding]/sections:flex"
                 >
                   {primaryNavItems.map((item) => (
@@ -683,7 +642,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                         // rule), which would otherwise paint over its lower half
                         <span
                           aria-hidden="true"
-                          data-section-bar
+                          data-slide-bar
                           className="pointer-events-none absolute -bottom-[4px] left-0 right-0 z-20 h-[4px] bg-accent"
                         />
                       )}

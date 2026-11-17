@@ -849,7 +849,7 @@ function ArchiveFinder({
                     type="button"
                     className="tpe-btn tpe-btn-primary"
                     disabled={!term}
-                    title={term ? undefined : 'Older than the oldest term on the shelf'}
+                    title={term ? undefined : 'Older than the oldest listed term'}
                     onClick={() => {
                       onAdd(a);
                       setAdded(`Added “${a.plainTitle || 'Untitled'}” to the ${term}.`);
@@ -1524,7 +1524,7 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
   const term = started.find((t) => t.slug === termSlug) ?? currentTerm;
   const termIdx = terms.indexOf(term);
 
-  // Archive finder: search back to the oldest term on the shelf, skipping
+  // Archive finder: search back to the oldest listed term, skipping
   // what's already on the timeline
   const archiveFrom = started.find((t) => t.hasCoverage)?.startsOn ?? started[0]?.startsOn ?? '2016-01-01';
   const onTimeline = useMemo(

@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
 import type { FrameStyle } from "./timelinePage";
+import { STUDENT_GOV, type StudentGovBody } from "./studentGov";
+import StudentGovBodySwitch from "./StudentGovBodySwitch";
 
 export type PanelPhoto = {
   src: string;
@@ -48,7 +50,7 @@ const SETTLE_MS = 150;
 export default function StudentGovMonthPanel({
   title,
   termLabel,
-  otherTitle,
+  body,
   otherHref,
   months,
   photo,
@@ -56,7 +58,8 @@ export default function StudentGovMonthPanel({
   title: string;
   /** "57th Senate · 2026–27" / "2026–27" */
   termLabel: string;
-  otherTitle: string;
+  body: StudentGovBody;
+  /** The other body's same term (or its timeline), for the switch */
   otherHref: string;
   months: PanelMonth[];
   /** The term's photo, or null for plain red */
@@ -144,21 +147,34 @@ export default function StudentGovMonthPanel({
             </span>
             <span>Student Government</span>
           </nav>
-          <h1 className="mt-3 font-meta text-[40px] font-light uppercase leading-[1] tracking-[0.02em] min-[860px]:text-[clamp(40px,4.2vw,60px)]">
+          {/* Stays put when moving between bodies, its bar sliding over, while
+              the title, term and month swipe across (data-swipe, pageSwipe.ts) */}
+          <StudentGovBodySwitch
+            id="panel"
+            body={body}
+            otherHref={otherHref}
+            labels={{ senate: STUDENT_GOV.senate.label, eboard: STUDENT_GOV.eboard.label }}
+            tone="panel"
+            className="mt-4"
+          />
+          <h1
+            data-swipe
+            className="mt-5 font-meta text-[40px] font-light uppercase leading-[1] tracking-[0.02em] min-[860px]:text-[clamp(40px,4.2vw,60px)]"
+          >
             {title}
           </h1>
-          <p className="mt-2 font-meta text-[15px] font-semibold uppercase tracking-[0.08em]">{termLabel}</p>
-          <p className="mt-4 font-meta text-[14px] font-medium leading-[1.5]">
-            <TransitionLink href={otherHref} className="transition-opacity hover:opacity-75">
-              {otherTitle} timeline&nbsp;&rsaquo;
-            </TransitionLink>
+          <p data-swipe className="mt-2 font-meta text-[15px] font-semibold uppercase tracking-[0.08em]">
+            {termLabel}
           </p>
         </div>
 
         {active && (
           // The tight leading lets the tails of p, y and g (Apr, May, Aug, Sep)
           // hang below the box, into the panel's padding
-          <p className="font-copy text-[132px] font-semibold leading-[0.78] tracking-[-0.02em] min-[860px]:text-[clamp(110px,22vh,200px)]">
+          <p
+            data-swipe
+            className="w-fit font-copy text-[132px] font-semibold leading-[0.78] tracking-[-0.02em] min-[860px]:text-[clamp(110px,22vh,200px)]"
+          >
             {active.short}
           </p>
         )}

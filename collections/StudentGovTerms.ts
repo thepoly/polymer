@@ -21,8 +21,8 @@ const isAdminOrEIC: Access = ({ req: { user } }) => {
  * One Student Senate or Executive Board term: GM Week to GM Week. A term runs
  * from its first meeting (`startsOn`) to the day before the next term's first
  * meeting; the newest started term is the one in session. Timeline entries
- * are put in a term by date, and each covered term is one spine on the
- * shelf at the bottom of its timeline page.
+ * are put in a term by date, and each covered term is one row in the Terms
+ * list at the bottom of its timeline page.
  */
 const StudentGovTerms: CollectionConfig = {
   slug: 'student-gov-terms',
@@ -37,7 +37,7 @@ const StudentGovTerms: CollectionConfig = {
     useAsTitle: 'name',
     defaultColumns: ['name', 'body', 'startsOn', 'hasCoverage'],
     description:
-      'Senate and Executive Board terms, GM Week to GM Week. Timeline entries are sorted into terms by date; each covered term is a spine on its page’s shelf.',
+      'Senate and Executive Board terms, GM Week to GM Week. Timeline entries are sorted into terms by date; each listed term has its own page and a row in the Terms list at the foot of the timeline.',
   },
   defaultSort: '-startsOn',
   access: {
@@ -129,10 +129,13 @@ const StudentGovTerms: CollectionConfig = {
     },
     {
       name: 'hasCoverage',
-      label: 'On the shelf',
+      label: 'Listed',
       type: 'checkbox',
       defaultValue: true,
-      admin: { description: 'Untick for terms before the digital archive’s coverage starts.' },
+      admin: {
+        description:
+          'Untick for terms before the digital archive’s coverage starts: the term leaves the Terms list and its page 404s.',
+      },
     },
     {
       name: 'leaders',

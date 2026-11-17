@@ -46,7 +46,7 @@ const streamGestures = new WeakMap<HTMLElement, StreamGesture>();
 
 /**
  * Called for every vertical wheel event over the timeline stream (once per
- * event: the shelf's handler or the frame's, not both). Says whether the
+ * event, by the frame's handler). Says whether the
  * stream is at its end and whether the page has to hold still: it does when
  * the event is part of the same gesture that scrolled the stream down to its
  * end, so a hard swipe, or its momentum, stops at the end of the stream

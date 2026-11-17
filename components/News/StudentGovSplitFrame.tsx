@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { scrollByWheel, streamWheel, wheelDeltaY } from "./wheelScroll";
+import { swipeArrived } from "./pageSwipe";
 
 /**
  * Frame for the split timeline page. On desktop (≥860px) it fills the window
@@ -22,6 +23,12 @@ export default function StudentGovSplitFrame({ className, children }: { classNam
   const fillRef = useRef<HTMLDivElement>(null);
   // Distance from the top of the page to the frame: the header's height
   const [top, setTop] = useState<number | null>(null);
+
+  // A new timeline (one per term) has rendered: a swipe from the other body
+  // can capture it now, before it's painted
+  useLayoutEffect(() => {
+    swipeArrived();
+  }, []);
 
   useEffect(() => {
     const el = ref.current;
@@ -53,26 +60,19 @@ export default function StudentGovSplitFrame({ className, children }: { classNam
   //
   // Sideways movement needs care too. A browser hands a whole trackpad swipe
   // to whatever can scroll the way its first tiny movement goes, and swipes
-  // start with a little drift. If that drift is sideways and nothing under
-  // the pointer can scroll sideways (the shelf already at that end, or the
-  // cards, which never do), the swipe goes to the page, and the rest of it
-  // scrolls the page down to the footer. So a mostly sideways event is
-  // stopped unless the shelf under it can actually slide that way.
+  // start with a little drift. If that drift is sideways, nothing in the
+  // stream can take it (nothing there scrolls sideways), so the swipe goes to
+  // the page, and the rest of it scrolls the page down to the footer. So a
+  // mostly sideways event is always stopped.
   useEffect(() => {
     const scroller = ref.current?.querySelector<HTMLElement>("[data-timeline-scroller]");
     if (!scroller) return;
     const desktop = window.matchMedia("(min-width: 860px)");
     const onWheel = (e: WheelEvent) => {
-      // Phones and narrow windows scroll the page; ctrl + wheel zooms. Already
-      // handled (the shelf passes vertical swipes on to the stream itself).
+      // Phones and narrow windows scroll the page; ctrl + wheel zooms
       if (!desktop.matches || e.ctrlKey || e.defaultPrevented || (e.deltaX === 0 && e.deltaY === 0)) return;
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) {
-        const row = (e.target as Element | null)?.closest?.<HTMLElement>("[data-shelf-row]");
-        const canSlide =
-          row !== null &&
-          row !== undefined &&
-          (e.deltaX > 0 ? row.scrollLeft < row.scrollWidth - row.clientWidth - 1 : e.deltaX < 0 && row.scrollLeft > 1);
-        if (!canSlide) e.preventDefault();
+        e.preventDefault();
         return;
       }
       const dy = wheelDeltaY(e);

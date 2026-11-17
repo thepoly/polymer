@@ -144,11 +144,16 @@ const lastName = (name: string) => name.trim().split(/\s+/).pop() ?? name;
  * Each number shows when it's entered. Null when no leader has been entered.
  */
 export function leaderLine(t: StudentGovTerm): string | null {
+  const names = leaderNames(t);
+  return names && `${LEADER_TITLE[t.body]} ${names}`;
+}
+
+/** leaderLine without the title: "Ava Gallagher, then Catherine Philipps (135th)" */
+export function leaderNames(t: StudentGovTerm): string | null {
   const names = t.leaders
     .filter((l) => l.name.trim())
     .map((l) => (l.ordinal ? `${l.name.trim()} (${ordinal(l.ordinal)})` : l.name.trim()));
-  if (names.length === 0) return null;
-  return `${LEADER_TITLE[t.body]} ${names.join(", then ")}`;
+  return names.length > 0 ? names.join(", then ") : null;
 }
 
 /** "Kate Goldstein elected President of the Union" (GM Week marker) */
@@ -164,18 +169,6 @@ export function leaderChangeLine(t: StudentGovTerm, leader: TermLeader): string 
   const verb = leader.how === "appointed" ? "appointed" : "elected";
   const nth = leader.ordinal ? `${ordinal(leader.ordinal)} ` : "";
   return `${lastName(leader.name)} ${verb} ${nth}${LEADER_TITLE[t.body]}`;
-}
-
-/**
- * Spine foot, one entry per line: ["26–27"] (Senate); ["PU 137"] (E-Board), or
- * one line per PU stacked (["PU 134", "PU 135"]) when one handed over mid-term,
- * or ["2 PUs"] if any of them has no number; [] when there's nothing to show
- */
-export function spineFoot(t: StudentGovTerm): string[] {
-  if (t.body === "senate") return [termYearLabel(t.startYear).slice(2)];
-  const numbers = t.leaders.map((l) => l.ordinal);
-  if (numbers.length > 0 && numbers.every((n) => n)) return numbers.map((n) => `PU ${n}`);
-  return numbers.length > 1 ? [`${numbers.length} PUs`] : [];
 }
 
 // ---------------------------------------------------------------------------

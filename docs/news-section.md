@@ -2,7 +2,7 @@
 
 `/news` has its own page and layout editor, and links to two timeline pages:
 one for the Student Senate and one for the Executive Board. Each timeline
-shows one term (GM Week to GM Week) at a time and ends in a "shelf" of every
+shows one term (GM Week to GM Week) at a time and ends in a list of every
 term. This page covers how it all works, what has to happen once it's
 deployed, and what needs looking after over time.
 
@@ -57,7 +57,7 @@ is still in the repo but no longer rendered.
 | A past E-Board, by year | `/news/student-government/e-board/2025-26` |
 
 The current term's own address (`/senate/57`) redirects to the plain page. An
-unknown term, or one taken off the shelf, gets a per-body 404 linking to the
+unknown term, or one unlisted, gets a per-body 404 linking to the
 current term. `/news/student-government` itself forwards (308) to `/news`.
 
 ### Terms run GM Week to GM Week
@@ -103,11 +103,11 @@ assembled in [`lib/studentGovPage.tsx`](../lib/studentGovPage.tsx).
 
 | Part | What it shows | Code |
 | --- | --- | --- |
-| Photo panel (left, sticky) | Body name, term ("57th Senate · 2026–27"), link to the other body's same term, the month in view (older months are reached by scrolling) | [`StudentGovMonthPanel.tsx`](../components/News/StudentGovMonthPanel.tsx) |
+| Photo panel (left, sticky) | A Senate / Executive Board switch under the breadcrumb (see "Moving between bodies" below), body name, term ("57th Senate · 2026–27"), the month in view (older months are reached by scrolling) | [`StudentGovMonthPanel.tsx`](../components/News/StudentGovMonthPanel.tsx) |
 | Stream (right, scrolls on its own on desktop; the swipe or wheel turn that reaches its end stops there, momentum and all, and the next one carries the page on to the footer) | The term's entries by month, newest first | [`StudentGovSplitTimeline.tsx`](../components/News/StudentGovSplitTimeline.tsx) |
-| Back link (past terms only) | Top of the stream: a white book from the shelf lying on its side (hairline edge, hinge lines near each end), "TO 57TH SENATE" / "TO 2026–27 E-BOARD" on its spine in red, in the term label's type (Raleway, bold, uppercase), and the Poly P charm in red, pin included, pinned in the middle of the spine's width near its right end, hanging over it as on the shelf. The name is the term in session (the newest whose first meeting has passed), worked out on every request, so it moves to the 58th Senate by itself once that term is entered and has met. On hover the book lifts, the charm swings once and the ‹ nudges left | [`StudentGovBackLink.tsx`](../components/News/StudentGovBackLink.tsx) |
+| Back link (past terms only) | Top of the stream: a white book lying on its side (hairline edge, hinge lines near each end), "TO 57TH SENATE" / "TO 2026–27 E-BOARD" on its spine in red, in the term label's type (Raleway, bold, uppercase), and the Poly P charm in red, pin included, pinned in the middle of the spine's width near its right end, hanging over it. The name is the term in session (the newest whose first meeting has passed), worked out on every request, so it moves to the 58th Senate by itself once that term is entered and has met. On hover the book lifts, the charm swings once and the ‹ nudges left | [`StudentGovBackLink.tsx`](../components/News/StudentGovBackLink.tsx) |
 | Stream markers | Top of a past term: the GM Week that ended it, linked to the election story. A divider at a mid-term leader change. Senate only: a "2026 Summer recess · No meetings" line, placed at June 1 of each term once that day has passed, placed by date like the other dividers (automatic; editors don’t add it). No automatic first-meeting marker: editors post the first meeting as an update. | Same file; text from `studentGovTerms.ts` |
-| Shelf (end of the stream) | One book per covered term, newest left, flat, narrow spines in a minimal style (rounded corners, 2px apart, a soft sheen, title in serif reading top to bottom, foot in small capitals); on desktop the first book stands 2px off the photo panel and the row runs to the stream column's right edge, under a red "From the stacks" kicker and a header about the book in view: the term on the page, or the one being previewed. The header is the formal name ("54th Student Senate" / "2025–26 Executive Board", with an "In session" pill for the current term), then "2026–27 · Grand Marshal Jordan Krishnayah (160th)" ("President of the Union …" on E-Board pages; numbers when entered; just the years when no leader is entered). The term on the page has the Poly P (from the favicon) hanging on its spine as a charm: a pin near the top of the spine, a short cord and ring, and the P, above the title, all in one colour; only the cord and P cast a soft shadow. When the shelf slides sideways the charm swings like a pendulum (a damped spring, up to 12°, settling in about 1.5s); it stays still for reduced motion. Red on light spines, near-white on red ones. Every book is a link to its term: with a mouse, resting on a book (120ms) lifts it and crossfades the header to it; a click opens it, and the book rises a little further while the page loads. The preview lasts while the mouse is anywhere over the shelf and ends when it leaves, or when focus leaves the shelf. On touch the first tap lifts a book and the second opens it. Arrow keys, Home and End move along the shelf, Enter opens. Clicking the term on the page scrolls its stream back to the top. The headlines share one grid cell, so the books never move as the headline changes. The row scrolls sideways with no scrollbar (a sideways trackpad swipe, a touch swipe, shift + wheel, arrow keys; any mostly vertical wheel or trackpad scroll over it goes to the stream instead, even at the stream's end), and snaps books into place. Opening a term remounts the whole timeline (keyed by term), so the new stream starts at the top. | [`StudentGovShelf.tsx`](../components/News/StudentGovShelf.tsx) |
+| Terms list (end of the stream) | "TERMS" over a 2px rule, with the same Senate / Executive Board switch on the right, its red bar on the rule. Every covered term, newest first: name, chair, how many stories and updates it has on the timeline, and a chevron. The four newest show, plus the term on the page if it's older; "Show N earlier terms" opens the rest. A four-column table with a header row once the stream column is 600px wide (a container query), stacked rows below that. The term on the page has a red rule and "Viewing" and isn't a link. The foot links the print archive at the Folsom Library. Opening a term remounts the whole timeline (keyed by term), so the new stream starts at the top. See "Terms list" below | [`StudentGovTermList.tsx`](../components/News/StudentGovTermList.tsx) |
 
 The panel shows **one photo for the whole term** (no per-month photos): the
 term's own, set in the page editor, else the page's default photo, else plain
@@ -115,30 +115,50 @@ red. Only hand-picked photos are used, never article photos, so with nothing
 set every term is plain red. Saved in
 `timelinePages[body].photos` as `default` and `terms[termSlug]`.
 
-**Spine size** comes from the term's article count only (updates don't count),
-on a fixed scale: 240 × 38 px with no articles, growing evenly to 290 × 60 px at
-30 articles and staying there (38px is the narrowest that fits the widest foot,
-"PU 136"). The constants are at the top of `lib/studentGovPage.tsx`. Past terms
-cycle through twenty-one reds, pinks, whites and greys (no blacks), ordered so
-neighbours mostly differ in tone or hue: crimson, white, oxblood, paper white,
-light grey, dark warm grey, cherry, blush pink, a cooler tangy red, wine, tangy
-red, slate grey, garnet, rose (the first fourteen, enough for every past
-term today), then deep red, pale grey, raspberry, soft white, a cooler tangy
-red still, warm light grey, coral red. The tangy reds are RPI red made a touch
-less orange. The term in session is RPI red (#D6001C). Whites carry red
-lettering and a hairline edge so they show on the white page; pinks and
-greys have maroon, deep red or dark grey lettering; the reds are lettered in
-near-white.
+**Moving between bodies.** Both switches
+([`StudentGovBodySwitch.tsx`](../components/News/StudentGovBodySwitch.tsx))
+go to the other body's same term (57th Senate ↔ 2026–27 E-Board), else its
+timeline. They mark the body you're on the way the masthead marks its
+section: a bar under it (white in the panel, red on the rule in the Terms
+list). Choosing the other body slides the bar over, turning each label as it
+passes, with the masthead's own code
+([`components/slidingBar.ts`](../components/slidingBar.ts)). At the same time
+the page swipes towards the body you're moving to (the Executive Board is to
+the right): every piece marked `data-swipe` that's on screen (the panel's
+title, term and month; month headings, cards and markers; the list's rows)
+slides out and fades, staggered top to bottom, and the new page's pieces
+slide in from the other side
+([`pageSwipe.ts`](../components/News/pageSwipe.ts)). The header, photo and
+rules just change. The new page is fetched in full as soon as the switch is
+pointed at, and the navigation starts once the old pieces are gone (under
+0.3 s), so it's usually there at once. This uses Web Animations rather than a
+View Transition, which would hold the old page frozen and unclickable until
+the new one arrived. Reduced motion: neither the bar nor the page moves.
 
-**Book details.** A few past terms carry a small, hand-picked detail so the
-shelf reads as real volumes: a striped headband, raised bands, a faint cloth
-weave, a sun-faded head, a dust jacket shorter than its boards, old-style
-figures in the title, and the oldest book leaning on its neighbour. They're
-listed by Senate number and E-Board start year in
-`components/News/shelfDetails.ts`, chosen rather than generated: older books
-have more, a few stay plain, and the term in session (and any new term) is
-always plain. None depends on the spine's colour, which shifts each year as a
-new term takes the first slot. Add or move one by editing that file.
+**Terms list.** It replaced a sideways-scrolling "shelf" of book spines (one
+per term, sized by article count), which held fifteen terms in a row that
+showed four or five at a time, needed a hover or a first tap to say which term
+a spine was, and gave no way to compare terms at a glance. The list puts the
+same links in a form you can scan. What it shows, and why:
+
+- **Name** in the stream's serif: "57th Senate" with the years under it, or
+  "2026–27" on E-Board pages, where the years are the name (no "Executive
+  Board" repeated on every row; the heading's switch says which body).
+- **In session** goes under the name, not beside it, so a long name never
+  wraps to make room for it.
+- **Chair** without the title, which is the column's heading on wide screens
+  and spelt out on each row on phones. A dash when none is entered.
+- **Counts**: articles as "stories", updates separately, and either one left
+  out when it's zero ("Nothing yet" for a term with neither).
+- **Each row is one link**, with a chevron rather than a "View" label repeated
+  on every row. The term on the page isn't a link: it has a red rule and
+  "Viewing", in grey so it doesn't look clickable.
+- **Four newest**, plus the term on the page if it's older, then "Show N
+  earlier terms", which opens the rest in place and moves keyboard focus to
+  the first new row.
+- The foot links the print archive at the Folsom Library (the same link as
+  the search pages) instead of naming a cut-off year that isn't stored
+  anywhere.
 
 ## For editors
 
@@ -228,8 +248,8 @@ Delete: admin, EIC.
 | First meeting | **Decides which term every entry falls in**; not shown on the page |
 | GM Week result | When the election producing this term was decided (the runoff, if any). Shown on the GM Week marker at the top of the *previous* term |
 | Election results story | Links that marker |
-| On the shelf | Untick for terms the archive doesn't cover; the term leaves the shelf and its page 404s |
-| Chaired by | GM / PU name, number and how they took office. A second row with a **From** date adds a mid-term divider, and on the E-Board spine both numbers stack ("PU 134" over "PU 135"; "2 PUs" if either number is missing). Leave empty if unknown: the "Chaired by" line is hidden |
+| Listed | Untick for terms the archive doesn't cover; the term leaves the Terms list and its page 404s |
+| Chaired by | GM / PU name, number and how they took office. A second row with a **From** date adds a mid-term divider, and the Terms list shows both ("Ava Gallagher (134th), then Catherine Philipps (135th)"). Leave empty if unknown: the list shows a dash |
 
 Name and slug (`senate-57`, `eboard-2026-27`) fill in from a `beforeValidate`
 hook.
@@ -240,7 +260,6 @@ hook.
 | --- | --- |
 | Kickers counted automatically | "Student Senate", "Senate" (any capitalisation, News section) |
 | Led by | Grand Marshal |
-| Spine / foot | "57th Senate" / "26–27" |
 | Summer | Mostly inactive. A "2026 Summer recess · No meetings" line appears at June 1 each year: in the archive (2012–2026) the last spring story is always by May 31 (usually early May, after finals; Commencement is mid-May) and coverage resumes from late August. The only summer meeting covered was June 2020 |
 | Archive finder words | student senate, senate, senator, grand marshal (Faculty Senate skipped) |
 
@@ -294,7 +313,6 @@ Archive notes:
 | --- | --- |
 | Kickers counted automatically | "Executive Board", "E-Board", "EBoard" (any capitalisation, News section) |
 | Led by | President of the Union, who appoints 15–20 members; the Senate approves them |
-| Spine / foot | "2026–27" / "PU 137" (two PUs stack: "PU 134" over "PU 135") |
 | Summer | May keep meeting; no recess line |
 | Archive finder words | executive board, e-board, eboard, president of the union |
 
@@ -324,7 +342,7 @@ bylaws and disputes; the President of the Union's "Derby" columns when
 they're about the board or the role; Senate confirmations of E-Board members;
 and PU election results, withdrawals, runoffs and primaries. Left out:
 campaign coverage (candidate profiles, endorsements, debates), Derby columns
-about campus life, humour, and a Senate meeting story. With those, the shelf
+about campus life, humour, and a Senate meeting story. With those, the list
 goes back fifteen years to 2012–13, like the Senate's. Philipps leading two
 terms with the same number is correct. Several
 "Executive Board" stories are really about the Senate; they stay here and can
@@ -365,7 +383,7 @@ live in the `news_page_layout` jsonb.
      2024-02-01 appointment date);
    - add GM Week dates and election stories for past years (only 2026 is
      entered);
-   - untick "On the shelf" for any term the archive doesn't cover well.
+   - untick "Listed" for any term the archive doesn't cover well.
 5. Comb the archive in both page editors for anything the vetted list missed:
    a pass with "Article text too", and kicker matches that don't belong
    (hide them).
@@ -404,7 +422,7 @@ live in the `news_page_layout` jsonb.
 ## Known gaps and follow-ups
 
 - Open questions from the design handoff: how far back coverage really goes
-  (sets the oldest spine).
+  (sets the oldest listed term).
 - Remove [`NewsSectionPage.tsx`](../components/News/NewsSectionPage.tsx) once
   the new page ships.
 - Not built from the handoff: the optional `stat` callout on entries, and a
