@@ -159,6 +159,11 @@ export type NewsLayout = {
    */
   secondary?: (number | null)[];
   /**
+   * Stories under the lead show their photo on the right. Missing counts as
+   * on; false runs them as text only.
+   */
+  secondaryPhotos?: boolean;
+  /**
    * Stories pinned in the Featured row, left to right. A null slot takes the
    * next newest story with a photo.
    */

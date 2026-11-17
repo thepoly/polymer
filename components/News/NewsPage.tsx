@@ -26,8 +26,12 @@ const TOPIC_CARD_SIZES = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 41
  * How far the lead column's type may grow to reach the bottom of the Student
  * Government column (BalanceColumns). The strips under the lead take the
  * full scale; the lead's own text, where it has any outside the photo, half.
+ * With the text above or below the photo, the lead's headline runs the full
+ * width and a strip under it can follow (shown even if it overshoots), so the
+ * type grows less: a strip at 1.5 came close to the lead's own size.
  */
 const LEAD_COLUMN_SCALE = "1,1.5";
+const STACKED_LEAD_COLUMN_SCALE = "1,1.25";
 
 /**
  * New /news section page (work in progress on the `news-page` branch).
@@ -44,6 +48,7 @@ export default function NewsPage({
   leadTextPosition = DEFAULT_LEAD_TEXT_POSITION,
   leadFrame = null,
   secondaryPins = [],
+  secondaryPhotos = true,
   featuredPins = [],
   topics = null,
   topicCards = DEFAULT_TOPIC_CARDS,
@@ -60,6 +65,8 @@ export default function NewsPage({
   leadFrame?: LeadFrame | null;
   /** Stories the editor pinned under the lead, by slot; null slots fill automatically */
   secondaryPins?: (ComponentArticle | null)[];
+  /** Stories under the lead show their photo on the right (News Layout editor) */
+  secondaryPhotos?: boolean;
   /** Stories the editor pinned in the Featured row, by slot; null slots fill automatically */
   featuredPins?: (ComponentArticle | null)[];
   /** Newest stories per topic for the tabbed row, a few spare in each */
@@ -180,7 +187,7 @@ export default function NewsPage({
       >
         <div
           data-balance-col
-          data-balance-scale={LEAD_COLUMN_SCALE}
+          data-balance-scale={position === "north" || position === "south" ? STACKED_LEAD_COLUMN_SCALE : LEAD_COLUMN_SCALE}
           suppressHydrationWarning
           className="flex flex-col lg:border-r lg:border-[var(--rule-color)] lg:pr-[clamp(16px,2vw,24px)]"
         >
@@ -191,7 +198,7 @@ export default function NewsPage({
               frames={leadFrameStyles(leadFrame, leadArticle.id, leadArticle.imageFocus)}
             />
           )}
-          <NewsSecondary articles={secondary} optional={stripsOptional} />
+          <NewsSecondary articles={secondary} optional={stripsOptional} photos={secondaryPhotos} />
         </div>
         <StudentGovColumn
           boxes={studentGovBoxes}

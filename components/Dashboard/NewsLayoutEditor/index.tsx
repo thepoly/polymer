@@ -526,7 +526,15 @@ function LeadCropEditor({
       <span style={{ fontSize: '0.72rem', fontWeight: 600 }}>Lead photo crop</span>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <LeadCropPreview src={src} label="Computer, at its shortest" ratio={16 / 9} frame={desktop} onFrame={setDesktop} />
+          {/* Above, under or behind the text, the photo goes as wide as 2:1
+              to keep the whole lead on a laptop's first screen (NewsLead) */}
+          <LeadCropPreview
+            src={src}
+            label="Computer, at its shortest"
+            ratio={beside ? 16 / 9 : 2}
+            frame={desktop}
+            onFrame={setDesktop}
+          />
           <ZoomSlider label="Computer" frame={desktop} onFrame={setDesktop} />
           {own?.desktop && (
             <button type="button" className="tpe-btn" onClick={() => setDesktop(null)}>
@@ -807,6 +815,7 @@ function NewsPageEditor() {
   const [leadTextPosition, setLeadTextPosition] = useState<LeadTextPosition>(DEFAULT_LEAD_TEXT_POSITION);
   const [leadFrame, setLeadFrame] = useState<LeadFrame | null>(null);
   const [secondary, setSecondary] = useState<(number | null)[]>(() => normalizeSecondary(null));
+  const [secondaryPhotos, setSecondaryPhotos] = useState(true);
   const [featured, setFeatured] = useState<(number | null)[]>(() => normalizeFeatured(null));
   const [topicCards, setTopicCards] = useState<TopicCardStyle>(() => normalizeTopicCards(null));
   const [topicPicks, setTopicPicks] = useState<Record<NewsTopicKey, TopicPicks>>(() => normalizeTopicPicks(null));
@@ -897,6 +906,7 @@ function NewsPageEditor() {
           );
           setLeadFrame(normalizeLeadFrame(savedLayout.leadFrame));
           setSecondary(normalizeSecondary(savedLayout.secondary));
+          setSecondaryPhotos(savedLayout.secondaryPhotos !== false);
           setFeatured(normalizeFeatured(savedLayout.featured));
           setTopicCards(normalizeTopicCards(savedLayout.topicCards));
           const picks = normalizeTopicPicks(savedLayout.topicPicks);
@@ -1033,7 +1043,7 @@ function NewsPageEditor() {
       // The Senate / Executive Board editors save into the same JSON, so
       // merge over the latest copy instead of replacing it
       const latest = await fetch(`/api/news-page-layout/${docIdRef.current}?depth=0`).then((r) => r.json());
-      const layout: NewsLayout = { ...(latest?.layout ?? {}), lead, leadTextPosition, leadFrame, secondary, featured, topicCards, topicPicks, bulletsHeadlinesOnly, studentGov };
+      const layout: NewsLayout = { ...(latest?.layout ?? {}), lead, leadTextPosition, leadFrame, secondary, secondaryPhotos, featured, topicCards, topicPicks, bulletsHeadlinesOnly, studentGov };
       const res = await fetch(`/api/news-page-layout/${docIdRef.current}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -1129,8 +1139,21 @@ function NewsPageEditor() {
                     onClear={() => setSlotArticle(slotId, null)}
                   />
                 ))}
+                <ChoiceRow
+                  label="Photos"
+                  value={secondaryPhotos ? 'on' : 'off'}
+                  options={[
+                    { value: 'on', label: 'Photo on the right' },
+                    { value: 'off', label: 'Text only' },
+                  ]}
+                  onChange={(v) => {
+                    setSecondaryPhotos(v === 'on');
+                    markDirty();
+                  }}
+                />
                 <span style={{ fontSize: '0.62rem', opacity: 0.5 }}>
-                  These run as headlines with no photo. How many show follows the lead&rsquo;s text position: two
+                  Each story runs as a headline, byline and summary, with its photo cropped square on the right
+                  (a story without a photo runs text only either way). How many show follows the lead&rsquo;s text position: two
                   beside the photo, one over it, and one above or below it only when the lead ends well short of the
                   Student Government column.
                 </span>

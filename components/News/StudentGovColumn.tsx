@@ -88,11 +88,23 @@ function Nameplate({ body, session }: { body: StudentGovBody; session: StudentGo
   );
 }
 
+/**
+ * A pinned story's photo is normally 3:2. On computers BalanceColumns may
+ * crop it as wide as 2:1 when this column runs longer than the lead's, so the
+ * two end together without the lead photo having to grow past the first
+ * screen. Both boxes' photos share the change, keeping the same shape.
+ */
+const PHOTO_FLEX = "2,1.5";
+
 function PinnedArticle({ article }: { article: ComponentArticle }) {
   return (
-    <TransitionLink href={getArticleUrl(article)} className="group block pt-4">
+    <TransitionLink href={getArticleUrl(article)} className="group block pt-4 @container">
       {article.image && (
-        <div className="relative mb-3 aspect-[3/2] overflow-hidden">
+        <div
+          data-balance-flex={PHOTO_FLEX}
+          suppressHydrationWarning
+          className="relative mb-3 aspect-[3/2] overflow-hidden lg:aspect-auto lg:h-[var(--balance-h,66.667cqw)]"
+        >
           <Image
             src={article.image}
             alt={article.imageTitle || ""}

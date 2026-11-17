@@ -26,12 +26,32 @@ const FRAME_CLASS =
 /**
  * Height limits for the photo while BalanceColumns squares off the page
  * (width ÷ height, widest then tallest): stacked and overlay photos run from
- * 16:9 to 4:3, a photo beside the text from 16:9 to square (it still follows
+ * 16:9 to 5:4, a photo beside the text from 16:9 to square (it still follows
  * longer text up to 4:5, but balancing alone stops at square so the text
  * beside it isn't left with a blank under it).
  */
-const FLEX_STACKED = "1.7778,1.3333";
+const FLEX_STACKED = "1.7778,1.25";
+
+/** Lead headline's base size, by the lead's own width (cqw) */
+const HEADLINE = "clamp(30px, 5.4cqw, 46px)";
+/** Half of the column's --balance-scale, as a multiplier: the lead's text grows at half the strips' rate */
+const HALF_SCALE = "(1 + (var(--balance-scale, 1) - 1) * 0.5)";
+/**
+ * Largest the lead's headline and subdeck get above or below the photo,
+ * however much BalanceColumns scales the column (a little over the base
+ * sizes, 46px and 17px)
+ */
+const STACKED_HEADLINE_MAX = 48;
+const STACKED_SUBDECK_MAX = 18;
 const FLEX_BESIDE = "1.7778,1";
+
+/**
+ * A photo above or under the text, or behind it, is also kept short enough
+ * that the whole lead story is on the first screen on a laptop-height
+ * window, down to 2:1 if it has to be (BalanceColumns' fold). A photo beside
+ * the text follows the text's height instead, so it isn't held.
+ */
+const FOLD_WIDEST = "2";
 
 /**
  * A zoomed photo is drawn larger than its box, so it needs a sharper copy:
@@ -60,11 +80,12 @@ function OverlayLead({ article, image, frames }: { article: ComponentArticle; im
   const credit = photoCredit(article);
   return (
     <TransitionLink href={getArticleUrl(article)} className="group block">
-      <article className="@container">
+      <article data-balance-fold-end className="@container">
         <div className="relative">
           {/* 3:2, until BalanceColumns sets another height on desktop (cqw = 1% of the lead's width) */}
           <div
             data-balance-flex={FLEX_STACKED}
+            data-balance-fold={FOLD_WIDEST}
             suppressHydrationWarning
             className="relative -mx-4 aspect-[3/2] overflow-hidden sm:mx-0 lg:aspect-auto lg:h-[var(--balance-h,66.667cqw)]"
           >
@@ -161,8 +182,13 @@ export default function NewsLead({
           // Scales with the lead's own width (cqw), not the window's, so
           // tablets, where the lead runs full width, get a full-size headline.
           // BalanceColumns may set it larger (--balance-scale, at half rate)
-          // when the lead's column has to run deeper.
-          fontSize: "calc(clamp(30px, 5.4cqw, 46px) * (1 + (var(--balance-scale, 1) - 1) * 0.5))",
+          // when the lead's column has to run deeper. Above or below the
+          // photo, that's capped: the headline runs the column's full width,
+          // so a few points more read as shouting. The photo and an extra
+          // strip close the rest.
+          fontSize: sideBySide
+            ? `calc(${HEADLINE} * ${HALF_SCALE})`
+            : `min(${STACKED_HEADLINE_MAX}px, calc(${HEADLINE} * ${HALF_SCALE}))`,
           lineHeight: 1.06,
         }}
       >
@@ -177,7 +203,11 @@ export default function NewsLead({
       {article.excerpt && (
         <p
           className="mt-3 font-meta font-medium leading-[1.5] text-text-main"
-          style={{ fontSize: `calc(${sideBySide ? 18 : 17}px * (1 + (var(--balance-scale, 1) - 1) * 0.5))` }}
+          style={{
+            fontSize: sideBySide
+              ? `calc(18px * ${HALF_SCALE})`
+              : `min(${STACKED_SUBDECK_MAX}px, calc(17px * ${HALF_SCALE}))`,
+          }}
         >
           {article.excerpt}
         </p>
@@ -191,6 +221,7 @@ export default function NewsLead({
     >
       <div
         data-balance-flex={sideBySide ? FLEX_BESIDE : FLEX_STACKED}
+        data-balance-fold={sideBySide ? undefined : FOLD_WIDEST}
         suppressHydrationWarning
         className={
           sideBySide
@@ -235,7 +266,7 @@ export default function NewsLead({
 
   return (
     <TransitionLink href={getArticleUrl(article)} className="group block">
-      <article className={`@container ${layoutClass}`}>
+      <article data-balance-fold-end className={`@container ${layoutClass}`}>
         {/* West: text comes first in the DOM, matching the desktop layout,
             and is moved under the photo on phones */}
         {position === "west" ? (

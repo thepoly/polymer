@@ -389,6 +389,7 @@ export default async function SectionPageRoute({ params }: Args) {
   // Topic tabs the editor chose stories for, by slot; other tabs show the newest
   let newsTopicPins: Partial<Record<NewsTopicKey, (ComponentArticle | null)[]>> = {};
   let newsBulletsHeadlinesOnly = false;
+  let newsSecondaryPhotos = true;
   let studentGovLayout: StudentGovLayout = DEFAULT_STUDENT_GOV_LAYOUT;
   let newsStudentGovBoxes: StudentGovBoxContent[] = [];
   // Entries hidden in the Senate / Executive Board page editors stay out of the boxes too
@@ -413,6 +414,7 @@ export default async function SectionPageRoute({ params }: Args) {
       const topicPicks = normalizeTopicPicks(layoutJson?.topicPicks);
       const manualTopics = NEWS_TOPICS.filter((t) => topicPicks[t.key].manual).map((t) => t.key);
       newsBulletsHeadlinesOnly = layoutJson?.bulletsHeadlinesOnly === true;
+      newsSecondaryPhotos = layoutJson?.secondaryPhotos !== false;
       const pinnedById = await getArticlesById(
         payload,
         [...secondaryIds, ...featuredIds, ...manualTopics.flatMap((key) => topicPicks[key].articles)].filter(
@@ -910,6 +912,7 @@ export default async function SectionPageRoute({ params }: Args) {
           leadTextPosition={newsLeadTextPosition}
           leadFrame={newsLeadFrame}
           secondaryPins={newsSecondaryPins}
+          secondaryPhotos={newsSecondaryPhotos}
           featuredPins={newsFeaturedPins}
           topics={newsTopics}
           topicCards={newsTopicCards}

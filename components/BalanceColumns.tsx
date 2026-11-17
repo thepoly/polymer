@@ -14,6 +14,9 @@ import React, { useLayoutEffect, useRef, useSyncExternalStore } from "react";
  * - `data-balance-opt`: optional content, hidden until there's room. Shown
  *   in document order, each only if it fits whole. An option inside another
  *   option is only tried once the outer one is showing.
+ *   `data-balance-opt="reach"` may also be shown when it doesn't fit, making
+ *   its column the longer one, if the other column can then be brought down
+ *   to meet it more closely than the options that fit could manage (step 4a).
  * - `data-balance-scale="min,max"`: on a column (or one element in it), the
  *   range its type may be scaled over, e.g. "0.9,1.45". The scale arrives as
  *   the CSS variable `--balance-scale`; text opts in by multiplying its font
@@ -22,6 +25,13 @@ import React, { useLayoutEffect, useRef, useSyncExternalStore } from "react";
  *   height, between width ÷ wide and width ÷ tall (e.g. "1.7778,1.3333" for
  *   16:9 to 4:3). The height arrives as the CSS variable `--balance-h`; the
  *   box decides how to use it (`height: var(--balance-h, …)`).
+ * - `data-balance-fold="widest"`: on a flexible box near the top of the
+ *   page, keeps the box short enough that the bottom of its nearest
+ *   `data-balance-fold-end` (the whole lead story, say) is on the first
+ *   screen as the page loads. It may go as wide as `widest` (e.g. "2" for
+ *   2:1) to get there, and no wider: on a very short window the end stays
+ *   below. This outranks squaring off: what the box can't take up, the rest
+ *   of the column (options, type) has to.
  * - `data-balance-trim`: content the taller column can drop (summaries) when
  *   nothing else brings the columns together.
  *
@@ -36,6 +46,10 @@ import React, { useLayoutEffect, useRef, useSyncExternalStore } from "react";
  *    then shrink the tall column's.
  * 4. Scale the tall column's type down (if its range goes below 1), then
  *    the flexible boxes again.
+ * 4a. If a gap remains and the short column has a "reach" option still
+ *    hidden, steps 1 to 4 run again with the first one that doesn't fit
+ *    shown anyway, so the other column is the short one and grows to meet
+ *    it. Kept only if that leaves a smaller gap.
  * 5. If the gap is still more than `feather` px and the tall column has
  *    trims, drop them and start over.
  * 6. A gap of `feather` px or less is spread between the short column's
@@ -90,19 +104,25 @@ function balance(root: HTMLElement | null) {
   }
 
   const TOLERANCE = 1;
+  // Space left under a fold-held box's end, so it doesn't sit on the window's edge
+  const FOLD_MARGIN = 16;
   // Type scales in whole steps, so sizes don't drift by fractions between loads
   const STEP = 0.02;
   const feather = parseFloat(root.getAttribute("data-balance-feather") || "48");
   // Columns keep their own height while measured, instead of stretching
   root.setAttribute("data-balancing", "");
 
-  const fill = (col: HTMLElement, limit: number) => {
+  // `reach`: the first "reach" option that doesn't fit stays shown anyway
+  const fill = (col: HTMLElement, limit: number, reach: boolean) => {
     const opts = all(col, "[data-balance-opt]");
+    let reached = false;
     for (let i = 0; i < opts.length; i++) {
       const outer = opts[i].parentElement ? opts[i].parentElement!.closest("[data-balance-opt]") : null;
       if (outer && !outer.hasAttribute("data-on")) continue;
       opts[i].setAttribute("data-on", "");
-      if (height(col) > limit + TOLERANCE) opts[i].removeAttribute("data-on");
+      if (height(col) <= limit + TOLERANCE) continue;
+      if (reach && !reached && opts[i].getAttribute("data-balance-opt") === "reach") reached = true;
+      else opts[i].removeAttribute("data-on");
     }
   };
   // Scale the column's type: up (`up`) to the largest step in (1, max], or
@@ -145,17 +165,61 @@ function balance(root: HTMLElement | null) {
       set(-lo);
     }
   };
-  // Grow (delta > 0) or shrink the column's flexible box, within its limits
-  const flexBy = (col: HTMLElement, delta: number) => {
-    const box = col.querySelector<HTMLElement>("[data-balance-flex]");
-    if (!box) return;
+  // A flexible box's height limits right now, [shortest, tallest, current],
+  // or null if it has none. Measured each time: type set larger above or
+  // below the box moves where the fold falls on it.
+  const limitsOf = (box: HTMLElement): number[] | null => {
     const rect = box.getBoundingClientRect();
     const ratios = (box.getAttribute("data-balance-flex") || "").split(",");
     const wide = parseFloat(ratios[0]);
     const tall = parseFloat(ratios[1]);
-    if (!rect.width || !(wide > 0) || !(tall > 0)) return;
-    const target = Math.max(rect.width / wide, Math.min(rect.width / tall, rect.height + delta));
-    box.style.setProperty("--balance-h", target.toFixed(2) + "px");
+    if (!rect.width || !(wide > 0) || !(tall > 0)) return null;
+    let lo = rect.width / wide;
+    let hi = rect.width / tall;
+    const widest = parseFloat(box.getAttribute("data-balance-fold") || "");
+    const top = rect.top + window.scrollY;
+    // Only a box that starts on the first screen is held to it
+    if (widest > 0 && top < window.innerHeight) {
+      const end = box.closest("[data-balance-fold-end]") || box;
+      const below = end.getBoundingClientRect().bottom - rect.bottom;
+      const room = window.innerHeight - top - below - FOLD_MARGIN;
+      hi = Math.max(rect.width / widest, Math.min(hi, room));
+      lo = Math.min(lo, hi);
+    }
+    return [lo, hi, rect.height];
+  };
+  // Bring every flexible box within its limits before anything else (its
+  // normal height may be taller than the fold allows)
+  const clampBoxes = () => {
+    const boxes = all(root, "[data-balance-flex]");
+    for (let i = 0; i < boxes.length; i++) {
+      const lim = limitsOf(boxes[i]);
+      if (lim && (lim[2] > lim[1] + TOLERANCE || lim[2] < lim[0] - TOLERANCE)) {
+        boxes[i].style.setProperty("--balance-h", Math.max(lim[0], Math.min(lim[1], lim[2])).toFixed(2) + "px");
+      }
+    }
+  };
+  // Grow (delta > 0) or shrink the column's flexible boxes, within their
+  // limits. Several share the change evenly, so two photos in a column keep
+  // the same shape; what one can't take passes to the others.
+  const flexBy = (col: HTMLElement, delta: number) => {
+    let open = all(col, "[data-balance-flex]");
+    let left = delta;
+    while (open.length > 0 && Math.abs(left) > TOLERANCE) {
+      const share = left / open.length;
+      const still: HTMLElement[] = [];
+      for (let i = 0; i < open.length; i++) {
+        const lim = limitsOf(open[i]);
+        if (!lim) continue;
+        const target = Math.max(lim[0], Math.min(lim[1], lim[2] + share));
+        open[i].style.setProperty("--balance-h", target.toFixed(2) + "px");
+        left -= target - lim[2];
+        // A box that took its whole share can take more next round
+        if (Math.abs(target - (lim[2] + share)) < 0.01) still.push(open[i]);
+      }
+      if (still.length === open.length) break;
+      open = still;
+    }
   };
   // Whichever column is shorter right now, and by how much
   const measure = () => {
@@ -178,9 +242,10 @@ function balance(root: HTMLElement | null) {
     }
     return now;
   };
-  const run = () => {
+  const run = (reach: boolean) => {
+    clampBoxes();
     let now = measure();
-    fill(now.shortCol, height(now.tallCol));
+    fill(now.shortCol, height(now.tallCol), reach);
     now = measure();
     if (now.gap > TOLERANCE) {
       scaleTo(now.shortCol, height(now.tallCol), true);
@@ -193,11 +258,24 @@ function balance(root: HTMLElement | null) {
     return now;
   };
 
-  let result = run();
+  let reach = false;
+  let result = run(false);
+  // Step 4a: try a "reach" option the short column couldn't fit whole
+  if (result.gap > TOLERANCE && result.shortCol.querySelector('[data-balance-opt="reach"]:not([data-on])')) {
+    resetFill();
+    const reached = run(true);
+    if (reached.gap < result.gap - TOLERANCE) {
+      result = reached;
+      reach = true;
+    } else {
+      resetFill();
+      result = run(false);
+    }
+  }
   if (result.gap > feather && result.tallCol.querySelector("[data-balance-trim]")) {
     resetFill();
     result.tallCol.setAttribute("data-trimmed", "");
-    result = run();
+    result = run(reach);
   }
   if (result.gap > TOLERANCE && result.gap <= feather) result.shortCol.setAttribute("data-feather", "");
   root.removeAttribute("data-balancing");
@@ -254,6 +332,17 @@ export default function BalanceColumns({
     observer.observe(root);
     const query = when ? window.matchMedia(when) : null;
     query?.addEventListener("change", schedule);
+    // A box held to the fold also follows the window's height. Only with a
+    // mouse: on touch screens the height changes as the browser's toolbars
+    // slide in and out while scrolling, and the photo would jump with them.
+    const followsHeight = root.querySelector("[data-balance-fold]") !== null;
+    let windowHeight = window.innerHeight;
+    const onWindowResize = () => {
+      if (window.innerHeight === windowHeight) return;
+      windowHeight = window.innerHeight;
+      if (window.matchMedia("(pointer: fine)").matches) schedule();
+    };
+    if (followsHeight) window.addEventListener("resize", onWindowResize);
     let alive = true;
     document.fonts?.ready.then(() => {
       if (alive) schedule();
@@ -263,6 +352,7 @@ export default function BalanceColumns({
       cancelAnimationFrame(frame);
       observer.disconnect();
       query?.removeEventListener("change", schedule);
+      if (followsHeight) window.removeEventListener("resize", onWindowResize);
     };
   }, [when, feather]);
 

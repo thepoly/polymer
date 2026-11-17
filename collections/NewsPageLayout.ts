@@ -50,6 +50,7 @@ const NewsPageLayout: CollectionConfig = {
     //                                        // where the lead's text sits
     //                                        // relative to its photo (or on it)
     //   secondary: (number | null)[],       // stories pinned under the lead
+    //   secondaryPhotos: boolean,            // their photos on the right (missing = on)
     //   featured: (number | null)[],        // stories pinned in the Featured row
     //   topicCards: { overlay, subdeck },    // topic row card style
     //   topicPicks: { [topic]: { manual, articles: (number | null)[] } },

@@ -16,7 +16,7 @@ it needs a code change or a deploy.
 | --- | --- | --- |
 | Header | Section title, Archive link, Contact link (emails `news@` and `eic@`) | [`components/News/NewsPage.tsx`](../components/News/NewsPage.tsx) |
 | Lead story | Two thirds of the width, text north / south / east / west of the photo, or over it | Pinned in the News Layout editor; otherwise the newest news story with a photo |
-| Stories under the lead | Full-width strips with no photo: the headline end to end, the subdeck under it | Pinned in the News Layout editor (two slots); an empty slot takes the next newest news story. Two when the lead's text is beside its photo, one when it's over the photo. With the text above or below the photo, one only if the lead ends well short of the Student Government column |
+| Stories under the lead | Full-width strips with no photo: the headline end to end, the subdeck under it | Pinned in the News Layout editor (two slots); an empty slot takes the next newest news story. Two when the lead's text is beside its photo, one when it's over the photo. With the text above or below the photo, one only if the lead ends well short of the Student Government column (even if the strip then runs past it, when that column can grow to meet it) |
 | Student Government column | A Senate box and an Executive Board box, in either order | Each box: the latest 2 or 3 timeline entries, or one pinned article |
 | Featured row | Under the two columns, full width: four cards with photo, headline, byline and subdeck (two across on tablets, one on phones) | Pinned in the News Layout editor (four slots); an empty slot takes the next newest news story with a photo. [`components/News/NewsFeatured.tsx`](../components/News/NewsFeatured.tsx) |
 | Topic row | Under Featured: four headers (Administration, Academia, Campus Infrastructure, Interview); clicking one swipes in its six newest stories, 3×2 on computers | Stories whose kicker is in that topic's list in [`components/News/newsTopics.ts`](../components/News/newsTopics.ts), any capitalisation, from the whole archive, skipping anything shown above, unless the editor chose that tab's stories (News Layout editor, Topic row → Stories). Opens on the first topic with stories. [`components/News/NewsTopicTabs.tsx`](../components/News/NewsTopicTabs.tsx) |
@@ -25,8 +25,15 @@ On computers the two columns are squared off to end on the same line
 ([`BalanceColumns`](fit-text.md#balancecolumns-two-columns-that-end-together)).
 Whichever column is shorter has its type set larger: the strips and the
 lead's headline on the left, the docket entries on the right (a box set to 2
-entries gains a third first). The lead photo's height then closes the last
-gap, anywhere from 16:9 to 4:3, or up to square beside its text. If the
+entries gains a third first). With the text above or below the photo the
+left column's type grows less (up to 1.25×, the lead's headline no larger
+than 48px), and a strip is added under the lead instead when the column is
+well short. The lead photo's height then closes the last gap, anywhere from
+16:9 to 5:4, or up to square beside its text. With the
+text above, under or over the photo, the photo is first kept short enough
+that the whole lead story is on the first screen (as wide as 2:1 on a short
+laptop window). Photos of stories pinned in the Senate and Executive Board
+boxes may then be cropped from 3:2 down to 2:1 to bring that column up. If the
 Student Government column is still the longer one, its type is set slightly
 smaller and, failing that, its summaries are dropped. Phones show everything
 at its base size, with no third entry and no optional strip.

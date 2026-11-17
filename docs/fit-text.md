@@ -83,6 +83,11 @@ Each step runs only if a gap remains.
    step that makes the columns meet exactly.
 4. **Type, down.** If a gap still remains and the tall column's range goes
    below 1, its type is scaled down, then the flexible boxes are tried again.
+4a. **Reach.** If a gap still remains and the short column has a hidden
+   `reach` option, steps 1–4 run again with the first one that didn't fit
+   shown anyway. That column is now the long one, so the other column's type
+   and photos grow to meet it (and its own photo shrinks). The result is kept
+   only if the columns end closer than before.
 5. **Trim.** If more than `feather` px (default 48) still remains and the
    tall column has trimmable content (summaries), it drops all of it and the
    routine starts over.
@@ -115,9 +120,11 @@ Wrap the two columns in `<BalanceColumns when="(min-width: 1024px)">`
 | Marker | On | Meaning |
 | --- | --- | --- |
 | `data-balance-col` | Each of the two columns (flex columns, grid items of the root) | What gets measured and levelled |
-| `data-balance-opt` | Optional content | Hidden until there's room. Tried in document order; one nested in another waits for the outer one |
+| `data-balance-opt` | Optional content | Hidden until there's room. Tried in document order; one nested in another waits for the outer one. `data-balance-opt="reach"` may also be shown when it doesn't fit, if the other column can then come closer to meeting it (step 4a) |
 | `data-balance-scale="min,max"` | A column, or one element in it | The range its type may be scaled over. Text opts in with the CSS variable it's given: `font-size: calc(18px * var(--balance-scale, 1))`, or in part: `calc(46px * (1 + (var(--balance-scale, 1) - 1) * 0.5))` |
-| `data-balance-flex="wide,tall"` | The photo box | May change height between width ÷ wide and width ÷ tall. Use the CSS variable it's given: `height: var(--balance-h, <normal height>)` |
+| `data-balance-flex="wide,tall"` | The photo box | May change height between width ÷ wide and width ÷ tall. Use the CSS variable it's given: `height: var(--balance-h, <normal height>)`. Several in one column share each change evenly; what one can't take passes to the rest |
+| `data-balance-fold="widest"` | A flexible box near the top of the page | Kept short enough that the bottom of its nearest `data-balance-fold-end` is on the first screen as the page loads, going as wide as `widest` (e.g. `2` for 2:1) if it has to. This outranks squaring off, so on a short window the other column may end lower. Also follows changes to the window's height on computers (not on touch screens, where the toolbars change it while scrolling) |
+| `data-balance-fold-end` | Around a fold-held box (the whole lead story) | What has to fit on the first screen. Without one, just the box |
 | `data-balance-trim` | Summaries and the like | Dropped by the taller column as a last resort |
 
 Give the type a rate that matches its rank: on `/news` the strips under the
@@ -133,9 +140,9 @@ First use: the top of `/news`
 
 | | Lead's column | Student Government column |
 | --- | --- | --- |
-| Options | With the lead's text above or below its photo: one strip, only if the column is short by a whole strip | A third docket entry in a box set to two |
-| Type | 1 to 1.5: strips in full, lead text at half | 0.9 to 1.45: docket entries and pinned stories; nameplates stay one size |
-| Flexible box | The lead photo: 16:9 to 4:3, or up to square beside its text | None |
+| Options | With the lead's text above or below its photo: one strip (`reach`), shown if the column is short by a whole strip, or by enough that the Student Government column can grow to meet it | A third docket entry in a box set to two |
+| Type | 1 to 1.5: strips in full, lead text at half. With the text above or below the photo, 1 to 1.25, and the lead's headline and subdeck stop at 48px and 18px | 0.9 to 1.45: docket entries and pinned stories; nameplates stay one size |
+| Flexible box | The lead photo: 16:9 to 5:4, or up to square beside its text. Above, under or behind its text it's also held to the first screen (`data-balance-fold="2"`), as wide as 2:1 | Pinned stories' photos: 3:2 down to 2:1, sharing the change so both boxes keep one shape |
 | Trims | None | Entries' and pinned stories' summaries |
 
 ## Other ways to close a gap
