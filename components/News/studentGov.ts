@@ -78,7 +78,7 @@ export const monthSectionId = (key: string) => `month-${key}`;
 /** One entry on a timeline: an article with the body's kicker, or an update */
 export type TimelineItem =
   | { kind: "article"; id: number | string; date: string; article: ComponentArticle }
-  | { kind: "update"; id: number | string; date: string; title: string; blurb: string };
+  | { kind: "update"; id: number | string; date: string; title: string; blurb: string; href?: string | null };
 
 /** What a box in the Student Government column shows */
 export type StudentGovBoxMode = "timeline" | "article";

@@ -8,7 +8,7 @@
  * Shared by the timeline pages, the shelf, the dashboard editor and the
  * `student-gov-terms` collection. Safe to import from client code.
  */
-import { STUDENT_GOV, type StudentGovBody } from "./studentGov";
+import { STUDENT_GOV, updateAnchor, type StudentGovBody } from "./studentGov";
 import { troyYearMonth } from "./timelinePage";
 
 export type TermLeaderHow = "elected" | "runoff" | "appointed";
@@ -268,6 +268,15 @@ export function termIndexOf(terms: StudentGovTerm[], date: Date | string): numbe
     if (terms[i].startsOn <= day) return i;
   }
   return -1;
+}
+
+/** A docket update must link to the term that actually contains its anchor. */
+export function updateTermHref(terms: StudentGovTerm[], date: string, id: number | string, now: Date): string | null {
+  const today = troyDayKey(now);
+  const term = terms[termIndexOf(terms, date)];
+  if (!term || !term.hasCoverage || term.startsOn > today) return null;
+  const current = terms.filter((t) => t.startsOn <= today).at(-1);
+  return `${termHref(term, term === current)}#${updateAnchor(id)}`;
 }
 
 

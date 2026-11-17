@@ -31,7 +31,7 @@ import { getArticlesById, getStudentGovTimeline } from '@/lib/studentGovTimeline
 import { getNewsTopicArticles } from '@/lib/newsTopics';
 import { NEWS_TOPICS, type NewsTopicKey } from '@/components/News/newsTopics';
 import { getStoredTerms } from '@/lib/studentGovTerms';
-import { ordinal, resolveTerms, termYearLabel, troyDayKey } from '@/components/News/studentGovTerms';
+import { ordinal, resolveTerms, termYearLabel, troyDayKey, updateTermHref } from '@/components/News/studentGovTerms';
 import FeaturesSectionPage, { type FeaturesEvent, type SpotlightPhoto } from '@/components/Features/FeaturesSectionPage';
 import SportsSectionPage, { type ScoreboardDate } from '@/components/Sports/SportsSectionPage';
 import type { StandingsTeam } from '@/components/Sports/SportsStandings';
@@ -491,7 +491,11 @@ export default async function SectionPageRoute({ params }: Args) {
           if (article) return { body, kind: 'article', article, session: sessionOf(body, []) };
           const { hidden, included } = timelinePages[body];
           // One more than the editor's count: the page shows it when the column has room
-          const items = await getStudentGovTimeline(payload, body, STUDENT_GOV_BOX_MAX, { hidden: new Set(hidden), included });
+          const timeline = await getStudentGovTimeline(payload, body, STUDENT_GOV_BOX_MAX, { hidden: new Set(hidden), included });
+          const terms = resolveTerms(storedTerms, body, timeline.map((item) => item.date), now);
+          const items = timeline.map((item) => item.kind === 'update'
+            ? { ...item, href: updateTermHref(terms, item.date, item.id, now) }
+            : item);
           return { body, kind: 'timeline', items, min: box.count, session: sessionOf(body, items.map((item) => item.date)) };
         }),
       );

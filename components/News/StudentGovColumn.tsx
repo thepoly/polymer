@@ -136,6 +136,15 @@ function PinnedArticle({ article }: { article: ComponentArticle }) {
 }
 
 /** One docket row: the date in its own column (month over a large day), then the entry */
+function DocketLink({ href, children, ...props }: {
+  href: string | null;
+  children: React.ReactNode;
+  className: string;
+  style: React.CSSProperties;
+}) {
+  return href ? <TransitionLink href={href} {...props}>{children}</TransitionLink> : <div {...props}>{children}</div>;
+}
+
 function DocketRow({
   href,
   date,
@@ -143,7 +152,7 @@ function DocketRow({
   text,
   optional,
 }: {
-  href: string;
+  href: string | null;
   date: string;
   title: React.ReactNode;
   /** Summary under the headline; dropped when the column needs the room */
@@ -154,7 +163,7 @@ function DocketRow({
   const { month, day } = docketDate(date);
   return (
     <li data-balance-opt={optional ? "" : undefined} suppressHydrationWarning>
-      <TransitionLink
+      <DocketLink
         href={href}
         className="group grid grid-cols-[44px_1fr] gap-x-3.5"
         style={{ paddingTop: scaled(16) }}
@@ -188,7 +197,7 @@ function DocketRow({
             </span>
           )}
         </span>
-      </TransitionLink>
+      </DocketLink>
     </li>
   );
 }
@@ -218,7 +227,7 @@ function Docket({
         const href =
           item.kind === "article"
             ? getArticleUrl(item.article)
-            : `${STUDENT_GOV[body].href}#${updateAnchor(item.id)}`;
+            : item.href === undefined ? `${STUDENT_GOV[body].href}#${updateAnchor(item.id)}` : item.href;
         const title = item.kind === "article" ? item.article.richTitle || item.article.title : item.title;
         const text = item.kind === "article" ? item.article.excerpt : item.blurb;
         return (
