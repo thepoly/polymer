@@ -488,10 +488,14 @@ export default async function SectionPageRoute({ params }: Args) {
         studentGovLayout.order.map(async (body): Promise<StudentGovBoxContent> => {
           const box = studentGovLayout[body];
           const article = box.mode === 'article' && box.article !== null ? pinned.get(box.article) : undefined;
-          if (article) return { body, kind: 'article', article, session: sessionOf(body, []) };
+          // An explicit lead pin wins a conflicting box pin, which falls back
+          // to its timeline just like a missing or unpublished pin.
+          if (article && article.id !== newsLead?.id) return { body, kind: 'article', article, session: sessionOf(body, []) };
           const { hidden, included } = timelinePages[body];
           // One more than the editor's count: the page shows it when the column has room
-          const timeline = await getStudentGovTimeline(payload, body, STUDENT_GOV_BOX_MAX, { hidden: new Set(hidden), included });
+          const timeline = (await getStudentGovTimeline(payload, body, STUDENT_GOV_BOX_MAX + (newsLead ? 1 : 0), { hidden: new Set(hidden), included }))
+            .filter((item) => item.kind !== 'article' || item.article.id !== newsLead?.id)
+            .slice(0, STUDENT_GOV_BOX_MAX);
           const terms = resolveTerms(storedTerms, body, timeline.map((item) => item.date), now);
           const items = timeline.map((item) => item.kind === 'update'
             ? { ...item, href: updateTermHref(terms, item.date, item.id, now) }

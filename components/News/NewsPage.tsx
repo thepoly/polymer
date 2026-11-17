@@ -86,15 +86,15 @@ export default function NewsPage({
   pinnedArticles?: ComponentArticle[];
   hasOlderArticles?: boolean;
 }) {
-  const leadArticle = lead ?? articles.find((a) => a.image) ?? articles[0] ?? null;
-
-  // Stories already on the page, so nothing is shown twice: the lead, and
-  // whatever is in the Senate / Executive Board boxes
-  const shown = new Set<number | string>(leadArticle ? [leadArticle.id] : []);
+  // Government boxes claim their stories before automatic lead selection.
+  const shown = new Set<number | string>();
   for (const box of studentGovBoxes) {
     if (box.kind === "article") shown.add(box.article.id);
     else for (const item of box.items) if (item.kind === "article") shown.add(item.article.id);
   }
+  const leadCandidates = articles.filter((a) => !shown.has(a.id));
+  const leadArticle = lead ?? leadCandidates.find((a) => a.image) ?? leadCandidates[0] ?? null;
+  if (leadArticle) shown.add(leadArticle.id);
   // Overlay without a photo is laid out as south (see NewsLead)
   const position = leadTextPosition === "overlay" && !leadArticle?.image ? "south" : leadTextPosition;
   // Strips under the lead, by its layout. Beside its photo the lead is short,
@@ -108,7 +108,7 @@ export default function NewsPage({
   // Fills `slots` places: a pinned story takes its slot (unless it's the lead
   // or already placed by an earlier pin), and the others take the newest
   // stories not on the page yet. Everything placed counts as shown after.
-  const placed = new Set<number | string>(leadArticle ? [leadArticle.id] : []);
+  const placed = new Set(shown);
   const fillSlots = (
     pinned: (ComponentArticle | null)[],
     slots: number,
