@@ -1,5 +1,6 @@
 import type { Payload } from 'payload'
-import { formatArticle } from '@/utils/formatArticle'
+import { extractTextFromLexical, formatArticle } from '@/utils/formatArticle'
+import { collectPages } from './collectPages'
 import type { Article as ComponentArticle } from '@/components/FrontPage/types'
 import { STUDENT_GOV, matchesKicker, type StudentGovBody, type TimelineItem } from '@/components/News/studentGov'
 import { entryKey } from '@/components/News/timelinePage'
@@ -19,6 +20,11 @@ export const ARTICLE_SELECT = {
   isFollytechnic: true,
 } as const
 
+/** Rank and deduplicate before loading images and authors for visible stories. */
+export const ARTICLE_CANDIDATE_SELECT = {
+  title: true, slug: true, kicker: true, featuredImage: true, publishedDate: true, createdAt: true,
+} as const
+
 /**
  * Newest-first timeline for the Student Senate or Executive Board: published
  * news articles whose kicker matches the body in any capitalisation, the
@@ -28,7 +34,7 @@ export const ARTICLE_SELECT = {
 export async function getStudentGovTimeline(
   payload: Payload,
   body: StudentGovBody,
-  limit: number,
+  limit: number | null,
   {
     hidden = new Set(),
     included = [],
@@ -40,11 +46,10 @@ export async function getStudentGovTimeline(
   } = {},
 ): Promise<TimelineItem[]> {
   const meta = STUDENT_GOV[body]
-  // Fetch enough to still fill `limit` after dropping hidden entries and
-  // kickers that only contain the word ("School Board", "Faculty Senate")
-  const fetchLimit = Math.max(limit, 50) + hidden.size
+  // Scan lightweight candidates to EOF: neither false-positive kickers nor
+  // duplicate archive copies may consume a visible slot or erase older terms.
   const [articles, extra, updates] = await Promise.all([
-    payload.find({
+    collectPages((page) => payload.find({
       collection: 'articles',
       where: {
         and: [
@@ -53,62 +58,58 @@ export async function getStudentGovTimeline(
           { or: meta.kickerQuery.map((word) => ({ kicker: { like: word } })) },
         ],
       },
-      sort: '-publishedDate',
-      limit: fetchLimit,
-      depth: 1,
-      select: ARTICLE_SELECT,
-    }),
+      sort: ['-publishedDate', '-id'],
+      limit: 500,
+      page,
+      depth: 0,
+      select: ARTICLE_CANDIDATE_SELECT,
+    }), (doc) => matchesKicker(body, doc.kicker)),
     included.length > 0
-      ? payload.find({
+      ? collectPages((page) => payload.find({
           collection: 'articles',
           where: { and: [{ id: { in: [...included] } }, { _status: { equals: 'published' } }] },
-          limit: included.length,
-          depth: 1,
-          select: ARTICLE_SELECT,
-        })
-      : Promise.resolve({ docs: [] }),
-    payload
-      .find({
+          limit: 500,
+          page,
+          sort: 'id',
+          depth: 0,
+          select: ARTICLE_CANDIDATE_SELECT,
+        }))
+      : Promise.resolve([]),
+    collectPages((page) => payload.find({
         collection: 'student-gov-updates',
         where: { body: { equals: body } },
-        sort: '-date',
-        limit: fetchLimit,
+        sort: ['-date', '-id'],
+        limit: 500,
+        page,
         depth: 0,
-      })
+        select: { title: true, blurb: true, date: true },
+      }))
       // Table may not exist yet (before the migration runs)
-      .catch(() => ({ docs: [] as { id: number; title: string; blurb: string; date: string }[] })),
+      .catch(() => []),
   ])
 
-  const items: TimelineItem[] = []
   const seen = new Set<number>()
-  for (const doc of [...articles.docs.filter((d) => matchesKicker(body, d.kicker)), ...extra.docs]) {
-    if (seen.has(doc.id)) continue
+  const candidates = [...articles, ...extra].filter((doc) => {
+    if (seen.has(doc.id) || !doc.slug) return false
     seen.add(doc.id)
-    const article = formatArticle(doc)
-    if (!article) continue
-    items.push({
-      kind: 'article',
-      id: doc.id,
-      date: doc.publishedDate || doc.createdAt,
-      article,
-    })
-  }
-  for (const doc of updates.docs) {
-    items.push({ kind: 'update', id: doc.id, date: doc.date, title: doc.title, blurb: doc.blurb })
-  }
-
-  // One copy of each story (the archive has duplicates), chosen before hidden
-  // entries drop out so the page matches the dashboard editor
-  const unique = dropDuplicateStories(items, (item) =>
-    item.kind === 'article'
-      ? { id: Number(item.id), title: item.article.title, date: item.date, hasImage: Boolean(item.article.image) }
-      : null,
-  )
-
-  return unique
-    .filter((item) => !hidden.has(entryKey(item.kind, item.id)))
+    return true
+  })
+  const stories = dropDuplicateStories(candidates, (doc) => ({
+    id: doc.id, title: extractTextFromLexical(doc.title),
+    date: doc.publishedDate || doc.createdAt, hasImage: Boolean(doc.featuredImage),
+  }))
+  const ranked = [
+    ...stories.map(doc => ({ kind: 'article' as const, id: doc.id, date: doc.publishedDate || doc.createdAt })),
+    ...updates.map(doc => ({ kind: 'update' as const, ...doc })),
+  ].filter((item) => !hidden.has(entryKey(item.kind, item.id)))
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, limit)
+    .slice(0, limit ?? undefined)
+  const hydrated = await getArticlesById(payload, ranked.filter(item => item.kind === 'article').map(item => item.id))
+  return ranked.flatMap((item): TimelineItem[] => {
+    if (item.kind === 'update') return [item]
+    const article = hydrated.get(item.id)
+    return article ? [{ ...item, article }] : []
+  })
 }
 
 /** Published articles by id (for pinned boxes), keyed by id */
@@ -117,17 +118,19 @@ export async function getArticlesById(
   ids: number[],
 ): Promise<Map<number, ComponentArticle>> {
   if (ids.length === 0) return new Map()
-  const response = await payload.find({
+  const response = await collectPages((page) => payload.find({
     collection: 'articles',
     where: {
       and: [{ id: { in: ids } }, { _status: { equals: 'published' } }],
     },
-    limit: ids.length,
+    limit: 500,
+    page,
+    sort: 'id',
     depth: 1,
     select: ARTICLE_SELECT,
-  })
+  }))
   const map = new Map<number, ComponentArticle>()
-  for (const doc of response.docs) {
+  for (const doc of response) {
     const article = formatArticle(doc)
     if (article) map.set(doc.id, article)
   }

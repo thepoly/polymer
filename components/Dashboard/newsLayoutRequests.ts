@@ -1,5 +1,18 @@
 export type NewsLayoutDocument = { layout: Record<string, unknown>; updatedAt: string }
 
+/** REST archive queries have finite pages even when the editor needs all rows. */
+export async function readAllDocs<T>(url: string): Promise<{ docs: T[] }> {
+  const docs: T[] = []
+  for (let page = 1; ; page += 1) {
+    const response = await fetch(`${url}${url.includes('?') ? '&' : '?'}page=${page}`, { cache: 'no-store' })
+    if (!response.ok) throw new Error('Could not load the complete archive.')
+    const result = await response.json()
+    if (!Array.isArray(result.docs)) throw new Error('Invalid archive response.')
+    docs.push(...result.docs)
+    if (!result.hasNextPage || result.docs.length === 0) return { docs }
+  }
+}
+
 export async function activateNewsLayout(id: string, layout: object, updatedAt: string): Promise<void> {
   const response = await fetch(`/api/news-page-layout/${encodeURIComponent(id)}/activate`, {
     method: 'PATCH',

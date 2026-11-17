@@ -43,9 +43,6 @@ import { focalObjectPosition } from '@/utils/focalPoint'
 import type { Article as ComponentArticle } from '@/components/FrontPage/types'
 import type { Media } from '@/payload-types'
 
-// Every entry a body has had; the page then shows one term at a time
-const TIMELINE_LIMIT = 1000
-
 /**
  * Title for a timeline page. `segment` is the term's part of the URL ("56",
  * "2025-26"); the name comes from it directly, so no lookup is needed.
@@ -197,7 +194,7 @@ export async function StudentGovTimelinePage({ body, segment }: { body: StudentG
   const today = troyDayKey(now)
   const page = await getPageConfig(payload, body)
   const [items, stored] = await Promise.all([
-    getStudentGovTimeline(payload, body, TIMELINE_LIMIT, { hidden: new Set(page.hidden), included: page.included }),
+    getStudentGovTimeline(payload, body, null, { hidden: new Set(page.hidden), included: page.included }),
     getStoredTerms(payload),
   ])
 

@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useStepNav } from '@payloadcms/ui';
-import { activateNewsLayout, readNewsLayout } from '../newsLayoutRequests';
+import { activateNewsLayout, readAllDocs, readNewsLayout } from '../newsLayoutRequests';
 import { useNewsEditorState } from '../newsEditorState';
 import '../FeaturesLayoutEditor/features-layout-editor.css';
 import './timeline-page-editor.css';
@@ -1359,7 +1359,7 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
         // Kicker matches (any capitalisation; the query narrows, the pattern
         // decides), articles added from the archive, updates and terms
         const [articleData, includedData, updateData, termData] = await Promise.all([
-          fetch(
+          readAllDocs<ArticleDoc>(
             `/api/articles?${restQuery(
               {
                 and: [
@@ -1368,20 +1368,19 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
                   { or: meta.kickerQuery.map((word) => ({ kicker: { like: word } })) },
                 ],
               },
-              { sort: '-publishedDate', limit: 2000, depth: 1 },
+              { sort: '-publishedDate,-id', limit: 500, depth: 1 },
             )}`,
-          ).then((r) => r.json()),
+          ),
           page.included.length > 0
-            ? fetch(
+            ? readAllDocs<ArticleDoc>(
                 `/api/articles?${restQuery(
                   { and: [{ id: { in: page.included.join(',') } }, { _status: { equals: 'published' } }] },
-                  { limit: page.included.length, depth: 1 },
+                  { sort: 'id', limit: 500, depth: 1 },
                 )}`,
-              ).then((r) => r.json())
+              )
             : Promise.resolve({ docs: [] }),
-          fetch(`/api/student-gov-updates?where[body][equals]=${body}&sort=-date&limit=1000&depth=0`).then((r) => r.json()),
-          fetch(`/api/student-gov-terms?where[body][equals]=${body}&sort=startsOn&limit=500&depth=0`)
-            .then((r) => (r.ok ? r.json() : { docs: [] }))
+          readAllDocs<UpdateDoc>(`/api/student-gov-updates?where[body][equals]=${body}&sort=-date,-id&limit=500&depth=0`),
+          readAllDocs<Record<string, unknown>>(`/api/student-gov-terms?where[body][equals]=${body}&sort=startsOn,id&limit=500&depth=0`)
             .catch(() => ({ docs: [] })),
         ]);
         setStoredTerms(
@@ -1406,9 +1405,7 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
           .filter((p): p is TimelinePhoto => p !== null)
           .map((p) => p.media);
         if (mediaIds.length > 0) {
-          const mediaData = await fetch(`/api/media?where[id][in]=${[...new Set(mediaIds)].join(',')}&limit=50&depth=0`).then(
-            (r) => r.json(),
-          );
+          const mediaData = await readAllDocs<MediaDoc>(`/api/media?where[id][in]=${[...new Set(mediaIds)].join(',')}&sort=id&limit=100&depth=0`);
           setMedia(new Map(((mediaData.docs || []) as MediaDoc[]).map((m) => [m.id, m])));
         }
       } catch (err) {

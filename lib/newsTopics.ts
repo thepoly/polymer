@@ -1,7 +1,7 @@
 import type { Payload } from 'payload'
-import { formatArticle } from '@/utils/formatArticle'
 import type { Article as ComponentArticle } from '@/components/FrontPage/types'
-import { ARTICLE_SELECT } from '@/lib/studentGovTimeline'
+import { ARTICLE_CANDIDATE_SELECT, getArticlesById } from '@/lib/studentGovTimeline'
+import { collectPages } from './collectPages'
 import { NEWS_TOPICS, TOPIC_CARDS, topicOf, type NewsTopicKey } from '@/components/News/newsTopics'
 
 /**
@@ -19,27 +19,28 @@ export async function getNewsTopicArticles(
   >
   // Enough that stories above the row can be skipped and six still remain
   const perTopic = TOPIC_CARDS + 12
-  const kickers = NEWS_TOPICS.flatMap((t) => t.kickers as readonly string[])
-  const res = await payload.find({
+  const sets = await Promise.all(NEWS_TOPICS.map((topic) => collectPages((page) => payload.find({
     collection: 'articles',
     where: {
       and: [
         { section: { equals: 'news' } },
         { _status: { equals: 'published' } },
         // `like` narrows the query; the exact match is checked below
-        { or: kickers.map((k) => ({ kicker: { like: k } })) },
+        { or: topic.kickers.map((k) => ({ kicker: { like: k } })) },
       ],
     },
-    sort: '-publishedDate',
-    limit: 400,
-    depth: 1,
-    select: ARTICLE_SELECT,
+    sort: ['-publishedDate', '-id'],
+    limit: 50,
+    page,
+    depth: 0,
+    select: ARTICLE_CANDIDATE_SELECT,
+  }), (doc) => Boolean(doc.slug) && topicOf(doc.kicker) === topic.key, perTopic)))
+  const articles = await getArticlesById(payload, [...new Set(sets.flatMap(set => set.map(doc => doc.id)))])
+  NEWS_TOPICS.forEach((topic, index) => {
+    out[topic.key] = sets[index].flatMap(doc => {
+      const article = articles.get(doc.id)
+      return article ? [article] : []
+    })
   })
-  for (const doc of res.docs) {
-    const topic = topicOf(doc.kicker)
-    if (!topic || out[topic].length >= perTopic) continue
-    const article = formatArticle(doc)
-    if (article) out[topic].push(article)
-  }
   return out
 }
