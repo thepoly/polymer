@@ -107,7 +107,7 @@ assembled in [`lib/studentGovPage.tsx`](../lib/studentGovPage.tsx).
 | Stream (right, scrolls on its own on desktop; the swipe or wheel turn that reaches its end stops there, momentum and all, and the next one carries the page on to the footer) | The term's entries by month, newest first | [`StudentGovSplitTimeline.tsx`](../components/News/StudentGovSplitTimeline.tsx) |
 | Back link (past terms only) | Top of the stream: a white book lying on its side (hairline edge, hinge lines near each end), "TO 57TH SENATE" / "TO 2026–27 E-BOARD" on its spine in red, in the term label's type (Raleway, bold, uppercase), and the Poly P charm in red, pin included, pinned in the middle of the spine's width near its right end, hanging over it. The name is the term in session (the newest whose first meeting has passed), worked out on every request, so it moves to the 58th Senate by itself once that term is entered and has met. On hover the book lifts, the charm swings once and the ‹ nudges left | [`StudentGovBackLink.tsx`](../components/News/StudentGovBackLink.tsx) |
 | Stream markers | Top of a past term: the GM Week that ended it, linked to the election story. A divider at a mid-term leader change. Senate only: a "2026 Summer recess · No meetings" line, placed at June 1 of each term once that day has passed, placed by date like the other dividers (automatic; editors don’t add it). No automatic first-meeting marker: editors post the first meeting as an update. | Same file; text from `studentGovTerms.ts` |
-| Terms list (end of the stream) | "TERMS" over a 2px rule, with the same Senate / Executive Board switch on the right, its red bar on the rule. Every covered term, newest first: name, chair, how many stories and updates it has on the timeline, and a chevron. The four newest show, plus the term on the page if it's older; "Show N earlier terms" opens the rest. A four-column table with a header row once the stream column is 600px wide (a container query), stacked rows below that. The term on the page has a red rule and "Viewing" and isn't a link. The foot links the print archive at the Folsom Library. Opening a term remounts the whole timeline (keyed by term), so the new stream starts at the top. See "Terms list" below | [`StudentGovTermList.tsx`](../components/News/StudentGovTermList.tsx) |
+| Terms list (end of the stream) | The same Senate / Executive Board switch, on the right over a 2px rule, its red bar on the rule (the "Terms" heading is for screen readers only). Every covered term, newest first: name, chair, how many stories and updates it has on the timeline, and a chevron. The four newest show, plus the term on the page if it's older; "Show N earlier terms" opens the rest. A four-column table with a header row once the stream column is 600px wide (a container query), stacked rows below that. The term on the page has a red rule and "Viewing" and isn't a link. The foot links the print archive at the Folsom Library. Opening a term remounts the whole timeline (keyed by term), so the new stream starts at the top. See "Terms list" below | [`StudentGovTermList.tsx`](../components/News/StudentGovTermList.tsx) |
 
 The panel shows **one photo for the whole term** (no per-month photos): the
 term's own, set in the page editor, else the page's default photo, else plain
@@ -122,18 +122,28 @@ timeline. They mark the body you're on the way the masthead marks its
 section: a bar under it (white in the panel, red on the rule in the Terms
 list). Choosing the other body slides the bar over, turning each label as it
 passes, with the masthead's own code
-([`components/slidingBar.ts`](../components/slidingBar.ts)). At the same time
-the page swipes towards the body you're moving to (the Executive Board is to
-the right): every piece marked `data-swipe` that's on screen (the panel's
-title, term and month; month headings, cards and markers; the list's rows)
-slides out and fades, staggered top to bottom, and the new page's pieces
-slide in from the other side
-([`pageSwipe.ts`](../components/News/pageSwipe.ts)). The header, photo and
-rules just change. The new page is fetched in full as soon as the switch is
-pointed at, and the navigation starts once the old pieces are gone (under
-0.3 s), so it's usually there at once. This uses Web Animations rather than a
-View Transition, which would hold the old page frozen and unclickable until
-the new one arrived. Reduced motion: neither the bar nor the page moves.
+([`components/slidingBar.ts`](../components/slidingBar.ts)). Nothing moves
+on the click itself: the old page stays as it is until the new one has
+rendered. Then, before it's painted, the bars start sliding and the page
+slides across with them like a carousel
+([`pageSwipe.ts`](../components/News/pageSwipe.ts)). Two blocks, marked
+`data-swipe-chunk`, move: the photo panel and the stream. In each, a copy
+of the old one, taken on the click, slides fully out one side while the new
+one follows right behind it, towards the body you've moved to (the
+Executive Board is to the right), by the block's full width, clipped to it,
+on the bars' timing. Parts marked `data-swipe-keep` stay put: the panel's
+breadcrumb and switch, and the Terms list's switch and rule. The site
+header and the column rules just change.
+
+The new page is fetched in full as soon as the switch is pointed at, so the
+wait is usually short. This uses Web Animations rather than a View
+Transition, which would hold the old page frozen and unclickable until the
+new one arrived. If the Terms list is on screen when either switch is
+chosen, the new page opens with its Terms list at the same spot (scrolling
+the stream on desktop, the window on phones), so you stay at the foot of the
+stream: the bottom of the new stream is what slides in, and the panel shows
+the last month scrolled past. Otherwise the new stream starts at the top. Reduced motion: neither the bar nor the page
+moves.
 
 **Terms list.** It replaced a sideways-scrolling "shelf" of book spines (one
 per term, sized by article count), which held fifteen terms in a row that

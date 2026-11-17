@@ -110,7 +110,6 @@ function ArticleCard({ item, layout, priority }: { item: ArticleItem; layout: La
 
   return (
     <TransitionLink
-      data-swipe
       href={getArticleUrl(article)}
       style={{ ...placement(layout), ...imageVars }}
       className={`group flex flex-col overflow-hidden ${CARD} ${CARD_DIRECTION[image]} ${PLACEMENT_CLASS}`}
@@ -154,7 +153,6 @@ function ArticleCard({ item, layout, priority }: { item: ArticleItem; layout: La
 function UpdateCard({ item, layout }: { item: UpdateItem; layout: Layout }) {
   return (
     <article
-      data-swipe
       id={updateAnchor(item.id)}
       style={placement(layout)}
       className={`scroll-mt-6 bg-[#f6f1f1] dark:bg-white/[0.06] ${PLACEMENT_CLASS} ${
@@ -190,7 +188,7 @@ function GmWeekMarker({ day, text, href }: { day: string; text: string; href: st
     </>
   );
   return (
-    <div data-swipe className="border-b-2 border-accent pb-2.5 text-accent">
+    <div className="border-b-2 border-accent pb-2.5 text-accent">
       <p className="font-meta text-[13px] font-bold uppercase leading-[1.4] tracking-[0.14em]">
         <span>GM Week &middot; </span>
         {href ? (
@@ -208,7 +206,7 @@ function GmWeekMarker({ day, text, href }: { day: string; text: string; href: st
 /** A lighter rule: a leader change or the Senate's summer recess (June 1) */
 function ThinMarker({ day, text }: { day: string | null; text: string }) {
   return (
-    <p data-swipe className="border-b border-[var(--rule-color)] pb-2 font-meta text-[12px] font-bold uppercase tracking-[0.12em] text-text-muted">
+    <p className="border-b border-[var(--rule-color)] pb-2 font-meta text-[12px] font-bold uppercase tracking-[0.12em] text-text-muted">
       {day && (
         <>
           <time dateTime={day}>{formatDay(day)}</time>
@@ -316,16 +314,21 @@ export default function StudentGovSplitTimeline({
         photo={photo}
       />
 
+      {/* Moving between bodies, the stream slides as one (data-swipe-chunk,
+          pageSwipe.ts): the part of the old one in view goes out one side and
+          the new one, scrolled to the same place, follows right behind it.
+          Clipped at its sides so neither shows outside the column. */}
       <div
         data-timeline-scroller
+        data-swipe-chunk="stream"
         tabIndex={0}
         role="region"
         aria-label={`${meta.title} stream`}
-        className="min-w-0 flex-1 px-4 pt-5 pb-8 outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent sm:max-[859px]:px-6 min-[860px]:h-full min-[860px]:overflow-y-auto min-[860px]:px-10 min-[860px]:pt-6 min-[860px]:pb-14 lg:pr-6 xl:pl-[72px]"
+        className="relative min-w-0 flex-1 overflow-x-clip px-4 pt-5 pb-8 outline-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-accent sm:max-[859px]:px-6 min-[860px]:h-full min-[860px]:overflow-y-auto min-[860px]:px-10 min-[860px]:pt-6 min-[860px]:pb-14 lg:pr-6 xl:pl-[72px]"
       >
         <div className="flex max-w-[800px] flex-col gap-7">
           {current && (
-            <div data-swipe className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="font-meta text-[13px] font-bold uppercase tracking-[0.14em] text-text-main">{termLabel}</p>
               <StudentGovBackLink href={current.href} name={current.name} />
             </div>
@@ -336,7 +339,7 @@ export default function StudentGovSplitTimeline({
           )}
 
           {months.length === 0 && (
-            <p data-swipe className="font-meta text-[16px] text-text-muted">Nothing on the timeline for {termLabel} yet.</p>
+            <p className="font-meta text-[16px] text-text-muted">Nothing on the timeline for {termLabel} yet.</p>
           )}
 
           {months.map((month, monthIndex) => {
@@ -353,7 +356,7 @@ export default function StudentGovSplitTimeline({
                   aria-labelledby={`${monthSectionId(month.key)}-heading`}
                   className="flex scroll-mt-6 flex-col gap-7"
                 >
-                  <div data-swipe className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b-2 border-text-main pb-2.5">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b-2 border-text-main pb-2.5">
                     <h2
                       id={`${monthSectionId(month.key)}-heading`}
                       className="font-meta text-[13px] font-bold uppercase tracking-[0.14em] text-text-main"

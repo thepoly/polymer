@@ -83,8 +83,10 @@ export default function StudentGovBodySwitch({
     // Keyboard and touch may not have pointed at it first
     preload();
     const other = body === "senate" ? "eboard" : "senate";
-    swipeTo(otherHref, STUDENT_GOV_BODIES.indexOf(other) > STUDENT_GOV_BODIES.indexOf(body) ? 1 : -1, (href) =>
-      router.push(href),
+    // With the Terms list on screen, the new page puts it back in place
+    // itself, so Next mustn't scroll to the top
+    swipeTo(otherHref, STUDENT_GOV_BODIES.indexOf(other) > STUDENT_GOV_BODIES.indexOf(body) ? 1 : -1, (href, keepScroll) =>
+      router.push(href, { scroll: !keepScroll }),
     );
   };
 

@@ -83,9 +83,12 @@ export default function StudentGovTermList({
   const grid = "@[600px]:grid @[600px]:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_10rem_4.5rem] @[600px]:items-baseline @[600px]:gap-x-5";
 
   return (
-    <section aria-labelledby={`${listId}-heading`} className="@container font-meta">
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 border-b-2 border-text-main pb-2.5">
-        <h2 id={`${listId}-heading`} className="text-[13px] font-bold uppercase tracking-[0.14em] text-text-main">
+    // The anchor: switching bodies with this on screen keeps it in place (pageSwipe.ts)
+    <section data-swipe-anchor aria-labelledby={`${listId}-heading`} className="@container font-meta">
+      {/* Stays put, rule and all, while the stream around it slides across (pageSwipe.ts) */}
+      <div data-swipe-keep className="flex flex-wrap items-end justify-end gap-x-6 gap-y-2 border-b-2 border-text-main pb-2.5">
+        {/* Named for screen readers only: on screen the switch and the rows say enough */}
+        <h2 id={`${listId}-heading`} className="sr-only">
           Terms
         </h2>
         {/* Which body's terms, with the bar on the rule below */}
@@ -100,7 +103,6 @@ export default function StudentGovTermList({
 
       {/* Column labels: wide only, and only for sighted readers (each row reads in full on its own) */}
       <div
-        data-swipe
         aria-hidden="true"
         className={`hidden px-3 pt-3 pb-1 text-[11px] font-bold uppercase tracking-[0.12em] text-text-muted ${grid}`}
       >
@@ -153,7 +155,6 @@ export default function StudentGovTermList({
           return (
             <li
               key={r.key}
-              data-swipe
               ref={r === rows[firstHidden] ? firstRevealed : undefined}
               className="border-b border-[var(--rule-color)]"
             >
@@ -190,7 +191,6 @@ export default function StudentGovTermList({
       {hidden > 0 && (
         <button
           type="button"
-          data-swipe
           aria-expanded={open}
           aria-controls={listId}
           onClick={() => {
@@ -210,7 +210,7 @@ export default function StudentGovTermList({
         </button>
       )}
 
-      <p data-swipe className="mt-3 text-[13px] leading-[1.5] text-text-muted">
+      <p className="mt-3 text-[13px] leading-[1.5] text-text-muted">
         Earlier {body === "senate" ? "Senates" : "boards"} are in The Polytechnic&rsquo;s{" "}
         <a
           href={PRINT_ARCHIVE_URL}

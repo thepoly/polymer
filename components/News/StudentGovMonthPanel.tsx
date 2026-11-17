@@ -85,11 +85,15 @@ export default function StudentGovMonthPanel({
     const scroller = desktop ? document.querySelector<HTMLElement>("[data-timeline-scroller]") : null;
     visible.current.clear();
     let timer = 0;
+    let first = true;
 
     // The root is the top third of whatever scrolls the stream: the month
     // whose section covers it, or the lowest one when two do, is being read.
     // The label only changes once a month has stayed there for SETTLE_MS, so
     // a fast scroll past several months swaps it once, not once per month.
+    // The first reading counts at once: a page that opens partway down the
+    // stream (switching bodies at the Terms list) shows its month straight
+    // away, not the newest one first.
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -97,10 +101,26 @@ export default function StudentGovMonthPanel({
           if (entry.isIntersecting) visible.current.add(key);
           else visible.current.delete(key);
         }
-        const current = [...order].reverse().find((k) => visible.current.has(k));
+        let current = [...order].reverse().find((k) => visible.current.has(k));
+        const wasFirst = first;
+        first = false;
+        // Opening past the last month (at the Terms list): the lowest one
+        // already scrolled by, as if it had been scrolled to
+        if (!current && wasFirst) {
+          const past = new Set(
+            entries
+              .filter((e) => e.rootBounds && e.boundingClientRect.bottom <= e.rootBounds.top)
+              .map((e) => (e.target as HTMLElement).dataset.timelineMonth as string),
+          );
+          current = [...order].reverse().find((k) => past.has(k));
+        }
         // Above the list or past it: keep the last month shown
         if (!current) return;
         window.clearTimeout(timer);
+        if (wasFirst) {
+          setActiveKey(current);
+          return;
+        }
         timer = window.setTimeout(() => setActiveKey(current), SETTLE_MS);
       },
       { root: scroller, rootMargin: "0px 0px -66% 0px", threshold: 0 },
@@ -118,66 +138,68 @@ export default function StudentGovMonthPanel({
     // From lg the header's rule (square line caps) starts half a pixel before
     // the content column, so the panel does too. A translate, not a margin:
     // Chrome snaps margins to whole pixels but draws translates exactly.
-    <aside className="relative h-[440px] w-full overflow-hidden bg-[#2a0a10] text-white min-[860px]:h-full min-[860px]:w-[38%] min-[860px]:max-w-[560px] min-[860px]:shrink-0 lg:-translate-x-[0.5px]">
-      {photo && (
-        <Image
-          src={photo.src}
-          alt={photo.alt}
-          fill
-          priority
-          sizes={photo.sizes}
-          className={`object-cover contrast-[1.15] grayscale ${FRAME_CLASS}`}
-          style={frameVars(photo)}
-        />
-      )}
-      <div aria-hidden="true" className="absolute inset-0 bg-[#D6001C] opacity-[0.78] mix-blend-multiply" />
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.6)_0%,rgba(0,0,0,0.35)_30%,rgba(0,0,0,0)_50%,rgba(0,0,0,0)_55%,rgba(0,0,0,0.85)_100%)]"
-      />
-
-      <div className="relative flex h-full flex-col justify-between gap-6 p-6 min-[860px]:p-11">
-        <div>
-          <nav aria-label="Breadcrumb" className="font-meta text-[12px] font-semibold uppercase tracking-[0.12em]">
-            <TransitionLink href="/news" className="hover:underline">
-              News
-            </TransitionLink>
-            <span className="mx-2 opacity-70" aria-hidden="true">
-              /
-            </span>
-            <span>Student Government</span>
-          </nav>
-          {/* Stays put when moving between bodies, its bar sliding over, while
-              the title, term and month swipe across (data-swipe, pageSwipe.ts) */}
-          <StudentGovBodySwitch
-            id="panel"
-            body={body}
-            otherHref={otherHref}
-            labels={{ senate: STUDENT_GOV.senate.label, eboard: STUDENT_GOV.eboard.label }}
-            tone="panel"
-            className="mt-4"
+    //
+    // Moving between bodies, the panel slides as one (data-swipe-chunk,
+    // pageSwipe.ts): the old body's photo, title, term and month go out one
+    // side and this one's follow right behind, while the breadcrumb and the
+    // switch (data-swipe-keep) stay put, the switch's bar sliding over.
+    <aside
+      data-swipe-chunk="panel"
+      className="relative h-[440px] w-full overflow-hidden bg-[#2a0a10] text-white min-[860px]:h-full min-[860px]:w-[38%] min-[860px]:max-w-[560px] min-[860px]:shrink-0 lg:-translate-x-[0.5px]"
+    >
+      <div className="relative h-full">
+        {photo && (
+          <Image
+            src={photo.src}
+            alt={photo.alt}
+            fill
+            priority
+            sizes={photo.sizes}
+            className={`object-cover contrast-[1.15] grayscale ${FRAME_CLASS}`}
+            style={frameVars(photo)}
           />
-          <h1
-            data-swipe
-            className="mt-5 font-meta text-[40px] font-light uppercase leading-[1] tracking-[0.02em] min-[860px]:text-[clamp(40px,4.2vw,60px)]"
-          >
-            {title}
-          </h1>
-          <p data-swipe className="mt-2 font-meta text-[15px] font-semibold uppercase tracking-[0.08em]">
-            {termLabel}
-          </p>
-        </div>
-
-        {active && (
-          // The tight leading lets the tails of p, y and g (Apr, May, Aug, Sep)
-          // hang below the box, into the panel's padding
-          <p
-            data-swipe
-            className="w-fit font-copy text-[132px] font-semibold leading-[0.78] tracking-[-0.02em] min-[860px]:text-[clamp(110px,22vh,200px)]"
-          >
-            {active.short}
-          </p>
         )}
+        <div aria-hidden="true" className="absolute inset-0 bg-[#D6001C] opacity-[0.78] mix-blend-multiply" />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.6)_0%,rgba(0,0,0,0.35)_30%,rgba(0,0,0,0)_50%,rgba(0,0,0,0)_55%,rgba(0,0,0,0.85)_100%)]"
+        />
+
+        <div className="relative flex h-full flex-col justify-between gap-6 p-6 min-[860px]:p-11">
+          <div>
+            <div data-swipe-keep>
+              <nav aria-label="Breadcrumb" className="font-meta text-[12px] font-semibold uppercase tracking-[0.12em]">
+                <TransitionLink href="/news" className="hover:underline">
+                  News
+                </TransitionLink>
+                <span className="mx-2 opacity-70" aria-hidden="true">
+                  /
+                </span>
+                <span>Student Government</span>
+              </nav>
+              <StudentGovBodySwitch
+                id="panel"
+                body={body}
+                otherHref={otherHref}
+                labels={{ senate: STUDENT_GOV.senate.label, eboard: STUDENT_GOV.eboard.label }}
+                tone="panel"
+                className="mt-4"
+              />
+            </div>
+            <h1 className="mt-5 font-meta text-[40px] font-light uppercase leading-[1] tracking-[0.02em] min-[860px]:text-[clamp(40px,4.2vw,60px)]">
+              {title}
+            </h1>
+            <p className="mt-2 font-meta text-[15px] font-semibold uppercase tracking-[0.08em]">{termLabel}</p>
+          </div>
+
+          {active && (
+            // The tight leading lets the tails of p, y and g (Apr, May, Aug, Sep)
+            // hang below the box, into the panel's padding
+            <p className="w-fit font-copy text-[132px] font-semibold leading-[0.78] tracking-[-0.02em] min-[860px]:text-[clamp(110px,22vh,200px)]">
+              {active.short}
+            </p>
+          )}
+        </div>
       </div>
     </aside>
   );
