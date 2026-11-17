@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { canEditNews } from '../lib/canEditNews'
 
 const NewsPageLayout: CollectionConfig = {
   slug: 'news-page-layout',
@@ -20,16 +21,8 @@ const NewsPageLayout: CollectionConfig = {
   },
   access: {
     read: () => true,
-    update: ({ req: { user } }) => {
-      if (!user) return false
-      const roles = (user as unknown as { roles?: string[] }).roles || []
-      return roles.some((role: string) => ['admin', 'eic', 'editor'].includes(role))
-    },
-    create: ({ req: { user } }) => {
-      if (!user) return false
-      const roles = (user as unknown as { roles?: string[] }).roles || []
-      return roles.some((role: string) => ['admin', 'eic', 'editor'].includes(role))
-    },
+    update: ({ req: { user } }) => canEditNews(user),
+    create: ({ req: { user } }) => canEditNews(user),
     delete: ({ req: { user } }) => {
       if (!user) return false
       const roles = (user as unknown as { roles?: string[] }).roles || []
