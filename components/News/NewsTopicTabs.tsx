@@ -68,7 +68,8 @@ export default function NewsTopicTabs({
     leaveTimer.current = window.setTimeout(() => setLeaving(null), OUT_MS);
     if (focus) tabRefs.current[index]?.focus();
     // Keep the chosen header in view where the row scrolls (phones)
-    tabRefs.current[index]?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    tabRefs.current[index]?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: reduce ? "instant" : "smooth" });
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
@@ -126,7 +127,7 @@ export default function NewsTopicTabs({
         {bar && (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute -bottom-px left-0 h-[3px] bg-accent transition-[transform,width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            className="pointer-events-none absolute -bottom-px left-0 h-[3px] bg-accent transition-[transform,width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
             style={{ width: bar.width, transform: `translateX(${bar.left}px)` }}
           />
         )}
