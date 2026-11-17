@@ -8,6 +8,7 @@ import { NEWS_TOPICS, TOPIC_CARDS, type NewsTopicKey } from "./newsTopics";
 import NewsLead from "./NewsLead";
 import NewsSecondary from "./NewsSecondary";
 import StudentGovColumn, { type StudentGovBoxContent } from "./StudentGovColumn";
+import NewsSearchPrompt from "./NewsSearchPrompt";
 import {
   DEFAULT_LEAD_TEXT_POSITION,
   DEFAULT_TOPIC_CARDS,
@@ -248,6 +249,8 @@ export default function NewsPage({
           )}
         </NewsTopicTabs>
       )}
+
+      <NewsSearchPrompt />
     </div>
   );
 }
