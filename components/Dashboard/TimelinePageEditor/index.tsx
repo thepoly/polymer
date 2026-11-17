@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useStepNav } from '@payloadcms/ui';
+import { readNewsLayout } from '../newsLayoutRequests';
 import '../FeaturesLayoutEditor/features-layout-editor.css';
 import './timeline-page-editor.css';
 import { STUDENT_GOV, matchesKicker, type StudentGovBody } from '@/components/News/studentGov';
@@ -1486,7 +1487,7 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
     setError(null);
     try {
       // Merge into the latest copy: the News Layout editor shares this JSON
-      const latest = await fetch(`/api/news-page-layout/${docIdRef.current}?depth=0`).then((r) => r.json());
+      const latest = await readNewsLayout(docIdRef.current);
       const prevLayout = (latest?.layout ?? {}) as Record<string, unknown>;
       const pages = normalizeTimelinePages(prevLayout.timelinePages);
       const layout = { ...prevLayout, timelinePages: { ...pages, [body]: config } };
@@ -1499,7 +1500,7 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
       setSaved(true);
     } catch (err) {
       console.error(err);
-      setError('Failed to save');
+      setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setSaving(false);
     }

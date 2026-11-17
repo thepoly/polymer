@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { TimelinePageEditor, pannedFrame } from '../TimelinePageEditor';
+import { readNewsLayout } from '../newsLayoutRequests';
 import {
   DndContext,
   DragOverlay,
@@ -1042,7 +1043,7 @@ function NewsPageEditor() {
     try {
       // The Senate / Executive Board editors save into the same JSON, so
       // merge over the latest copy instead of replacing it
-      const latest = await fetch(`/api/news-page-layout/${docIdRef.current}?depth=0`).then((r) => r.json());
+      const latest = await readNewsLayout(docIdRef.current);
       const layout: NewsLayout = { ...(latest?.layout ?? {}), lead, leadTextPosition, leadFrame, secondary, secondaryPhotos, featured, topicCards, topicPicks, bulletsHeadlinesOnly, studentGov };
       const res = await fetch(`/api/news-page-layout/${docIdRef.current}`, {
         method: 'PATCH',
@@ -1052,7 +1053,7 @@ function NewsPageEditor() {
       if (!res.ok) throw new Error('Save failed');
       setSaved(true);
     } catch (err) {
-      setError('Failed to save');
+      setError(err instanceof Error ? err.message : 'Failed to save');
       console.error(err);
     } finally {
       setSaving(false);
