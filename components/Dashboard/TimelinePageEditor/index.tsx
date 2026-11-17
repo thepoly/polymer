@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useStepNav } from '@payloadcms/ui';
 import { activateNewsLayout, readNewsLayout } from '../newsLayoutRequests';
+import { useNewsEditorState } from '../newsEditorState';
 import '../FeaturesLayoutEditor/features-layout-editor.css';
 import './timeline-page-editor.css';
 import { STUDENT_GOV, matchesKicker, type StudentGovBody } from '@/components/News/studentGov';
@@ -1311,7 +1312,7 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
   const [now] = useState(() => new Date());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(true);
+  const { saved, markDirty, captureRevision, confirmSaved } = useNewsEditorState();
   const [error, setError] = useState<string | null>(null);
   const docIdRef = useRef<string | null>(null);
   const { setStepNav } = useStepNav();
@@ -1422,8 +1423,8 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
   // ---- Mutations ----
   const update = useCallback((fn: (prev: TimelinePageConfig) => TimelinePageConfig) => {
     setConfig(fn);
-    setSaved(false);
-  }, []);
+    markDirty();
+  }, [markDirty]);
 
   const toggleHidden = (key: string) =>
     update((prev) => ({
@@ -1483,6 +1484,7 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
   // ---- Save ----
   const handleSave = async () => {
     if (!docIdRef.current) return;
+    const sentRevision = captureRevision();
     setSaving(true);
     setError(null);
     try {
@@ -1492,7 +1494,7 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
       const pages = normalizeTimelinePages(prevLayout.timelinePages);
       const layout = { ...prevLayout, timelinePages: { ...pages, [body]: config } };
       await activateNewsLayout(docIdRef.current, layout, latest.updatedAt);
-      setSaved(true);
+      confirmSaved(sentRevision);
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : 'Failed to save');

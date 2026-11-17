@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { TimelinePageEditor, pannedFrame } from '../TimelinePageEditor';
 import { activateNewsLayout, readNewsLayout } from '../newsLayoutRequests';
+import { useNewsEditorState } from '../newsEditorState';
 import {
   DndContext,
   DragOverlay,
@@ -826,7 +827,7 @@ function NewsPageEditor() {
   const [articles, setArticles] = useState<ArticleData[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(true);
+  const { saved, markDirty, captureRevision, confirmSaved } = useNewsEditorState();
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [activeArticle, setActiveArticle] = useState<ArticleData | null>(null);
@@ -947,8 +948,6 @@ function NewsPageEditor() {
   }, []);
 
   // ---- Mutations ----
-  const markDirty = useCallback(() => setSaved(false), []);
-
   const changeLead = useCallback((id: number | null) => {
     setLead(id);
     markDirty();
@@ -1038,6 +1037,7 @@ function NewsPageEditor() {
   // ---- Save ----
   const handleSave = async () => {
     if (!docIdRef.current) return;
+    const sentRevision = captureRevision();
     setSaving(true);
     setError(null);
     try {
@@ -1046,7 +1046,7 @@ function NewsPageEditor() {
       const latest = await readNewsLayout(docIdRef.current);
       const layout: NewsLayout = { ...(latest?.layout ?? {}), lead, leadTextPosition, leadFrame, secondary, secondaryPhotos, featured, topicCards, topicPicks, bulletsHeadlinesOnly, studentGov };
       await activateNewsLayout(docIdRef.current, layout, latest.updatedAt);
-      setSaved(true);
+      confirmSaved(sentRevision);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save');
       console.error(err);
