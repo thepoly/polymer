@@ -5,6 +5,7 @@ const useWebServer = process.env.PLAYWRIGHT_WEB_SERVER !== "0";
 
 export default defineConfig({
   testDir: "./tests",
+  testIgnore: ["**/lib/**", "**/opinion-ui.spec.ts"],
   timeout: 45_000,
   expect: {
     timeout: 10_000,

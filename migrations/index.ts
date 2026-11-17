@@ -1,3 +1,4 @@
+import * as opinionSingleton from './20261117_000000_opinion_layout_singleton';
 import * as migration_20260211_224237_initial_baseline from './20260211_224237_initial_baseline';
 import * as migration_20260213_223303_remove_copy_workflow from './20260213_223303_remove_copy_workflow';
 import * as migration_20260217_015404_add_photographer_to_media from './20260217_015404_add_photographer_to_media';
@@ -318,4 +319,5 @@ export const migrations = [
     down: migration_20261112_000000_add_user_portfolio.down,
     name: '20261112_000000_add_user_portfolio',
   },
+  { up: opinionSingleton.up, down: opinionSingleton.down, name: '20261117_000000_opinion_layout_singleton' },
 ];

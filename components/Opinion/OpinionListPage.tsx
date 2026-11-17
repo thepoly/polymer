@@ -1,31 +1,29 @@
-"use client";
 
-import React, { useState } from "react";
+import React from "react";
+import { OPINION_PAGE_SIZE } from "@/lib/opinionPagination";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import type { Article } from "@/components/FrontPage/types";
 import { Byline } from "@/components/FrontPage/Byline";
 
-const PAGE_SIZE = 10;
+
 
 export default function OpinionListPage({
   title,
-  articles,
+  articles, page, totalDocs, totalPages, basePath,
 }: {
   title: string;
   articles: Article[];
+  page: number; totalDocs: number; totalPages: number; basePath: string;
 }) {
-  const [page, setPage] = useState(1);
-
-  const totalPages = Math.ceil(articles.length / PAGE_SIZE);
-  const start = (page - 1) * PAGE_SIZE + 1;
-  const end = Math.min(page * PAGE_SIZE, articles.length);
-  const visible = articles.slice(start - 1, end);
+  const start = (page - 1) * OPINION_PAGE_SIZE + 1;
+  const end = Math.min(page * OPINION_PAGE_SIZE, totalDocs);
+  const pageUrl = (p: number) => p === 1 ? basePath : basePath + '?page=' + p;
 
   return (
-    <div style={{ maxWidth: 1280, margin: "0 auto", padding: "20px 30px 64px" }}>
-      <div className="flex items-baseline justify-between mt-6 mb-8">
+    <div className="mx-auto max-w-[1280px] px-4 sm:px-[30px] pt-5 pb-16">
+      <div className="flex flex-wrap gap-4 items-baseline justify-between mt-6 mb-8">
         <h1
           className="font-meta uppercase tracking-[0.04em] text-text-main"
           style={{ fontSize: 40, fontWeight: 400, lineHeight: 1 }}
@@ -40,9 +38,10 @@ export default function OpinionListPage({
         </TransitionLink>
       </div>
 
+      {totalDocs === 0 && <p>No published articles in this category yet.</p>}
       {/* Article list */}
       <div className="flex flex-col">
-        {visible.map((article) => (
+        {articles.map((article) => (
           <TransitionLink
             key={article.id}
             href={getArticleUrl(article)}
@@ -50,19 +49,18 @@ export default function OpinionListPage({
           >
             {article.image && (
               <div
-                className="relative overflow-hidden shrink-0"
-                style={{ width: 180, aspectRatio: "3/2" }}
+                className="relative overflow-hidden shrink-0 w-20 sm:w-[180px] aspect-[3/2] self-start"
               >
                 <Image
                   src={article.image}
                   alt={article.imageTitle || ""}
                   fill
                   className="object-cover"
-                  sizes="180px"
+                  sizes="(max-width: 640px) 80px, 180px"
                 />
               </div>
             )}
-            <div className="flex flex-col justify-center">
+            <div className="flex min-w-0 flex-col justify-center break-words">
               <h2 className="font-copy font-medium leading-[1.15] text-[22px] text-text-main transition-colors">
                 {article.richTitle || article.title}
               </h2>
@@ -81,27 +79,13 @@ export default function OpinionListPage({
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-8">
           <span className="font-meta text-[13px] uppercase tracking-[0.08em] text-text-muted">
-            {start}–{end} of {articles.length}
+            {start}–{end} of {totalDocs}
           </span>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => { setPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              disabled={page === 1}
-              className="font-meta text-[13px] uppercase tracking-[0.04em] px-3 py-1.5 rounded transition-colors disabled:opacity-30 text-text-main hover:text-accent"
-            >
-              &larr; Prev
-            </button>
-            <span className="font-meta text-[13px] text-text-muted">
-              {page} / {totalPages}
-            </span>
-            <button
-              onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              disabled={page === totalPages}
-              className="font-meta text-[13px] uppercase tracking-[0.04em] px-3 py-1.5 rounded transition-colors disabled:opacity-30 text-text-main hover:text-accent"
-            >
-              Next &rarr;
-            </button>
-          </div>
+          <nav aria-label="Opinion archive pages" className="flex items-center gap-3">
+            {page > 1 && <TransitionLink href={pageUrl(page - 1)} rel="prev">&larr; Prev</TransitionLink>}
+            <span aria-current="page">{page} / {totalPages}</span>
+            {page < totalPages && <TransitionLink href={pageUrl(page + 1)} rel="next">Next &rarr;</TransitionLink>}
+          </nav>
         </div>
       )}
       {totalPages <= 1 && articles.length > 0 && (

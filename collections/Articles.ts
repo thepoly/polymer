@@ -1,3 +1,4 @@
+import { deriveOpinionType } from '../lib/opinionType'
 import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
 import { lexicalEditor, BoldFeature, ItalicFeature } from '@payloadcms/richtext-lexical'
@@ -174,25 +175,9 @@ const Articles: CollectionConfig = {
           data.lastModifiedBy = req.user.id
         }
 
-        // Auto-derive opinionType from kicker for opinion articles
-        if (data.section === 'opinion' && data.kicker) {
-          const kickerLower = data.kicker.toLowerCase().trim()
-          const typeMap: Record<string, string> = {
-            'opinion': 'opinion',
-            'column': 'column',
-            'staff editorial': 'staff-editorial',
-            'editorial notebook': 'editorial-notebook',
-            'endorsement': 'endorsement',
-            'top hat': 'top-hat',
-            'candidate profile': 'candidate-profile',
-            'letter to the editor': 'letter-to-the-editor',
-            "the poly's recommendations": 'polys-recommendations',
-            "editor's notebook": 'editors-notebook',
-            'derby': 'derby',
-            'other': 'other',
-          }
-          const matched = typeMap[kickerLower]
-          data.opinionType = matched || 'more'
+        // Partial updates must use the effective saved section and kicker.
+        if ((data.section ?? originalDoc?.section) === 'opinion') {
+          data.opinionType = deriveOpinionType(data.kicker !== undefined ? data.kicker : originalDoc?.kicker)
         }
 
         // Sports stories with no kicker get the sport's name ("Men's Hockey").

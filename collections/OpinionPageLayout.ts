@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { canManageOpinion, OPINION_LAYOUT_NAME, validateOpinionLayout } from '../lib/opinionLayout'
 
 const OpinionPageLayout: CollectionConfig = {
   slug: 'opinion-page-layout',
@@ -20,23 +21,24 @@ const OpinionPageLayout: CollectionConfig = {
   },
   access: {
     read: () => true,
-    update: ({ req: { user } }) => {
-      if (!user) return false
-      const roles = (user as unknown as { roles?: string[] }).roles || []
-      return roles.some((role: string) => ['admin', 'eic', 'editor'].includes(role))
-    },
-    create: ({ req: { user } }) => {
-      if (!user) return false
-      const roles = (user as unknown as { roles?: string[] }).roles || []
-      return roles.some((role: string) => ['admin', 'eic', 'editor'].includes(role))
-    },
+    update: ({ req: { user } }) => canManageOpinion(user) ? { name: { equals: OPINION_LAYOUT_NAME } } : false,
+    create: ({ req: { user } }) => canManageOpinion(user),
+    delete: ({ req: { user } }) => !!user?.roles?.includes('admin'),
+  },
+  hooks: {
+    beforeValidate: [({ data, operation, originalDoc }) => ({
+      ...data,
+      name: operation === 'create' ? OPINION_LAYOUT_NAME : originalDoc.name,
+    })],
   },
   fields: [
     {
       name: 'name',
       type: 'text',
       required: true,
-      defaultValue: 'Opinion Layout',
+      defaultValue: OPINION_LAYOUT_NAME,
+      unique: true,
+      admin: { readOnly: true },
     },
     // JSON blob storing the full 3-column layout + editors choice
     // Shape: { column1: number[], column2: number[], column3: number[],
@@ -45,6 +47,7 @@ const OpinionPageLayout: CollectionConfig = {
       name: 'layout',
       type: 'json',
       required: false,
+      validate: validateOpinionLayout,
     },
     // Legacy fields kept for backward compat during migration
     {

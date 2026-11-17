@@ -4,7 +4,7 @@ set -euo pipefail
 
 : "${DATABASE_URL:?DATABASE_URL must be set}"
 
-psql "$DATABASE_URL" <<'SQL'
+psql -v ON_ERROR_STOP=1 "$DATABASE_URL" <<'SQL'
 -- Ensure migration tracking is up to date
 DELETE FROM payload_migrations WHERE batch = -1;
 INSERT INTO payload_migrations (name, batch, updated_at, created_at)
@@ -1599,4 +1599,18 @@ CREATE INDEX IF NOT EXISTS "users_rels_order_idx" ON "users_rels" USING btree ("
 CREATE INDEX IF NOT EXISTS "users_rels_parent_idx" ON "users_rels" USING btree ("parent_id");
 CREATE INDEX IF NOT EXISTS "users_rels_path_idx" ON "users_rels" USING btree ("path");
 CREATE INDEX IF NOT EXISTS "users_rels_media_id_idx" ON "users_rels" USING btree ("media_id");
+-- 20261117: Enforce the opinion layout singleton without deleting archived layouts.
+DO $$ BEGIN
+  IF to_regclass('public.opinion_page_layout_name_idx') IS NULL THEN
+    LOCK TABLE "opinion_page_layout" IN EXCLUSIVE MODE;
+    UPDATE "opinion_page_layout" SET "name" = 'Archived Opinion Layout #' || "id"
+      WHERE "id" <> (SELECT "id" FROM "opinion_page_layout" ORDER BY "created_at" DESC, "id" DESC LIMIT 1);
+    UPDATE "opinion_page_layout" SET "name" = 'Opinion Layout'
+      WHERE "id" = (SELECT "id" FROM "opinion_page_layout" ORDER BY "created_at" DESC, "id" DESC LIMIT 1);
+    CREATE UNIQUE INDEX "opinion_page_layout_name_idx" ON "opinion_page_layout" ("name");
+  END IF;
+END $$;
+INSERT INTO payload_migrations (name, batch, updated_at, created_at)
+SELECT '20261117_000000_opinion_layout_singleton', 34, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM payload_migrations WHERE name = '20261117_000000_opinion_layout_singleton');
 SQL

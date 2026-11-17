@@ -16,6 +16,7 @@ import {
   pointerWithin,
 } from '@dnd-kit/core';
 import './opinion-layout-editor.css';
+import { normalizeOpinionLayout, readOpinionLayoutDocument, validateOpinionLayout, OPINION_LAYOUT_NAME, MAX_OPINION_SLOTS, MAX_SPOTLIGHT_AUTHORS, type OpinionLayout, type SpotlightEntry } from '@/lib/opinionLayout';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -37,28 +38,10 @@ type ArticleData = {
   writeInAuthors?: Array<{ name: string }>;
 };
 
-type SpotlightEntry = {
-  userId: number;
-  articleTitle?: string | null;
-  articleUrl?: string | null;
-};
-
 type UserData = {
   id: number;
   firstName: string;
   lastName: string;
-};
-
-type OpinionLayout = {
-  column1: (number | null)[];
-  column1Images: boolean[];
-  column2: (number | null)[];
-  column2Images: boolean[];
-  column3: (number | null)[];
-  column3Images: boolean[];
-  editorsChoice: (number | null)[];
-  editorsChoiceLabel: string;
-  spotlight: SpotlightEntry[];
 };
 
 // ---------------------------------------------------------------------------
@@ -71,17 +54,7 @@ const pointerThenCenter: CollisionDetection = (args) => {
   return closestCenter(args);
 };
 
-const EMPTY_LAYOUT: OpinionLayout = {
-  column1: [null, null, null, null, null],
-  column1Images: [false, false, false, false, false],
-  column2: [null, null, null, null],
-  column2Images: [false, false, false, false],
-  column3: [null, null, null, null],
-  column3Images: [false, false, false, false],
-  editorsChoice: [null, null, null],
-  editorsChoiceLabel: "Opinion\u2019s Choice",
-  spotlight: [],
-};
+const EMPTY_LAYOUT = normalizeOpinionLayout(null);
 
 // Column labels
 const COL1_LABELS = ['Lead (with image)', 'Article', 'Article', 'Article', 'Article'];
@@ -109,13 +82,6 @@ const getAuthorString = (article: ArticleData): string => {
 const formatDate = (d: string | null): string => {
   if (!d) return '';
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-};
-
-const extractDocId = (): string | null => {
-  const parts = window.location.pathname.split('/');
-  const idx = parts.indexOf('opinion-page-layout');
-  if (idx >= 0 && parts[idx + 1] && parts[idx + 1] !== 'create') return parts[idx + 1];
-  return null;
 };
 
 const collectUsedIds = (layout: OpinionLayout): Set<number> => {
@@ -185,6 +151,12 @@ function SlotPreview({ article, showImage }: { article: ArticleData; showImage?:
 // Droppable Slot
 // ---------------------------------------------------------------------------
 
+const SlotPickerContext = React.createContext<{
+  articles: ArticleData[];
+  layout: OpinionLayout;
+  assign: (slot: string, id: number | null) => void;
+} | null>(null);
+
 function DropSlot({
   slotId, label, article, showImage, onClear, isImageSlot, imageToggle,
 }: {
@@ -196,6 +168,9 @@ function DropSlot({
   isImageSlot?: boolean;
   imageToggle?: React.ReactNode;
 }) {
+  const picker = React.useContext(SlotPickerContext);
+  const parsed = parseSlotId(slotId);
+  const pinnedId = picker && parsed ? (picker.layout[parsed.column] as (number | null)[])[parsed.index] : null;
   const { isOver, setNodeRef } = useDroppable({
     id: `drop-${slotId}`,
     data: { slotId },
@@ -210,11 +185,19 @@ function DropSlot({
         <span className="ole-slot-label">{label}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {imageToggle}
-          {article && (
+          {pinnedId != null && (
             <button className="ole-slot-clear" onClick={onClear} title="Remove article">&times;</button>
           )}
         </div>
       </div>
+      {picker && <select aria-label={`Article for ${slotId}`} value={pinnedId || ''}
+        onChange={(e) => picker.assign(slotId, e.target.value ? Number(e.target.value) : null)}
+        style={{ width: '100%', maxWidth: '100%' }}>
+        <option value="">Automatic / no pin</option>
+        {pinnedId && !article && <option value={pinnedId}>Unavailable article #{pinnedId}</option>}
+        {[...new Map([...(article ? [article] : []), ...picker.articles].map((a) => [a.id, a])).values()].map((a) =>
+          <option key={a.id} value={a.id}>{a.plainTitle || a.slug}</option>)}
+      </select>}
       {article ? (
         <DraggableSlotArticle article={article} slotId={slotId} showImage={showImage} />
       ) : (
@@ -303,23 +286,17 @@ function ArticlePool({
   articles,
   usedIds,
   search,
-  onSearch,
+  onSearch, hasMore, onMore, busy,
 }: {
   articles: ArticleData[];
   usedIds: Set<number>;
   search: string;
   onSearch: (v: string) => void;
+  hasMore: boolean; onMore: () => void; busy: boolean;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: 'pool-drop-zone', data: { pool: true } });
 
-  const filtered = articles.filter((a) => {
-    if (usedIds.has(a.id)) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return (a.plainTitle || '').toLowerCase().includes(q) || getAuthorString(a).toLowerCase().includes(q);
-    }
-    return true;
-  });
+  const filtered = articles.filter((a) => !usedIds.has(a.id));
 
   return (
     <div
@@ -332,20 +309,23 @@ function ArticlePool({
       }}
     >
       <div style={{ padding: '14px 14px 0', fontSize: '0.78rem', fontWeight: 700 }}>Opinion Articles</div>
+      <p style={{ padding: '0 14px', fontSize: '0.75rem' }}>Drag a story or choose it from an article slot menu.</p>
       <div style={{ padding: '8px 14px 0' }}>
         <input
           type="search"
-          placeholder="Search articles..."
+          placeholder="Search all opinion titles..."
           value={search}
           onChange={(e) => onSearch(e.target.value)}
           className="ole-pool-search"
         />
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '6px 10px 16px', display: 'flex', flexDirection: 'column', gap: '1px' }}>
-        {filtered.length === 0 && (
+        {busy && <p role="status">Searching...</p>}
+        {hasMore && <button onClick={onMore} disabled={busy}>Load more articles</button>}
+        {filtered.length === 0 && !busy && (
           <div style={{ textAlign: 'center', padding: '32px 16px', opacity: 0.3, fontSize: '0.75rem' }}>No articles found</div>
         )}
-        {filtered.slice(0, 20).map((article) => (
+        {filtered.map((article) => (
           <DraggablePoolCard key={article.id} article={article} isUsed={usedIds.has(article.id)} />
         ))}
       </div>
@@ -360,6 +340,11 @@ function ArticlePool({
 export function OpinionLayoutEditor() {
   const [layout, setLayout] = useState<OpinionLayout>({ ...EMPTY_LAYOUT });
   const [articles, setArticles] = useState<ArticleData[]>([]);
+  const [poolIds, setPoolIds] = useState<number[]>([]);
+  const [searchPage, setSearchPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const revision = useRef(0);
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -376,115 +361,97 @@ export function OpinionLayoutEditor() {
   const articleMap = new Map(articles.map((a) => [a.id, a]));
   const usedIds = collectUsedIds(layout);
 
-  // ---- Fetch ----
-  // Fetch users for spotlight picker
-  useEffect(() => {
-    fetch('/api/users?limit=200&depth=0&select[firstName]=true&select[lastName]=true')
-      .then((r) => r.json())
-      .then((d) => setUsers(d.docs || []))
-      .catch(() => {});
+  const mergeArticles = useCallback((incoming: ArticleData[]) => {
+    setArticles((previous) => [...new Map([...previous, ...incoming].map((a) => [a.id, a])).values()]);
   }, []);
+  const poolArticles = poolIds.map((id) => articleMap.get(id)).filter((a): a is ArticleData => !!a);
 
   useEffect(() => {
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch('/api/opinion/articles?' + new URLSearchParams({ q: search, page: String(searchPage) }), { signal: controller.signal });
+        if (!res.ok) throw new Error('Unable to search opinion articles.');
+        const data = await res.json();
+        mergeArticles(data.docs);
+        setPoolIds((prev) => searchPage === 1 ? data.docs.map((a: ArticleData) => a.id) : [...new Set([...prev, ...data.docs.map((a: ArticleData) => a.id)])]);
+        setHasMore(data.hasNextPage);
+      } catch (error) {
+        if (!controller.signal.aborted) setError(error instanceof Error ? error.message : 'Search failed');
+      } finally { if (!controller.signal.aborted) setSearching(false); }
+    }, 250);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [search, searchPage, mergeArticles]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/opinion/staff?q=' + encodeURIComponent(userSearch), { signal: controller.signal });
+        if (!res.ok) throw new Error('Unable to search staff.');
+        const data = await res.json();
+        setUsers((prev) => [...new Map([...prev, ...data.docs as UserData[]].map((u) => [u.id, u])).values()]);
+      } catch { if (!controller.signal.aborted) setError('Unable to load staff directory.'); }
+    }, 250);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [userSearch]);
+
+  useEffect(() => {
+    let cancelled = false;
     (async () => {
       try {
-        // Fetch opinion articles
-        const artRes = await fetch(
-          '/api/articles?where[section][equals]=opinion&where[_status][equals]=published&sort=-publishedDate&limit=100&depth=1' +
-          '&select[title]=true&select[plainTitle]=true&select[slug]=true&select[section]=true&select[publishedDate]=true' +
-          '&select[createdAt]=true&select[featuredImage]=true&select[subdeck]=true&select[kicker]=true' +
-          '&select[authors]=true&select[writeInAuthors]=true&select[opinionType]=true',
-        );
-        const artData = await artRes.json();
-        setArticles(artData.docs || []);
-
-        // Find or create the single layout doc
-        let id = extractDocId();
-        let layoutData: Record<string, unknown> | null = null;
-
-        if (id) {
-          const layoutRes = await fetch(`/api/opinion-page-layout/${id}?depth=1`);
-          if (layoutRes.ok) { layoutData = await layoutRes.json(); } else { id = null; }
-        }
-        if (!id) {
-          const listRes = await fetch('/api/opinion-page-layout?limit=1&depth=1');
-          const listData = await listRes.json();
-          if (listData.docs?.length > 0) {
-            layoutData = listData.docs[0];
-            id = String((layoutData as Record<string, unknown>).id);
-          }
-        }
-        if (!id) {
-          const createRes = await fetch('/api/opinion-page-layout', {
+        const listUrl = '/api/opinion-page-layout?' + new URLSearchParams({ 'where[name][equals]': OPINION_LAYOUT_NAME, limit: '1', depth: '0' });
+        const readLayout = async () => {
+          const res = await fetch(listUrl);
+          if (!res.ok) throw new Error('Unable to load opinion layout.');
+          return (await res.json()).docs[0];
+        };
+        let doc = await readLayout();
+        if (!doc) {
+          const res = await fetch('/api/opinion-page-layout', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: 'Opinion Layout' }),
+            body: JSON.stringify({ name: OPINION_LAYOUT_NAME }),
           });
-          if (createRes.ok) {
-            const c = await createRes.json(); id = String(c.doc.id); layoutData = c.doc;
-          } else {
-            setError('Failed to create layout document. Check your permissions.');
-          }
+          // Another editor may have created the singleton while this request was pending.
+          doc = res.ok ? (await res.json()).doc : await readLayout();
+          if (!doc) throw new Error('Unable to create opinion layout. Check your permissions.');
         }
-        docIdRef.current = id;
-
-        if (layoutData) {
-          const savedLayout = layoutData.layout as OpinionLayout | undefined;
-          if (savedLayout && typeof savedLayout === 'object') {
-            const c1 = padArray(savedLayout.column1, 5);
-            const c2 = padArray(savedLayout.column2, 4);
-            const c3 = padArray(savedLayout.column3, 4);
-            setLayout({
-              column1: c1,
-              column1Images: savedLayout.column1Images
-                ? padBoolArray(savedLayout.column1Images, c1.length)
-                : padBoolArray([true], c1.length), // col1[0] previously always had image
-              column2: c2,
-              column2Images: savedLayout.column2Images
-                ? padBoolArray(savedLayout.column2Images, c2.length)
-                : padBoolArray([false, false, true], c2.length), // col2[2] previously always had image
-              column3: c3,
-              column3Images: savedLayout.column3Images
-                ? padBoolArray(savedLayout.column3Images, c3.length)
-                : padBoolArray([false, false, false, true], c3.length), // col3[3] previously always had image
-              editorsChoice: padArray(savedLayout.editorsChoice, 3),
-              editorsChoiceLabel: savedLayout.editorsChoiceLabel || "Opinion\u2019s Choice",
-              spotlight: (savedLayout as OpinionLayout).spotlight || [],
-            });
-          } else {
-            // Migrate from legacy fields
-            const getRelId = (val: unknown): number | null => {
-              if (typeof val === 'number') return val;
-              if (val && typeof val === 'object' && 'id' in val) return (val as { id: number }).id;
-              return null;
-            };
-            const ec1 = getRelId(layoutData.editorsChoice1);
-            const ec2 = getRelId(layoutData.editorsChoice2);
-            const ec3 = getRelId(layoutData.editorsChoice3);
-            const ecLabel = (layoutData.editorsChoiceLabel as string) || "Opinion\u2019s Choice";
-            setLayout({
-              ...EMPTY_LAYOUT,
-              editorsChoice: [ec1, ec2, ec3],
-              editorsChoiceLabel: ecLabel,
-            });
-          }
+        if (cancelled) return;
+        const next = readOpinionLayoutDocument(doc);
+        docIdRef.current = String(doc.id);
+        setLayout(next);
+        const ids = [...collectUsedIds(next)];
+        if (ids.length) {
+          const res = await fetch('/api/opinion/articles?ids=' + ids.join(','));
+          if (!res.ok) throw new Error('Unable to load pinned articles.');
+          const data = await res.json();
+          if (!cancelled) mergeArticles(data.docs);
         }
-      } catch (err) {
-        setError('Failed to load data');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+        if (next.spotlight.length) {
+          const res = await fetch('/api/opinion/staff?ids=' + next.spotlight.map((e) => e.userId).join(','));
+          if (!res.ok) throw new Error('Unable to load spotlight authors.');
+          const data = await res.json();
+          if (!cancelled) setUsers((prev) => [...new Map([...prev, ...data.docs as UserData[]].map((u) => [u.id, u])).values()]);
+        }
+      } catch (error) {
+        if (!cancelled) setError(error instanceof Error ? error.message : 'Failed to load data');
+      } finally { if (!cancelled) setLoading(false); }
     })();
-  }, []);
+    return () => { cancelled = true; };
+  }, [mergeArticles]);
 
   // ---- Mutations ----
-  const markDirty = useCallback(() => setSaved(false), []);
+  const markDirty = useCallback(() => { revision.current++; setSaved(false); }, []);
 
   const setSlot = useCallback((column: keyof OpinionLayout, index: number, articleId: number | null) => {
     setLayout((prev) => {
-      const col = [...(prev[column] as (number | null)[])];
-      col[index] = articleId;
-      return { ...prev, [column]: col };
+      const next = { ...prev };
+      for (const key of ['column1', 'column2', 'column3', 'editorsChoice'] as const) {
+        next[key] = prev[key].map((id) => articleId !== null && id === articleId ? null : id);
+      }
+      (next[column] as (number | null)[])[index] = articleId;
+      return next;
     });
     markDirty();
   }, [markDirty]);
@@ -507,6 +474,7 @@ export function OpinionLayoutEditor() {
   }, [markDirty]);
 
   const addSlot = useCallback((column: 'column1' | 'column2' | 'column3') => {
+    if (layout[column].length >= MAX_OPINION_SLOTS) return;
     const imagesKey = (column + 'Images') as 'column1Images' | 'column2Images' | 'column3Images';
     setLayout((prev) => ({
       ...prev,
@@ -514,11 +482,12 @@ export function OpinionLayoutEditor() {
       [imagesKey]: [...prev[imagesKey], false],
     }));
     markDirty();
-  }, [markDirty]);
+  }, [markDirty, layout]);
 
   // ---- Spotlight ----
   const addSpotlight = useCallback((userId: number) => {
     setLayout((prev) => {
+      if (prev.spotlight.length >= MAX_SPOTLIGHT_AUTHORS) return prev;
       if ((prev.spotlight || []).some((e) => e.userId === userId)) return prev;
       return { ...prev, spotlight: [...(prev.spotlight || []), { userId, articleTitle: null, articleUrl: null }] };
     });
@@ -621,31 +590,18 @@ export function OpinionLayoutEditor() {
     setSaving(true);
     setError(null);
     try {
-      // Trim trailing nulls from columns
-      const tc1 = trimTrailingNulls(layout.column1);
-      const tc2 = trimTrailingNulls(layout.column2);
-      const tc3 = trimTrailingNulls(layout.column3);
-      const trimmed = {
-        column1: tc1,
-        column1Images: layout.column1Images.slice(0, tc1.length),
-        column2: tc2,
-        column2Images: layout.column2Images.slice(0, tc2.length),
-        column3: tc3,
-        column3Images: layout.column3Images.slice(0, tc3.length),
-        editorsChoice: trimTrailingNulls(layout.editorsChoice),
-        editorsChoiceLabel: layout.editorsChoiceLabel,
-        spotlight: layout.spotlight || [],
-      };
-
+      const validation = validateOpinionLayout(layout);
+      if (validation !== true) throw new Error(validation);
+      const submittedRevision = revision.current;
       const res = await fetch(`/api/opinion-page-layout/${docIdRef.current}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ layout: trimmed }),
+        body: JSON.stringify({ layout }),
       });
       if (!res.ok) throw new Error('Save failed');
-      setSaved(true);
+      setSaved(revision.current === submittedRevision);
     } catch (err) {
-      setError('Failed to save');
+      setError(err instanceof Error ? err.message : 'Failed to save');
       console.error(err);
     } finally {
       setSaving(false);
@@ -677,6 +633,9 @@ export function OpinionLayoutEditor() {
   });
 
   return (
+    <SlotPickerContext.Provider value={{ articles: poolArticles, layout, assign: (slot, id) => {
+      const parsed = parseSlotId(slot); if (parsed) setSlot(parsed.column, parsed.index, id);
+    } }}>
     <DndContext
       sensors={sensors}
       collisionDetection={pointerThenCenter}
@@ -694,7 +653,7 @@ export function OpinionLayoutEditor() {
             <button
               className={`ole-save-btn ${saved ? 'ole-save-btn-saved' : 'ole-save-btn-unsaved'}`}
               onClick={handleSave}
-              disabled={saving || saved}
+              disabled={saving || saved || !docIdRef.current}
             >
               {saving ? 'Saving...' : saved ? 'Saved' : 'Activate'}
             </button>
@@ -755,7 +714,7 @@ export function OpinionLayoutEditor() {
                     />
                   );
                 })}
-                <button className="ole-add-slot-btn" onClick={() => addSlot('column1')}>+ Add slot</button>
+                <button className="ole-add-slot-btn" onClick={() => addSlot('column1')} disabled={layout.column1.length >= MAX_OPINION_SLOTS}>+ Add slot</button>
               </div>
 
               {/* Column 2 */}
@@ -825,7 +784,7 @@ export function OpinionLayoutEditor() {
                       value={userSearch}
                       onChange={(e) => { setUserSearch(e.target.value); setShowUserDropdown(true); }}
                       onFocus={() => setShowUserDropdown(true)}
-                      onBlur={() => setTimeout(() => setShowUserDropdown(false), 150)}
+
                     />
                     {showUserDropdown && filteredUsers.length > 0 && (
                       <div className="ole-spotlight-dropdown">
@@ -833,7 +792,7 @@ export function OpinionLayoutEditor() {
                           <button
                             key={u.id}
                             className="ole-spotlight-user-option"
-                            onMouseDown={() => addSpotlight(u.id)}
+                            onClick={() => addSpotlight(u.id)}
                           >
                             {u.firstName} {u.lastName}
                           </button>
@@ -863,7 +822,7 @@ export function OpinionLayoutEditor() {
                     />
                   );
                 })}
-                <button className="ole-add-slot-btn" onClick={() => addSlot('column2')}>+ Add slot</button>
+                <button className="ole-add-slot-btn" onClick={() => addSlot('column2')} disabled={layout.column2.length >= MAX_OPINION_SLOTS}>+ Add slot</button>
               </div>
 
               {/* Column 3 */}
@@ -903,17 +862,18 @@ export function OpinionLayoutEditor() {
                     }
                   />
                 ))}
-                <button className="ole-add-slot-btn" onClick={() => addSlot('column3')}>+ Add slot</button>
+                <button className="ole-add-slot-btn" onClick={() => addSlot('column3')} disabled={layout.column3.length >= MAX_OPINION_SLOTS}>+ Add slot</button>
               </div>
             </div>
           </div>
 
           {/* Right: Article pool */}
           <ArticlePool
-            articles={articles}
+            articles={poolArticles}
             usedIds={usedIds}
             search={search}
-            onSearch={setSearch}
+            onSearch={(value) => { setSearch(value); setSearchPage(1); }}
+            hasMore={hasMore} busy={searching} onMore={() => setSearchPage((page) => page + 1)}
           />
         </div>
 
@@ -922,27 +882,6 @@ export function OpinionLayoutEditor() {
         </DragOverlay>
       </div>
     </DndContext>
+    </SlotPickerContext.Provider>
   );
-}
-
-// ---------------------------------------------------------------------------
-// Utility
-// ---------------------------------------------------------------------------
-
-function padArray(arr: (number | null)[] | undefined, minLen: number): (number | null)[] {
-  const result = [...(arr || [])];
-  while (result.length < minLen) result.push(null);
-  return result;
-}
-
-function trimTrailingNulls(arr: (number | null)[]): (number | null)[] {
-  const result = [...arr];
-  while (result.length > 0 && result[result.length - 1] === null) result.pop();
-  return result;
-}
-
-function padBoolArray(arr: boolean[] | undefined, minLen: number): boolean[] {
-  const result = [...(arr || [])];
-  while (result.length < minLen) result.push(false);
-  return result;
 }
