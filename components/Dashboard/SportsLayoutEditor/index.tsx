@@ -25,8 +25,16 @@ import {
   type Phase,
   type StandingsOverride,
 } from '@/lib/standingsSchedule';
-import type { ScoreboardDate } from '@/components/Sports/SportsSectionPage';
-import { FEATURED_COUNT, type FeaturedFocus } from '@/components/Sports/sportsFormat';
+import {
+  FEATURED_COUNT,
+  HEADLINE_COUNT,
+  autoFill,
+  hasFinalScore,
+  parseSportsLayout,
+  type FeaturedFocus,
+  type ScoreboardDate,
+  type SportsLayout,
+} from '@/lib/sportsLayout';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -45,25 +53,11 @@ type ArticleData = {
   kicker?: string | null;
   authors?: Array<number | { firstName: string; lastName: string }>;
   writeInAuthors?: Array<{ name: string }>;
-};
-
-// Stored shape (see collections/SportsPageLayout.ts)
-type SportsLayout = {
-  lead: number | null;
-  showScoreboard: boolean;
-  /** Day the lead's game was played, shown under the scoreboard */
-  scoreboardDate: ScoreboardDate | null;
-  belowLead: number | null;
-  /** Second wide card, shown only when the scoreboard isn't */
-  belowLead2: number | null;
-  headlines: (number | null)[];
-  featured: (number | null)[];
-  featuredFocus: FeaturedFocus;
-  /** RPI scores banner at the top; off shows the plain "Sports | Contact" header */
-  showScoreStrip: boolean;
-  /** Lead title overlaps its photo on desktop; off puts a plain title below */
-  leadTitleOverlay: boolean;
-  standingsOverrides: StandingsOverride[];
+  _status?: string | null;
+  // The game result, which decides whether the lead gets a scoreboard
+  opponent?: unknown;
+  rpiScore?: number | null;
+  opponentScore?: number | null;
 };
 
 // Editor state keeps every slot group as an array so drag/drop is uniform
@@ -84,7 +78,14 @@ const pointerThenCenter: CollisionDetection = (args) => {
   return closestCenter(args);
 };
 
-const HEADLINE_COUNT = 3;
+// Fields loaded for every article, for the pool and for pinned stories alike
+const ARTICLE_FIELDS =
+  '&depth=1&select[title]=true&select[plainTitle]=true&select[slug]=true&select[section]=true&select[publishedDate]=true' +
+  '&select[createdAt]=true&select[featuredImage]=true&select[subdeck]=true&select[kicker]=true' +
+  '&select[authors]=true&select[writeInAuthors]=true&select[_status]=true' +
+  '&select[opponent]=true&select[rpiScore]=true&select[opponentScore]=true';
+
+const BADGE_STYLE = { fontSize: '0.62rem', color: '#C41E3A', fontWeight: 600 } as const;
 
 const EMPTY_SLOTS: SlotLayout = {
   lead: [null],
@@ -193,11 +194,13 @@ function SlotPreview({ article, showImage }: { article: ArticleData; showImage?:
 // ---------------------------------------------------------------------------
 
 function DropSlot({
-  slotId, label, article, onClear,
+  slotId, label, article, missing = false, onClear,
 }: {
   slotId: string;
   label: string;
   article: ArticleData | null;
+  /** A story is pinned here but can no longer be found */
+  missing?: boolean;
   onClear: () => void;
 }) {
   const { isOver, setNodeRef } = useDroppable({
@@ -205,6 +208,7 @@ function DropSlot({
     data: { slotId },
   });
   const missingImage = article !== null && !getImageUrl(article);
+  const unpublished = article !== null && article._status !== 'published';
 
   return (
     <div
@@ -214,18 +218,29 @@ function DropSlot({
       <div className="fle-slot-header">
         <span className="fle-slot-label">{label}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {unpublished && (
+            <span style={BADGE_STYLE} title="This story isn't published, so the slot fills automatically until it is">
+              not published
+            </span>
+          )}
           {missingImage && (
-            <span style={{ fontSize: '0.62rem', color: '#C41E3A', fontWeight: 600 }} title="This article has no featured image">
+            <span style={BADGE_STYLE} title="This article has no featured image">
               no image
             </span>
           )}
-          {article && (
+          {(article || missing) && (
             <button className="fle-slot-clear" onClick={onClear} title="Remove article">&times;</button>
           )}
         </div>
       </div>
       {article ? (
         <DraggableSlotArticle article={article} slotId={slotId} showImage />
+      ) : missing ? (
+        <div className="fle-slot-empty">
+          <div className="fle-slot-empty-inner">
+            <span>The story pinned here can&apos;t be found, so the slot fills automatically. Remove it to clear the pin.</span>
+          </div>
+        </div>
       ) : (
         <div className="fle-slot-empty">
           <div className="fle-slot-empty-inner">
@@ -369,6 +384,7 @@ function FramePreview({
 function FeaturedSlot({
   index,
   article,
+  missing,
   focus,
   onClear,
   onFocusChange,
@@ -376,6 +392,8 @@ function FeaturedSlot({
 }: {
   index: number;
   article: ArticleData | null;
+  /** A story is pinned here but can no longer be found */
+  missing: boolean;
   focus: { x: number; y: number } | undefined;
   onClear: () => void;
   onFocusChange: (focus: { x: number; y: number }) => void;
@@ -406,6 +424,11 @@ function FeaturedSlot({
         title={article ? 'Drag to move this story' : undefined}
       >
         <span className="fle-slot-label">{index + 1}</span>
+        {article && article._status !== 'published' && (
+          <span style={BADGE_STYLE} title="This story isn't published, so the slot fills automatically until it is">
+            not published
+          </span>
+        )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {article && focus && (
             <button
@@ -419,7 +442,7 @@ function FeaturedSlot({
               &#8634;
             </button>
           )}
-          {article && (
+          {(article || missing) && (
             <button
               type="button"
               className="fle-slot-clear"
@@ -447,7 +470,7 @@ function FeaturedSlot({
             opacity: 0.35,
           }}
         >
-          Drop article (auto-fills if empty)
+          {missing ? "Pinned story can't be found; remove it to clear the pin" : 'Drop article (auto-fills if empty)'}
         </div>
       )}
     </div>
@@ -606,6 +629,7 @@ function StandingsPanel({
       <div className="fle-events-header">Standings</div>
       <div style={{ fontSize: '0.68rem', opacity: 0.6, lineHeight: 1.4 }}>
         Sports pick themselves from the calendar (3–5 at a time). Show or Hide overrides that for {OVERRIDE_DAYS} days.
+        A sport only appears while its conference&apos;s standings page can be read.
       </div>
 
       {/* One sport at a time: pick it here, set it below */}
@@ -686,6 +710,9 @@ export function SportsLayoutEditor() {
   const [standingsOverrides, setStandingsOverrides] = useState<StandingsOverride[]>([]);
   const [now] = useState(() => new Date());
   const [articles, setArticles] = useState<ArticleData[]>([]);
+  // Pinned stories the pool doesn't hold: older than its newest 100, or no
+  // longer published
+  const [pinnedExtras, setPinnedExtras] = useState<ArticleData[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(true);
@@ -696,7 +723,7 @@ export function SportsLayoutEditor() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  const articleMap = new Map(articles.map((a) => [a.id, a]));
+  const articleMap = new Map([...pinnedExtras, ...articles].map((a) => [a.id, a]));
   const usedIds = collectUsedIds(slots);
 
   // ---- Fetch ----
@@ -704,13 +731,12 @@ export function SportsLayoutEditor() {
     (async () => {
       try {
         const artRes = await fetch(
-          '/api/articles?where[section][equals]=sports&where[_status][equals]=published&sort=-publishedDate&limit=100&depth=1' +
-          '&select[title]=true&select[plainTitle]=true&select[slug]=true&select[section]=true&select[publishedDate]=true' +
-          '&select[createdAt]=true&select[featuredImage]=true&select[subdeck]=true&select[kicker]=true' +
-          '&select[authors]=true&select[writeInAuthors]=true',
+          '/api/articles?where[section][equals]=sports&where[_status][equals]=published&sort=-publishedDate&limit=100' +
+          ARTICLE_FIELDS,
         );
         const artData = await artRes.json();
-        setArticles(artData.docs || []);
+        const pool: ArticleData[] = artData.docs || [];
+        setArticles(pool);
 
         let id = extractDocId();
         let layoutData: Record<string, unknown> | null = null;
@@ -744,21 +770,40 @@ export function SportsLayoutEditor() {
         docIdRef.current = id;
 
         if (layoutData) {
-          const savedLayout = layoutData.layout as Partial<SportsLayout> | undefined;
-          if (savedLayout && typeof savedLayout === 'object') {
-            setSlots({
-              lead: [savedLayout.lead ?? null],
-              belowLead: [savedLayout.belowLead ?? null, savedLayout.belowLead2 ?? null],
-              headlines: padArray(savedLayout.headlines, HEADLINE_COUNT),
-              featured: padArray(savedLayout.featured, FEATURED_COUNT),
-            });
-            setShowScoreboard(savedLayout.showScoreboard ?? true);
-            setScoreboardDate(savedLayout.scoreboardDate ?? null);
-            setFeaturedFocus(savedLayout.featuredFocus ?? {});
-            setShowScoreStrip(savedLayout.showScoreStrip ?? true);
-            setLeadTitleOverlay(savedLayout.leadTitleOverlay ?? true);
-            // Expired overrides are dropped; the next save clears them for good
-            setStandingsOverrides(activeOverrides(savedLayout.standingsOverrides, new Date()));
+          const savedLayout = parseSportsLayout(layoutData.layout);
+          setSlots({
+            lead: [savedLayout.lead],
+            belowLead: [savedLayout.belowLead, savedLayout.belowLead2],
+            headlines: savedLayout.headlines,
+            featured: savedLayout.featured,
+          });
+          setShowScoreboard(savedLayout.showScoreboard);
+          setScoreboardDate(savedLayout.scoreboardDate);
+          setFeaturedFocus(savedLayout.featuredFocus);
+          setShowScoreStrip(savedLayout.showScoreStrip);
+          setLeadTitleOverlay(savedLayout.leadTitleOverlay);
+          // Expired overrides are dropped; the next save clears them for good
+          setStandingsOverrides(activeOverrides(savedLayout.standingsOverrides, new Date()));
+
+          // Every pinned story is loaded, in the pool or not, so a pin always
+          // shows in its slot and can be removed
+          const inPool = new Set(pool.map((a) => a.id));
+          const absent = [
+            ...new Set(
+              [
+                savedLayout.lead,
+                savedLayout.belowLead,
+                savedLayout.belowLead2,
+                ...savedLayout.headlines,
+                ...savedLayout.featured,
+              ].filter((pinned): pinned is number => pinned !== null && !inPool.has(pinned)),
+            ),
+          ];
+          if (absent.length > 0) {
+            const extraRes = await fetch(
+              `/api/articles?where[id][in]=${absent.join(',')}&limit=${absent.length}${ARTICLE_FIELDS}`,
+            );
+            if (extraRes.ok) setPinnedExtras((await extraRes.json()).docs || []);
           }
         }
       } catch (err) {
@@ -930,7 +975,20 @@ export function SportsLayoutEditor() {
     const id = slots[column][index];
     return id ? articleMap.get(id) || null : null;
   };
+  // A pin whose story is gone (deleted): shown as such, so it can be removed
+  const isMissing = (column: ColumnKey, index: number): boolean => {
+    const id = slots[column][index];
+    return id !== null && !articleMap.has(id);
+  };
   const leadId = slots.lead[0];
+  // The story the page will lead with: the pinned one if it's published, else
+  // the newest story not placed anywhere. As on the page, it gets a scoreboard
+  // only if it has an opponent and both scores, and the second below-lead
+  // slot is used whenever it doesn't.
+  const pinnedLead = getArticle('lead', 0);
+  const leadArticle =
+    pinnedLead?._status === 'published' ? pinnedLead : autoFill(articles, usedIds, (a) => Boolean(getImageUrl(a)));
+  const scoreboardShows = showScoreboard && Boolean(leadArticle?.opponent) && hasFinalScore(leadArticle);
 
   return (
     <DndContext
@@ -985,13 +1043,19 @@ export function SportsLayoutEditor() {
                   slotId="lead-0"
                   label="Lead story (large image)"
                   article={getArticle('lead', 0)}
+                  missing={isMissing('lead', 0)}
                   onClear={() => clearSlot('lead-0')}
                 />
                 <label className="fle-image-toggle" title="Uses the lead story's opponent and score" style={{ alignSelf: 'flex-start' }}>
                   <input type="checkbox" checked={showScoreboard} onChange={toggleScoreboard} />
                   Show scoreboard above the lead (from the story&apos;s game result, when it has one)
                 </label>
-                {showScoreboard && leadId !== null && (
+                {showScoreboard && !scoreboardShows && leadArticle && (
+                  <span style={{ fontSize: '0.62rem', opacity: 0.5, alignSelf: 'flex-start' }}>
+                    No scoreboard for &ldquo;{leadArticle.plainTitle}&rdquo;: the story needs an opponent and both scores.
+                  </span>
+                )}
+                {scoreboardShows && leadId !== null && leadArticle?.id === leadId && (
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.72rem', alignSelf: 'flex-start' }}>
                     <span style={{ fontWeight: 600 }}>Date played</span>
                     <input
@@ -1034,15 +1098,16 @@ export function SportsLayoutEditor() {
                   slotId="below-0"
                   label="Below lead (image + text)"
                   article={getArticle('belowLead', 0)}
+                  missing={isMissing('belowLead', 0)}
                   onClear={() => clearSlot('below-0')}
                 />
-                {/* Only used when the scoreboard is off, so it collapses to a
-                    note while the scoreboard shows; a story placed there stays
-                    saved and returns with the slot */}
-                {showScoreboard ? (
+                {/* Only used when no scoreboard shows, so it collapses to a
+                    note while one does; a story placed there stays saved and
+                    returns with the slot */}
+                {scoreboardShows ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.62rem', padding: '2px 2px 0' }}>
                     <span style={{ opacity: 0.5 }}>
-                      Second below-lead slot appears when the scoreboard is off
+                      Second below-lead slot appears when no scoreboard shows
                       {getArticle('belowLead', 1) ? ` (holding “${getArticle('belowLead', 1)?.plainTitle}”)` : ''}
                     </span>
                     {/* Frees the held story for other slots without turning the scoreboard off */}
@@ -1061,6 +1126,7 @@ export function SportsLayoutEditor() {
                     slotId="below-1"
                     label="Second below lead (text + image)"
                     article={getArticle('belowLead', 1)}
+                    missing={isMissing('belowLead', 1)}
                     onClear={() => clearSlot('below-1')}
                   />
                 )}
@@ -1076,6 +1142,7 @@ export function SportsLayoutEditor() {
                     slotId={`head-${i}`}
                     label={`Headline ${i + 1}`}
                     article={getArticle('headlines', i)}
+                    missing={isMissing('headlines', i)}
                     onClear={() => clearSlot(`head-${i}`)}
                   />
                 ))}
@@ -1099,6 +1166,7 @@ export function SportsLayoutEditor() {
                       key={`feat-${i}`}
                       index={i}
                       article={article}
+                      missing={isMissing('featured', i)}
                       focus={id !== null ? featuredFocus[String(id)] : undefined}
                       onClear={() => clearSlot(`feat-${i}`)}
                       onFocusChange={(focus) => id !== null && changeFeaturedFocus(id, focus)}
@@ -1125,14 +1193,4 @@ export function SportsLayoutEditor() {
       </div>
     </DndContext>
   );
-}
-
-// ---------------------------------------------------------------------------
-// Utility
-// ---------------------------------------------------------------------------
-
-function padArray(arr: (number | null)[] | undefined, len: number): (number | null)[] {
-  const result = [...(arr || [])];
-  while (result.length < len) result.push(null);
-  return result.slice(0, len);
 }

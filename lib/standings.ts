@@ -4,6 +4,7 @@
 // redesigns its page, parsing fails, the last good table keeps showing, and a
 // sport with no good table is simply left out. Which sports appear is decided
 // in ./standingsSchedule.
+import { fetchSidearm } from './sidearm'
 import type { SportValue } from './sports'
 import {
   STANDINGS_SPORTS,
@@ -62,7 +63,6 @@ const CONFERENCE_SITES: Record<Conference, string> = {
   'Liberty League': 'https://libertyleagueathletics.com',
 }
 
-const REFRESH_SECONDS = 60 * 60
 const RECORD = /^\d+-\d+(-\d+)?$/
 
 // Last table that parsed cleanly, per sport, for when a refresh fails
@@ -127,11 +127,12 @@ function parseStandings(html: string, conference: Conference) {
     const overall = values[overallCol]
     if (!team || !RECORD.test(conf ?? '') || !RECORD.test(overall ?? '')) return null
     const group = groups[groups.length - 1]
+    const pts = ptsCol >= 0 && values[ptsCol]?.trim() ? Number(values[ptsCol]) : NaN
     const row: StandingsRow = {
       rank: group.rows.length + 1,
       team,
       conf,
-      pts: ptsCol >= 0 && values[ptsCol] !== undefined ? Number(values[ptsCol]) : null,
+      pts: Number.isFinite(pts) ? pts : null,
       overall,
       isRpi: team === 'RPI',
     }
@@ -171,11 +172,7 @@ async function fetchSport(sport: SportValue): Promise<SportStandings | null> {
   if (!source || !entry) return null
   const url = `${CONFERENCE_SITES[source.conference]}/standings.aspx?path=${source.path}`
   try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'The Polytechnic (poly.rpi.edu) sports desk' },
-      next: { revalidate: REFRESH_SECONDS },
-      signal: AbortSignal.timeout(8000),
-    })
+    const res = await fetchSidearm(url)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const parsed = parseStandings(await res.text(), source.conference)
     if (!parsed) throw new Error('standings table not recognised')
@@ -196,7 +193,7 @@ async function fetchSport(sport: SportValue): Promise<SportStandings | null> {
 
 /**
  * Standings for the sports the schedule picks today, in tab order. Every
- * sport's table is fetched (each cached for an hour) because the data checks
+ * sport's table is fetched (each cached for an hour, see ./sidearm) because the data checks
  * and summer hold-over need to know what each conference page shows.
  */
 export async function getSportsStandings({

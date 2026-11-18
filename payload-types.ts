@@ -311,7 +311,7 @@ export interface Article {
   id: number;
   section: 'news' | 'sports' | 'features' | 'opinion';
   /**
-   * Which team this story is about. Fills an empty kicker with the sport name.
+   * Which team this story is about. The kicker follows it until you write your own.
    */
   sport?:
     | (
@@ -342,7 +342,7 @@ export interface Article {
       )
     | null;
   /**
-   * The school RPI played. Leave empty for stories that are not about one game.
+   * The school RPI played. Leave empty for stories that are not about one game. The /sports scoreboard shows once both scores are entered.
    */
   opponent?: (number | null) | School;
   homeAway?: ('home' | 'away' | 'neutral') | null;

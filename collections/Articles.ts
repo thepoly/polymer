@@ -5,7 +5,14 @@ import { lexicalEditor, BoldFeature, ItalicFeature } from '@payloadcms/richtext-
 import { getPostHogClient } from '../lib/posthog-server'
 import { getPlainText } from '../utils/getPlainText'
 import { getContentPlainText } from '../utils/getContentPlainText'
-import { SPORTS, sportLabel } from '../lib/sports'
+import { SPORTS, sportKicker, sportLabel } from '../lib/sports'
+
+// Scores are whole numbers. A custom check replaces the built-in one, so this
+// covers the minimum of 0 as well.
+const wholeScore = (value: number | number[] | null | undefined) =>
+  value == null ||
+  (typeof value === 'number' && Number.isInteger(value) && value >= 0) ||
+  'Enter a whole number, 0 or more.'
 
 const Articles: CollectionConfig = {
   slug: 'articles',
@@ -180,14 +187,29 @@ const Articles: CollectionConfig = {
           data.opinionType = deriveOpinionType(data.kicker !== undefined ? data.kicker : originalDoc?.kicker)
         }
 
-        // Sports stories with no kicker get the sport's name ("Men's Hockey").
-        // Partial updates may omit fields, so fall back to the saved doc.
+        // A sports story's kicker follows its sport ("Men's Hockey") until an
+        // editor writes their own: it is filled in when empty, and replaced
+        // when it still names the sport the story had before, so changing the
+        // sport never leaves the old one behind. "General" has no name to
+        // show, so it leaves the kicker empty. Partial updates may omit
+        // fields, so fall back to the saved doc.
         {
           const section = data.section ?? originalDoc?.section
-          const sport = data.sport ?? originalDoc?.sport
-          const kicker = data.kicker !== undefined ? data.kicker : originalDoc?.kicker
-          if (section === 'sports' && sport && !kicker?.trim()) {
-            data.kicker = sportLabel(sport) ?? kicker
+          const sport = data.sport !== undefined ? data.sport : originalDoc?.sport
+          const previousSport = originalDoc?.sport
+          const kicker = (data.kicker !== undefined ? data.kicker : originalDoc?.kicker)?.trim() ?? ''
+          const followsSport = !kicker || kicker === sportLabel(previousSport)
+          if (section === 'sports' && (sport || previousSport) && followsSport) {
+            data.kicker = sportKicker(sport)
+          }
+        }
+
+        // Sport and game result belong to sports stories only. A story moved
+        // to another section drops them, so it never keeps a hidden sport or
+        // scoreboard that would come back if it moved again.
+        if ((data.section ?? originalDoc?.section) !== 'sports') {
+          for (const field of ['sport', 'opponent', 'homeAway', 'rpiScore', 'opponentScore', 'gameStatus'] as const) {
+            if (data[field] != null || originalDoc?.[field] != null) data[field] = null
           }
         }
 
@@ -239,7 +261,7 @@ const Articles: CollectionConfig = {
       options: SPORTS.map(({ value, label }) => ({ value, label })),
       index: true,
       admin: {
-        description: 'Which team this story is about. Fills an empty kicker with the sport name.',
+        description: 'Which team this story is about. The kicker follows it until you write your own.',
         condition: (data: Record<string, unknown>) => data?.section === 'sports',
       },
     },
@@ -255,7 +277,7 @@ const Articles: CollectionConfig = {
           hasMany: false,
           admin: {
             width: '50%',
-            description: 'The school RPI played. Leave empty for stories that are not about one game.',
+            description: 'The school RPI played. Leave empty for stories that are not about one game. The /sports scoreboard shows once both scores are entered.',
             condition: (data: Record<string, unknown>) => data?.section === 'sports',
           },
         },
@@ -283,6 +305,7 @@ const Articles: CollectionConfig = {
           type: 'number',
           label: 'RPI Score',
           min: 0,
+          validate: wholeScore,
           admin: {
             width: '25%',
             condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
@@ -293,6 +316,7 @@ const Articles: CollectionConfig = {
           type: 'number',
           label: 'Opponent Score',
           min: 0,
+          validate: wholeScore,
           admin: {
             width: '25%',
             condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),

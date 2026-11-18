@@ -3,7 +3,9 @@ import Link from "next/link";
 import type { Article as ComponentArticle } from "@/components/FrontPage/types";
 import { sportLabel, type SportValue } from "@/lib/sports";
 import { StoryCard } from "./SportsFeatured";
-import { cardPosition, type FeaturedFocus } from "./sportsFormat";
+import { cardPosition } from "./sportsFormat";
+import type { FeaturedFocus } from "@/lib/sportsLayout";
+import { troyMonth } from "@/lib/troyTime";
 
 /** Sport tabs shown in the row; the rest go under "More" */
 const INLINE_TABS = 6;
@@ -13,8 +15,7 @@ export type SportTab = { sport: SportValue; count: number };
 // Months in Troy's time zone, matching the dates on the cards
 const monthKey = (article: ComponentArticle) => {
   const iso = article.publishedDate || article.createdAt;
-  if (!iso) return null;
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit" }).format(new Date(iso));
+  return iso ? troyMonth(new Date(iso)) : null;
 };
 
 const monthLabel = (key: string, style: "short" | "long") =>
@@ -65,8 +66,8 @@ function Tab({ href, active, children }: { href: string; active: boolean; childr
 
 /**
  * Every sports story as a grid of photo cards, newest first, reading left to
- * right. A month tile opens each month on a new row. Tabs filter by sport (most stories
- * first), and the list pages at the foot.
+ * right. A month tile opens each month on a new row. Tabs filter by sport
+ * (most stories first), and the list pages at the foot.
  */
 export default function SportsAllStories({
   articles,

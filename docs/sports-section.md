@@ -11,43 +11,59 @@ over time.
 | --- | --- | --- |
 | Score strip (top) | For each sport in the standings card: RPI's last two finals and next game | rpiathletics.com calendar feed ([`lib/schedule.ts`](../lib/schedule.ts)) |
 | Lead + scoreboard | Lead story with a scoreboard (logos, score, sport, status, date played) | The lead article's game result + `schools` |
-| Below-lead stories | One wide story, or two when the scoreboard is off | Layout editor, auto-filled with the newest stories |
+| Below-lead stories | One wide story, or two when no scoreboard shows | Layout editor, auto-filled with the newest stories |
 | Standings card | Every sport in season (at least 3). Five tabs fit; any more scroll sideways (trackpad or finger swipe, or the arrows). Top five teams, with RPI held at its real rank | ECAC Hockey and Liberty League standings pages ([`lib/standings.ts`](../lib/standings.ts)) |
 | Headlines | Three stories | Layout editor / newest stories |
 | More Headlines | A carousel of seven photo cards, ending in a link to `/sports/all` | Layout editor / newest unused stories |
 | `/sports/all` | Every sports story by month, filterable by sport, 24 per page | Articles |
 
-The page components are in [`components/Sports/`](../components/Sports/),
-and the route is the `sports` branch of
-[`app/(frontend)/[section]/page.tsx`](../app/(frontend)/[section]/page.tsx).
-Both pages revalidate every 60 seconds.
+The page components are in [`components/Sports/`](../components/Sports/).
+The route is the `sports` branch of
+[`app/(frontend)/[section]/page.tsx`](../app/(frontend)/[section]/page.tsx),
+which gets everything besides the newest stories from
+[`lib/sportsPage.ts`](../lib/sportsPage.ts). The layout's JSON is defined
+and read in [`lib/sportsLayout.ts`](../lib/sportsLayout.ts).
+
+`/sports` revalidates every 60 seconds. `/sports/all` reads its query
+string, so it renders on every request; the count behind its sport tabs is
+cached for 60 seconds.
 
 ## For editors
 
 **On a sports article** (right under Section; shown only for sports):
-- **Sport.** Choosing one fills an empty kicker with the sport's name.
-  For a story that isn't about one team, pick "General / Multiple Sports",
-  or leave Sport blank and write a kicker, which is then used as the
-  story's label on `/sports`.
+- **Sport.** The kicker follows it: an empty kicker gets the sport's name,
+  and changing the sport changes a kicker that still names the old one. A
+  kicker an editor wrote stays. For a story that isn't about one team, pick
+  "General / Multiple Sports" (which adds no label) or leave Sport blank,
+  and write a kicker if you want one; it is then the story's label on
+  `/sports`.
 - **Game result** (all optional): opponent (a school), home / away /
-  neutral, RPI score, opponent score, and status. Leave status blank for
-  "Final"; type "Final/OT" and similar when it applies. The scoreboard only
-  appears when the lead story has an opponent.
+  neutral, RPI score, opponent score, and status. Scores are whole numbers.
+  Leave status blank for "Final"; type "Final/OT" and similar when it
+  applies. The scoreboard only appears when the lead story has an opponent
+  and both scores, so a game preview gets none.
+- Moving a story out of Sports clears its sport and game result.
 
 **Sports Layout** (in the newsroom):
 - Drag stories into the lead, below-lead, Headlines and More Headlines
   slots. Empty slots fill themselves with the newest stories, so the page
   works before anyone sets it up.
+- A pinned story that has been unpublished is marked "not published"; its
+  slot fills itself until the story is published again. A pin whose story
+  was deleted says so and can be removed with ×.
 - **Scoreboard** switch, and **Date played** under it. The scoreboard
   otherwise shows the publish date, which is often a day after the game.
   The date belongs to the story it was typed for: change the lead and it
-  goes back to the publish date.
+  goes back to the publish date. When the lead has no final score, the
+  editor says why there's no scoreboard and offers the second below-lead
+  slot instead.
 - **Scores banner** switch. Turning it off shows the plain
   "Sports | Contact" header and stops the site contacting RPI Athletics.
 - **Lead title overlay** switch.
 - **Standings**: each sport shows whether it's in season. **Show** or
   **Hide** forces a sport on or off for 7 days, then the calendar takes
-  over again. **Auto** goes back to the calendar now.
+  over again. **Auto** goes back to the calendar now. Show can't bring
+  back a sport whose conference page can't be read.
 - More Headlines cards can be reframed by dragging the photo. Otherwise
   they use the photo's focal point.
 - The **Schools** button beside "Create New" opens the list of opponents.
@@ -177,6 +193,9 @@ not just `/sports`:
   feed data).
 - Schools logos are stored in the same media directory as `media` and
   `logos` uploads (`MEDIA_DIR`), like the other upload collections.
+- A **Show** override for a sport whose conference page failed to load or
+  parse does nothing, and the layout editor can't tell which sports are
+  affected: it would need the page's standings status passed to it.
 - The pending `fix/dedupe-migration-tracking` branch changes the format of
   the tracking rows at the top of `run_deploy_sql_migrations.sh`. Whichever
   of the two merges second must rewrite this PR's three rows as
