@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
@@ -19,121 +19,258 @@ export type SpotlightPhoto = {
   photographerUrl?: string;
 };
 
+/*
+ * One layout for every screen size. The DOM is in phone reading order; CSS
+ * grid areas place the same sections on tablet and desktop:
+ *
+ *   phone       tablet (≥768)        desktop (≥1024)
+ *   lead        lead     lead        oncampus lead latest
+ *   latest      oncampus latest      arts     spot spot
+ *   spot        spot     spot
+ *   oncampus    arts     arts
+ *   arts
+ *
+ * Cards change shape per breakpoint with classes, not duplicate markup: on
+ * phones most stories are compact rows (headline, small thumbnail); from
+ * tablet up they're the stacked cards the editor's image toggles control.
+ */
+
 const COLUMN_GAP = "clamp(16px, 2vw, 24px)";
-const SECTION_RULE_GAP = "clamp(18px, 3vw, 24px)";
-const SECTION_RULE_INSET = 7;
 
-/* ── Article card — optionally shows image ── */
+const GRID_CSS = `
+.features-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "lead" "latest" "spot" "oncampus" "arts";
+  row-gap: 48px;
+}
+@media (min-width: 768px) {
+  .features-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: "lead lead" "oncampus latest" "spot spot" "arts arts";
+    column-gap: ${COLUMN_GAP};
+  }
+}
+@media (min-width: 1024px) {
+  .features-grid {
+    grid-template-columns: 240px minmax(0, 1fr) 300px;
+    grid-template-areas: "oncampus lead latest" "arts spot spot";
+    row-gap: 0;
+  }
+}
+@keyframes dividerWaveTravel {
+  from { transform: translateX(-600px); }
+  to   { transform: translateX(0px); }
+}
+@keyframes dividerRainbowHue {
+  from { filter: hue-rotate(0deg); }
+  to   { filter: hue-rotate(360deg); }
+}
+`;
 
-function FeaturesCard({
+/* ── Labels and dates ── */
+
+const normalize = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
+
+/** The kicker, unless it only repeats the section it sits in (or "Features") */
+function visibleKicker(article: ComponentArticle, sectionLabel?: string): string | null {
+  const kicker = article.kicker?.trim();
+  if (!kicker) return null;
+  const n = normalize(kicker);
+  if (n === "features") return null;
+  if (sectionLabel && n === normalize(sectionLabel)) return null;
+  return kicker;
+}
+
+/** "Nov 14", in the paper's time zone so server and browser agree */
+const shortDate = (iso?: string | null): string | null => {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  // Non-breaking space: the date never splits across lines ("Oct / 30")
+  return d
+    .toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/New_York" })
+    .replace(" ", " ");
+};
+
+/** More in Features columns by story count, so a short run never leaves a hole */
+const MORE_COLUMNS: Record<number, string> = {
+  1: "md:grid-cols-1 lg:grid-cols-1",
+  2: "md:grid-cols-2 lg:grid-cols-2",
+  3: "md:grid-cols-3 lg:grid-cols-3",
+  4: "md:grid-cols-2 lg:grid-cols-4",
+  5: "md:grid-cols-3 lg:grid-cols-5",
+};
+
+/** The slug at the end of an article path, for matching spotlight links to stories */
+const slugOf = (path: string | undefined): string | null =>
+  path ? path.split(/[?#]/)[0].replace(/\/+$/, "").split("/").pop() || null : null;
+
+/* ── Story card ── */
+
+/** Phone (<768px): a big photo on top, a thumbnail beside the headline, or no photo */
+type PhoneMedia = "stack" | "thumb" | "none";
+/** Tablet and up: photo on top, photo left of the text, photo right of it, or none */
+type WideMedia = "stack" | "row" | "row-end" | "none";
+type HeadlineSize = "lead" | "m" | "s" | "xs";
+
+const ROOT_PHONE: Record<PhoneMedia, string> = {
+  stack: "block",
+  thumb: "grid grid-cols-[minmax(0,1fr)_88px] items-start gap-x-3",
+  none: "block",
+};
+const ROOT_WIDE: Record<WideMedia, string> = {
+  stack: "md:block",
+  row: "md:grid md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:items-start md:gap-x-4",
+  "row-end": "md:grid md:grid-cols-2 md:items-start md:gap-x-6",
+  none: "md:block",
+};
+const MEDIA_PHONE: Record<PhoneMedia, string> = {
+  stack: "-mx-4 mb-3 sm:mx-0",
+  thumb: "order-2 aspect-square w-[88px]",
+  none: "hidden",
+};
+const MEDIA_WIDE: Record<WideMedia, string> = {
+  stack: "md:order-none md:mx-0 md:mb-3 md:block md:w-full",
+  row: "md:order-1 md:mx-0 md:mb-0 md:block md:w-full md:aspect-[3/2]",
+  "row-end": "md:order-2 md:mx-0 md:mb-0 md:block md:w-full md:aspect-[3/2]",
+  none: "md:hidden",
+};
+const BODY_PHONE: Record<PhoneMedia, string> = { stack: "", thumb: "order-1", none: "" };
+const BODY_WIDE: Record<WideMedia, string> = {
+  stack: "md:order-none",
+  row: "md:order-2",
+  "row-end": "md:order-1",
+  none: "md:order-none",
+};
+
+/** The type scale: lead 42/36/32, m 24, s 20, xs 18. Phone rows are always 18. */
+const HEADLINE_PHONE: Record<HeadlineSize, string> = {
+  lead: "text-[32px] leading-[1.08]",
+  m: "text-[22px] leading-[1.12]",
+  s: "text-[20px] leading-[1.15]",
+  xs: "text-[18px] leading-[1.18]",
+};
+const HEADLINE_PHONE_ROW = "text-[18px] leading-[1.18]";
+const HEADLINE_WIDE: Record<HeadlineSize, string> = {
+  lead: "md:text-[36px] lg:text-[42px] md:leading-[1.08]",
+  m: "md:text-[24px] md:leading-[1.12]",
+  s: "md:text-[20px] md:leading-[1.15]",
+  xs: "md:text-[18px] md:leading-[1.18]",
+};
+
+function StoryCard({
   article,
-  withImage = false,
+  phone = "thumb",
+  wide = "stack",
+  size = "s",
+  sectionLabel,
+  showDek = false,
+  date = null,
   priority = false,
   large = false,
-  showExcerpt = false,
-  hideDate = false,
+  wideSizes = "33vw",
+  className = "",
 }: {
   article: ComponentArticle;
-  withImage?: boolean;
+  phone?: PhoneMedia;
+  wide?: WideMedia;
+  size?: HeadlineSize;
+  /** The section the card sits in; a kicker that repeats it is hidden */
+  sectionLabel?: string;
+  showDek?: boolean;
+  date?: string | null;
   priority?: boolean;
+  /** 16:9 photo instead of 3:2 (the lead) */
   large?: boolean;
-  showExcerpt?: boolean;
-  hideDate?: boolean;
+  /** `sizes` for tablet and up */
+  wideSizes?: string;
+  className?: string;
 }) {
+  const hasImage = Boolean(article.image);
+  const phoneMedia: PhoneMedia = hasImage ? phone : "none";
+  const wideMedia: WideMedia = hasImage ? wide : "none";
+  const showMedia = phoneMedia !== "none" || wideMedia !== "none";
+  const kicker = visibleKicker(article, sectionLabel);
+  const phoneSize = phoneMedia === "stack" ? "100vw" : "88px";
+  const tabletSize = wideMedia === "none" ? "88px" : wideSizes;
+  const stackAspect = large ? "aspect-video" : "aspect-[3/2]";
+  const wideStackAspect = large ? "md:aspect-video" : "md:aspect-[3/2]";
+
   return (
     <TransitionLink
       href={getArticleUrl(article)}
-      className="group block mb-5"
+      className={`group ${ROOT_PHONE[phoneMedia]} ${ROOT_WIDE[wideMedia]} ${className}`}
     >
-      {withImage && article.image && (
+      {showMedia && (
         <div
-          className="relative overflow-hidden mb-3 -mx-4 w-auto sm:mx-0 sm:w-full"
-          style={{ aspectRatio: large ? "16/9" : "3/2" }}
+          className={`relative overflow-hidden ${phoneMedia === "stack" ? stackAspect : ""} ${
+            MEDIA_PHONE[phoneMedia]
+          } ${MEDIA_WIDE[wideMedia]} ${wideMedia === "stack" ? wideStackAspect : ""}`}
         >
           <Image
-            src={article.image}
+            src={article.image!}
             alt={article.imageTitle || ""}
             fill
             className="object-cover"
-            sizes={large ? "(max-width: 640px) 100vw, 50vw" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"}
+            style={article.imageFocus ? { objectPosition: article.imageFocus } : undefined}
+            sizes={`(max-width: 767px) ${phoneSize}, ${tabletSize}`}
             priority={priority}
           />
         </div>
       )}
-      {article.kicker && (
-        <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] block mb-1.5">
-          {article.kicker}
-        </span>
-      )}
-      <h3
-        className={`font-copy font-medium leading-[1.12] text-text-main transition-colors group-hover:text-accent ${
-          large ? "text-[34px] lg:text-[42px] lg:leading-[1.08]" : "text-[20px]"
-        }`}
-      >
-        {article.richTitle || article.title}
-      </h3>
-      <Byline
-        author={article.author}
-        date={hideDate ? null : article.date}
-        variant="features"
-        className="mt-2 text-[13px]"
-      />
-      {showExcerpt && article.excerpt && (
-        <p
-          className={`mt-0.5 font-meta font-medium leading-[1.5] text-text-main line-clamp-4 ${
-            large ? "text-[15px] lg:text-[17px]" : "text-[15px]"
-          }`}
-        >
-          {article.excerpt}
-        </p>
-      )}
-    </TransitionLink>
-  );
-}
-
-/* ── Compact card: image beside the text (stories under the spotlight) ── */
-
-function FeaturesRowCard({ article }: { article: ComponentArticle }) {
-  return (
-    <TransitionLink
-      href={getArticleUrl(article)}
-      className="group grid items-start gap-4"
-      style={{ gridTemplateColumns: article.image ? "minmax(0, 2fr) minmax(0, 3fr)" : "1fr" }}
-    >
-      {article.image && (
-        <div className="relative overflow-hidden" style={{ aspectRatio: "3/2" }}>
-          <Image
-            src={article.image}
-            alt={article.imageTitle || ""}
-            fill
-            className="object-cover"
-            sizes="200px"
-          />
-        </div>
-      )}
-      <div>
-        {article.kicker && (
-          <span className="font-meta text-[13px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] block mb-1">
-            {article.kicker}
+      <div className={`min-w-0 ${BODY_PHONE[phoneMedia]} ${BODY_WIDE[wideMedia]}`}>
+        {kicker && (
+          <span className="mb-1 block font-meta text-[13px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76]">
+            {kicker}
           </span>
         )}
-        <h3 className="font-copy font-medium leading-[1.12] text-[20px] text-text-main transition-colors group-hover:text-accent">
+        <h3
+          className={`font-copy font-medium text-text-main transition-colors group-hover:text-accent ${
+            phoneMedia === "thumb" ? HEADLINE_PHONE_ROW : HEADLINE_PHONE[size]
+          } ${HEADLINE_WIDE[size]}`}
+        >
           {article.richTitle || article.title}
         </h3>
-        <Byline author={article.author} variant="features" className="mt-2 text-[13px]" />
+        <Byline author={article.author} date={date} variant="features" className="mt-1.5 text-[13px]" />
+        {showDek && article.excerpt && (
+          <p
+            className={`mt-1.5 font-meta leading-[1.5] line-clamp-3 ${
+              size === "lead"
+                ? "text-[16px] text-text-main lg:text-[17px]"
+                : "text-[15px] text-text-muted"
+            } ${phoneMedia === "thumb" ? "hidden md:block" : ""}`}
+          >
+            {article.excerpt}
+          </p>
+        )}
       </div>
     </TransitionLink>
   );
 }
 
-/* ── Top-row section label: red rule over a small caps label ── */
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
+/**
+ * A run of stories: hairline-divided rows on phones, spaced cards from
+ * tablet up. Pass grid classes to lay the cards out side by side.
+ */
+function StoryList({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div style={{ borderTop: "2px solid var(--accent-color)", paddingTop: 4, marginBottom: 16 }}>
+    <div
+      className={`flex flex-col divide-y divide-rule md:divide-y-0 [&>*]:py-4 [&>*:first-child]:pt-0 md:[&>*]:py-0 md:[&>*]:mb-6 ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ── Section label: red rule over a small-caps heading ── */
+
+function SectionLabel({ id, children }: { id: string; children: React.ReactNode }) {
+  return (
+    <div className="mb-4 border-t-2 border-accent pt-1">
       <h2
-        className="font-meta uppercase text-accent dark:text-white"
-        style={{ fontSize: 17, letterSpacing: "0.08em", fontWeight: 500, margin: "0 0 2px" }}
+        id={id}
+        className="m-0 font-meta text-[17px] font-medium uppercase tracking-[0.08em] text-accent dark:text-white"
       >
         {children}
       </h2>
@@ -141,170 +278,153 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-/* ── Photo Spotlight Carousel ── */
+/* ── Photo Spotlight: a swipeable rail with buttons ── */
 
-/** The slug at the end of an article path, for matching spotlight links to stories */
-const slugOf = (path: string | undefined): string | null =>
-  path ? path.split(/[?#]/)[0].replace(/\/+$/, "").split("/").pop() || null : null;
-
-function PhotoSpotlightCarousel({ photos, wide = false }: { photos: SpotlightPhoto[]; wide?: boolean }) {
+function PhotoSpotlight({ photos }: { photos: SpotlightPhoto[] }) {
+  const railRef = useRef<HTMLDivElement>(null);
   const [current, setCurrent] = useState(0);
+
+  // Follow whichever slide is mostly in view (swipes, trackpads, buttons)
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail || photos.length < 2) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) setCurrent(Number((entry.target as HTMLElement).dataset.index));
+        }
+      },
+      { root: rail, threshold: 0.6 },
+    );
+    rail.querySelectorAll<HTMLElement>("[data-index]").forEach((slide) => observer.observe(slide));
+    return () => observer.disconnect();
+  }, [photos.length]);
+
+  const goTo = useCallback(
+    (index: number) => {
+      const rail = railRef.current;
+      if (!rail) return;
+      const i = (index + photos.length) % photos.length;
+      const slides = rail.querySelectorAll<HTMLElement>("[data-index]");
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      rail.scrollTo({ left: slides[i].offsetLeft - slides[0].offsetLeft, behavior: reduce ? "auto" : "smooth" });
+      setCurrent(i);
+    },
+    [photos.length],
+  );
 
   if (photos.length === 0) return null;
 
-  const prev = () => setCurrent((c) => (c - 1 + photos.length) % photos.length);
-  const next = () => setCurrent((c) => (c + 1) % photos.length);
-  const photo = photos[current];
-  const caption = photo.caption?.trim();
-
   return (
-    <figure style={{ margin: 0, padding: 0 }}>
-      <div className="-mx-4 w-auto overflow-hidden sm:mx-0 sm:w-full" style={{ borderRadius: 4 }}>
-        {/* 16:9 when the spotlight spans two columns, so the photo doesn't
-            outgrow the row */}
-        <div style={{ aspectRatio: wide ? "16/9" : "3/2", position: "relative" }}>
-          <Image
-            src={photo.url}
-            alt={caption || photo.articleTitle || ""}
-            fill
-            className="object-cover"
-            sizes={wide ? "(max-width: 1024px) 100vw, 960px" : "(max-width: 640px) 100vw, 50vw"}
-          />
-        </div>
+    <div>
+      <div
+        ref={railRef}
+        className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 [scrollbar-width:none] sm:mx-0 sm:scroll-px-0 sm:px-0 md:gap-0 [&::-webkit-scrollbar]:hidden"
+        aria-roledescription="carousel"
+        aria-label="Photo Spotlight"
+      >
+        {photos.map((photo, i) => {
+          const caption = photo.caption?.trim();
+          return (
+            <figure
+              key={`${photo.url}-${i}`}
+              data-index={i}
+              className="m-0 w-[88%] shrink-0 snap-start md:w-full"
+              aria-roledescription="slide"
+              aria-label={`${i + 1} of ${photos.length}`}
+            >
+              {/* 3:2 on phones; 16:9 from tablet up, where it spans two columns */}
+              <div className="relative aspect-[3/2] overflow-hidden rounded-[4px] bg-black/5 md:aspect-video dark:bg-white/5">
+                <Image
+                  src={photo.url}
+                  alt={caption || photo.articleTitle || ""}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 767px) 88vw, (max-width: 1023px) 100vw, 960px"
+                />
+              </div>
+              {/* Newspaper caption: what the photo shows, then credit and its story */}
+              <figcaption className="mt-2 pr-2">
+                {caption && <p className="font-meta text-[14px] leading-[1.45] text-text-main">{caption}</p>}
+                {(photo.photographerName || photo.articleTitle) && (
+                  <p className="mt-1 font-meta text-[12px] leading-[1.45] text-text-muted">
+                    {photo.photographerName && (
+                      <>
+                        Photo by{" "}
+                        {photo.photographerUrl ? (
+                          <TransitionLink href={photo.photographerUrl} className="-my-[5px] inline-block py-[5px] text-accent hover:underline">
+                            {photo.photographerName}
+                          </TransitionLink>
+                        ) : (
+                          photo.photographerName
+                        )}
+                      </>
+                    )}
+                    {photo.photographerName && photo.articleTitle && (
+                      <span aria-hidden="true" className="mx-1.5">
+                        &middot;
+                      </span>
+                    )}
+                    {photo.articleTitle && (
+                      <>
+                        From{" "}
+                        {photo.articleUrl ? (
+                          <TransitionLink
+                            href={photo.articleUrl}
+                            className="-my-[5px] inline-block py-[5px] italic text-text-main hover:text-accent hover:underline"
+                          >
+                            {photo.articleTitle}
+                          </TransitionLink>
+                        ) : (
+                          <span className="italic">{photo.articleTitle}</span>
+                        )}
+                      </>
+                    )}
+                  </p>
+                )}
+              </figcaption>
+            </figure>
+          );
+        })}
       </div>
-      {/* Newspaper caption: what the photo shows, then credit and the story
-          it comes from */}
-      <figcaption className="mt-2">
-        {caption && (
-          <p className="font-meta text-[14px] leading-[1.45] text-text-main">{caption}</p>
-        )}
-        {(photo.photographerName || photo.articleTitle) && (
-          <p className="mt-1 font-meta text-[12px] leading-[1.45] text-text-muted">
-            {photo.photographerName && (
-              <>
-                Photo by{" "}
-                {photo.photographerUrl ? (
-                  <TransitionLink href={photo.photographerUrl} className="text-accent hover:underline">
-                    {photo.photographerName}
-                  </TransitionLink>
-                ) : (
-                  photo.photographerName
-                )}
-              </>
-            )}
-            {photo.photographerName && photo.articleTitle && (
-              <span aria-hidden="true" className="mx-1.5">&middot;</span>
-            )}
-            {photo.articleTitle && (
-              <>
-                From{" "}
-                {photo.articleUrl ? (
-                  <TransitionLink href={photo.articleUrl} className="italic text-text-main hover:text-accent hover:underline">
-                    {photo.articleTitle}
-                  </TransitionLink>
-                ) : (
-                  <span className="italic">{photo.articleTitle}</span>
-                )}
-              </>
-            )}
-          </p>
-        )}
-      </figcaption>
+
       {photos.length > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-3 mb-6">
+        // Each control is a 44px target around a small visible mark
+        <div className="mt-1 flex items-center justify-center">
           <button
-            onClick={prev}
-            style={{ fontSize: 22, lineHeight: 1, padding: "0 4px", color: "#999", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", position: "relative", top: -1 }}
+            type="button"
+            onClick={() => goTo(current - 1)}
+            className="flex h-11 w-11 items-center justify-center text-[24px] leading-none text-text-muted transition-colors hover:text-text-main"
             aria-label="Previous photo"
           >
             &#8249;
           </button>
-          <div className="flex gap-1.5 items-center">
-            {photos.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrent(i)}
-                style={{
-                  width: 10,
-                  height: 10,
-                  borderRadius: "50%",
-                  border: "none",
-                  cursor: "pointer",
-                  background: i === current ? "var(--accent-color)" : "#d9d9d9",
-                  transition: "background 0.2s",
-                }}
-                aria-label={`Photo ${i + 1}`}
+          {photos.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => goTo(i)}
+              className="group/dot flex h-11 w-7 items-center justify-center"
+              aria-label={`Show photo ${i + 1} of ${photos.length}`}
+              aria-current={i === current ? "true" : undefined}
+            >
+              <span
+                className={`block h-2.5 w-2.5 rounded-full transition-colors ${
+                  i === current ? "bg-accent" : "bg-black/20 group-hover/dot:bg-black/40 dark:bg-white/30"
+                }`}
               />
-            ))}
-          </div>
+            </button>
+          ))}
           <button
-            onClick={next}
-            style={{ fontSize: 22, lineHeight: 1, padding: "0 4px", color: "#999", background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", position: "relative", top: -1 }}
+            type="button"
+            onClick={() => goTo(current + 1)}
+            className="flex h-11 w-11 items-center justify-center text-[24px] leading-none text-text-muted transition-colors hover:text-text-main"
             aria-label="Next photo"
           >
             &#8250;
           </button>
         </div>
       )}
-    </figure>
-  );
-}
-
-function MobileSectionHeader({
-  title,
-  href,
-}: {
-  title: string;
-  href?: string;
-}) {
-  const heading = href ? (
-    <TransitionLink
-      href={href}
-      className="font-meta text-[20px] font-bold tracking-[0.04em] text-accent dark:text-white uppercase leading-[1] hover:opacity-75 transition-opacity"
-    >
-      {title}
-    </TransitionLink>
-  ) : (
-    <span className="font-meta text-[20px] font-bold tracking-[0.04em] text-accent dark:text-white uppercase leading-[1]">
-      {title}
-    </span>
-  );
-
-  return (
-    <div className="mb-3">
-      <div className="relative -left-2 w-[calc(100%+0.5rem)] border-t border-black dark:border-white" />
-      <h2 className="mt-4">{heading}</h2>
-    </div>
-  );
-}
-
-function MobileFeaturesList({
-  articles,
-  imageFlags,
-  largeFirst = false,
-  showExcerptFirst = false,
-  hideDates = false,
-}: {
-  articles: ComponentArticle[];
-  imageFlags?: boolean[];
-  largeFirst?: boolean;
-  showExcerptFirst?: boolean;
-  hideDates?: boolean;
-}) {
-  return (
-    <div className="flex flex-col">
-      {articles.map((article, i) => (
-        <div key={article.id} className={i > 0 ? "mt-10" : ""}>
-          <FeaturesCard
-            article={article}
-            withImage={imageFlags ? Boolean(imageFlags[i]) : Boolean(article.image)}
-            large={largeFirst && i === 0}
-            showExcerpt={showExcerptFirst && i === 0}
-            hideDate={hideDates}
-            priority={i === 0}
-          />
-        </div>
-      ))}
     </div>
   );
 }
@@ -383,36 +503,63 @@ export default function FeaturesSectionPage({
   const theArts = fillColumn(pinnedTheArts, 3, poolRef);
   const spotlightSubs = fillColumn(pinnedSpotlightSubs, 2, poolRef);
   const wideArticle = fillColumn(pinnedWide, 1, poolRef);
-  // Headline-only extras so the side columns run about as long as the lead
-  // column. Taken after every editor slot, so they never displace a pick.
+  // Headline-only extras so the desktop side columns run about as long as
+  // the lead column. Taken after every editor slot, so they never displace a pick.
   const onCampusExtra = fillColumn([], 3, poolRef);
   const rightExtra = fillColumn([], 3, poolRef);
+  const moreInFeatures = autoFillPool.slice(poolRef.idx, poolRef.idx + 5);
 
-  const sectionColumnStyle = {
-    borderRight: "1px solid var(--rule-color)",
-    paddingRight: COLUMN_GAP,
-  } as const;
+  const lead = featured[0];
+  const leadFollowers = [featured[1], featured[2]].filter((a): a is ComponentArticle => Boolean(a));
+  const wide = wideArticle[0];
 
-  const getSectionBreakRuleStyle = (insetLeft = 0, insetRight = 0) =>
-    ({
-      borderTop: "1px solid var(--text-main, #1a1a1a)",
-      marginTop: SECTION_RULE_GAP,
-      marginLeft: insetLeft,
-      marginRight: insetRight,
-    }) as const;
-  const LOWER_SECTION_EXTRA_TOP_SPACE = 8;
+  /** A column of an editor's three slots plus extras (On Campus, Latest, The Arts) */
+  const columnCards = (
+    items: ComponentArticle[],
+    imageFlags: boolean[],
+    label: string,
+    wideSizes: string,
+    options: { dates?: boolean; extras?: ComponentArticle[] } = {},
+  ) => [
+    ...items.map((article, i) => {
+      const flagged = Boolean(imageFlags[i]);
+      return (
+        <StoryCard
+          key={article.id}
+          article={article}
+          // Phones: only the section's first story gets the big photo
+          phone={i === 0 && flagged ? "stack" : "thumb"}
+          wide={flagged ? "stack" : "none"}
+          sectionLabel={label}
+          showDek={i === 0}
+          date={options.dates ? shortDate(article.isoDate) : null}
+          wideSizes={wideSizes}
+        />
+      );
+    }),
+    ...(options.extras ?? []).map((article) => (
+      <StoryCard
+        key={article.id}
+        article={article}
+        wide="none"
+        size="xs"
+        sectionLabel={label}
+        date={options.dates ? shortDate(article.isoDate) : null}
+      />
+    )),
+  ];
 
-  const getSectionHeadingWrapStyle = (insetLeft = 0, insetRight = 0) =>
-    ({
-      marginLeft: insetLeft,
-      marginRight: insetRight,
-      paddingTop: SECTION_RULE_GAP,
-    }) as const;
+  // A column rule and gutter, only at the widths where the column has a
+  // neighbour to its right (literal classes so Tailwind can see them)
+  const RULE_FROM_MD = "md:border-r md:border-rule md:pr-[clamp(16px,2vw,24px)]";
+  const RULE_FROM_LG = "lg:border-r lg:border-rule lg:pr-[clamp(16px,2vw,24px)]";
 
   return (
     // Side padding matches the site header's, so the page lines up with the
     // rule under the logo at every width
     <div className="mx-auto max-w-[1280px] px-4 pt-5 pb-8 md:px-6 xl:px-[30px]">
+      <style>{GRID_CSS}</style>
+
       {/* Header */}
       <div className="mt-6 mb-8 flex flex-col items-center gap-4 text-center sm:mb-10 lg:flex-row lg:items-center lg:gap-6 lg:text-left">
         <h1
@@ -444,295 +591,131 @@ export default function FeaturesSectionPage({
         </div>
       </div>
 
-      <div className="lg:hidden">
-        <div className="flex flex-col">
-          <MobileSectionHeader title="On-Campus" href="/features" />
-          <MobileFeaturesList
-            articles={[...onCampus, ...onCampusExtra]}
-            imageFlags={[...onCampusImages.slice(0, onCampus.length), ...onCampusExtra.map(() => false)]}
-            hideDates
-          />
-        </div>
-
-        <div className="mt-12">
-          <MobileSectionHeader title="Featured" href="/features" />
-          <div className="flex flex-col">
-            {featured[0] && (
-              <FeaturesCard article={featured[0]} withImage large priority showExcerpt />
-            )}
-            {featured[1] && (
-              <div className="mt-10">
-                <FeaturesCard article={featured[1]} withImage />
-              </div>
-            )}
-            {featured[2] && (
-              <div className="mt-10">
-                <FeaturesCard article={featured[2]} withImage />
-              </div>
-            )}
-            {wideArticle[0] && (
-              <div className="mt-10">
-                <FeaturesCard article={wideArticle[0]} withImage showExcerpt />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {(right.length > 0) && (
-          <div className="mt-12">
-            <MobileSectionHeader title="Latest" />
-            <MobileFeaturesList
-              articles={[...right, ...rightExtra]}
-              imageFlags={[...rightImages.slice(0, right.length), ...rightExtra.map(() => false)]}
+      <div className="features-grid">
+        {/* ── Lead: hero, two followers, the wide story ── */}
+        {lead && (
+          <section aria-label="Top stories" style={{ gridArea: "lead" }} className={RULE_FROM_LG}>
+            <StoryCard
+              article={lead}
+              phone="stack"
+              wide="stack"
+              size="lead"
+              large
+              showDek
+              priority
+              wideSizes="(max-width: 1023px) 100vw, 640px"
             />
-          </div>
-        )}
-
-        {photoSpotlight.length > 0 && (
-          <div className="mt-12">
-            <MobileSectionHeader title="Photo Spotlight" />
-            <PhotoSpotlightCarousel photos={photoSpotlight} />
-          </div>
-        )}
-
-        {spotlightSubs.length > 0 && (
-          <div className="mt-12">
-            <MobileSectionHeader title="Spotlight Stories" />
-            <MobileFeaturesList articles={spotlightSubs} />
-          </div>
-        )}
-
-        {theArts.length > 0 && (
-          <div className="mt-12">
-            <MobileSectionHeader title="The Arts" />
-            <MobileFeaturesList articles={theArts} imageFlags={theArtsImages} hideDates />
-          </div>
-        )}
-
-        <div className="mt-12">
-          <MobileSectionHeader title="More in Features" href="/features/archive" />
-          <MobileFeaturesList articles={autoFillPool.slice(poolRef.idx, poolRef.idx + 5)} />
-        </div>
-      </div>
-
-      {/* Single grid — vertical lines are continuous, horizontal line breaks at intersections */}
-      <div
-        className="hidden lg:grid"
-        style={{
-          // The lead column takes the room the old events box used to need
-          gridTemplateColumns: "240px minmax(0, 1fr) 300px",
-          gap: `0 ${COLUMN_GAP}`,
-        }}
-      >
-        {/* ══ Row 1 ══ */}
-
-        {/* ── Left column: On-Campus ── */}
-        <div style={sectionColumnStyle}>
-          <SectionLabel>On-Campus</SectionLabel>
-
-          {onCampus[0] && <FeaturesCard article={onCampus[0]} withImage={onCampusImages[0]} priority hideDate />}
-          {onCampus[1] && <FeaturesCard article={onCampus[1]} withImage={onCampusImages[1]} hideDate />}
-          {onCampus[2] && <FeaturesCard article={onCampus[2]} withImage={onCampusImages[2]} hideDate />}
-          {onCampusExtra.map((article) => (
-            <FeaturesCard key={article.id} article={article} hideDate />
-          ))}
-        </div>
-
-        {/* ── Middle column: Featured ── */}
-        <div style={sectionColumnStyle}>
-          {/* Large hero article */}
-          {featured[0] && (
-            <FeaturesCard article={featured[0]} withImage large priority showExcerpt />
-          )}
-
-          {/* Two articles with images below */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "0 20px",
-            }}
-          >
-            {featured[1] && <FeaturesCard article={featured[1]} withImage />}
-            {featured[2] && <FeaturesCard article={featured[2]} withImage />}
-          </div>
-
-          {/* Wide article: text left, image right */}
-          {wideArticle[0] && (
-            <TransitionLink
-              href={getArticleUrl(wideArticle[0])}
-              className="group"
-              style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "start", marginTop: 8 }}
-            >
-              <div>
-                {wideArticle[0].kicker && (
-                  <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] block mb-1.5">
-                    {wideArticle[0].kicker}
-                  </span>
-                )}
-                <h3
-                  className="font-copy font-medium leading-[1.12] text-text-main transition-colors group-hover:text-accent"
-                  style={{ fontSize: 28 }}
-                >
-                  {wideArticle[0].richTitle || wideArticle[0].title}
-                </h3>
-                <Byline author={wideArticle[0].author} date={wideArticle[0].date} variant="features" className="mt-2 text-[13px]" />
-                {wideArticle[0].excerpt && (
-                  <p className="mt-2 font-meta text-[15px] font-medium leading-[1.5] text-text-muted line-clamp-3">
-                    {wideArticle[0].excerpt}
-                  </p>
-                )}
-              </div>
-              {wideArticle[0].image && (
-                <div className="relative overflow-hidden" style={{ aspectRatio: "3/2" }}>
-                  <Image
-                    src={wideArticle[0].image}
-                    alt={wideArticle[0].imageTitle || ""}
-                    fill
-                    className="object-cover"
-                    sizes="40vw"
+            {(leadFollowers.length > 0 || wide) && (
+              <StoryList className="mt-5 md:mt-6 md:grid md:grid-cols-2 md:gap-x-5">
+                {leadFollowers.map((article) => (
+                  <StoryCard
+                    key={article.id}
+                    article={article}
+                    wideSizes="(max-width: 1023px) 50vw, 320px"
                   />
-                </div>
-              )}
-            </TransitionLink>
-          )}
-        </div>
+                ))}
+                {wide && (
+                  <StoryCard
+                    article={wide}
+                    wide="row-end"
+                    size="m"
+                    showDek
+                    className="md:col-span-2"
+                    wideSizes="(max-width: 1023px) 50vw, 320px"
+                  />
+                )}
+              </StoryList>
+            )}
+          </section>
+        )}
 
-        {/* ── Right column: Latest ── */}
-        <div>
-          {right.length > 0 && <SectionLabel>Latest</SectionLabel>}
-          {right[0] && <FeaturesCard article={right[0]} withImage={rightImages[0]} />}
-          {right[1] && <FeaturesCard article={right[1]} withImage={rightImages[1]} />}
-          {right[2] && <FeaturesCard article={right[2]} withImage={rightImages[2]} />}
-          {rightExtra.map((article) => (
-            <FeaturesCard key={article.id} article={article} />
-          ))}
-        </div>
+        {/* ── Latest ── */}
+        {right.length > 0 && (
+          <section aria-labelledby="features-latest" style={{ gridArea: "latest" }}>
+            <SectionLabel id="features-latest">Latest</SectionLabel>
+            <StoryList>
+              {columnCards(right, rightImages, "Latest", "(max-width: 1023px) 50vw, 300px", {
+                dates: true,
+                extras: rightExtra,
+              })}
+            </StoryList>
+          </section>
+        )}
 
-        {/* ══ Row 2 — borderTop on each cell creates the horizontal line with gaps at the vertical intersections ══ */}
+        {/* ── Photo Spotlight and its two stories ── */}
+        {(photoSpotlight.length > 0 || spotlightSubs.length > 0) && (
+          <section aria-labelledby="features-spotlight" style={{ gridArea: "spot" }} className="lg:pt-10">
+            <SectionLabel id="features-spotlight">
+              {photoSpotlight.length > 0 ? "Photo Spotlight" : "Spotlight"}
+            </SectionLabel>
+            <PhotoSpotlight photos={photoSpotlight} />
+            {spotlightSubs.length > 0 && (
+              <StoryList className="mt-4 md:grid md:grid-cols-2 md:gap-x-6">
+                {spotlightSubs.map((article) => (
+                  <StoryCard key={article.id} article={article} wide="row" wideSizes="200px" />
+                ))}
+              </StoryList>
+            )}
+          </section>
+        )}
 
-        {/* ── Left column: The Arts ── */}
-        <div style={sectionColumnStyle}>
-          <div
-            style={{
-              ...getSectionBreakRuleStyle(0, SECTION_RULE_INSET),
-              marginTop: `calc(${SECTION_RULE_GAP} + ${LOWER_SECTION_EXTRA_TOP_SPACE}px)`,
-            }}
-          />
-          <div style={getSectionHeadingWrapStyle(0, SECTION_RULE_INSET)}>
-            <h2
-              className="font-meta uppercase tracking-[0.04em] text-text-main text-center"
-              style={{ fontSize: 28, fontWeight: 500, marginTop: 0, marginBottom: 16 }}
-            >
-              The Arts
-            </h2>
-          </div>
-          <div>
+        {/* ── On Campus ── */}
+        {(onCampus.length > 0 || onCampusExtra.length > 0) && (
+          <section
+            aria-labelledby="features-on-campus"
+            style={{ gridArea: "oncampus" }}
+            className={RULE_FROM_MD}
+          >
+            <SectionLabel id="features-on-campus">On Campus</SectionLabel>
+            <StoryList>
+              {columnCards(onCampus, onCampusImages, "On Campus", "(max-width: 1023px) 50vw, 240px", {
+                extras: onCampusExtra,
+              })}
+            </StoryList>
+          </section>
+        )}
 
-            {theArts[0] && <FeaturesCard article={theArts[0]} withImage={theArtsImages[0]} priority hideDate />}
-            {theArts[1] && <FeaturesCard article={theArts[1]} withImage={theArtsImages[1]} hideDate />}
-            {theArts[2] && <FeaturesCard article={theArts[2]} withImage={theArtsImages[2]} hideDate />}
-          </div>
-        </div>
-
-        {/* ── Middle + right columns: Photo Spotlight ── */}
-        <div style={{ gridColumn: "2 / span 2" }}>
-          <div
-            style={{
-              ...getSectionBreakRuleStyle(SECTION_RULE_INSET, 0),
-              marginTop: `calc(${SECTION_RULE_GAP} + ${LOWER_SECTION_EXTRA_TOP_SPACE}px)`,
-            }}
-          />
-          {/* Same heading treatment and spacing as The Arts, so the two line up */}
-          <div style={getSectionHeadingWrapStyle(SECTION_RULE_INSET, 0)}>
-            <h2
-              className="font-meta uppercase tracking-[0.04em] text-text-main text-center"
-              style={{ fontSize: 28, fontWeight: 500, marginTop: 0, marginBottom: 16 }}
-            >
-              Photo Spotlight
-            </h2>
-          </div>
-          <PhotoSpotlightCarousel photos={photoSpotlight} wide />
-
-          {/* Two sub-features, image beside text, so the row stays about as
-              tall as The Arts */}
-          {(spotlightSubs[0] || spotlightSubs[1]) && (
-            <div
-              className="mt-2"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: `0 ${COLUMN_GAP}`,
-              }}
-            >
-              {spotlightSubs[0] && <FeaturesRowCard article={spotlightSubs[0]} />}
-              {spotlightSubs[1] && <FeaturesRowCard article={spotlightSubs[1]} />}
-            </div>
-          )}
-        </div>
+        {/* ── The Arts ── */}
+        {theArts.length > 0 && (
+          <section
+            aria-labelledby="features-arts"
+            style={{ gridArea: "arts" }}
+            className={`lg:pt-10 ${RULE_FROM_LG}`}
+          >
+            <SectionLabel id="features-arts">The Arts</SectionLabel>
+            {/* Three across on tablets, where the section spans the page */}
+            <StoryList className="md:grid md:grid-cols-3 md:gap-x-6 lg:flex lg:flex-col lg:gap-x-0">
+              {columnCards(theArts, theArtsImages, "The Arts", "(max-width: 1023px) 33vw, 240px")}
+            </StoryList>
+          </section>
+        )}
       </div>
 
       {/* ── More in Features ── */}
-      <div className="mt-14 hidden md:block">
-        <style>{`
-          @keyframes dividerWaveTravel {
-            from { transform: translateX(-600px); }
-            to   { transform: translateX(0px); }
-          }
-          @keyframes dividerRainbowHue {
-            from { filter: hue-rotate(0deg); }
-            to   { filter: hue-rotate(360deg); }
-          }
-        `}</style>
-        <AnimatedLine id="features-more" delay={0} duration={300} style={{ marginTop: SECTION_RULE_GAP, marginBottom: 8 }} />
-        <div className="flex items-baseline justify-between mb-4">
-          <h2 className="font-meta uppercase tracking-[0.04em] text-text-main" style={{ fontSize: 28, fontWeight: 500 }}>
-            More in Features
-          </h2>
-          <TransitionLink
-            href="/features/archive"
-            className="font-meta text-[14px] uppercase tracking-[0.08em] text-accent hover:underline transition-colors"
-          >
-            More &rarr;
-          </TransitionLink>
-        </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(5, 1fr)",
-            gap: 24,
-          }}
-        >
-          {autoFillPool.slice(poolRef.idx, poolRef.idx + 5).map((article) => (
-            <TransitionLink
-              key={article.id}
-              href={getArticleUrl(article)}
-              className="group block"
+      {moreInFeatures.length > 0 && (
+        <section aria-labelledby="features-more" className="mt-12 lg:mt-14">
+          <AnimatedLine id="features-more" delay={0} duration={300} style={{ marginTop: 24, marginBottom: 8 }} />
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2
+              id="features-more"
+              className="font-meta text-[22px] font-medium uppercase tracking-[0.04em] text-text-main md:text-[28px]"
             >
-              {article.image && (
-                <div className="relative overflow-hidden mb-3" style={{ aspectRatio: "3/2" }}>
-                  <Image
-                    src={article.image}
-                    alt={article.imageTitle || ""}
-                    fill
-                    className="object-cover"
-                    sizes="20vw"
-                  />
-                </div>
-              )}
-              {article.kicker && (
-                <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] block mb-1.5">
-                  {article.kicker}
-                </span>
-              )}
-              <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors group-hover:text-accent">
-                {article.richTitle || article.title}
-              </h3>
-              <Byline author={article.author} variant="features" className="mt-2 text-[13px]" />
+              More in Features
+            </h2>
+            <TransitionLink
+              href="/features/archive"
+              className="inline-flex min-h-11 items-center font-meta text-[14px] uppercase tracking-[0.08em] text-accent transition-colors hover:underline"
+            >
+              More &rarr;
             </TransitionLink>
-          ))}
-        </div>
-      </div>
+          </div>
+          <StoryList className={`md:grid md:gap-x-6 ${MORE_COLUMNS[moreInFeatures.length]}`}>
+            {moreInFeatures.map((article) => (
+              <StoryCard key={article.id} article={article} wideSizes="(max-width: 1023px) 33vw, 240px" />
+            ))}
+          </StoryList>
+        </section>
+      )}
     </div>
   );
 }

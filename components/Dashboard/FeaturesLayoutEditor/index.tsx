@@ -943,7 +943,7 @@ export function FeaturesLayoutEditor() {
               {/* On-Campus column (thin left) */}
               <div className="fle-column">
                 <div className="fle-column-header">
-                  <span className="fle-column-title">On-Campus</span>
+                  <span className="fle-column-title">On Campus</span>
                   <span style={{ fontSize: '0.62rem', opacity: 0.35 }}>{imageCount}/3 imgs</span>
                 </div>
                 {ON_CAMPUS_LABELS.map((label, i) => (
