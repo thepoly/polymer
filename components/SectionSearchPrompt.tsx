@@ -23,16 +23,33 @@ const WAVE_PATH = (() => {
 })();
 
 /**
- * The foot of /news: "Missed something?", centred. A search box limited to
- * News (it goes to the site search as /search?q=…&section=news) on a red
- * underline, a link to every past News story (/news/more-in-news), and the
- * News contact email (the page has no header row for these any more).
+ * The foot of a section page (/news, /features): "Missed something?",
+ * centred. A search box limited to the section (it goes to the site search
+ * as /search?q=…&section=<section>) on a red underline, a link to the
+ * section's archive, and its contact email. The section pages have no
+ * header row for these any more.
  *
  * Like the header search, the underline turns into a travelling rainbow wave
  * while you type, and stays rainbow once the search is submitted. Works
  * without scripts: the search is a plain form and the underline stays red.
  */
-export default function NewsSearchPrompt({ contactHref }: { contactHref?: string }) {
+export default function SectionSearchPrompt({
+  section,
+  name,
+  archiveHref,
+  contactHref,
+}: {
+  /** The section's slug, as the search filter expects it ("news") */
+  section: string;
+  /** How the section is named in the copy ("News") */
+  name: string;
+  /** Every past story in the section */
+  archiveHref: string;
+  contactHref?: string;
+}) {
+  const headingId = `${section}-search-prompt`;
+  const inputId = `${section}-search-prompt-q`;
+  const gradientId = `${section}-search-wave-rainbow`;
   const [isTyping, setIsTyping] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -77,24 +94,24 @@ export default function NewsSearchPrompt({ contactHref }: { contactHref?: string
   }, [clearTypingTimer]);
 
   return (
-    <section aria-labelledby="news-search-prompt" className="mx-auto mt-12 max-w-[460px] text-center lg:mt-16">
+    <section aria-labelledby={headingId} className="mx-auto mt-12 max-w-[460px] text-center lg:mt-16">
       <style>{`
-        @keyframes newsSearchWaveTravel {
+        @keyframes sectionSearchWaveTravel {
           from { transform: translateX(-${WAVE_LAMBDA}px); }
           to   { transform: translateX(0px); }
         }
-        @keyframes newsSearchRainbowHue {
+        @keyframes sectionSearchRainbowHue {
           from { filter: hue-rotate(0deg); }
           to   { filter: hue-rotate(360deg); }
         }
         @media (prefers-reduced-motion: reduce) {
-          .news-search-wave { display: none; }
-          .news-search-bar { opacity: 1 !important; }
+          .section-search-wave { display: none; }
+          .section-search-bar { opacity: 1 !important; }
         }
       `}</style>
 
       <h2
-        id="news-search-prompt"
+        id={headingId}
         className="font-copy text-[clamp(26px,2.6vw,32px)] font-semibold leading-tight tracking-[-0.01em] text-text-main"
       >
         Missed something<span className="text-accent">?</span>
@@ -110,18 +127,18 @@ export default function NewsSearchPrompt({ contactHref }: { contactHref?: string
         {/* Underline: a red bar that crossfades with the rainbow wave. */}
         <div aria-hidden="true" className="pointer-events-none absolute bottom-0 left-0 right-0 h-[8px] overflow-hidden">
           <svg
-            className="news-search-wave absolute bottom-0 left-0"
+            className="section-search-wave absolute bottom-0 left-0"
             width={WAVE_LAMBDA * 10}
             height="8"
             style={{
-              animation: `newsSearchWaveTravel ${WAVE_LAMBDA / 1200}s linear infinite, newsSearchRainbowHue 3s linear infinite`,
+              animation: `sectionSearchWaveTravel ${WAVE_LAMBDA / 1200}s linear infinite, sectionSearchRainbowHue 3s linear infinite`,
               opacity: showWave ? 1 : 0,
               transition: "opacity 0.8s ease-out",
               willChange: "transform, filter",
             }}
           >
             <defs>
-              <linearGradient id="news-search-wave-rainbow" x1="0" y1="0" x2="1" y2="0">
+              <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%"   stopColor="#ff4040" stopOpacity="0.8" />
                 <stop offset="16%"  stopColor="#ff9900" stopOpacity="0.8" />
                 <stop offset="33%"  stopColor="#ffee00" stopOpacity="0.8" />
@@ -131,25 +148,25 @@ export default function NewsSearchPrompt({ contactHref }: { contactHref?: string
                 <stop offset="100%" stopColor="#ff4040" stopOpacity="0.8" />
               </linearGradient>
             </defs>
-            <path d={WAVE_PATH} stroke="url(#news-search-wave-rainbow)" strokeWidth="2" fill="none" />
+            <path d={WAVE_PATH} stroke={`url(#${gradientId})`} strokeWidth="2" fill="none" />
           </svg>
 
           <div
-            className="news-search-bar absolute bottom-0 left-0 right-0 h-[2px] bg-accent"
+            className="section-search-bar absolute bottom-0 left-0 right-0 h-[2px] bg-accent"
             style={{ opacity: showWave ? 0 : 1, transition: "opacity 0.8s ease-out" }}
           />
         </div>
 
-        <input type="hidden" name="section" value="news" />
-        <label htmlFor="news-search-prompt-q" className="sr-only">
-          Search past News
+        <input type="hidden" name="section" value={section} />
+        <label htmlFor={inputId} className="sr-only">
+          Search past {name}
         </label>
         <input
-          id="news-search-prompt-q"
+          id={inputId}
           type="search"
           name="q"
           required
-          placeholder="Search past News"
+          placeholder={`Search past ${name}`}
           onChange={bumpWave}
           className="h-full min-w-0 flex-1 bg-transparent text-left font-meta text-[18px] text-text-main placeholder:text-text-muted focus:outline-none [&::-webkit-search-cancel-button]:hidden"
         />
@@ -164,7 +181,7 @@ export default function NewsSearchPrompt({ contactHref }: { contactHref?: string
 
       <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6">
         <TransitionLink
-          href="/news/more-in-news"
+          href={archiveHref}
           className="group inline-flex min-h-11 items-center gap-1.5 font-meta text-[15px] font-medium text-accent underline-offset-4 hover:underline"
         >
           Browse back issues
@@ -175,7 +192,7 @@ export default function NewsSearchPrompt({ contactHref }: { contactHref?: string
             href={contactHref}
             className="group inline-flex min-h-11 items-center gap-1.5 font-meta text-[15px] font-medium text-accent underline-offset-4 hover:underline"
           >
-            Contact News
+            Contact {name}
             <ArrowRight aria-hidden="true" className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={2} />
           </a>
         )}

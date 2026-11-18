@@ -7,7 +7,7 @@ import { NEWS_TOPICS, TOPIC_CARDS, type NewsTopicKey } from "./newsTopics";
 import NewsLead from "./NewsLead";
 import NewsSecondary from "./NewsSecondary";
 import StudentGovColumn, { type StudentGovBoxContent } from "./StudentGovColumn";
-import NewsSearchPrompt from "./NewsSearchPrompt";
+import SectionSearchPrompt from "@/components/SectionSearchPrompt";
 import {
   DEFAULT_LEAD_TEXT_POSITION,
   DEFAULT_TOPIC_CARDS,
@@ -168,7 +168,7 @@ export default function NewsPage({
           on the rule), so the title is for screen readers only and the lead
           starts right under the header. The mobile header has no section
           links, so the title shows there, small. Archive and Contact are at
-          the foot of the page (NewsSearchPrompt). */}
+          the foot of the page (SectionSearchPrompt). */}
       <h1
         className="mt-2 mb-6 text-center font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[32px] sm:text-[40px] lg:sr-only"
         style={{ fontWeight: 400, lineHeight: 1 }}
@@ -240,7 +240,7 @@ export default function NewsPage({
         </NewsTopicTabs>
       )}
 
-      <NewsSearchPrompt contactHref={NEWS_CONTACT_MAILTO} />
+      <SectionSearchPrompt section="news" name="News" archiveHref="/news/more-in-news" contactHref={NEWS_CONTACT_MAILTO} />
     </div>
   );
 }

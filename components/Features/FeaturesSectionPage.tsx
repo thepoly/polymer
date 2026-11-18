@@ -7,6 +7,10 @@ import { getArticleUrl } from "@/utils/getArticleUrl";
 import type { Article as ComponentArticle } from "@/components/FrontPage/types";
 import { Byline } from "@/components/FrontPage/Byline";
 import { AnimatedLine } from "@/components/Opinion/RainbowDivider";
+import SectionSearchPrompt from "@/components/SectionSearchPrompt";
+
+const FEATURES_CONTACT_MAILTO =
+  "mailto:features@poly.rpi.edu,eic@poly.rpi.edu?subject=Features%20Request%2FComment%20or%20Story%20Tip";
 
 /* ── Types ── */
 
@@ -587,36 +591,17 @@ export default function FeaturesSectionPage({
     <div className="mx-auto max-w-[1280px] px-4 pt-5 pb-8 md:px-6 xl:px-[30px]">
       <style>{GRID_CSS}</style>
 
-      {/* Header */}
-      <div className="mt-6 mb-8 flex flex-col items-center gap-4 text-center sm:mb-10 lg:flex-row lg:items-center lg:gap-6 lg:text-left">
-        <h1
-          className="font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[44px] sm:text-[52px] lg:text-[60px]"
-          style={{ fontWeight: 400, lineHeight: 1 }}
-        >
-          {title}
-        </h1>
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[24px] sm:text-[28px] lg:justify-start lg:text-[36px]">
-          <span className="hidden h-10 w-px shrink-0 bg-[var(--foreground-muted)] lg:block" />
-          <TransitionLink
-            href="/features/archive"
-            className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
-            style={{ fontWeight: 300 }}
-          >
-            Archive
-          </TransitionLink>
-          <span className="font-meta text-text-muted lg:hidden" aria-hidden="true">
-            &middot;
-          </span>
-          <span className="hidden h-10 w-px shrink-0 bg-[var(--foreground-muted)] lg:block" />
-          <a
-            href="mailto:features@poly.rpi.edu,eic@poly.rpi.edu?subject=Features%20Request%2FComment%20or%20Story%20Tip"
-            className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
-            style={{ fontWeight: 300 }}
-          >
-            Contact
-          </a>
-        </div>
-      </div>
+      {/* Title, as on News. On desktop the masthead already marks Features
+          (red, with a bar on the rule), so the title is for screen readers
+          only and the page starts right under the header. The mobile header
+          has no section links, so the title shows there, small. Archive and
+          Contact are at the foot of the page (SectionSearchPrompt). */}
+      <h1
+        className="mt-2 mb-6 text-center font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[32px] sm:text-[40px] lg:sr-only"
+        style={{ fontWeight: 400, lineHeight: 1 }}
+      >
+        {title}
+      </h1>
 
       <div className="features-grid">
         {/* ── Lead: hero, two followers, the wide story ── */}
@@ -753,6 +738,14 @@ export default function FeaturesSectionPage({
           </StoryList>
         </section>
       )}
+
+      {/* Search, archive and contact, where News has them */}
+      <SectionSearchPrompt
+        section="features"
+        name="Features"
+        archiveHref="/features/archive"
+        contactHref={FEATURES_CONTACT_MAILTO}
+      />
     </div>
   );
 }
