@@ -38,13 +38,11 @@ const FeaturesPageLayout: CollectionConfig = {
       required: true,
       defaultValue: 'Features Layout',
     },
-    // JSON blob storing the full layout:
-    // Shape: {
-    //   onCampus: (number | null)[],     // 4 article slots (indices 0,1 can have images)
-    //   featured: (number | null)[],      // 3 slots: 1 large hero + 2 with images
-    //   rightArticles: (number | null)[], // 3 slots: 1 with image + 2 text-only
-    //   events: Array<{ title, date, time, location? }>
-    // }
+    // JSON blob storing the full layout (see FeaturesLayoutEditor for the
+    // exact type). Row 1: onCampus, featured, wideArticle, rightArticles (+
+    // per-slot image flags). Row 2: theArts, photoSpotlight, spotlightSubs.
+    // Older saves may still carry `events` and `collarCity*`; both sections
+    // were removed and those keys are ignored.
     {
       name: 'layout',
       type: 'json',

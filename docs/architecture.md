@@ -84,7 +84,7 @@ Roughly grouped:
 - **public read**: `health`, `search`, `search/spellcheck`,
   `search/archive-date`, `archive/day`, `staff/[slug]`, `weather`,
   `logos/file`, `section-layout`
-- **public write**: `submit`, `submit-event`, `push/register`
+- **public write**: `submit`, `push/register`
 - **internal**: `push/send` (requires `x-internal-secret`), `inline-edit`,
   `admin/archive`, `newsroom/admin-move-notice`
 

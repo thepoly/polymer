@@ -86,7 +86,7 @@ Collections:
 - `media`: Uploaded assets with alt text, caption, photographer attribution, and source URL
 - `job-titles`: Reusable staff titles for profile timelines
 - `submissions`: Public op-ed / letter-to-the-editor submissions
-- `event-submissions`: Public event submissions for the calendar
+- `event-submissions`: Archived event submissions (read-only; the public event form was removed)
 - `logos`: Branded section logos and homepage assets
 - `device-tokens`: Registered Android FCM tokens for push notifications
 
@@ -191,7 +191,6 @@ Open `http://localhost:3000` for the public site and `http://localhost:3000/admi
 - `GET /api/logos/file` — logo asset proxy
 - `GET /api/section-layout` — per-section layout fetch
 - `POST /api/submit` — public op-ed / letter submissions
-- `POST /api/submit-event` — public event submissions
 - `POST /api/push/register` — Android FCM token registration
 - `POST /api/push/send` — internal breaking-news fan-out (requires `x-internal-secret`)
 - `POST /api/inline-edit` — admin inline-editing handler

@@ -79,6 +79,13 @@ const nextConfig: NextConfig = {
         destination: '/dynamicPfavicon.svg',
         permanent: true,
       },
+      {
+        // The Features event-submission form was removed along with the
+        // page's Upcoming Events box; old links land on the section.
+        source: '/features/submit-event',
+        destination: '/features',
+        permanent: false,
+      },
     ];
   },
   async rewrites() {

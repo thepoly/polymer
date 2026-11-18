@@ -59,7 +59,7 @@ Collections:
 - `media`: uploaded assets (alt, title, caption, source URL, photographer relationship, write-in photographer)
 - `job-titles`: staff position metadata
 - `submissions`: public op-ed / letter submissions (anonymous create, staff triage)
-- `event-submissions`: public event submissions for the calendar
+- `event-submissions`: archived event submissions (read-only; the public event form and Features events box were removed)
 - `logos`: branded section logos and homepage assets
 - `device-tokens`: registered Android and iOS FCM tokens (anonymous create via `/api/push/register`, admin-only read/delete)
 - `schools`: opponents RPI teams play, each with a logo (upload collection; seeded from RPI Athletics schedules by `pnpm db:seed:schools`). Sports articles link one as `opponent`, alongside `homeAway`, `rpiScore`, `opponentScore` and `gameStatus`
