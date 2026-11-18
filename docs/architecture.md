@@ -73,9 +73,11 @@ Payload is mounted in-process (no separate server). The config wires up:
   layouts, behind the newsroom login (signed-out visitors are sent to
   `/newsroom/login` and back)
 
-`db.push` is enabled in development unless `PAYLOAD_DISABLE_PUSH=1` —
-useful when you want to run migrations against your dev DB without Payload
-auto-syncing on the side.
+`db.push` is enabled in development unless `PAYLOAD_DISABLE_PUSH=1`. Local
+dev should always set it to `1` (the generated `.env` does): the schema
+comes from `migrations/`. If push runs on a migrated DB, it can drop
+tables that migrations still create. See
+[`local-development.md`](local-development.md#dev-schema-push-payload-changed-my-schema--crashed-on-boot).
 
 ### API routes — `app/api/`
 

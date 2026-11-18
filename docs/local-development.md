@@ -19,22 +19,45 @@ How to get a working dev loop, plus the gotchas we keep tripping on.
 pnpm install
 # scripts/generate-env.js creates .env if missing and seeds PAYLOAD_SECRET
 
-# 2. Edit .env to point at your local Postgres
+# 2. (Optional) The generated .env targets the docker-compose db on :5433,
+#    which `pnpm dev` starts for you. To use a system Postgres instead:
 #    DATABASE_URL=postgres://USER:PASSWORD@127.0.0.1:5432/polymer
+#    and create it first with `createdb polymer`.
 
-# 3. Create the database
-createdb polymer
+# 3. Make sure .env contains PAYLOAD_DISABLE_PUSH=1 (generate-env.js writes
+#    it; older or hand-written .env files may not have it). See
+#    "Dev schema push" below for why this matters.
 
-# 4. Run migrations (CI does this via `pnpm exec payload migrate`)
-pnpm exec payload migrate
-
-# 5. Boot the dev server
+# 4. Boot the dev server. scripts/dev-up.sh runs `pnpm exec payload migrate`
+#    first, so the schema always comes from migrations/.
 pnpm dev
 ```
+
+> Migrations in `migrations/` are the only supported way to build a local
+> schema. Don't rely on Payload's dev-mode push to create or fix tables;
+> see [`migrations.md`](migrations.md).
 
 Open <http://localhost:3000> for the public site and
 <http://localhost:3000/admin> for the CMS. On a fresh database, Payload
 will prompt you to create the first admin user.
+
+## Placeholder data
+
+Seed scripts fill a local database with sample content. Both are safe to
+re-run; records that already exist are skipped.
+
+```bash
+# Staff users, fixture photos, articles in every section, homepage layout.
+# Log in with admin@dev.local / devpassword.
+pnpm db:seed
+
+# 24 more sports articles spread over the last two months (needs db:seed first)
+pnpm exec tsx --env-file=.env scripts/seed-sports.ts
+```
+
+`pnpm db:fresh` wipes the docker-compose database volume, then migrates and
+seeds whatever `DATABASE_URL` points to. It's meant for the docker setup;
+with a system Postgres it won't wipe anything, only migrate and seed it.
 
 ## Environment variables
 
@@ -58,7 +81,7 @@ will prompt you to create the first admin user.
 | `NEXT_PUBLIC_POSTHOG_HOST` | `https://t.poly.rpi.edu` | PostHog ingest host |
 | `INTERNAL_PUSH_SECRET` | unset | Shared secret between the article hook and `/api/push/send`. Without it the hook becomes a no-op. |
 | `FCM_SERVICE_ACCOUNT_JSON` | unset | Raw JSON of a Firebase service account. Without it, FCM sends are no-ops. |
-| `PAYLOAD_DISABLE_PUSH` | unset | Set to `1` to disable Payload's dev-mode `db.push` (run migrations manually) |
+| `PAYLOAD_DISABLE_PUSH` | `1` in generated `.env` | **Keep at `1` for local dev.** Disables Payload's dev-mode `db.push` so the schema comes only from migrations. `scripts/dev-up.sh` warns if it's missing. |
 
 > Production sets all of these via `/var/www/polymer/shared/.env`. See
 > [`deployment.md`](deployment.md).
@@ -100,15 +123,36 @@ Payload could not read `PAYLOAD_SECRET`. Either `.env` doesn't exist
 output), or the runtime user can't read the file. In production this
 usually means a wrong-user PM2 daemon; see [`deployment.md`](deployment.md).
 
-### Payload changed my schema without a migration
+### Dev schema push (Payload changed my schema / crashed on boot)
 
-In dev, Payload's Postgres adapter sets `push: true` (`payload.config.ts`),
-which mutates the schema to match the config on every start. To turn this
-off and force migrations only:
+`payload.config.ts` turns on Payload's Postgres `push` whenever
+`NODE_ENV=development` and `PAYLOAD_DISABLE_PUSH` isn't `1`. Push changes
+the live schema to match the collection config on every start. Push and
+migrations shouldn't both manage the same database: whatever push changes
+doesn't match what production gets from migrations.
 
-```bash
-PAYLOAD_DISABLE_PUSH=1 pnpm dev
-```
+Typical symptoms when push is on:
+
+- prompts asking whether `enum_audio_jobs_*` (or other enums/tables) were
+  renamed, or a "DATA LOSS WARNING" prompt that hangs requests
+- `constraint "payload_locked_documents_rels_audio_files_fk" of relation
+  "payload_locked_documents_rels" does not exist`
+
+The audio errors come from the transcription feature that was taken down
+in `013e0a5`. Its collections were removed from the config, but its tables
+were kept in production on purpose, so
+`20260428_100000_add_audio_transcription` still creates `audio_files`,
+`audio_jobs` and `transcripts`. Payload ignores those tables as long as push
+is off. Push tries to drop them and fails partway through.
+
+Fix:
+
+1. Add `PAYLOAD_DISABLE_PUSH=1` to `.env`.
+2. If push already ran against the DB, rebuild it. The schema is now
+   partly changed and no longer matches migrations. With the docker
+   DB: `pnpm db:fresh`. With a system Postgres:
+   `DROP DATABASE polymer; CREATE DATABASE polymer;`
+3. `pnpm dev`. `dev-up.sh` reapplies all migrations.
 
 ### Search returns no archive results
 
