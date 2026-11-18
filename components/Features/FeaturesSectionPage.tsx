@@ -72,15 +72,25 @@ const GRID_CSS = `
 
 const normalize = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
 
-/** The kicker, unless it only repeats the section it sits in (or "Features") */
+/**
+ * The kicker, unless it only repeats the section it sits in, says
+ * "Features", or opens the headline already ("Photo" over "Photo: …")
+ */
 function visibleKicker(article: ComponentArticle, sectionLabel?: string): string | null {
   const kicker = article.kicker?.trim();
   if (!kicker) return null;
   const n = normalize(kicker);
   if (n === "features") return null;
   if (sectionLabel && n === normalize(sectionLabel)) return null;
+  if (article.title?.toLowerCase().startsWith(`${kicker.toLowerCase()}:`)) return null;
   return kicker;
 }
+
+/** Kickers that put a story in a topic section when it's auto-filled */
+const ON_CAMPUS_KICKERS = new Set(["oncampus", "campus", "campuslife"]);
+const ARTS_KICKERS = new Set(["thearts", "arts", "art", "music", "theater", "theatre", "film", "dance"]);
+const isOnCampus = (a: ComponentArticle) => ON_CAMPUS_KICKERS.has(normalize(a.kicker ?? ""));
+const isArts = (a: ComponentArticle) => ARTS_KICKERS.has(normalize(a.kicker ?? ""));
 
 /** "Nov 14", in the paper's time zone so server and browser agree */
 const shortDate = (iso?: string | null): string | null => {
@@ -483,31 +493,48 @@ export default function FeaturesSectionPage({
     [articles, pinnedIds, spotlightSlugs],
   );
 
-  // Fill each column: pinned first, then auto-fill to reach slot count
-  const fillColumn = (
+  // Fill each slot run: pinned first, then the newest unused pool stories.
+  // Topic sections (On Campus, The Arts) only auto-fill stories whose kicker
+  // matches, so a section label never sits over an unrelated story; they show
+  // fewer stories rather than mislabelled ones.
+  const used = new Set<string>();
+  const fill = (
     pinned: ComponentArticle[],
     slotCount: number,
-    poolRef: { idx: number },
+    matches: (a: ComponentArticle) => boolean = () => true,
   ): ComponentArticle[] => {
     const result: ComponentArticle[] = [...pinned];
-    while (result.length < slotCount && poolRef.idx < autoFillPool.length) {
-      result.push(autoFillPool[poolRef.idx++]);
+    for (const a of autoFillPool) {
+      if (result.length >= slotCount) break;
+      if (used.has(String(a.id)) || !matches(a)) continue;
+      used.add(String(a.id));
+      result.push(a);
     }
     return result;
   };
 
-  const poolRef = { idx: 0 };
-  const onCampus = fillColumn(pinnedOnCampus, 3, poolRef);
-  const featured = fillColumn(pinnedFeatured, 3, poolRef);
-  const right = fillColumn(pinnedRight, 3, poolRef);
-  const theArts = fillColumn(pinnedTheArts, 3, poolRef);
-  const spotlightSubs = fillColumn(pinnedSpotlightSubs, 2, poolRef);
-  const wideArticle = fillColumn(pinnedWide, 1, poolRef);
+  // Topic sections first, so their stories aren't used up elsewhere; the lead
+  // and Latest then get the newest of the rest. A topic section with no
+  // matching story at all falls back to general stories under an honest label
+  // rather than leaving a hole in the grid.
+  let onCampus = fill(pinnedOnCampus, 3, isOnCampus);
+  const onCampusLabel = onCampus.length > 0 ? "On Campus" : "More Stories";
+  let theArts = fill(pinnedTheArts, 3, isArts);
+  const artsLabel = theArts.length > 0 ? "The Arts" : "More Stories";
+  const featured = fill(pinnedFeatured, 3);
+  const right = fill(pinnedRight, 3);
+  if (onCampus.length === 0) onCampus = fill([], 3);
+  if (theArts.length === 0) theArts = fill([], 3);
+  const spotlightSubs = fill(pinnedSpotlightSubs, 2);
+  const wideArticle = fill(pinnedWide, 1);
   // Headline-only extras so the desktop side columns run about as long as
   // the lead column. Taken after every editor slot, so they never displace a pick.
-  const onCampusExtra = fillColumn([], 3, poolRef);
-  const rightExtra = fillColumn([], 3, poolRef);
-  const moreInFeatures = autoFillPool.slice(poolRef.idx, poolRef.idx + 5);
+  const onCampusExtra = fill([], 3, onCampusLabel === "On Campus" ? isOnCampus : undefined);
+  const rightExtra = fill([], 3);
+  // When On Campus runs short of its six, the left column carries on with a
+  // separately labelled run of general stories instead of a blank stretch
+  const leftMore = fill([], Math.max(0, 6 - onCampus.length - onCampusExtra.length));
+  const moreInFeatures = fill([], 5);
 
   const lead = featured[0];
   const leadFollowers = [featured[1], featured[2]].filter((a): a is ComponentArticle => Boolean(a));
@@ -666,12 +693,22 @@ export default function FeaturesSectionPage({
             style={{ gridArea: "oncampus" }}
             className={RULE_FROM_MD}
           >
-            <SectionLabel id="features-on-campus">On Campus</SectionLabel>
+            <SectionLabel id="features-on-campus">{onCampusLabel}</SectionLabel>
             <StoryList>
-              {columnCards(onCampus, onCampusImages, "On Campus", "(max-width: 1023px) 50vw, 240px", {
+              {columnCards(onCampus, onCampusImages, onCampusLabel, "(max-width: 1023px) 50vw, 240px", {
                 extras: onCampusExtra,
               })}
             </StoryList>
+            {leftMore.length > 0 && (
+              <div className="mt-8 md:mt-2">
+                <SectionLabel id="features-more-stories">More Stories</SectionLabel>
+                <StoryList>
+                  {leftMore.map((article) => (
+                    <StoryCard key={article.id} article={article} wide="none" size="xs" />
+                  ))}
+                </StoryList>
+              </div>
+            )}
           </section>
         )}
 
@@ -682,10 +719,10 @@ export default function FeaturesSectionPage({
             style={{ gridArea: "arts" }}
             className={`lg:pt-10 ${RULE_FROM_LG}`}
           >
-            <SectionLabel id="features-arts">The Arts</SectionLabel>
+            <SectionLabel id="features-arts">{artsLabel}</SectionLabel>
             {/* Three across on tablets, where the section spans the page */}
             <StoryList className="md:grid md:grid-cols-3 md:gap-x-6 lg:flex lg:flex-col lg:gap-x-0">
-              {columnCards(theArts, theArtsImages, "The Arts", "(max-width: 1023px) 33vw, 240px")}
+              {columnCards(theArts, theArtsImages, artsLabel, "(max-width: 1023px) 33vw, 240px")}
             </StoryList>
           </section>
         )}
