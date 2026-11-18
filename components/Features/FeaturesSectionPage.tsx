@@ -66,8 +66,9 @@ function FeaturesCard({
         </span>
       )}
       <h3
-        className="font-copy font-medium leading-[1.12] text-text-main transition-colors group-hover:text-accent"
-        style={{ fontSize: large ? 34 : 20 }}
+        className={`font-copy font-medium leading-[1.12] text-text-main transition-colors group-hover:text-accent ${
+          large ? "text-[34px] lg:text-[42px] lg:leading-[1.08]" : "text-[20px]"
+        }`}
       >
         {article.richTitle || article.title}
       </h3>
@@ -78,7 +79,11 @@ function FeaturesCard({
         className="mt-2 text-[13px]"
       />
       {showExcerpt && article.excerpt && (
-        <p className="mt-0.5 font-meta text-[15px] font-medium leading-[1.5] text-text-main line-clamp-4">
+        <p
+          className={`mt-0.5 font-meta font-medium leading-[1.5] text-text-main line-clamp-4 ${
+            large ? "text-[15px] lg:text-[17px]" : "text-[15px]"
+          }`}
+        >
           {article.excerpt}
         </p>
       )}
@@ -86,58 +91,125 @@ function FeaturesCard({
   );
 }
 
+/* ── Compact card: image beside the text (stories under the spotlight) ── */
+
+function FeaturesRowCard({ article }: { article: ComponentArticle }) {
+  return (
+    <TransitionLink
+      href={getArticleUrl(article)}
+      className="group grid items-start gap-4"
+      style={{ gridTemplateColumns: article.image ? "minmax(0, 2fr) minmax(0, 3fr)" : "1fr" }}
+    >
+      {article.image && (
+        <div className="relative overflow-hidden" style={{ aspectRatio: "3/2" }}>
+          <Image
+            src={article.image}
+            alt={article.imageTitle || ""}
+            fill
+            className="object-cover"
+            sizes="200px"
+          />
+        </div>
+      )}
+      <div>
+        {article.kicker && (
+          <span className="font-meta text-[13px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] block mb-1">
+            {article.kicker}
+          </span>
+        )}
+        <h3 className="font-copy font-medium leading-[1.12] text-[20px] text-text-main transition-colors group-hover:text-accent">
+          {article.richTitle || article.title}
+        </h3>
+        <Byline author={article.author} variant="features" className="mt-2 text-[13px]" />
+      </div>
+    </TransitionLink>
+  );
+}
+
+/* ── Top-row section label: red rule over a small caps label ── */
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ borderTop: "2px solid var(--accent-color)", paddingTop: 4, marginBottom: 16 }}>
+      <h2
+        className="font-meta uppercase text-accent dark:text-white"
+        style={{ fontSize: 17, letterSpacing: "0.08em", fontWeight: 500, margin: "0 0 2px" }}
+      >
+        {children}
+      </h2>
+    </div>
+  );
+}
+
 /* ── Photo Spotlight Carousel ── */
 
-function PhotoSpotlightCarousel({ photos }: { photos: SpotlightPhoto[] }) {
+/** The slug at the end of an article path, for matching spotlight links to stories */
+const slugOf = (path: string | undefined): string | null =>
+  path ? path.split(/[?#]/)[0].replace(/\/+$/, "").split("/").pop() || null : null;
+
+function PhotoSpotlightCarousel({ photos, wide = false }: { photos: SpotlightPhoto[]; wide?: boolean }) {
   const [current, setCurrent] = useState(0);
 
   if (photos.length === 0) return null;
 
   const prev = () => setCurrent((c) => (c - 1 + photos.length) % photos.length);
   const next = () => setCurrent((c) => (c + 1) % photos.length);
+  const photo = photos[current];
+  const caption = photo.caption?.trim();
 
   return (
-    <div style={{ margin: 0, padding: 0 }}>
-      <h2
-        className="font-meta uppercase tracking-[0.04em] text-text-main text-center"
-        style={{ fontSize: 28, fontWeight: 500, marginBottom: 16, marginTop: 0 }}
-      >
-        Photo Spotlight
-      </h2>
+    <figure style={{ margin: 0, padding: 0 }}>
       <div className="-mx-4 w-auto overflow-hidden sm:mx-0 sm:w-full" style={{ borderRadius: 4 }}>
-        <div style={{ aspectRatio: "3/2", position: "relative" }}>
+        {/* 16:9 when the spotlight spans two columns, so the photo doesn't
+            outgrow the row */}
+        <div style={{ aspectRatio: wide ? "16/9" : "3/2", position: "relative" }}>
           <Image
-            src={photos[current].url}
-            alt={photos[current].caption || ""}
+            src={photo.url}
+            alt={caption || photo.articleTitle || ""}
             fill
             className="object-cover"
-            sizes="(max-width: 640px) 100vw, 50vw"
+            sizes={wide ? "(max-width: 1024px) 100vw, 960px" : "(max-width: 640px) 100vw, 50vw"}
           />
         </div>
       </div>
-      {photos[current].photographerName && (
-        <p className="mt-2 font-meta text-[15px] font-medium text-accent text-center">
-          Shot by{' '}
-          {photos[current].photographerUrl ? (
-            <TransitionLink href={photos[current].photographerUrl!} className="hover:underline">
-              {photos[current].photographerName}
-            </TransitionLink>
-          ) : (
-            photos[current].photographerName
-          )}
-        </p>
-      )}
-      {photos[current].articleTitle && (
-        <p className="mt-0.5 font-meta text-[13px] text-text-muted text-center">
-          {photos[current].articleUrl ? (
-            <TransitionLink href={photos[current].articleUrl!} className="hover:underline">
-              {photos[current].articleTitle}
-            </TransitionLink>
-          ) : (
-            photos[current].articleTitle
-          )}
-        </p>
-      )}
+      {/* Newspaper caption: what the photo shows, then credit and the story
+          it comes from */}
+      <figcaption className="mt-2">
+        {caption && (
+          <p className="font-meta text-[14px] leading-[1.45] text-text-main">{caption}</p>
+        )}
+        {(photo.photographerName || photo.articleTitle) && (
+          <p className="mt-1 font-meta text-[12px] leading-[1.45] text-text-muted">
+            {photo.photographerName && (
+              <>
+                Photo by{" "}
+                {photo.photographerUrl ? (
+                  <TransitionLink href={photo.photographerUrl} className="text-accent hover:underline">
+                    {photo.photographerName}
+                  </TransitionLink>
+                ) : (
+                  photo.photographerName
+                )}
+              </>
+            )}
+            {photo.photographerName && photo.articleTitle && (
+              <span aria-hidden="true" className="mx-1.5">&middot;</span>
+            )}
+            {photo.articleTitle && (
+              <>
+                From{" "}
+                {photo.articleUrl ? (
+                  <TransitionLink href={photo.articleUrl} className="italic text-text-main hover:text-accent hover:underline">
+                    {photo.articleTitle}
+                  </TransitionLink>
+                ) : (
+                  <span className="italic">{photo.articleTitle}</span>
+                )}
+              </>
+            )}
+          </p>
+        )}
+      </figcaption>
       {photos.length > 1 && (
         <div className="flex items-center justify-center gap-2 mt-3 mb-6">
           <button
@@ -174,7 +246,7 @@ function PhotoSpotlightCarousel({ photos }: { photos: SpotlightPhoto[] }) {
           </button>
         </div>
       )}
-    </div>
+    </figure>
   );
 }
 
@@ -275,10 +347,20 @@ export default function FeaturesSectionPage({
     return ids;
   }, [pinnedOnCampus, pinnedFeatured, pinnedRight, pinnedTheArts, pinnedSpotlightSubs, pinnedWide]);
 
-  // Auto-fill pool: articles not already pinned
+  // Stories the Photo Spotlight already links to; kept out of auto-fill so a
+  // story isn't shown twice (editor-pinned slots are left as chosen)
+  const spotlightSlugs = useMemo(
+    () => new Set(photoSpotlight.map((p) => slugOf(p.articleUrl)).filter((s): s is string => Boolean(s))),
+    [photoSpotlight],
+  );
+
+  // Auto-fill pool: articles not already pinned or in the spotlight
   const autoFillPool = useMemo(
-    () => articles.filter((a) => !pinnedIds.has(String(a.id))),
-    [articles, pinnedIds],
+    () =>
+      articles.filter(
+        (a) => !pinnedIds.has(String(a.id)) && !spotlightSlugs.has(slugOf(getArticleUrl(a)) ?? ""),
+      ),
+    [articles, pinnedIds, spotlightSlugs],
   );
 
   // Fill each column: pinned first, then auto-fill to reach slot count
@@ -301,14 +383,14 @@ export default function FeaturesSectionPage({
   const theArts = fillColumn(pinnedTheArts, 3, poolRef);
   const spotlightSubs = fillColumn(pinnedSpotlightSubs, 2, poolRef);
   const wideArticle = fillColumn(pinnedWide, 1, poolRef);
+  // Headline-only extras so the side columns run about as long as the lead
+  // column. Taken after every editor slot, so they never displace a pick.
+  const onCampusExtra = fillColumn([], 3, poolRef);
+  const rightExtra = fillColumn([], 3, poolRef);
 
   const sectionColumnStyle = {
     borderRight: "1px solid var(--rule-color)",
     paddingRight: COLUMN_GAP,
-  } as const;
-
-  const sectionBreakContentStyle = {
-    paddingTop: SECTION_RULE_GAP,
   } as const;
 
   const getSectionBreakRuleStyle = (insetLeft = 0, insetRight = 0) =>
@@ -365,7 +447,11 @@ export default function FeaturesSectionPage({
       <div className="lg:hidden">
         <div className="flex flex-col">
           <MobileSectionHeader title="On-Campus" href="/features" />
-          <MobileFeaturesList articles={onCampus} imageFlags={onCampusImages} hideDates />
+          <MobileFeaturesList
+            articles={[...onCampus, ...onCampusExtra]}
+            imageFlags={[...onCampusImages.slice(0, onCampus.length), ...onCampusExtra.map(() => false)]}
+            hideDates
+          />
         </div>
 
         <div className="mt-12">
@@ -395,7 +481,10 @@ export default function FeaturesSectionPage({
         {(right.length > 0) && (
           <div className="mt-12">
             <MobileSectionHeader title="Latest" />
-            <MobileFeaturesList articles={right} imageFlags={rightImages} />
+            <MobileFeaturesList
+              articles={[...right, ...rightExtra]}
+              imageFlags={[...rightImages.slice(0, right.length), ...rightExtra.map(() => false)]}
+            />
           </div>
         )}
 
@@ -430,7 +519,8 @@ export default function FeaturesSectionPage({
       <div
         className="hidden lg:grid"
         style={{
-          gridTemplateColumns: "240px 1fr 320px",
+          // The lead column takes the room the old events box used to need
+          gridTemplateColumns: "240px minmax(0, 1fr) 300px",
           gap: `0 ${COLUMN_GAP}`,
         }}
       >
@@ -438,29 +528,14 @@ export default function FeaturesSectionPage({
 
         {/* ── Left column: On-Campus ── */}
         <div style={sectionColumnStyle}>
-          <div
-            style={{
-              borderTop: "2px solid var(--accent-color)",
-              paddingTop: 4,
-              marginBottom: 16,
-            }}
-          >
-            <h2
-              className="font-meta uppercase text-accent dark:text-white"
-              style={{
-                fontSize: 17,
-                letterSpacing: "0.08em",
-                fontWeight: 500,
-                margin: "0 0 2px",
-              }}
-            >
-              On-Campus
-            </h2>
-          </div>
+          <SectionLabel>On-Campus</SectionLabel>
 
           {onCampus[0] && <FeaturesCard article={onCampus[0]} withImage={onCampusImages[0]} priority hideDate />}
           {onCampus[1] && <FeaturesCard article={onCampus[1]} withImage={onCampusImages[1]} hideDate />}
           {onCampus[2] && <FeaturesCard article={onCampus[2]} withImage={onCampusImages[2]} hideDate />}
+          {onCampusExtra.map((article) => (
+            <FeaturesCard key={article.id} article={article} hideDate />
+          ))}
         </div>
 
         {/* ── Middle column: Featured ── */}
@@ -495,12 +570,12 @@ export default function FeaturesSectionPage({
                     {wideArticle[0].kicker}
                   </span>
                 )}
-                <h2
+                <h3
                   className="font-copy font-medium leading-[1.12] text-text-main transition-colors group-hover:text-accent"
                   style={{ fontSize: 28 }}
                 >
                   {wideArticle[0].richTitle || wideArticle[0].title}
-                </h2>
+                </h3>
                 <Byline author={wideArticle[0].author} date={wideArticle[0].date} variant="features" className="mt-2 text-[13px]" />
                 {wideArticle[0].excerpt && (
                   <p className="mt-2 font-meta text-[15px] font-medium leading-[1.5] text-text-muted line-clamp-3">
@@ -523,11 +598,15 @@ export default function FeaturesSectionPage({
           )}
         </div>
 
-        {/* ── Right column: articles ── */}
+        {/* ── Right column: Latest ── */}
         <div>
+          {right.length > 0 && <SectionLabel>Latest</SectionLabel>}
           {right[0] && <FeaturesCard article={right[0]} withImage={rightImages[0]} />}
           {right[1] && <FeaturesCard article={right[1]} withImage={rightImages[1]} />}
           {right[2] && <FeaturesCard article={right[2]} withImage={rightImages[2]} />}
+          {rightExtra.map((article) => (
+            <FeaturesCard key={article.id} article={article} />
+          ))}
         </div>
 
         {/* ══ Row 2 — borderTop on each cell creates the horizontal line with gaps at the vertical intersections ══ */}
@@ -564,21 +643,32 @@ export default function FeaturesSectionPage({
               marginTop: `calc(${SECTION_RULE_GAP} + ${LOWER_SECTION_EXTRA_TOP_SPACE}px)`,
             }}
           />
-          <div style={sectionBreakContentStyle}>
-            <PhotoSpotlightCarousel photos={photoSpotlight} />
+          {/* Same heading treatment and spacing as The Arts, so the two line up */}
+          <div style={getSectionHeadingWrapStyle(SECTION_RULE_INSET, 0)}>
+            <h2
+              className="font-meta uppercase tracking-[0.04em] text-text-main text-center"
+              style={{ fontSize: 28, fontWeight: 500, marginTop: 0, marginBottom: 16 }}
+            >
+              Photo Spotlight
+            </h2>
+          </div>
+          <PhotoSpotlightCarousel photos={photoSpotlight} wide />
 
-            {/* Two sub-feature articles with images */}
+          {/* Two sub-features, image beside text, so the row stays about as
+              tall as The Arts */}
+          {(spotlightSubs[0] || spotlightSubs[1]) && (
             <div
+              className="mt-2"
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
-                gap: "0 20px",
+                gap: `0 ${COLUMN_GAP}`,
               }}
             >
-              {spotlightSubs[0] && <FeaturesCard article={spotlightSubs[0]} withImage />}
-              {spotlightSubs[1] && <FeaturesCard article={spotlightSubs[1]} withImage />}
+              {spotlightSubs[0] && <FeaturesRowCard article={spotlightSubs[0]} />}
+              {spotlightSubs[1] && <FeaturesRowCard article={spotlightSubs[1]} />}
             </div>
-          </div>
+          )}
         </div>
       </div>
 

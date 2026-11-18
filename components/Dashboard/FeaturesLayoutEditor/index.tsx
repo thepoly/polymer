@@ -1004,7 +1004,7 @@ export function FeaturesLayoutEditor() {
               {/* Right column */}
               <div className="fle-column">
                 <div className="fle-column-header">
-                  <span className="fle-column-title">Right Column</span>
+                  <span className="fle-column-title">Latest</span>
                   <span style={{ fontSize: '0.62rem', opacity: 0.35 }}>{rightImageCount}/2 imgs</span>
                 </div>
 
