@@ -10,14 +10,6 @@ import { AnimatedLine } from "@/components/Opinion/RainbowDivider";
 
 /* ── Types ── */
 
-export type FeaturesEvent = {
-  title: string;
-  date: string;
-  time: string;
-  location?: string;
-  url?: string;
-};
-
 export type SpotlightPhoto = {
   url: string;
   caption?: string;
@@ -91,107 +83,6 @@ function FeaturesCard({
         </p>
       )}
     </TransitionLink>
-  );
-}
-
-/* ── Upcoming Events box ── */
-
-function UpcomingEvents({ events }: { events: FeaturesEvent[] }) {
-  // Filter out events whose day has already ended
-  const upcomingEvents = useMemo(() => {
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    return events.filter((e) => e.date >= todayStr);
-  }, [events]);
-
-  if (upcomingEvents.length === 0) return null;
-
-  const formatEventDate = (dateStr: string): string => {
-    const d = new Date(dateStr + "T00:00:00");
-    return d.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  return (
-    <div className="mb-8">
-      <div
-        style={{
-          borderTop: "2px solid var(--accent-color)",
-          paddingTop: 10,
-        }}
-      >
-        <p
-          className="font-meta uppercase"
-          style={{
-            fontSize: 17,
-            letterSpacing: "0.08em",
-            color: "var(--accent-color)",
-            fontWeight: 500,
-            margin: "0 0 2px",
-          }}
-        >
-          Upcoming Events
-        </p>
-        <div className="flex flex-col">
-          {upcomingEvents.map((event, i) => {
-            const hasUrl = event.url && event.url.trim().length > 0;
-            const titleEl = (
-              <h4
-                className={`font-meta text-[16px] font-medium leading-[1.2] m-0 ${
-                  hasUrl
-                    ? "text-text-main transition-colors group-hover:text-accent group-hover:underline"
-                    : "text-text-main"
-                }`}
-              >
-                {event.title}
-              </h4>
-            );
-
-            return (
-              <div
-                key={i}
-                style={{
-                  padding: "5px 0",
-                  borderBottom:
-                    i < upcomingEvents.length - 1
-                      ? "1px solid var(--rule-color, #e0e0e0)"
-                      : "none",
-                }}
-              >
-                {hasUrl ? (
-                  <a
-                    href={event.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="group block no-underline"
-                  >
-                    {titleEl}
-                  </a>
-                ) : (
-                  titleEl
-                )}
-                <div className="mt-1 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
-                  <span className="text-accent">
-                    {formatEventDate(event.date)}
-                  </span>
-                  <span className="text-text-muted mx-1.5">&bull;</span>
-                  <span className="text-text-muted">{event.time}</span>
-                  {event.location && (
-                    <>
-                      <span className="text-text-muted mx-1.5">&bull;</span>
-                      <span className="text-text-muted">{event.location}</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -354,15 +245,12 @@ export default function FeaturesSectionPage({
   pinnedOnCampus,
   pinnedFeatured,
   pinnedRight,
-  events,
   onCampusImages,
   rightImages,
   pinnedTheArts,
   theArtsImages,
   photoSpotlight,
   pinnedSpotlightSubs,
-  pinnedCollarCity,
-  collarCityImages,
   pinnedWide = [],
 }: {
   title: string;
@@ -370,25 +258,22 @@ export default function FeaturesSectionPage({
   pinnedOnCampus: ComponentArticle[];
   pinnedFeatured: ComponentArticle[];
   pinnedRight: ComponentArticle[];
-  events: FeaturesEvent[];
   onCampusImages: boolean[];
   rightImages: boolean[];
   pinnedTheArts: ComponentArticle[];
   theArtsImages: boolean[];
   photoSpotlight: SpotlightPhoto[];
   pinnedSpotlightSubs: ComponentArticle[];
-  pinnedCollarCity: ComponentArticle[];
-  collarCityImages: boolean[];
   pinnedWide?: ComponentArticle[];
 }) {
   // Build set of pinned IDs to exclude from auto-fill
   const pinnedIds = useMemo(() => {
     const ids = new Set<string>();
-    for (const a of [...pinnedOnCampus, ...pinnedFeatured, ...pinnedRight, ...pinnedTheArts, ...pinnedSpotlightSubs, ...pinnedCollarCity, ...(pinnedWide || [])]) {
+    for (const a of [...pinnedOnCampus, ...pinnedFeatured, ...pinnedRight, ...pinnedTheArts, ...pinnedSpotlightSubs, ...(pinnedWide || [])]) {
       ids.add(String(a.id));
     }
     return ids;
-  }, [pinnedOnCampus, pinnedFeatured, pinnedRight, pinnedTheArts, pinnedSpotlightSubs, pinnedCollarCity, pinnedWide]);
+  }, [pinnedOnCampus, pinnedFeatured, pinnedRight, pinnedTheArts, pinnedSpotlightSubs, pinnedWide]);
 
   // Auto-fill pool: articles not already pinned
   const autoFillPool = useMemo(
@@ -415,7 +300,6 @@ export default function FeaturesSectionPage({
   const right = fillColumn(pinnedRight, 3, poolRef);
   const theArts = fillColumn(pinnedTheArts, 3, poolRef);
   const spotlightSubs = fillColumn(pinnedSpotlightSubs, 2, poolRef);
-  const collarCity = fillColumn(pinnedCollarCity, 3, poolRef);
   const wideArticle = fillColumn(pinnedWide, 1, poolRef);
 
   const sectionColumnStyle = {
@@ -458,18 +342,18 @@ export default function FeaturesSectionPage({
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[24px] sm:text-[28px] lg:justify-start lg:text-[36px]">
           <span className="hidden h-10 w-px shrink-0 bg-[var(--foreground-muted)] lg:block" />
           <TransitionLink
-            href="/features/submit-event"
+            href="/features/archive"
             className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
             style={{ fontWeight: 300 }}
           >
-            Submit
+            Archive
           </TransitionLink>
           <span className="font-meta text-text-muted lg:hidden" aria-hidden="true">
             &middot;
           </span>
           <span className="hidden h-10 w-px shrink-0 bg-[var(--foreground-muted)] lg:block" />
           <a
-            href="mailto:features@poly.rpi.edu,eic@poly.rpi.edu?subject=Features%20Request%2FComment%20or%20Event%20Tip"
+            href="mailto:features@poly.rpi.edu,eic@poly.rpi.edu?subject=Features%20Request%2FComment%20or%20Story%20Tip"
             className="font-meta uppercase tracking-[0.04em] text-text-main hover:text-accent transition-colors"
             style={{ fontWeight: 300 }}
           >
@@ -508,13 +392,6 @@ export default function FeaturesSectionPage({
           </div>
         </div>
 
-        {events.length > 0 && (
-          <div className="mt-12">
-            <MobileSectionHeader title="Upcoming Events" />
-            <UpcomingEvents events={events} />
-          </div>
-        )}
-
         {(right.length > 0) && (
           <div className="mt-12">
             <MobileSectionHeader title="Latest" />
@@ -540,13 +417,6 @@ export default function FeaturesSectionPage({
           <div className="mt-12">
             <MobileSectionHeader title="The Arts" />
             <MobileFeaturesList articles={theArts} imageFlags={theArtsImages} hideDates />
-          </div>
-        )}
-
-        {collarCity.length > 0 && (
-          <div className="mt-12">
-            <MobileSectionHeader title="Collar City Column" />
-            <MobileFeaturesList articles={collarCity} imageFlags={collarCityImages} />
           </div>
         )}
 
@@ -590,21 +460,6 @@ export default function FeaturesSectionPage({
 
           {onCampus[0] && <FeaturesCard article={onCampus[0]} withImage={onCampusImages[0]} priority hideDate />}
           {onCampus[1] && <FeaturesCard article={onCampus[1]} withImage={onCampusImages[1]} hideDate />}
-
-          {/* Event submission CTA */}
-          <div className="py-8 border-y border-rule text-center" style={{ marginBottom: 30 }}>
-            <p className="font-meta uppercase tracking-[0.04em] text-text-main" style={{ fontSize: 19, fontWeight: 500 }}>
-              Have something you want to be{" "}
-              <TransitionLink
-                href="/features/submit-event"
-                className="text-accent hover:underline transition-colors"
-              >
-                featured
-              </TransitionLink>
-              ?
-            </p>
-          </div>
-
           {onCampus[2] && <FeaturesCard article={onCampus[2]} withImage={onCampusImages[2]} hideDate />}
         </div>
 
@@ -668,11 +523,8 @@ export default function FeaturesSectionPage({
           )}
         </div>
 
-        {/* ── Right column: Events + articles ── */}
+        {/* ── Right column: articles ── */}
         <div>
-          {/* Upcoming Events */}
-          <UpcomingEvents events={events} />
-
           {right[0] && <FeaturesCard article={right[0]} withImage={rightImages[0]} />}
           {right[1] && <FeaturesCard article={right[1]} withImage={rightImages[1]} />}
           {right[2] && <FeaturesCard article={right[2]} withImage={rightImages[2]} />}
@@ -704,11 +556,11 @@ export default function FeaturesSectionPage({
           </div>
         </div>
 
-        {/* ── Middle column: Photo Spotlight ── */}
-        <div style={sectionColumnStyle}>
+        {/* ── Middle + right columns: Photo Spotlight ── */}
+        <div style={{ gridColumn: "2 / span 2" }}>
           <div
             style={{
-              ...getSectionBreakRuleStyle(SECTION_RULE_INSET, SECTION_RULE_INSET),
+              ...getSectionBreakRuleStyle(SECTION_RULE_INSET, 0),
               marginTop: `calc(${SECTION_RULE_GAP} + ${LOWER_SECTION_EXTRA_TOP_SPACE}px)`,
             }}
           />
@@ -726,30 +578,6 @@ export default function FeaturesSectionPage({
               {spotlightSubs[0] && <FeaturesCard article={spotlightSubs[0]} withImage />}
               {spotlightSubs[1] && <FeaturesCard article={spotlightSubs[1]} withImage />}
             </div>
-          </div>
-        </div>
-
-        {/* ── Right column: Collar City Column ── */}
-        <div>
-          <div
-            style={{
-              ...getSectionBreakRuleStyle(SECTION_RULE_INSET, 0),
-              marginTop: `calc(${SECTION_RULE_GAP} + ${LOWER_SECTION_EXTRA_TOP_SPACE}px)`,
-            }}
-          />
-          <div style={getSectionHeadingWrapStyle(SECTION_RULE_INSET, 0)}>
-            <h2
-              className="font-meta uppercase tracking-[0.04em] text-text-main text-center"
-              style={{ fontSize: 24, fontWeight: 500, marginTop: 0, marginBottom: 16 }}
-            >
-              Collar City Column
-            </h2>
-          </div>
-          <div>
-
-            {collarCity[0] && <FeaturesCard article={collarCity[0]} withImage={collarCityImages[0]} />}
-            {collarCity[1] && <FeaturesCard article={collarCity[1]} withImage={collarCityImages[1]} />}
-            {collarCity[2] && <FeaturesCard article={collarCity[2]} withImage={collarCityImages[2]} />}
           </div>
         </div>
       </div>

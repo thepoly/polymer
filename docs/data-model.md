@@ -88,7 +88,7 @@ update; only `admin` can delete.
 
 ### `event-submissions` — [`collections/EventSubmissions.ts`](../collections/EventSubmissions.ts)
 
-Public event submissions for the calendar (`/api/submit-event`).
+Archived event submissions from the removed Features event form. Read-only: `create` is closed, and `/features/submit-event` redirects to `/features`. Kept so past submissions stay readable; dropping it needs a migration.
 
 ### `logos` — [`collections/Logos.ts`](../collections/Logos.ts)
 

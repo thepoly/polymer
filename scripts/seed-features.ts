@@ -5,9 +5,9 @@
  * Run `pnpm db:seed` first; it creates the features editor and the fixture
  * photos this script reuses (the same four the news seed uses).
  *
- * Also creates a Features layout (Arts and Collar City columns pinned,
- * upcoming events, Photo Spotlight) when none exists yet. An existing layout
- * is left alone, so editor changes aren't overwritten.
+ * Also creates a Features layout (Arts column pinned, Photo Spotlight) when
+ * none exists yet. An existing layout is left alone, so editor changes aren't
+ * overwritten.
  *
  * Usage: pnpm db:seed:features
  */
@@ -43,11 +43,11 @@ type SeedFeaturesArticle = {
   writeIn?: string
   paragraphs: string[]
   /** Pinned into a lower-row column of the seeded layout */
-  column?: 'theArts' | 'collarCity'
+  column?: 'theArts'
 }
 
 const ARTS = 'The Arts'
-const COLLAR_CITY = 'Collar City Column'
+const TROY = 'Troy'
 
 // Newest first; each one is published a day and a half before the last.
 const ARTICLES: SeedFeaturesArticle[] = [
@@ -90,7 +90,7 @@ const ARTICLES: SeedFeaturesArticle[] = [
   {
     slug: 'troy-farmers-market-saturday',
     title: 'A Saturday morning at the Troy Waterfront Farmers Market',
-    kicker: COLLAR_CITY,
+    kicker: TROY,
     subdeck: 'Students are a growing share of the crowd, and some vendors have changed what they sell because of it.',
     writeIn: 'Priya Nair',
     paragraphs: [
@@ -98,7 +98,6 @@ const ARTICLES: SeedFeaturesArticle[] = [
       'Several vendors say students now make up a noticeable share of their Saturday customers.',
       'One baker added smaller loaves after hearing the same request from students every week.',
     ],
-    column: 'collarCity',
   },
   {
     slug: 'first-year-ra-semester',
@@ -150,7 +149,7 @@ const ARTICLES: SeedFeaturesArticle[] = [
   {
     slug: 'downtown-independent-bookstore',
     title: 'Downtown’s independent bookstore is looking for new readers',
-    kicker: COLLAR_CITY,
+    kicker: TROY,
     subdeck: 'As rent rises, a group of student volunteers is helping the shop add events and workshops.',
     writeIn: 'Caleb Morrison',
     paragraphs: [
@@ -158,7 +157,6 @@ const ARTICLES: SeedFeaturesArticle[] = [
       'A group of student volunteers now runs a weekly reading night and helps with the shop’s online orders.',
       'The owner says the events have brought in customers who had never been downtown before.',
     ],
-    column: 'collarCity',
   },
   {
     slug: 'calculus-professor-thirty-years',
@@ -210,7 +208,7 @@ const ARTICLES: SeedFeaturesArticle[] = [
   {
     slug: 'warehouse-music-scene',
     title: 'Music in the old warehouses along the Hudson',
-    kicker: COLLAR_CITY,
+    kicker: TROY,
     subdeck: 'Pop-up shows in former industrial buildings are drawing students and locals to the same rooms.',
     writeIn: 'Julian Reese',
     paragraphs: [
@@ -218,7 +216,6 @@ const ARTICLES: SeedFeaturesArticle[] = [
       'Most take place in buildings that once housed factories along the river.',
       'Organizers say the crowds are about half students and half people who grew up in Troy.',
     ],
-    column: 'collarCity',
   },
   {
     slug: 'alum-engineering-to-bakery',
@@ -269,7 +266,7 @@ const ARTICLES: SeedFeaturesArticle[] = [
   {
     slug: 'downtown-diner-regulars',
     title: 'The downtown diner where students and regulars share the counter',
-    kicker: COLLAR_CITY,
+    kicker: TROY,
     subdeck: 'Open early and late, it has been feeding the neighborhood and the campus for decades.',
     paragraphs: [
       'The counter seats twelve, and on weekend mornings every stool is taken.',
@@ -366,12 +363,6 @@ const PHOTO_FILENAMES = ['campus-life.webp', 'schmidt.webp', 'swe-day.webp', 'wi
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** Local calendar date `days` from today, as YYYY-MM-DD */
-const dateFromToday = (days: number): string => {
-  const d = new Date(Date.now() + days * DAY_MS)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
 async function main() {
   const payload = await getPayload({ config })
 
@@ -454,7 +445,7 @@ async function main() {
     process.exit(0)
   }
 
-  const pinned = (column: 'theArts' | 'collarCity') =>
+  const pinned = (column: 'theArts') =>
     ARTICLES.filter((a) => a.column === column)
       .slice(0, 3)
       .map((a) => articleIds.get(a.slug) ?? null)
@@ -491,47 +482,15 @@ async function main() {
         featured: [null, null, null],
         rightArticles: [null, null, null],
         rightImages: [true, false, false],
-        events: [
-          {
-            title: 'Fall a cappella showcase',
-            date: dateFromToday(2),
-            time: '7:30 PM',
-            location: 'EMPAC Concert Hall',
-            url: '',
-          },
-          {
-            title: 'Open night at the observatory',
-            date: dateFromToday(5),
-            time: '8:00 PM',
-            location: 'Hirsch Observatory',
-            url: '',
-          },
-          {
-            title: 'Playhouse winter production',
-            date: dateFromToday(9),
-            time: '7:00 PM',
-            location: 'Rensselaer Playhouse',
-            url: '',
-          },
-          {
-            title: 'Troy Waterfront Farmers Market',
-            date: dateFromToday(11),
-            time: '9:00 AM',
-            location: 'Troy Atrium',
-            url: '',
-          },
-        ],
         theArts: pinned('theArts'),
         theArtsImages: [true, false, false],
         photoSpotlight: spotlight,
         spotlightSubs: [null, null],
-        collarCity: pinned('collarCity'),
-        collarCityImages: [true, false, false],
         wideArticle: [null],
       },
     },
   })
-  console.log('features layout created (Arts and Collar City pinned, 4 events, 4 spotlight photos).')
+  console.log('features layout created (Arts pinned, 4 spotlight photos).')
   process.exit(0)
 }
 

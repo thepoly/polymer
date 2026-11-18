@@ -83,8 +83,10 @@ export const Seo: GlobalConfig = {
         longText('staffDescription', 'Staff Description', 'Used for the /staff page description and Open Graph description.'),
         shortText('featuresArchiveTitle', 'Features Archive Title', 'Used for the /features/archive page title.'),
         longText('featuresArchiveDescription', 'Features Archive Description', 'Used for the /features/archive page description.'),
-        shortText('featuresSubmitEventTitle', 'Submit Event Title', 'Used for the /features/submit-event page title.'),
-        longText('featuresSubmitEventDescription', 'Submit Event Description', 'Used for the /features/submit-event page description.'),
+        // Unused since /features/submit-event was removed. Hidden rather than
+        // deleted so the seo table keeps its columns (no migration needed).
+        { ...shortText('featuresSubmitEventTitle', 'Submit Event Title', 'Unused.'), admin: { hidden: true } },
+        { ...longText('featuresSubmitEventDescription', 'Submit Event Description', 'Unused.'), admin: { hidden: true } },
         shortText('opinionOtherTitle', 'Opinion Other Title', 'Used for the /opinion/other page title.'),
         longText('opinionOtherDescription', 'Opinion Other Description', 'Used for the /opinion/other page description.'),
         shortText('opinionEditorialsTitle', 'Opinion Editorials Title', 'Used for the /opinion/editorials page title.'),

@@ -6,7 +6,7 @@ import Footer from '@/components/Footer';
 import SectionPage from '@/components/SectionPage';
 import OpinionSectionPage from '@/components/Opinion/OpinionSectionPage';
 import NewsSectionPage from '@/components/News/NewsSectionPage';
-import FeaturesSectionPage, { type FeaturesEvent, type SpotlightPhoto } from '@/components/Features/FeaturesSectionPage';
+import FeaturesSectionPage, { type SpotlightPhoto } from '@/components/Features/FeaturesSectionPage';
 import SportsSectionPage, { type ScoreboardDate } from '@/components/Sports/SportsSectionPage';
 import type { StandingsTeam } from '@/components/Sports/SportsStandings';
 import type { FeaturedFocus } from '@/components/Sports/sportsFormat';
@@ -389,11 +389,12 @@ export default async function SectionPageRoute({ params }: Args) {
     });
   }
 
-  // Fetch features page layout — 3-column with events + Row 2
+  // Fetch features page layout — 3-column Row 1 + Row 2. Layouts saved before
+  // Upcoming Events and the Collar City Column were removed may still carry
+  // `events` / `collarCity*` keys; they're ignored.
   let featuresPinnedOnCampus: ComponentArticle[] = [];
   let featuresPinnedFeatured: ComponentArticle[] = [];
   let featuresPinnedRight: ComponentArticle[] = [];
-  let featuresEvents: FeaturesEvent[] = [];
   let featuresOnCampusImages: boolean[] = [false, false, false];
   let featuresRightImages: boolean[] = [false, false, false];
   // Row 2
@@ -401,8 +402,6 @@ export default async function SectionPageRoute({ params }: Args) {
   let featuresTheArtsImages: boolean[] = [false, false, false];
   let featuresPhotoSpotlight: SpotlightPhoto[] = [];
   let featuresPinnedSpotlightSubs: ComponentArticle[] = [];
-  let featuresPinnedCollarCity: ComponentArticle[] = [];
-  let featuresCollarCityImages: boolean[] = [false, false, false];
   let featuresPinnedWide: ComponentArticle[] = [];
 
   if (section === 'features') {
@@ -412,13 +411,10 @@ export default async function SectionPageRoute({ params }: Args) {
       featured?: (number | null)[];
       rightArticles?: (number | null)[];
       rightImages?: boolean[];
-      events?: FeaturesEvent[];
       theArts?: (number | null)[];
       theArtsImages?: boolean[];
       photoSpotlight?: SpotlightPhoto[];
       spotlightSubs?: (number | null)[];
-      collarCity?: (number | null)[];
-      collarCityImages?: boolean[];
       wideArticle?: (number | null)[];
     };
 
@@ -433,16 +429,14 @@ export default async function SectionPageRoute({ params }: Args) {
       const layoutJson = doc?.layout as FeaturesLayoutShape | undefined;
 
       if (layoutJson) {
-        featuresEvents = layoutJson.events || [];
         if (layoutJson.onCampusImages) featuresOnCampusImages = layoutJson.onCampusImages;
         if (layoutJson.rightImages) featuresRightImages = layoutJson.rightImages;
         if (layoutJson.theArtsImages) featuresTheArtsImages = layoutJson.theArtsImages;
         featuresPhotoSpotlight = layoutJson.photoSpotlight || [];
-        if (layoutJson.collarCityImages) featuresCollarCityImages = layoutJson.collarCityImages;
 
         // Collect all pinned IDs to fetch in one batch (Row 1 + Row 2)
         const allPinnedIds = new Set<number>();
-        for (const col of [layoutJson.onCampus, layoutJson.featured, layoutJson.rightArticles, layoutJson.theArts, layoutJson.spotlightSubs, layoutJson.collarCity, layoutJson.wideArticle]) {
+        for (const col of [layoutJson.onCampus, layoutJson.featured, layoutJson.rightArticles, layoutJson.theArts, layoutJson.spotlightSubs, layoutJson.wideArticle]) {
           if (col) for (const id of col) { if (id) allPinnedIds.add(id); }
         }
 
@@ -475,7 +469,6 @@ export default async function SectionPageRoute({ params }: Args) {
           featuresPinnedRight = resolveColumn(layoutJson.rightArticles);
           featuresPinnedTheArts = resolveColumn(layoutJson.theArts);
           featuresPinnedSpotlightSubs = resolveColumn(layoutJson.spotlightSubs);
-          featuresPinnedCollarCity = resolveColumn(layoutJson.collarCity);
           featuresPinnedWide = resolveColumn(layoutJson.wideArticle);
         }
       }
@@ -718,15 +711,12 @@ export default async function SectionPageRoute({ params }: Args) {
           pinnedOnCampus={featuresPinnedOnCampus}
           pinnedFeatured={featuresPinnedFeatured}
           pinnedRight={featuresPinnedRight}
-          events={featuresEvents}
           onCampusImages={featuresOnCampusImages}
           rightImages={featuresRightImages}
           pinnedTheArts={featuresPinnedTheArts}
           theArtsImages={featuresTheArtsImages}
           photoSpotlight={featuresPhotoSpotlight}
           pinnedSpotlightSubs={featuresPinnedSpotlightSubs}
-          pinnedCollarCity={featuresPinnedCollarCity}
-          collarCityImages={featuresCollarCityImages}
           pinnedWide={featuresPinnedWide}
         />
       ) : section === 'sports' ? (

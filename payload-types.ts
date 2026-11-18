@@ -773,6 +773,8 @@ export interface Submission {
   createdAt: string;
 }
 /**
+ * Archive only. The public event form and the Features page events box were removed, so nothing new arrives here.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "event-submissions".
  */
@@ -1566,13 +1568,7 @@ export interface Seo {
      * Used for the /features/archive page description.
      */
     featuresArchiveDescription?: string | null;
-    /**
-     * Used for the /features/submit-event page title.
-     */
     featuresSubmitEventTitle?: string | null;
-    /**
-     * Used for the /features/submit-event page description.
-     */
     featuresSubmitEventDescription?: string | null;
     /**
      * Used for the /opinion/other page title.

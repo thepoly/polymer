@@ -10,10 +10,16 @@ const EventSubmissions: CollectionConfig = {
     useAsTitle: 'eventName',
     defaultColumns: ['eventName', 'date', 'contactName', 'status', 'createdAt'],
     group: 'Content',
+    description:
+      'Archive only. The public event form and the Features page events box were removed, so nothing new arrives here.',
   },
+  // Kept so past submissions stay readable and no schema change is needed;
+  // drop the collection (and its table) with a proper migration later.
   access: {
     read: ({ req: { user } }) => !!user,
-    create: () => true,
+    // The form's API route is gone; closing create also shuts Payload's own
+    // REST endpoint, which would otherwise accept anonymous posts
+    create: () => false,
     update: ({ req: { user } }) => {
       if (!user) return false
       const roles = (user as unknown as { roles?: string[] }).roles || []
