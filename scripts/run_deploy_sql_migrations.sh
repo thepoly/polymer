@@ -4,7 +4,7 @@ set -euo pipefail
 
 : "${DATABASE_URL:?DATABASE_URL must be set}"
 
-psql "$DATABASE_URL" <<'SQL'
+psql -v ON_ERROR_STOP=1 "$DATABASE_URL" <<'SQL'
 -- Ensure migration tracking is up to date
 DELETE FROM payload_migrations WHERE batch = -1;
 INSERT INTO payload_migrations (name, batch, updated_at, created_at)
@@ -61,9 +61,9 @@ VALUES
   ('20261022_010000_add_schools_and_game_result', 32, NOW(), NOW()),
   ('20261022_020000_add_article_sport', 32, NOW(), NOW()),
   ('20261112_000000_add_user_portfolio', 33, NOW(), NOW()),
-  ('20261112_000000_add_news_page_layout', 34, NOW(), NOW()),
-  ('20261112_010000_add_student_gov_updates', 34, NOW(), NOW()),
-  ('20261113_000000_add_student_gov_terms', 35, NOW(), NOW())
+  ('20261112_000000_add_news_page_layout', 35, NOW(), NOW()),
+  ('20261112_010000_add_student_gov_updates', 35, NOW(), NOW()),
+  ('20261113_000000_add_student_gov_terms', 36, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1715,4 +1715,19 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_student_gov_terms_id_idx"
   ON "payload_locked_documents_rels" ("student_gov_terms_id");
+
+-- 20261117: Enforce the opinion layout singleton without deleting archived layouts.
+DO $$ BEGIN
+  IF to_regclass('public.opinion_page_layout_name_idx') IS NULL THEN
+    LOCK TABLE "opinion_page_layout" IN EXCLUSIVE MODE;
+    UPDATE "opinion_page_layout" SET "name" = 'Archived Opinion Layout #' || "id"
+      WHERE "id" <> (SELECT "id" FROM "opinion_page_layout" ORDER BY "created_at" DESC, "id" DESC LIMIT 1);
+    UPDATE "opinion_page_layout" SET "name" = 'Opinion Layout'
+      WHERE "id" = (SELECT "id" FROM "opinion_page_layout" ORDER BY "created_at" DESC, "id" DESC LIMIT 1);
+    CREATE UNIQUE INDEX "opinion_page_layout_name_idx" ON "opinion_page_layout" ("name");
+  END IF;
+END $$;
+INSERT INTO payload_migrations (name, batch, updated_at, created_at)
+SELECT '20261117_000000_opinion_layout_singleton', 34, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM payload_migrations WHERE name = '20261117_000000_opinion_layout_singleton');
 SQL

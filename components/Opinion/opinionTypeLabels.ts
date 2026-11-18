@@ -11,4 +11,5 @@ export const opinionTypeLabels: Record<string, string> = {
   'editors-notebook': "Editor's Notebook",
   derby: 'Derby',
   other: 'Other',
+  more: 'Other',
 };

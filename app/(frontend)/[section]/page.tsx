@@ -44,6 +44,8 @@ import { Article as PayloadArticle, Media } from '@/payload-types';
 import { Article as ComponentArticle, GameTeam } from '@/components/FrontPage/types';
 import type { SpotlightAuthor } from '@/components/Opinion/AuthorSpotlightCarousel';
 import { formatArticle } from '@/utils/formatArticle';
+import { normalizeOpinionLayout, readOpinionLayoutDocument, OPINION_LAYOUT_NAME } from '@/lib/opinionLayout';
+import { buildOpinionSpotlights, opinionCardSelect } from '@/lib/opinionArticles';
 import { opinionGroups } from '@/components/Opinion/opinionGroups';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -142,7 +144,7 @@ export default async function SectionPageRoute({ params }: Args) {
       },
     },
     sort: '-publishedDate',
-    limit: isNews ? 200 : 30,
+    limit: isNews ? 200 : isOpinion ? 63 : 30,
     depth: isOpinion ? 2 : 1,
     select: {
       title: true,
@@ -207,9 +209,9 @@ export default async function SectionPageRoute({ params }: Args) {
   };
 
   // Fetch opinion page layout — pinned articles per column + editors choice
-  let pinnedCol1: ComponentArticle[] = [];
-  let pinnedCol2: ComponentArticle[] = [];
-  let pinnedCol3: ComponentArticle[] = [];
+  let pinnedCol1: (ComponentArticle | null)[] = [];
+  let pinnedCol2: (ComponentArticle | null)[] = [];
+  let pinnedCol3: (ComponentArticle | null)[] = [];
   let col1Images: boolean[] = [true, false, false, false, false];
   let col2Images: boolean[] = [false, false, true, false];
   let col3Images: boolean[] = [false, false, false, true];
@@ -218,30 +220,17 @@ export default async function SectionPageRoute({ params }: Args) {
   let pinnedSpotlightAuthors: SpotlightAuthor[] = [];
 
   if (isOpinion) {
-    type LayoutShape = {
-      column1?: (number | null)[];
-      column1Images?: boolean[];
-      column2?: (number | null)[];
-      column2Images?: boolean[];
-      column3?: (number | null)[];
-      column3Images?: boolean[];
-      editorsChoice?: (number | null)[];
-      editorsChoiceLabel?: string;
-      spotlight?: Array<{ userId: number; articleTitle?: string | null; articleUrl?: string | null }>;
-    };
-
-    let layoutJson: LayoutShape | undefined;
+    let layoutJson = normalizeOpinionLayout(null);
     try {
       const layoutResponse = await payload.find({
         collection: 'opinion-page-layout',
+        where: { name: { equals: OPINION_LAYOUT_NAME } },
         limit: 1,
         depth: 0,
-        select: { layout: true },
+        select: { layout: true, editorsChoice1: true, editorsChoice2: true, editorsChoice3: true, editorsChoiceLabel: true },
       });
       const doc = layoutResponse.docs[0] as Record<string, unknown> | undefined;
-      if (doc?.layout && typeof doc.layout === 'object') {
-        layoutJson = doc.layout as LayoutShape;
-      }
+      layoutJson = readOpinionLayoutDocument(doc);
     } catch {
       // Table may not exist yet
     }
@@ -251,6 +240,10 @@ export default async function SectionPageRoute({ params }: Args) {
       if (layoutJson.column1Images) col1Images = layoutJson.column1Images;
       if (layoutJson.column2Images) col2Images = layoutJson.column2Images;
       if (layoutJson.column3Images) col3Images = layoutJson.column3Images;
+
+      pinnedCol1 = layoutJson.column1.map(() => null);
+      pinnedCol2 = layoutJson.column2.map(() => null);
+      pinnedCol3 = layoutJson.column3.map(() => null);
 
       // Collect all pinned IDs to fetch in one batch
       const allPinnedIds = new Set<number>();
@@ -264,6 +257,7 @@ export default async function SectionPageRoute({ params }: Args) {
           where: {
             and: [
               { id: { in: Array.from(allPinnedIds) } },
+              { section: { equals: 'opinion' } },
               { _status: { equals: 'published' } },
             ],
           },
@@ -279,13 +273,13 @@ export default async function SectionPageRoute({ params }: Args) {
           pinnedResponse.docs.map((a) => [a.id, formatArticle(a)])
         );
 
-        const resolveColumn = (ids: (number | null)[] | undefined): ComponentArticle[] =>
-          (ids || []).map((id) => (id ? pinnedMap.get(id) ?? null : null)).filter((a): a is ComponentArticle => a !== null);
+        const resolveColumn = (ids: (number | null)[]): (ComponentArticle | null)[] =>
+          ids.map((id) => (id ? pinnedMap.get(id) ?? null : null));
 
         pinnedCol1 = resolveColumn(layoutJson.column1);
         pinnedCol2 = resolveColumn(layoutJson.column2);
         pinnedCol3 = resolveColumn(layoutJson.column3);
-        editorsChoiceArticles = resolveColumn(layoutJson.editorsChoice);
+        editorsChoiceArticles = resolveColumn(layoutJson.editorsChoice).filter((a): a is ComponentArticle => a !== null);
       }
 
       // Build pinned spotlight authors
@@ -532,18 +526,7 @@ export default async function SectionPageRoute({ params }: Args) {
           sort: '-publishedDate',
           limit: 5,
           depth: 1,
-          select: {
-            title: true,
-            slug: true,
-            subdeck: true,
-            featuredImage: true,
-            section: true,
-            kicker: true,
-            publishedDate: true,
-            createdAt: true,
-            authors: true,
-            opinionType: true,
-          },
+          select: opinionCardSelect,
         })
       )
     );
@@ -857,7 +840,7 @@ export default async function SectionPageRoute({ params }: Args) {
         <OpinionSectionPage
           title={sectionTitle}
           articles={formattedArticles}
-          rawArticles={articles}
+          spotlightAuthors={buildOpinionSpotlights(articles)}
           pinnedCol1={pinnedCol1}
           pinnedCol2={pinnedCol2}
           pinnedCol3={pinnedCol3}
