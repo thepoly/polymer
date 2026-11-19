@@ -158,11 +158,12 @@ export default function SportsFeatured({ articles, focus }: { articles: Componen
     const measure = () => {
       const first = track.firstElementChild as HTMLElement | null;
       if (!first) return;
-      const step = first.offsetWidth + GAP;
+      const step = first.getBoundingClientRect().width + GAP;
       setMetrics({
         step,
-        // Cards fully in view, which is how far one click moves
-        perSet: Math.max(1, Math.floor((track.clientWidth + GAP) / step)),
+        // Keep fractional card widths and allow a pixel of layout rounding
+        // so a full four-card desktop row never advances only three cards.
+        perSet: Math.max(1, Math.floor((track.getBoundingClientRect().width + GAP + 1) / step)),
         maxOffset: Math.max(0, track.scrollWidth - track.clientWidth),
       });
     };
