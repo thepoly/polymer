@@ -112,6 +112,24 @@ export default function GetInvolvedPage() {
                 <CopyButton value="news@poly.rpi.edu" targetId="get-involved-tip-email" />
               </div>
             </section>
+
+            <div className="mt-10 grid grid-cols-1 gap-8 border-t border-rule-strong pt-6 sm:grid-cols-2">
+              <div className="min-w-0">
+                <h3 className="font-copy text-[22px] font-normal leading-[1.15]">Running an event?</h3>
+                <p className="mt-2 font-copy text-[16px] leading-[1.45] text-text-muted">Add it to the Features calendar.</p>
+                <Link href="/features/submit-event" className={`mt-3 inline-flex min-h-11 items-center gap-2 font-meta text-[13px] font-semibold text-accent ${focusStyle}`}>
+                  <span className="border-b border-accent">Submit an event</span><ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-copy text-[22px] font-normal leading-[1.15]">Advertise with The Poly</h3>
+                <p className="mt-2 font-copy text-[16px] leading-[1.45] text-text-muted">Ad rates and placements in the print edition.</p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <span id="get-involved-ads-email" className="select-all font-copy text-[18px]">business@poly.rpi.edu</span>
+                  <CopyButton value="business@poly.rpi.edu" targetId="get-involved-ads-email" label="Copy advertising email address" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>

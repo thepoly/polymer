@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-export default function CopyButton({ value, targetId }: { value: string; targetId: string }) {
+export default function CopyButton({ value, targetId, label = 'Copy news desk email address' }: { value: string; targetId: string; label?: string }) {
   const [status, setStatus] = useState<'idle' | 'copied' | 'selected' | 'error'>('idle');
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function CopyButton({ value, targetId }: { value: string; targetI
 
   return (
     <>
-      <button type="button" onClick={copy} aria-label="Copy news desk email address" className="min-h-11 min-w-[84px] cursor-pointer border border-rule bg-bg-main px-3 font-meta text-[12px] font-bold uppercase tracking-[0.08em] text-text-main hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">
+      <button type="button" onClick={copy} aria-label={label} className="min-h-11 min-w-[84px] cursor-pointer border border-rule bg-bg-main px-3 font-meta text-[12px] font-bold uppercase tracking-[0.08em] text-text-main hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">
         {status === 'copied' ? 'Copied' : 'Copy'}
       </button>
       <span role="status" className="sr-only">
