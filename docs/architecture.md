@@ -74,9 +74,13 @@ includes the footer's existing 12px margin.
 On phones (below 768px), the article strip keeps its logo centered while
 scrolling. Tablets (768–1023px) start with a centered logo; after 100px of
 scrolling they show a burger menu on the left and centered `Section | Title`.
-Both tablet text links return to the section page. The burger dropdown links
-to Home and all four sections, closes on selection, outside clicks, Escape,
-resizing or returning to the top, and returns focus to its button on Escape.
+Both tablet text links return to the section page. The burger opens the same
+`MobileMenuDrawer` as the mobile header, including section navigation,
+secondary links, theme toggle, archive search, dimmed backdrop and swipe-to-close.
+It closes on selection, backdrop clicks, Escape, resizing or returning to the
+top, and returns focus to its button on Escape. A secondary drawer trigger
+does not add another global swipe-to-open gesture, and closed drawers ignore
+touches while another drawer is open.
 Theme/share controls stay on the right. Desktop and homepage strips retain
 their existing behavior.
 

@@ -220,7 +220,11 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
     >
       <div className="relative flex items-center h-[56px] px-4 md:px-6">
         {/* Scrolled article tablets show a menu instead of the desktop logo. */}
-        {!isHome && !atTop && <ArticleSectionMenu />}
+        {!isHome && !atTop && (
+          <ArticleSectionMenu
+            onThemeToggle={() => triggerThemeTransition(window.innerWidth, 0, toggleDarkMode)}
+          />
+        )}
 
         {/* Left logo: hidden on articles while at top (a centered copy shows
             there instead); always shown on home mode. */}

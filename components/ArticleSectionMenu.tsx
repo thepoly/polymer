@@ -1,22 +1,20 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
-import Link from 'next/link';
 import { Menu } from 'lucide-react';
-import { primaryNavItems } from '@/components/MobileMenuDrawer';
+import { MobileMenuDrawer } from '@/components/MobileMenuDrawer';
+import { useTheme } from '@/components/ThemeProvider';
+import { openSearchOverlay } from '@/components/SearchOverlayHost';
 
-export default function ArticleSectionMenu() {
+export default function ArticleSectionMenu({ onThemeToggle }: { onThemeToggle: () => void }) {
   const [open, setOpen] = useState(false);
   const menuId = useId();
-  const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const { isDarkMode } = useTheme();
 
   useEffect(() => {
     if (!open) return;
 
-    const closeOnOutsideClick = (event: PointerEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
-    };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       setOpen(false);
@@ -24,18 +22,16 @@ export default function ArticleSectionMenu() {
     };
     const closeOnResize = () => setOpen(false);
 
-    document.addEventListener('pointerdown', closeOnOutsideClick);
     document.addEventListener('keydown', closeOnEscape);
     window.addEventListener('resize', closeOnResize);
     return () => {
-      document.removeEventListener('pointerdown', closeOnOutsideClick);
       document.removeEventListener('keydown', closeOnEscape);
       window.removeEventListener('resize', closeOnResize);
     };
   }, [open]);
 
   return (
-    <div ref={containerRef} className="relative hidden md:block lg:hidden">
+    <div className="relative hidden md:block lg:hidden">
       <button
         ref={buttonRef}
         type="button"
@@ -47,24 +43,26 @@ export default function ArticleSectionMenu() {
       >
         <Menu aria-hidden="true" className="h-5 w-5" />
       </button>
-      {open && (
-        <nav
-          id={menuId}
-          aria-label="Article section navigation"
-          className="absolute left-0 top-full mt-2 w-48 overflow-hidden rounded-lg border border-border-main bg-bg-main py-2 shadow-lg"
-        >
-          {[{ label: 'Home', href: '/' }, ...primaryNavItems].map(item => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setOpen(false)}
-              className="block px-4 py-3 font-meta text-[15px] text-text-main hover:bg-rule hover:text-accent focus-visible:bg-rule focus-visible:outline-2 focus-visible:outline-accent focus-visible:-outline-offset-2"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      )}
+      <MobileMenuDrawer
+        id={menuId}
+        isOpen={open}
+        onOpen={() => setOpen(true)}
+        onClose={() => setOpen(false)}
+        handleLinkClick={event => {
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+          setOpen(false);
+        }}
+        isDarkMode={isDarkMode}
+        onThemeToggle={() => {
+          setOpen(false);
+          onThemeToggle();
+        }}
+        onSearchOpen={() => {
+          setOpen(false);
+          openSearchOverlay();
+        }}
+        swipeToOpen={false}
+      />
     </div>
   );
 }
