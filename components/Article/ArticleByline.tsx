@@ -133,6 +133,9 @@ export const ArticleByline: React.FC<Props> = ({
       if (hasTitles) {
         const dividerRow = (
           <div className="flex flex-row flex-wrap items-stretch gap-y-1">
+            {/* "By", like the other formats, so the names under a photo
+                don't read as its credit */}
+            <div className={`${nameStyle} mr-[0.35em]`}>By</div>
             {enrichedStaff.map(({ user, title }, index) => (
               <React.Fragment key={user.id}>
                 {index > 0 && (
@@ -188,6 +191,7 @@ export const ArticleByline: React.FC<Props> = ({
 
         namesEl = (
           <div className={nameStyle}>
+            By{' '}
             {allNames.map((node, index) => (
               <React.Fragment key={index}>
                 {index > 0 && index === allNames.length - 1 ? ' & ' : index > 0 ? ', ' : ''}

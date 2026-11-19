@@ -19,6 +19,9 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
   const writeInPhotographer = featuredImage
     ? ((featuredImage as unknown as Record<string, unknown>).writeInPhotographer as string | null | undefined)
     : null;
+  const hasCaptionLine = Boolean(
+    imageCaption || (featuredImage?.photographer && typeof featuredImage.photographer === 'object') || writeInPhotographer,
+  );
 
   return (
     <div
@@ -86,7 +89,9 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
         );
       })()}
 
-      <div className={`w-full max-w-[680px] mx-auto ${hasFeaturedImage ? '' : '-mt-1'}`}>
+      {/* A photo with nothing under it: a clear gap, so the byline isn't
+          read as the photo's credit */}
+      <div className={`w-full max-w-[680px] mx-auto ${!hasFeaturedImage ? '-mt-1' : hasCaptionLine ? '' : 'mt-4'}`}>
         <ArticleByline article={article} showDate={false} />
       </div>
     </div>
