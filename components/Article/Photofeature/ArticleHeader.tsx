@@ -77,14 +77,16 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
               onClick={() => setIsMenuOpen(true)}
               className="flex h-9 w-9 items-center justify-center text-white hover:opacity-80 transition-opacity"
               aria-label="Open menu"
+              aria-expanded={isMenuOpen}
+              aria-controls="photofeature-menu"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
 
           {/* Center: Logo */}
           <div className="flex justify-center">
-            <Link href="/" className="relative w-[6.5rem] md:w-[9.5rem] h-7 hover:opacity-90 transition-opacity">
+            <Link href="/" aria-label="The Polytechnic, home page" className="relative w-[6.5rem] md:w-[9.5rem] h-7 hover:opacity-90 transition-opacity">
               <Image
                 src={logoSrcs.mobileDark}
                 alt="The Polytechnic"
@@ -230,6 +232,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
       </div>
 
       <MobileMenuDrawer
+        id="photofeature-menu"
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
         onOpen={() => setIsMenuOpen(true)}

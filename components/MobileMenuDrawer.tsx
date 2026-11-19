@@ -38,7 +38,10 @@ export function MobileMenuDrawer({
   onThemeToggle,
   onSearchOpen,
   className,
+  id,
 }: {
+  /** For the menu button's aria-controls */
+  id?: string;
   isOpen: boolean;
   onClose: () => void;
   onOpen: () => void;
@@ -196,8 +199,12 @@ export function MobileMenuDrawer({
         onClick={onClose}
       />
 
+      {/* Off screen while closed: inert, so its links aren't tabbed to or
+          read out until it opens */}
       <div
         ref={panelRef}
+        id={id}
+        inert={!showDrawer}
         className={`absolute top-0 left-0 bottom-0 bg-bg-main will-change-transform ${showDrawer ? 'shadow-2xl' : 'shadow-none'}`}
         style={{
           width: `${DRAWER_WIDTH * 100}vw`,

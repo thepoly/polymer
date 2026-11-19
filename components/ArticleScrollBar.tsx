@@ -207,6 +207,9 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
   return (
     <div
       className="fixed top-0 left-0 right-0 z-[51] bg-bg-main border-b border-border-main"
+      // Invisible until scrolled to: out of the tab order and the
+      // accessibility tree until then too
+      inert={(isHome || hideUntilScroll) && !visible}
       style={{
         opacity: (isHome || hideUntilScroll) && !visible ? 0 : 1,
         pointerEvents: (isHome || hideUntilScroll) && !visible ? 'none' : 'auto',
@@ -222,6 +225,9 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
             !isHome && atTop ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
           aria-hidden={!isHome && atTop ? true : undefined}
+          // Hidden copies are taken out of the tab order too
+          tabIndex={!isHome && atTop ? -1 : undefined}
+          aria-label="The Polytechnic, home page"
         >
           <div className="relative h-[56px] w-[180px]">
             <Image
@@ -243,6 +249,8 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
               atTop ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
             aria-hidden={!atTop}
+            tabIndex={atTop ? undefined : -1}
+            aria-label="The Polytechnic, home page"
           >
             <div className="relative h-[56px] w-[180px]">
               <Image
@@ -266,6 +274,7 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
           >
             <a
               href={sectionHref}
+              tabIndex={atTop ? -1 : undefined}
               className="font-bold uppercase tracking-wide text-text-main shrink-0 transition-colors hover:text-accent"
             >
               {sectionLabel}

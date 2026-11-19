@@ -13,6 +13,7 @@ import { User } from "@/payload-types";
 import ThemeStyle from "@/components/ThemeStyle";
 import BottomNav from "@/components/BottomNav";
 import SearchOverlayHost from "@/components/SearchOverlayHost";
+import SkipLink from "@/components/SkipLink";
 import { getTheme } from "@/lib/getTheme";
 import { getSeo } from "@/lib/getSeo";
 
@@ -177,6 +178,7 @@ export default async function RootLayout({
       <body
         className={`${cinzel.variable} ${barlowCondensed.variable} ${bebasNeuePro.variable} antialiased`}
       >
+        <SkipLink />
         <ThemeProvider initialDarkMode={isDarkMode} logoSrcs={siteTheme.logoSrcs}>
           <SiteAnalytics user={analyticsUser} />
           <WebVitals />

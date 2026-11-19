@@ -248,8 +248,14 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
         <div className="mobile-chrome-header-inner safe-area-mobile-header-x mx-auto max-w-[1280px]">
             <div className="grid h-[56px] grid-cols-[1fr_auto_1fr] items-center">
             <div className="flex justify-start">
-              <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="relative -top-[2px] flex h-9 w-9 items-center justify-center overflow-hidden text-text-main">
-                <span className="relative block h-5 w-5">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={isMobileMenuOpen}
+                aria-controls="mobile-menu"
+                className="relative -top-[2px] flex h-9 w-9 items-center justify-center overflow-hidden text-text-main"
+              >
+                <span aria-hidden="true" className="relative block h-5 w-5">
                   <Menu
                     className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
                       isMobileMenuOpen ? "-translate-x-6 opacity-0" : "translate-x-0 opacity-100"
@@ -268,6 +274,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
               onClick={(e) => handleLinkClick(e, "/")}
               onMouseEnter={() => prefetchLink("/")}
               onFocus={() => prefetchLink("/")}
+              aria-label="The Polytechnic, home page"
               className="relative block h-[56px] w-[min(72vw,300px)] justify-self-center"
             >
               <Image
@@ -279,8 +286,8 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
               />
             </Link>
             <div className="flex justify-end">
-              <button onClick={() => openSearchOverlay()} className="relative -top-[2px] flex h-9 w-9 items-center justify-center text-text-main">
-                <span className="relative block h-5 w-5">
+              <button onClick={() => openSearchOverlay()} aria-label="Search" className="relative -top-[2px] flex h-9 w-9 items-center justify-center text-text-main">
+                <span aria-hidden="true" className="relative block h-5 w-5">
                   <Search className="absolute inset-0 m-auto h-4 w-4" />
                 </span>
               </button>
@@ -298,6 +305,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
       </header>
 
       <MobileMenuDrawer
+        id="mobile-menu"
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         onOpen={() => setIsMobileMenuOpen(true)}
@@ -377,6 +385,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                       ? "border-rule text-text-main hover:border-white hover:bg-white hover:text-black"
                       : "border-rule text-text-main hover:border-black hover:bg-black hover:text-white"
                   }`}
+                  aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
                   onClick={(e) => {
                     setShowDarkModePrompt(false);
                     const rect = e.currentTarget.getBoundingClientRect();
@@ -387,7 +396,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                     );
                   }}
                 >
-                  {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                  {isDarkMode ? <Sun className="h-3.5 w-3.5" aria-hidden="true" /> : <Moon className="h-3.5 w-3.5" aria-hidden="true" />}
                 </button>
 
                 {showDarkModePrompt && (
@@ -590,6 +599,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                 onClick={(e) => handleLinkClick(e, "/")}
                 onMouseEnter={() => prefetchLink("/")}
                 onFocus={() => prefetchLink("/")}
+                aria-label="The Polytechnic, home page"
                 className="relative -top-2 block h-[76px] w-[456px] max-w-full shrink-0 cursor-pointer"
               >
                 <Image
@@ -684,6 +694,10 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
           </div>
         )}
       </header>
+
+      {/* Where "Skip to content" (components/SkipLink.tsx) lands: the page
+          starts right after the header, wherever a page draws it */}
+      <div id="main-content" tabIndex={-1} className="outline-none" />
 
       {/* <MaraudersFootsteps /> */}
     </>
