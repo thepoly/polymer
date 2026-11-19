@@ -277,7 +277,13 @@ function trackRedirect(req: NextRequest, path: string, destination: string) {
       properties: {
         redirect_path: path,
         redirect_destination: destination,
-        $current_url: req.nextUrl.href,
+        // Behind nginx the request URL is the internal localhost:3000 one, so
+        // rebuild it on the public origin.
+        $current_url: new URL(
+          req.nextUrl.pathname + req.nextUrl.search,
+          process.env.NEXT_PUBLIC_SITE_URL || 'https://poly.rpi.edu',
+        ).href,
+        $host: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://poly.rpi.edu').host,
         $pathname: req.nextUrl.pathname,
         $referrer: req.headers.get('referer') || '$direct',
         $raw_user_agent: req.headers.get('user-agent') || undefined,
