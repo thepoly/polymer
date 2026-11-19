@@ -61,6 +61,7 @@ Collections:
 - `event-submissions`: public event submissions for the calendar
 - `logos`: branded section logos and homepage assets
 - `device-tokens`: registered Android and iOS FCM tokens (anonymous create via `/api/push/register`, admin-only read/delete)
+- `redirects`: short tracked links at `poly.rpi.edu/<path>` (`path` + `destination`); `middleware.ts` answers with a 302 and captures a `redirect_followed` PostHog event per hit
 - `schools`: opponents RPI teams play, each with a logo (upload collection; seeded from RPI Athletics schedules by `pnpm db:seed:schools`). Sports articles link one as `opponent`, alongside `homeAway`, `rpiScore`, `opponentScore` and `gameStatus`
 
 Globals:

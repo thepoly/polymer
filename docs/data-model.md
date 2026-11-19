@@ -100,6 +100,10 @@ Opponents RPI teams play, each with its logo (upload collection, files in `MEDIA
 
 Sports articles carry an optional `sport` (values in [`lib/sports.ts`](../lib/sports.ts), matching RPI Athletics slugs; an empty kicker is filled with the sport name) and an optional game result: `opponent` (→ `schools`), `homeAway` (`home` | `away` | `neutral`), `rpiScore`, `opponentScore`, `gameStatus` (e.g. "Final/OT"; blank means "Final").
 
+### `redirects` — [`collections/Redirects.ts`](../collections/Redirects.ts)
+
+Short tracked links at `poly.rpi.edu/<path>`. `path` is one lowercase segment (validated against the site's own top-level routes in [`lib/redirects.ts`](../lib/redirects.ts)); `destination` is a full URL or a site-relative path. `middleware.ts` holds the table in memory (30s refresh), answers a match with a `302` + `Cache-Control: no-store`, and captures a `redirect_followed` PostHog event (`redirect_path`, `redirect_destination`, referrer, user agent, any `utm_*` params). Staff (`admin`, `eic`, `editor`) manage them in the admin.
+
 ### `device-tokens` — [`collections/DeviceTokens.ts`](../collections/DeviceTokens.ts)
 
 Registered Android FCM tokens. Schema:

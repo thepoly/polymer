@@ -51,6 +51,7 @@ import * as migration_20261022_000000_add_sports_page_layout from './20261022_00
 import * as migration_20261022_010000_add_schools_and_game_result from './20261022_010000_add_schools_and_game_result'
 import * as migration_20261022_020000_add_article_sport from './20261022_020000_add_article_sport'
 import * as migration_20261112_000000_add_user_portfolio from './20261112_000000_add_user_portfolio'
+import * as migration_20261119_000000_add_redirects from './20261119_000000_add_redirects'
 
 export const migrations = [
   {
@@ -317,5 +318,10 @@ export const migrations = [
     up: migration_20261112_000000_add_user_portfolio.up,
     down: migration_20261112_000000_add_user_portfolio.down,
     name: '20261112_000000_add_user_portfolio',
+  },
+  {
+    up: migration_20261119_000000_add_redirects.up,
+    down: migration_20261119_000000_add_redirects.down,
+    name: '20261119_000000_add_redirects',
   },
 ];
