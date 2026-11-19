@@ -108,6 +108,7 @@ function pickWeatherIcon(forecast: string): React.ComponentType<{ className?: st
 
 export default function Header({ compact = false, mobileTight = false, flushMobileBottom = false, logoSrcs, headerAnimation = DEFAULT_HEADER_ANIMATION, volume, edition, liveEntries, weather }: { compact?: boolean; mobileTight?: boolean; flushMobileBottom?: boolean; logoSrcs?: HeaderLogoSrcs; headerAnimation?: HeaderAnimationConfig; volume?: number | null; edition?: number | null; liveEntries?: LiveArticleStripEntry[]; weather?: HeaderWeather }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [showDarkModePrompt, setShowDarkModePrompt] = useState(false);
   const currentDate = useCurrentDate();
   const { animationKey, phase, isAnimating, navigateImmediately, triggerTransition, suckDurationMs, shootDurationMs } = useHeaderTransition();
@@ -292,11 +293,12 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
             <div className="grid h-[56px] grid-cols-[1fr_auto_1fr] items-center">
             <div className="flex justify-start">
               <button
+                ref={menuButtonRef}
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={isMobileMenuOpen}
                 aria-controls="mobile-menu"
-                className="relative -top-[2px] flex h-9 w-9 items-center justify-center overflow-hidden text-text-main"
+                className="relative -top-[2px] flex h-11 w-11 items-center justify-center overflow-hidden text-text-main focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
               >
                 <span aria-hidden="true" className="relative block h-5 w-5">
                   <Menu
@@ -318,7 +320,7 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
               onMouseEnter={() => prefetchLink("/")}
               onFocus={() => prefetchLink("/")}
               aria-label="The Polytechnic, home page"
-              className="relative block h-[56px] w-[min(72vw,300px)] justify-self-center"
+              className="relative block h-[56px] w-[min(72vw,300px,calc(100vw-112px))] justify-self-center"
             >
               <Image
                 src={mobileLogoSrc}
@@ -329,7 +331,7 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
               />
             </Link>
             <div className="flex justify-end">
-              <button onClick={() => openSearchOverlay()} aria-label="Search" className="relative -top-[2px] flex h-9 w-9 items-center justify-center text-text-main">
+              <button onClick={() => openSearchOverlay()} aria-label="Search" className="relative -top-[2px] flex h-11 w-11 items-center justify-center text-text-main focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">
                 <span aria-hidden="true" className="relative block h-5 w-5">
                   <Search className="absolute inset-0 m-auto h-4 w-4" />
                 </span>
@@ -349,6 +351,7 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
 
       <MobileMenuDrawer
         id="mobile-menu"
+        returnFocusRef={menuButtonRef}
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         onOpen={() => setIsMobileMenuOpen(true)}

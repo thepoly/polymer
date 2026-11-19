@@ -75,10 +75,17 @@ On phones (below 768px), the article strip keeps its logo centered while
 scrolling. Tablets (768–1023px) start with a centered logo; after 100px of
 scrolling they show a burger menu on the left and centered `Section | Title`.
 Both tablet text links return to the section page. The burger opens the same
-`MobileMenuDrawer` as the mobile header, including section navigation,
-secondary links, theme toggle, archive search, dimmed backdrop and swipe-to-close.
-It closes on selection, backdrop clicks, Escape, resizing or returning to the
-top, and returns focus to its button on Escape. A secondary drawer trigger
+`MobileMenuDrawer` as the mobile header and photofeature hero. It is a portalled
+modal dialog with a visible close button, section descriptions/current-section
+marker, archive search, paper links, `/submit` writing link, dark-mode switch
+and colophon. Phone width is min(86vw, 360px); tablets use 380px. The panel
+scrolls on short screens, with its footer last and split safe-area padding.
+Opening moves focus inside; Tab stays in the dialog and the page behind is
+inert. Close restores prior inert/scroll state and focus, except when following
+a link or opening search. The 220ms swipe/slide uses the rendered panel width;
+reduced motion disables transitions. Font tokens are carried across the portal
+to preserve article-local Follytechnic styling. The tablet trigger closes on
+resize or returning to the top. A secondary drawer trigger
 does not add another global swipe-to-open gesture, and closed drawers ignore
 touches while another drawer is open.
 Theme/share controls stay on the right. Desktop and homepage strips retain

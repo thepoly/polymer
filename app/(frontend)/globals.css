@@ -535,11 +535,21 @@ h6.font-display.italic {
 
 }
 
-.safe-area-mobile-drawer {
-  padding-top: calc(0.875rem + var(--safe-area-top));
-  padding-right: calc(1.125rem + var(--safe-area-right));
-  padding-bottom: calc(1.25rem + var(--safe-area-bottom));
-  padding-left: calc(1.125rem + var(--safe-area-left));
+.safe-area-mobile-drawer-top {
+  min-height: calc(56px + var(--safe-area-top));
+  padding-top: calc(6px + var(--safe-area-top));
+  padding-right: calc(14px + var(--safe-area-right));
+  padding-left: calc(14px + var(--safe-area-left));
+}
+
+.safe-area-mobile-drawer-content,
+.safe-area-mobile-drawer-footer {
+  padding-right: calc(18px + var(--safe-area-right));
+  padding-left: calc(18px + var(--safe-area-left));
+}
+
+.safe-area-mobile-drawer-footer {
+  padding-bottom: calc(22px + var(--safe-area-bottom));
 }
 
 /* Bottom nav only reserves space when mounted (Capacitor shell only).

@@ -19,6 +19,7 @@ type Props = {
 
 export const ArticleHeader: React.FC<Props> = ({ article }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuButtonRef = React.useRef<HTMLButtonElement>(null);
   const { isDarkMode, toggleDarkMode, logoSrcs } = useTheme();
   const featuredImage = article.featuredImage as Media | null;
   // Same precedence galleries use: explicit credit, then the media record's
@@ -75,9 +76,10 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
           {/* Left: Menu */}
           <div className="flex items-center justify-start">
             <button
+              ref={menuButtonRef}
               onClick={() => setIsMenuOpen(true)}
-              className="flex h-9 w-9 items-center justify-center text-white hover:opacity-80 transition-opacity"
-              aria-label="Open menu"
+              className="flex h-11 w-11 items-center justify-center text-white hover:opacity-80 transition-opacity focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+              aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={isMenuOpen}
               aria-controls="photofeature-menu"
             >
@@ -101,7 +103,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
           <div className="flex items-center justify-end">
             <button
               onClick={() => openSearchOverlay({ forceDark: true })}
-              className="flex h-9 w-9 items-center justify-center text-white hover:opacity-80 transition-opacity"
+              className="flex h-11 w-11 items-center justify-center text-white hover:opacity-80 transition-opacity focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
               aria-label="Search"
             >
               <Search className="w-5 h-5" />
@@ -237,6 +239,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
 
       <MobileMenuDrawer
         id="photofeature-menu"
+        returnFocusRef={menuButtonRef}
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
         onOpen={() => setIsMenuOpen(true)}

@@ -15,17 +15,10 @@ export default function ArticleSectionMenu({ onThemeToggle }: { onThemeToggle: (
   useEffect(() => {
     if (!open) return;
 
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      setOpen(false);
-      buttonRef.current?.focus();
-    };
     const closeOnResize = () => setOpen(false);
 
-    document.addEventListener('keydown', closeOnEscape);
     window.addEventListener('resize', closeOnResize);
     return () => {
-      document.removeEventListener('keydown', closeOnEscape);
       window.removeEventListener('resize', closeOnResize);
     };
   }, [open]);
@@ -35,7 +28,7 @@ export default function ArticleSectionMenu({ onThemeToggle }: { onThemeToggle: (
       <button
         ref={buttonRef}
         type="button"
-        aria-label="Open menu"
+        aria-label={open ? 'Close menu' : 'Open menu'}
         aria-expanded={open}
         aria-controls={menuId}
         onClick={() => setOpen(!open)}
@@ -45,6 +38,7 @@ export default function ArticleSectionMenu({ onThemeToggle }: { onThemeToggle: (
       </button>
       <MobileMenuDrawer
         id={menuId}
+        returnFocusRef={buttonRef}
         isOpen={open}
         onOpen={() => setOpen(true)}
         onClose={() => setOpen(false)}
