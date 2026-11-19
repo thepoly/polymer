@@ -20,6 +20,7 @@ import type { ThemeLogoSrcs, HeaderAnimationConfig } from "@/lib/getTheme";
 import LiveStrip, { type LiveArticleStripEntry } from "@/components/LiveStrip";
 import { HEADER_WAVE_CONVERGE, HEADER_WAVE_SVG_H, generateWaveFleet } from "@/lib/headerWaveFleet";
 import { BAR_SLIDE_MS, measureBar, slideBar, type BarSpot } from "@/components/slidingBar";
+import { slideSectionBarOut } from "@/components/sectionBarExit";
 const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
 
 /**
@@ -30,6 +31,8 @@ const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
  * wasn't in a section (the bar then grows in where it lands).
  */
 let lastSectionBar: BarSpot | null | undefined;
+type LogoBarExit = { bar: BarSpot; at: number };
+let pendingLogoExit: LogoBarExit | null = null;
 
 function formatCurrentDate() {
   return new Date().toLocaleDateString("en-US", {
@@ -116,22 +119,35 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
   const activeSectionHref =
     primaryNavItems.find((item) => currentPath === item.href || currentPath.startsWith(`${item.href}/`))?.href ?? null;
   const sectionNavRef = useRef<HTMLElement>(null);
+  const logoExitRef = useRef<LogoBarExit | null>(null);
 
   // Slide the section bar over from where it was on the last page. The bar
   // rests inside the active link (plain CSS); this only animates it in.
   useLayoutEffect(() => {
+    // Keep the captured move through Strict Mode's effect restart too.
+    const exit = logoExitRef.current ?? pendingLogoExit;
+    pendingLogoExit = null;
     const nav = sectionNavRef.current;
     const bar = nav?.querySelector<HTMLElement>("[data-slide-bar]") ?? null;
     const measure = (): BarSpot | null => (nav && bar ? measureBar(bar) : null);
     // Below desktop width the section links are hidden: nothing to slide,
     // and a slide on the next page would start from a bogus spot
     if (!nav || nav.getBoundingClientRect().width === 0) {
+      logoExitRef.current = null;
       lastSectionBar = undefined;
       return;
     }
     const here = measure();
     const previous = lastSectionBar;
     lastSectionBar = here;
+
+    if (currentPath === "/" && exit && performance.now() - exit.at < 10000) {
+      logoExitRef.current = exit;
+      return slideSectionBarOut(nav, exit.bar, () => {
+        if (logoExitRef.current === exit) logoExitRef.current = null;
+      });
+    }
+    logoExitRef.current = null;
 
     // From the last page's bar, or (from a page outside the sections) a
     // point in the middle of this one, so it grows out both ways. The red
@@ -155,7 +171,7 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
       cancelled = true;
       window.removeEventListener("resize", save);
     };
-  }, [activeSectionHref]);
+  }, [activeSectionHref, currentPath]);
 
   const shouldEnableAnimatedHeaderTransition =
     headerAnimation.enabled !== false &&
@@ -185,6 +201,16 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
     if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) return;
     if (!href.startsWith("/")) return;
     const currentRoute = pathname ?? window.location.pathname;
+    pendingLogoExit = null;
+    if (href === "/" && currentRoute !== "/") {
+      const nav = sectionNavRef.current;
+      const bar = nav?.querySelector<HTMLElement>("[data-slide-bar]");
+      if (nav && bar && nav.clientWidth > 0) {
+        const navBox = nav.getBoundingClientRect();
+        const box = bar.getBoundingClientRect();
+        pendingLogoExit = { bar: { left: box.left - navBox.left + nav.scrollLeft, width: box.width }, at: performance.now() };
+      }
+    }
 
     if (isAnimating) {
       e.preventDefault();
@@ -468,7 +494,7 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
 
             `}} />
 
-            <div className="relative">
+            <div className="relative" data-section-rule>
             <div className="flex items-end justify-between gap-8 pb-0.5">
               <div
                 className={`absolute left-0 right-0 bottom-0 h-px overflow-visible pointer-events-none ${
