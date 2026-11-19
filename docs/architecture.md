@@ -65,6 +65,13 @@ headlines. These overrides apply only to the title within standard, Opinion,
 photofeature and live articles, and to the title in the sticky article strip;
 italic emphasis is preserved.
 
+At tablet widths (768–1023px), the article strip replaces its logos and
+centered article text with a section dropdown on the left. The dropdown links
+to Home and all four sections, closes on selection, outside clicks, Escape
+or resizing, and returns focus to its button on Escape. Theme and share
+controls stay on the right. Phone, desktop and homepage strips retain their
+existing layouts.
+
 Homepage composition is **data-driven**: the `layout` collection (one
 versioned global-ish doc) describes what's pinned, what's lead, and which
 sections render below. `app/(frontend)/page.tsx` reads layout and supplements

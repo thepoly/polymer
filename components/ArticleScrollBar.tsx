@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Moon, Search, Sun } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import { openSearchOverlay } from '@/components/SearchOverlayHost';
+import ArticleSectionMenu from '@/components/ArticleSectionMenu';
 import posthog from 'posthog-js';
 
 type Props = {
@@ -217,11 +218,14 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
       }}
     >
       <div className="relative flex items-center h-[56px] px-4 md:px-6">
+        {/* Article tablets use section navigation in place of the logos. */}
+        {!isHome && <ArticleSectionMenu section={section!} />}
+
         {/* Left logo: hidden on articles while at top (a centered copy shows
             there instead); always shown on home mode. */}
         <Link
           href="/"
-          className={`shrink-0 transition-opacity duration-300 ease-out ${
+          className={`shrink-0 transition-opacity duration-300 ease-out ${!isHome ? 'md:hidden lg:block' : ''} ${
             !isHome && atTop ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
           aria-hidden={!isHome && atTop ? true : undefined}
@@ -245,7 +249,7 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
         {!isHome && (
           <Link
             href="/"
-            className={`absolute left-1/2 -translate-x-1/2 transition-opacity duration-300 ease-out ${
+            className={`absolute left-1/2 -translate-x-1/2 md:hidden lg:block transition-opacity duration-300 ease-out ${
               atTop ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
             aria-hidden={!atTop}
@@ -267,7 +271,7 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
             the user has scrolled past the logo-shift threshold. */}
         {!isHome && (
           <div
-            className={`hidden md:flex items-center gap-2 font-meta text-[13px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[50%] transition-opacity duration-300 ease-out ${
+            className={`hidden lg:flex items-center gap-2 font-meta text-[13px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[50%] transition-opacity duration-300 ease-out ${
               atTop ? 'opacity-0 pointer-events-none' : 'opacity-100'
             }`}
             aria-hidden={atTop}
