@@ -65,6 +65,9 @@ headlines. These overrides apply only to the title within standard, Opinion,
 photofeature and live articles, and to the title in the sticky article strip;
 italic emphasis is preserved.
 
+News recommendation titles at the bottom of articles also use regular weight,
+including bold spans in their rich-text headlines.
+
 On phones (below 768px), the article strip keeps its logo centered while
 scrolling. Tablets (768–1023px) start with a centered logo; after 100px of
 scrolling they show a burger menu on the left and centered `Section | Title`.

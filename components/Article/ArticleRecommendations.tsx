@@ -102,10 +102,13 @@ const getArticleLabel = (article: RecommendationArticle) => {
 };
 
 const getHeadlineClasses = (article: RecommendationArticle, variant: 'lead' | 'list') => {
+  const weight = article.section === 'news'
+    ? 'font-normal [&_strong]:font-normal [&_b]:font-normal'
+    : 'font-bold';
   const base =
     variant === 'lead'
-      ? 'font-copy font-bold leading-[1.12] tracking-[-0.01em] text-[28px] md:text-[32px]'
-      : 'font-copy font-bold leading-[1.12] tracking-[-0.01em] text-[22px] md:text-[24px]';
+      ? 'font-copy leading-[1.12] tracking-[-0.01em] text-[28px] md:text-[32px]'
+      : 'font-copy leading-[1.12] tracking-[-0.01em] text-[22px] md:text-[24px]';
 
   const sectionStyles = [
     article.section === 'features'
@@ -124,7 +127,7 @@ const getHeadlineClasses = (article: RecommendationArticle, variant: 'lead' | 'l
     .filter(Boolean)
     .join(' ');
 
-  return `${base} text-text-main transition-colors ${sectionStyles}`;
+  return `${base} ${weight} text-text-main transition-colors ${sectionStyles}`;
 };
 
 const prioritizeRecommendations = (articles: RecommendationArticle[], currentArticle: Article) => {
