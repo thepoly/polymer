@@ -10,7 +10,7 @@ root has lighter-weight onboarding (`/README.md`) and agent-oriented guides
 | Doc | When to read it |
 | --- | --- |
 | [`architecture.md`](architecture.md) | First time touching the app: request flow, runtime layers, where things live |
-| [`local-development.md`](local-development.md) | Setting up a working dev loop, env vars, troubleshooting |
+| [`local-development.md`](local-development.md) | Dev setup, env vars, pre-commit checks, CMS image preview lint policy, troubleshooting |
 | [`data-model.md`](data-model.md) | Adding/changing a Payload collection, global, or field |
 | [`migrations.md`](migrations.md) | The dual-path migration rule (Payload TS + raw SQL) — read **before** you change the schema |
 | [`search.md`](search.md) | Working on `/api/search`, `/archive`, or rate limiting |

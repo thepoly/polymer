@@ -81,7 +81,7 @@ will prompt you to create the first admin user.
 
 ## Pre-commit checklist
 
-Run **both** before pushing:
+Run **both** before committing:
 
 ```bash
 pnpm lint
@@ -90,6 +90,28 @@ pnpm typecheck
 
 CI runs these in addition to a Postgres-backed `pnpm exec payload migrate`
 and `pnpm build`. Pushes that fail any step block the deploy workflow.
+
+### Lint expectations and CMS image previews
+
+The current baseline is **zero ESLint errors and zero warnings**, with no
+TypeScript errors from `pnpm typecheck`.
+
+Staff CMS layout previews and drag overlays intentionally use ordinary
+`<img>` elements. The `cms-layout-editor-previews` override in
+[`eslint.config.mjs`](../eslint.config.mjs) disables only
+`@next/next/no-img-element` for these five files:
+
+- `components/Dashboard/LayoutEditor/index.tsx` (homepage)
+- `components/Dashboard/FeaturesLayoutEditor/index.tsx`
+- `components/Dashboard/NewsLayoutEditor/index.tsx`
+- `components/Dashboard/OpinionLayoutEditor/index.tsx`
+- `components/Dashboard/SportsLayoutEditor/index.tsx`
+
+This policy is settled; no preview optimization task remains.
+The rule remains enabled for public-facing components and other CMS files;
+alt-text accessibility checks remain enabled in the previews. Keep the
+exception limited to these files and this rule. Any future exception needs
+its own rationale rather than a blanket Dashboard or repository exclusion.
 
 ## Troubleshooting
 
