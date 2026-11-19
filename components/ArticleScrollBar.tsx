@@ -280,7 +280,7 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
               {sectionLabel}
             </a>
             <span className="text-rule-strong shrink-0">|</span>
-            <span className="text-text-muted truncate">{richTitle || title}</span>
+            <span className="font-normal [&_strong]:font-normal [&_b]:font-normal text-text-muted truncate">{richTitle || title}</span>
           </div>
         )}
 

@@ -116,7 +116,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
               <ArticleSectionLabel section={article.section} kicker={article.kicker} inverse />
             </div>
 
-            <h1 data-ie-field="title" className={`font-copy font-bold text-[43px] md:text-[38px] lg:text-[47px] text-white leading-[1.05] tracking-[-0.02em] drop-shadow-lg ${article.section === "opinion" ? "font-light" : ""} ${article.section === "sports" ? "font-light" : ""} ${article.section === "features" ? "font-light" : ""} pointer-events-auto`}>
+            <h1 data-ie-field="title" className="font-copy font-normal [&_strong]:font-normal [&_b]:font-normal text-[43px] md:text-[38px] lg:text-[47px] text-white leading-[1.05] tracking-[-0.02em] drop-shadow-lg pointer-events-auto">
               {renderLexicalHeadline(article.title)}
             </h1>
 

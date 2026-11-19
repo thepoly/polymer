@@ -26,7 +26,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
     <div className="flex flex-col gap-10 mb-8" style={{ paddingTop: '20px' }}>
       <div className="flex flex-col gap-4 max-w-[680px] w-full mx-auto">
         <ArticleSectionLabel section={article.section} kicker={article.kicker} />
-        <h1 data-ie-field="title" className={`font-bold text-[39px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em] transition-colors font-copy ${article.section === "opinion" ? "font-light" : ""} ${article.section === "sports" ? "font-light" : ""} ${article.section === "features" ? "font-light" : ""}`}>
+        <h1 data-ie-field="title" className="font-normal [&_strong]:font-normal [&_b]:font-normal text-[39px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em] transition-colors font-copy">
           {renderLexicalHeadline(article.title)}
         </h1>
         {article.subdeck && (

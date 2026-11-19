@@ -60,6 +60,11 @@ are omitted. Opinion uses its stored kicker, falling back to its type label
 for older articles. Photofeature heroes use white kicker text and a white rule
 over the photo; mobile photofeatures use the standard header.
 
+Article titles use regular weight, including bold spans stored in rich-text
+headlines. These overrides apply only to the title within standard, Opinion,
+photofeature and live articles, and to the title in the sticky article strip;
+italic emphasis is preserved.
+
 Homepage composition is **data-driven**: the `layout` collection (one
 versioned global-ish doc) describes what's pinned, what's lead, and which
 sections render below. `app/(frontend)/page.tsx` reads layout and supplements

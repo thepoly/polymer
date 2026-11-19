@@ -124,7 +124,7 @@ export default function DemoPage() {
             <span className="font-meta text-accent font-[440] italic text-[15px] md:text-[16px] tracking-[0.06em]">
               Features
             </span>
-            <h1 className="font-display font-bold text-[39px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em]">
+            <h1 className="font-display font-normal text-[39px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em]">
               The Constitution of the United States
             </h1>
             <h2 className="font-meta text-xl md:text-2xl font-normal text-text-muted leading-snug">

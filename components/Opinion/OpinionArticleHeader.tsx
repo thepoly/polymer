@@ -36,7 +36,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
 
       {/* Title */}
       <div className="flex flex-col gap-4 max-w-[680px] w-full mx-auto">
-        <h1 data-ie-field="title" className="font-copy font-light text-[39px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center">
+        <h1 data-ie-field="title" className="font-copy font-normal [&_strong]:font-normal [&_b]:font-normal text-[39px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center">
           {renderLexicalHeadline(article.title)}
         </h1>
       </div>
