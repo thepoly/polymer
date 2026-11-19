@@ -54,12 +54,14 @@ empty slots with recent stories from each section.
 The header animation, theme colors, and SEO defaults all come from globals
 (`theme`, `seo`) so they can be edited from the admin without a deploy.
 
-The desktop section underline slides between section links. Choosing the
-masthead logo from a section carries that underline onto the landing-page
-rule and slides it off the left edge, without delaying navigation. It uses
-the section slide's 420ms timing and easing, with the active-colour text
-following the bar. Reduced motion and mobile skip the exit; resizing or
-leaving the landing page cleans it up.
+The desktop section underline slides between section links. Opening a
+section from the landing page brings its underline in from outside the
+rule's left edge and slides it beneath the selected label at a fixed width.
+Choosing the masthead logo from a section carries that underline onto the
+landing-page rule and slides it off the left edge, without delaying navigation.
+It uses the section slide's 420ms timing and easing, with the active-colour text
+following the bar. Reduced motion and mobile skip these entrance and exit
+animations; resizing or navigating again cleans them up.
 
 ### Payload — `app/(payload)/` and `payload.config.ts`
 

@@ -20,7 +20,7 @@ import type { ThemeLogoSrcs, HeaderAnimationConfig } from "@/lib/getTheme";
 import LiveStrip, { type LiveArticleStripEntry } from "@/components/LiveStrip";
 import { HEADER_WAVE_CONVERGE, HEADER_WAVE_SVG_H, generateWaveFleet } from "@/lib/headerWaveFleet";
 import { BAR_SLIDE_MS, measureBar, slideBar, type BarSpot } from "@/components/slidingBar";
-import { slideSectionBarOut } from "@/components/sectionBarExit";
+import { slideSectionBarIn, slideSectionBarOut } from "@/components/sectionBarTravel";
 const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
 
 /**
@@ -28,9 +28,11 @@ const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
  * slide over from it. Each page draws its own header, so this lives outside
  * the component: it survives moving between pages, not a reload. Undefined
  * until a header has drawn on a desktop-width screen; null when that page
- * wasn't in a section (the bar then grows in where it lands).
+ * wasn't in a section. The previous path identifies arrivals from the
+ * homepage, which enter from the rule's left edge.
  */
 let lastSectionBar: BarSpot | null | undefined;
+let lastHeaderPath: string | undefined;
 type LogoBarExit = { bar: BarSpot; at: number };
 let pendingLogoExit: LogoBarExit | null = null;
 
@@ -120,10 +122,13 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
     primaryNavItems.find((item) => currentPath === item.href || currentPath.startsWith(`${item.href}/`))?.href ?? null;
   const sectionNavRef = useRef<HTMLElement>(null);
   const logoExitRef = useRef<LogoBarExit | null>(null);
+  const sectionEntryRef = useRef<string | null>(null);
 
   // Slide the section bar over from where it was on the last page. The bar
   // rests inside the active link (plain CSS); this only animates it in.
   useLayoutEffect(() => {
+    const previousPath = lastHeaderPath;
+    lastHeaderPath = currentPath;
     // Keep the captured move through Strict Mode's effect restart too.
     const exit = logoExitRef.current ?? pendingLogoExit;
     pendingLogoExit = null;
@@ -134,6 +139,7 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
     // and a slide on the next page would start from a bogus spot
     if (!nav || nav.getBoundingClientRect().width === 0) {
       logoExitRef.current = null;
+      sectionEntryRef.current = null;
       lastSectionBar = undefined;
       return;
     }
@@ -142,6 +148,7 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
     lastSectionBar = here;
 
     if (currentPath === "/" && exit && performance.now() - exit.at < 10000) {
+      sectionEntryRef.current = null;
       logoExitRef.current = exit;
       return slideSectionBarOut(nav, exit.bar, () => {
         if (logoExitRef.current === exit) logoExitRef.current = null;
@@ -149,12 +156,20 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
     }
     logoExitRef.current = null;
 
-    // From the last page's bar, or (from a page outside the sections) a
-    // point in the middle of this one, so it grows out both ways. The red
-    // ink comes from a red copy of the links (see slidingBar.ts).
-    const from: BarSpot | null =
-      previous === null && here ? { left: here.left + here.width / 2, width: 0 } : (previous ?? null);
-    if (from) slideBar(nav, from, previous === null ? BAR_SLIDE_MS * 0.75 : BAR_SLIDE_MS);
+    let stopEntry: (() => void) | undefined;
+    if (bar && (previousPath === "/" || sectionEntryRef.current === currentPath)) {
+      sectionEntryRef.current = currentPath;
+      stopEntry = slideSectionBarIn(nav, () => {
+        if (sectionEntryRef.current === currentPath) sectionEntryRef.current = null;
+      });
+    } else {
+      sectionEntryRef.current = null;
+      // Section-to-section slides keep their existing movement. Arrivals
+      // from other pages still grow from the middle of the selected label.
+      const from: BarSpot | null =
+        previous === null && here ? { left: here.left + here.width / 2, width: 0 } : (previous ?? null);
+      if (from) slideBar(nav, from, previous === null ? BAR_SLIDE_MS * 0.75 : BAR_SLIDE_MS);
+    }
 
     if (!bar) return;
     // Measure again once the web font is in and on resize, so the next
@@ -169,6 +184,7 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
     window.addEventListener("resize", save);
     return () => {
       cancelled = true;
+      stopEntry?.();
       window.removeEventListener("resize", save);
     };
   }, [activeSectionHref, currentPath]);
@@ -204,7 +220,8 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
     pendingLogoExit = null;
     if (href === "/" && currentRoute !== "/") {
       const nav = sectionNavRef.current;
-      const bar = nav?.querySelector<HTMLElement>("[data-slide-bar]");
+      const bar = nav?.closest("[data-section-rule]")?.querySelector<HTMLElement>("[data-entering-section-bar]")
+        ?? nav?.querySelector<HTMLElement>("[data-slide-bar]");
       if (nav && bar && nav.clientWidth > 0) {
         const navBox = nav.getBoundingClientRect();
         const box = bar.getBoundingClientRect();
