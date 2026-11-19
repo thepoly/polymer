@@ -43,6 +43,8 @@ On mobile, Standings initially selects the leftmost displayed sport, even if
 its conference play has not started. Desktop initially prefers the lead
 story's sport when conference play has started. A reader's chosen tab stays
 selected when resizing between mobile and desktop.
+The active sport's underline matches its label width, rather than the wider
+button used to space the tabs.
 There is no extra gap from Standings to the Headlines rule below 768px.
 Between 768px and 1023px wide the gap is 20px; desktop retains 24px.
 

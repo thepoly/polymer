@@ -127,13 +127,22 @@ function SportTabs({
               aria-selected={selected}
               onClick={() => onSelect(s.sport)}
               style={tabWidth}
-              className={`shrink-0 border-b-2 pb-1.5 text-left font-meta text-[11px] uppercase tracking-[0.04em] whitespace-nowrap transition-colors xl:text-[12px] xl:tracking-[0.06em] ${
+              className={`shrink-0 pb-2 text-left font-meta text-[11px] uppercase tracking-[0.04em] whitespace-nowrap transition-colors xl:text-[12px] xl:tracking-[0.06em] ${
                 selected
-                  ? "border-accent text-text-main"
-                  : "border-transparent text-text-muted hover:text-text-main"
+                  ? "text-text-main"
+                  : "text-text-muted hover:text-text-main"
               }`}
             >
-              {s.tabLabel}
+              <span className="relative block w-fit">
+                {s.tabLabel}
+                {selected && (
+                  <span
+                    aria-hidden="true"
+                    data-slide-bar
+                    className="pointer-events-none absolute -bottom-2 left-0 right-0 h-[2px] bg-accent"
+                  />
+                )}
+              </span>
             </button>
           );
         })}
