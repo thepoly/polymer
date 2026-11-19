@@ -17,6 +17,10 @@ over time.
 | More Headlines | A carousel of seven photo cards, ending in a link to `/sports/all` | Layout editor / newest unused stories |
 | `/sports/all` | Every sports story by month, filterable by sport, 24 per page | Articles |
 
+Below 768px, the score strip and Standings tab/table surfaces reach both
+screen edges. Standings text, its heading rule and its source link retain
+the page's reading inset. Tablet and desktop keep their existing widths.
+
 More Headlines scrolls horizontally by finger swipe or trackpad. On desktop,
 readers can also drag the cards with a mouse or use the arrows to move four
 cards at a time. The arrows are hidden below the desktop breakpoint (1024px).

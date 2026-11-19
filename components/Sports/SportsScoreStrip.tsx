@@ -171,7 +171,7 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
   return (
     <section
       aria-label="RPI scores and schedule"
-      className="relative mb-3 sm:mb-5"
+      className="relative -mx-4 mb-3 sm:mb-5 md:mx-0"
       onMouseEnter={() => setRevealed(true)}
     >
       <div

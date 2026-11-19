@@ -114,7 +114,7 @@ function SportTabs({
         ref={listRef}
         role="tablist"
         aria-label="Sport"
-        className="relative flex justify-between gap-x-4 overflow-x-auto overscroll-x-contain shadow-[inset_0_-1px_0_var(--rule-color)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:cursor-grab lg:select-none lg:active:cursor-grabbing lg:[&_button]:cursor-[inherit]"
+        className="relative flex justify-between gap-x-4 overflow-x-auto overscroll-x-contain px-4 shadow-[inset_0_-1px_0_var(--rule-color)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:px-0 lg:cursor-grab lg:select-none lg:active:cursor-grabbing lg:[&_button]:cursor-[inherit]"
         {...handlers}
       >
         {standings.map((s) => {
@@ -191,14 +191,16 @@ export default function SportsStandings({
   const rows = visibleRows(current.rows);
 
   return (
-    <section aria-label="Conference standings">
-      <SportsHeading gap={10}>Standings</SportsHeading>
+    <section aria-label="Conference standings" className="-mx-4 md:mx-0">
+      <div className="px-4 md:px-0">
+        <SportsHeading gap={10}>Standings</SportsHeading>
+      </div>
 
       <SportTabs standings={standings} activeSport={current.sport} onSelect={setActive} />
 
       {/* Divisional sports show RPI's division */}
       {current.division && (
-        <p className="mb-1.5 font-meta text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted">
+        <p className="mb-1.5 px-4 font-meta text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted md:px-0">
           {current.division} Division
         </p>
       )}
@@ -207,11 +209,11 @@ export default function SportsStandings({
         <table className="w-full table-fixed font-meta text-[13px] tabular-nums">
           <thead>
             <tr className="text-[11px] uppercase tracking-[0.06em] text-text-muted">
-              <th className="w-7 pb-1.5 text-left font-medium">#</th>
+              <th className="w-11 pb-1.5 pl-4 text-left font-medium md:w-7 md:pl-0">#</th>
               <th className="pb-1.5 text-left font-medium">Team</th>
               <th className="w-[58px] pb-1.5 text-right font-medium">{abbr}</th>
               {current.hasPoints && <th className="w-9 pb-1.5 text-right font-medium">Pts</th>}
-              <th className="w-[62px] pb-1.5 text-right font-medium">Overall</th>
+              <th className="w-[78px] pb-1.5 pr-4 text-right font-medium md:w-[62px] md:pr-0">Overall</th>
             </tr>
           </thead>
           <tbody>
@@ -222,19 +224,19 @@ export default function SportsStandings({
                   row.isRpi ? "bg-accent/[0.07] font-semibold text-text-main" : "text-text-main"
                 }`}
               >
-                <td className="py-2 pl-1 text-text-muted">{row.rank}</td>
+                <td className="py-2 pl-5 text-text-muted md:pl-1">{row.rank}</td>
                 <td className="py-2">
                   <TeamCell row={row} team={teams[row.team]} />
                 </td>
                 <td className="py-2 text-right">{row.conf}</td>
                 {current.hasPoints && <td className="py-2 text-right">{row.pts ?? "–"}</td>}
-                <td className="py-2 pr-1 text-right text-text-muted">{row.overall}</td>
+                <td className="py-2 pr-5 text-right text-text-muted md:pr-1">{row.overall}</td>
               </tr>
             ))}
           </tbody>
         </table>
       ) : (
-        <p className="font-copy text-[16px] leading-[1.35] text-text-main">
+        <p className="px-4 font-copy text-[16px] leading-[1.35] text-text-main md:px-0">
           {current.conference} play hasn&apos;t started yet.
           {rpi && (
             <>
@@ -249,7 +251,7 @@ export default function SportsStandings({
         href={current.sourceUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-2.5 inline-block font-meta text-[11px] uppercase tracking-[0.06em] text-text-muted hover:text-accent transition-colors"
+        className="mx-4 mt-2.5 inline-block font-meta text-[11px] uppercase tracking-[0.06em] text-text-muted hover:text-accent transition-colors md:mx-0"
       >
         Full standings: {current.conference} &#8599;
       </a>
