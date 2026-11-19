@@ -27,7 +27,7 @@ export default function GetInvolvedPage() {
   return (
     <div className="min-h-screen bg-bg-main text-text-main">
       <Header />
-      <main data-get-involved-page className="mx-auto w-full max-w-[1280px] px-5 pb-0 pt-8 md:px-6 md:pb-16 md:pt-12 xl:px-[30px]">
+      <main data-get-involved-page className="mx-auto w-full max-w-[1280px] px-5 pb-0 pt-8 md:px-6 md:pb-16 md:pt-12 lg:pb-3 xl:px-[30px]">
         <style>{`
           @media (prefers-reduced-motion: no-preference) {
             html:has([data-get-involved-page]) { scroll-behavior: smooth; }
@@ -50,7 +50,7 @@ export default function GetInvolvedPage() {
         </nav>
 
         <div className="lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start lg:gap-x-16">
-          <section id="join" aria-labelledby="join-heading" className="grid min-w-0 scroll-mt-24 grid-cols-1 gap-8 pb-2 pt-8 md:py-10 lg:gap-y-0 lg:pt-6">
+          <section id="join" aria-labelledby="join-heading" className="grid min-w-0 scroll-mt-24 grid-cols-1 gap-8 pb-2 pt-8 md:py-10 lg:gap-y-0 lg:pb-0 lg:pt-6">
             <div className="min-w-0 lg:contents">
               <div className="contents lg:block lg:pb-6">
                 <PathLabel>Join the staff</PathLabel>

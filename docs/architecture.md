@@ -122,6 +122,8 @@ the header container. Below 1024px, the title scales to fit on one line and
 the path index uses larger links; the staff section has no trailing divider.
 Desktop retains its 76px title with balanced wrapping, without a hero divider,
 and uses a 24px gap before the column labels.
+Desktop also leaves just 24px between the taller column's content and the
+footer rule.
 An events/advertising block follows news tips, stacking below 640px. The
 advertising address reuses the copy control with its own accessible label.
 The event link uses `/features/submit-event`, which currently redirects to
