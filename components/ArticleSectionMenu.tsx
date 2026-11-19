@@ -2,15 +2,14 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { primaryNavItems } from '@/components/MobileMenuDrawer';
 
-export default function ArticleSectionMenu({ section }: { section: string }) {
+export default function ArticleSectionMenu() {
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const sectionLabel = primaryNavItems.find(item => item.href === `/${section}`)?.label || section;
 
   useEffect(() => {
     if (!open) return;
@@ -40,14 +39,13 @@ export default function ArticleSectionMenu({ section }: { section: string }) {
       <button
         ref={buttonRef}
         type="button"
-        aria-label={`${sectionLabel}, open section navigation`}
+        aria-label="Open menu"
         aria-expanded={open}
         aria-controls={menuId}
         onClick={() => setOpen(!open)}
-        className="flex min-h-11 items-center gap-2 cursor-pointer rounded px-2 -ml-2 font-meta text-[13px] font-bold uppercase tracking-wide text-text-main hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+        className="flex h-11 w-11 items-center justify-center cursor-pointer rounded -ml-2 text-text-main hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
-        {sectionLabel}
-        <ChevronDown aria-hidden="true" className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+        <Menu aria-hidden="true" className="h-5 w-5" />
       </button>
       {open && (
         <nav

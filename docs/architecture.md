@@ -65,12 +65,14 @@ headlines. These overrides apply only to the title within standard, Opinion,
 photofeature and live articles, and to the title in the sticky article strip;
 italic emphasis is preserved.
 
-At tablet widths (768–1023px), the article strip replaces its logos and
-centered article text with a section dropdown on the left. The dropdown links
-to Home and all four sections, closes on selection, outside clicks, Escape
-or resizing, and returns focus to its button on Escape. Theme and share
-controls stay on the right. Phone, desktop and homepage strips retain their
-existing layouts.
+On phones (below 768px), the article strip keeps its logo centered while
+scrolling. Tablets (768–1023px) start with a centered logo; after 100px of
+scrolling they show a burger menu on the left and centered `Section | Title`.
+Both tablet text links return to the section page. The burger dropdown links
+to Home and all four sections, closes on selection, outside clicks, Escape,
+resizing or returning to the top, and returns focus to its button on Escape.
+Theme/share controls stay on the right. Desktop and homepage strips retain
+their existing behavior.
 
 Homepage composition is **data-driven**: the `layout` collection (one
 versioned global-ish doc) describes what's pinned, what's lead, and which
