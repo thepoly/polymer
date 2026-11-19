@@ -33,5 +33,13 @@ export const SYSTEM_DARK_QUERY = "(prefers-color-scheme: dark)";
 /**
  * Runs in <head> before the first paint when the reader hasn't picked, so
  * the page comes up in the device's theme rather than the server's guess.
+ * Only fixed constants go into it, written in as they are (no escaping
+ * helper, which CodeQL rightly treats as unsafe for inline scripts); keep
+ * it that way: nothing from a request or a reader belongs in here.
  */
-export const SYSTEM_THEME_SCRIPT = `(function(){try{var d=window.matchMedia(${JSON.stringify(SYSTEM_DARK_QUERY)}).matches,r=document.documentElement;r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light";document.cookie=${JSON.stringify(THEME_SYSTEM_COOKIE + "=")}+(d?"dark":"light")+"; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax"}catch(e){}})();`;
+export const SYSTEM_THEME_SCRIPT =
+  '(function(){try{' +
+  `var d=window.matchMedia("${SYSTEM_DARK_QUERY}").matches,r=document.documentElement;` +
+  'r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light";' +
+  `document.cookie="${THEME_SYSTEM_COOKIE}="+(d?"dark":"light")+"; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax"` +
+  '}catch(e){}})();';
