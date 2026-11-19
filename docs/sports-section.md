@@ -12,7 +12,7 @@ over time.
 | Score strip (top) | For each sport in the standings card: RPI's last two finals and next game | rpiathletics.com calendar feed ([`lib/schedule.ts`](../lib/schedule.ts)) |
 | Lead + scoreboard | Lead story with a scoreboard (logos, score, sport, status, date played) | The lead article's game result + `schools` |
 | Below-lead stories | One wide story, or two when no scoreboard shows | Layout editor, auto-filled with the newest stories |
-| Standings card | Every sport in season (at least 3). Five tabs fit; any more scroll sideways (trackpad or finger swipe, or the arrows). Top five teams, with RPI held at its real rank | ECAC Hockey and Liberty League standings pages ([`lib/standings.ts`](../lib/standings.ts)) |
+| Standings card | Every sport in season (at least 3). Five tabs fit; any more scroll sideways (trackpad or finger swipe, desktop mouse drag, or the arrows). Top five teams, with RPI held at its real rank | ECAC Hockey and Liberty League standings pages ([`lib/standings.ts`](../lib/standings.ts)) |
 | Headlines | Three stories | Layout editor / newest stories |
 | More Headlines | A carousel of seven photo cards, ending in a link to `/sports/all` | Layout editor / newest unused stories |
 | `/sports/all` | Every sports story by month, filterable by sport, 24 per page | Articles |
@@ -32,6 +32,14 @@ On mobile, Standings initially selects the leftmost displayed sport, even if
 its conference play has not started. Desktop initially prefers the lead
 story's sport when conference play has started. A reader's chosen tab stays
 selected when resizing between mobile and desktop.
+
+At desktop widths (1024px and up), the sport tabs also support mouse grab
+scrolling and coast after release. Dragging does not select a different tab;
+normal clicks and keyboard activation still do. Pressing the row, using an
+arrow, scrolling with a wheel, or focusing a tab stops the coast. Reduced
+motion disables coasting and makes arrow scrolling immediate. Mobile keeps
+native touch scrolling.
+
 The route is the `sports` branch of
 [`app/(frontend)/[section]/page.tsx`](../app/(frontend)/[section]/page.tsx),
 which gets everything besides the newest stories from

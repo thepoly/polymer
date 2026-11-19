@@ -19,10 +19,11 @@ type Drag = {
 };
 
 /** Horizontal touch gestures and optional mouse dragging with a longer coast.
- * The viewport must allow `pan-y pinch-zoom` so vertical scrolling and zoom
- * stay with the browser. Trackpad scrolling keeps the device's own momentum.
+ * With touch dragging enabled, the viewport must allow `pan-y pinch-zoom`
+ * so vertical scrolling and zoom stay with the browser. Trackpad scrolling
+ * keeps the device's own momentum.
  */
-export function useMomentumScroll(ref: RefObject<HTMLDivElement | null>, { mouseDrag = false } = {}) {
+export function useMomentumScroll(ref: RefObject<HTMLDivElement | null>, { mouseDrag = false, touchDrag = true } = {}) {
   const dragRef = useRef<Drag | null>(null);
   const frameRef = useRef<number | null>(null);
   const suppressClickRef = useRef(false);
@@ -37,12 +38,12 @@ export function useMomentumScroll(ref: RefObject<HTMLDivElement | null>, { mouse
     // Keep row swipes away from the document's mobile menu gesture. Attach
     // directly here, before the event reaches document-level React listeners.
     const ownTouch = (event: TouchEvent) => event.stopPropagation();
-    viewport?.addEventListener("touchstart", ownTouch, { passive: true });
+    if (touchDrag) viewport?.addEventListener("touchstart", ownTouch, { passive: true });
     return () => {
       stopMomentum();
       viewport?.removeEventListener("touchstart", ownTouch);
     };
-  }, [ref, stopMomentum]);
+  }, [ref, stopMomentum, touchDrag]);
 
   const coast = (viewport: HTMLDivElement, speed: number) => {
     if (Math.abs(speed) < 0.1 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -84,7 +85,7 @@ export function useMomentumScroll(ref: RefObject<HTMLDivElement | null>, { mouse
     // Catching a moving row should not also open the link under the finger.
     suppressClickRef.current = wasCoasting;
     if (!event.isPrimary || event.button !== 0) return;
-    if (event.pointerType !== "touch" && !(mouseDrag && event.pointerType === "mouse")) return;
+    if (!(touchDrag && event.pointerType === "touch") && !(mouseDrag && event.pointerType === "mouse")) return;
     // Also interrupt any smooth arrow scroll before grabbing the row.
     event.currentTarget.scrollTo({ left: event.currentTarget.scrollLeft, behavior: "instant" });
     dragRef.current = {

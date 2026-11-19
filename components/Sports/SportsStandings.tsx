@@ -6,6 +6,7 @@ import type { SportStandings, StandingsRow } from "@/lib/standings";
 import { MAX_TABS } from "@/lib/standingsSchedule";
 import SportsHeading from "./SportsHeading";
 import { useScrollEdges } from "./useScrollEdges";
+import { useMomentumScroll } from "./useMomentumScroll";
 
 export type StandingsTeam = { logo: string | null; url: string | null };
 
@@ -62,8 +63,8 @@ function TeamCell({ row, team }: { row: StandingsRow; team?: StandingsTeam }) {
 
 /**
  * Tabs spread across the full width when they fit. When they don't, the row
- * scrolls sideways (finger or trackpad swipe), with a desktop fade and arrows
- * on the cut-off edge for mouse users. Past five sports each
+ * scrolls sideways (finger or trackpad swipe, or desktop mouse drag), with a
+ * desktop fade and arrows on the cut-off edge for mouse users. Past five sports each
  * tab takes at least a fifth of the row, so no more than five show at once.
  */
 function SportTabs({
@@ -76,10 +77,13 @@ function SportTabs({
   onSelect: (sport: SportStandings["sport"]) => void;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
+  const desktop = useSyncExternalStore(subscribeToDesktop, isDesktopViewport, () => false);
+  const { handlers, stopMomentum } = useMomentumScroll(listRef, { mouseDrag: desktop, touchDrag: false });
   const edges = useScrollEdges(listRef);
 
   // Keep the selected tab in view without scrolling the page itself
   useEffect(() => {
+    stopMomentum();
     const el = listRef.current;
     const tab = el?.querySelector<HTMLElement>('[aria-selected="true"]');
     if (!el || !tab) return;
@@ -87,10 +91,15 @@ function SportTabs({
     else if (tab.offsetLeft + tab.offsetWidth > el.scrollLeft + el.clientWidth) {
       el.scrollLeft = tab.offsetLeft + tab.offsetWidth - el.clientWidth;
     }
-  }, [activeSport]);
+  }, [activeSport, stopMomentum]);
 
-  const scrollBy = (direction: 1 | -1) =>
-    listRef.current?.scrollBy({ left: direction * listRef.current.clientWidth * 0.6, behavior: "smooth" });
+  const scrollBy = (direction: 1 | -1) => {
+    stopMomentum();
+    listRef.current?.scrollBy({
+      left: direction * listRef.current.clientWidth * 0.6,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+    });
+  };
 
   // Five tabs and the four gap-x-4 gaps between them fill the row
   const tabWidth = standings.length > MAX_TABS ? { minWidth: "calc((100% - 4rem) / 5)" } : undefined;
@@ -105,7 +114,8 @@ function SportTabs({
         ref={listRef}
         role="tablist"
         aria-label="Sport"
-        className="relative flex justify-between gap-x-4 overflow-x-auto overscroll-x-contain shadow-[inset_0_-1px_0_var(--rule-color)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="relative flex justify-between gap-x-4 overflow-x-auto overscroll-x-contain shadow-[inset_0_-1px_0_var(--rule-color)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:cursor-grab lg:select-none lg:active:cursor-grabbing lg:[&_button]:cursor-[inherit]"
+        {...handlers}
       >
         {standings.map((s) => {
           const selected = s.sport === activeSport;
