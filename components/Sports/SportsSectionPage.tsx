@@ -500,7 +500,7 @@ export default function SportsSectionPage({
   return (
     // Side padding matches the site header's, so the page lines up with the
     // rule under the logo at every width
-    <div className={`mx-auto max-w-[1280px] px-4 pb-8 md:px-6 xl:px-[30px] ${schedule.length > 0 ? "" : "pt-5"}`}>
+    <div className={`mx-auto max-w-[1280px] px-4 pb-2.5 md:px-6 xl:px-[30px] ${schedule.length > 0 ? "" : "pt-5"}`}>
       {/* Header: the score strip, hung from the header's rule, with the page
           title kept for screen readers and search. The original "Sports |
           Contact" header shows instead when editors switch the strip off (the

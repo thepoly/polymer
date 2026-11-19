@@ -131,7 +131,7 @@ function ArrowButton({ direction, hidden, onClick }: { direction: "prev" | "next
         direction === "prev" ? "left-4" : "right-4"
       }`}
       // Vertically centred on the cards, inside the room kept for their shadow
-      style={{ top: "calc((100% - 40px) / 2)" }}
+      style={{ top: "calc((100% - 16px) / 2)" }}
     >
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         {direction === "prev" ? <path d="M19 12H5M11 6l-6 6 6 6" /> : <path d="M5 12h14M13 6l6 6-6 6" />}
@@ -192,10 +192,10 @@ export default function SportsFeatured({ articles, focus }: { articles: Componen
 
       {/* Padding keeps card lift and shadows visible. The arrows stay outside
           the scrolling viewport so they remain fixed over the row. */}
-      <div className="relative -mt-2 -mb-12">
+      <div className="relative -mt-2 -mb-6">
         <div
           ref={viewportRef}
-          className="overflow-x-auto overflow-y-hidden pt-2 pb-12 touch-pan-y touch-pinch-zoom [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:cursor-grab lg:select-none lg:active:cursor-grabbing lg:[&_a]:cursor-inherit"
+          className="overflow-x-auto overflow-y-hidden pt-2 pb-6 touch-pan-y touch-pinch-zoom [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:cursor-grab lg:select-none lg:active:cursor-grabbing lg:[&_a]:cursor-inherit"
           {...handlers}
         >
           <div ref={trackRef} className="flex" style={{ gap: GAP }}>
