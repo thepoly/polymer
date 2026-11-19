@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import type { SportStandings, StandingsRow } from "@/lib/standings";
 import { MAX_TABS } from "@/lib/standingsSchedule";
@@ -10,6 +10,15 @@ import { useScrollEdges } from "./useScrollEdges";
 export type StandingsTeam = { logo: string | null; url: string | null };
 
 const TOP = 5;
+const DESKTOP_QUERY = "(min-width: 1024px)";
+
+function subscribeToDesktop(onChange: () => void) {
+  const query = window.matchMedia(DESKTOP_QUERY);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+const isDesktopViewport = () => window.matchMedia(DESKTOP_QUERY).matches;
 
 const CONFERENCE_ABBR: Record<string, string> = {
   "ECAC Hockey": "ECAC",
@@ -155,13 +164,15 @@ export default function SportsStandings({
 }: {
   standings: SportStandings[];
   teams: Record<string, StandingsTeam>;
+  /** Preferred initial sport on desktop; mobile starts at the leftmost tab. */
   defaultSport?: string | null;
 }) {
-  const [active, setActive] = useState(
-    // The lead story's sport, unless its conference play hasn't started
-    () => standings.find((s) => s.sport === defaultSport && s.confStarted)?.sport ?? standings[0]?.sport,
-  );
-  const current = standings.find((s) => s.sport === active) ?? standings[0];
+  // Render the first tab on the server too, so mobile never initially jumps
+  // to a later sport. Once chosen, the reader's selection survives resizing.
+  const desktop = useSyncExternalStore(subscribeToDesktop, isDesktopViewport, () => false);
+  const [active, setActive] = useState<string>();
+  const preferred = desktop ? standings.find((s) => s.sport === defaultSport && s.confStarted) : undefined;
+  const current = standings.find((s) => s.sport === active) ?? preferred ?? standings[0];
   if (!current) return null;
 
   // Divisional tables show (and rank by) the division record

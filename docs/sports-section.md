@@ -28,6 +28,10 @@ Vertical page scrolling and pinch zoom remain available. With reduced motion
 enabled, the rows stop on release. Trackpads keep their native momentum.
 
 The page components are in [`components/Sports/`](../components/Sports/).
+On mobile, Standings initially selects the leftmost displayed sport, even if
+its conference play has not started. Desktop initially prefers the lead
+story's sport when conference play has started. A reader's chosen tab stays
+selected when resizing between mobile and desktop.
 The route is the `sports` branch of
 [`app/(frontend)/[section]/page.tsx`](../app/(frontend)/[section]/page.tsx),
 which gets everything besides the newest stories from
