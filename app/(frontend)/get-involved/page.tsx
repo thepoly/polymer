@@ -33,7 +33,7 @@ export default function GetInvolvedPage() {
             html:has([data-get-involved-page]) { scroll-behavior: smooth; }
           }
         `}</style>
-        <div className="border-b border-rule-strong pb-8 md:pb-10">
+        <div className="border-b border-rule-strong pb-8 md:pb-10 lg:border-b-0 lg:pb-0">
           <h1 className="font-copy text-[clamp(24px,8vw,72px)] font-normal leading-[0.95] tracking-[-0.02em] lg:text-[76px] lg:text-balance">Get involved with The Poly</h1>
         </div>
 
@@ -50,7 +50,7 @@ export default function GetInvolvedPage() {
         </nav>
 
         <div className="lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start lg:gap-x-16">
-          <section id="join" aria-labelledby="join-heading" className="grid min-w-0 scroll-mt-24 grid-cols-1 gap-8 pb-2 pt-8 md:py-10 lg:gap-y-0">
+          <section id="join" aria-labelledby="join-heading" className="grid min-w-0 scroll-mt-24 grid-cols-1 gap-8 pb-2 pt-8 md:py-10 lg:gap-y-0 lg:pt-6">
             <div className="min-w-0 lg:contents">
               <div className="contents lg:block lg:pb-6">
                 <PathLabel>Join the staff</PathLabel>
@@ -87,7 +87,7 @@ export default function GetInvolvedPage() {
           </section>
 
           <div className="grid min-w-0 grid-cols-1">
-            <section id="opinion" aria-labelledby="opinion-heading" className="min-w-0 scroll-mt-24 py-8 md:py-10">
+            <section id="opinion" aria-labelledby="opinion-heading" className="min-w-0 scroll-mt-24 py-8 md:py-10 lg:pt-6">
               <PathLabel>Submit an op-ed or letter</PathLabel>
               <h2 id="opinion-heading" className="mb-[18px] mt-4 font-copy text-[30px] font-normal leading-[1.1] md:text-[34px]">Share your view</h2>
               <p className="font-copy text-[18px] leading-[1.55]">Our editors review every submission and will be in touch.</p>

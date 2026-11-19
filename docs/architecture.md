@@ -116,7 +116,8 @@ meeting times and desk list in the left column, with op-ed submissions and
 news tips stacked in the right column. From 768px, the content aligns with
 the header container. Below 1024px, the title scales to fit on one line and
 the path index uses larger links; the staff section has no trailing divider.
-Desktop retains its 76px title with balanced wrapping.
+Desktop retains its 76px title with balanced wrapping, without a hero divider,
+and uses a 24px gap before the column labels.
 An events/advertising block follows news tips, stacking below 640px. The
 advertising address reuses the copy control with its own accessible label.
 The event link uses `/features/submit-event`, which currently redirects to
