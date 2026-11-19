@@ -142,7 +142,7 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
       // Stops inside the rules so they run the full width. Hangs 1px past the
       // strip's end: at fractional zoom (125%, 175%) the scroller can paint a
       // device pixel beyond a flush tab, leaving a sliver of the next cell.
-      className={`pointer-events-none absolute top-px bottom-px flex lg:top-0 ${side === "left" ? "-left-px" : "-right-px"}`}
+      className={`pointer-events-none absolute top-px bottom-px hidden lg:top-0 lg:flex ${side === "left" ? "-left-px" : "-right-px"}`}
     >
       <button
         type="button"

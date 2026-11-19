@@ -53,8 +53,8 @@ function TeamCell({ row, team }: { row: StandingsRow; team?: StandingsTeam }) {
 
 /**
  * Tabs spread across the full width when they fit. When they don't, the row
- * scrolls sideways (finger or trackpad swipe), with a fade on the cut-off edge
- * and arrows for mouse users, who can't swipe sideways. Past five sports each
+ * scrolls sideways (finger or trackpad swipe), with a desktop fade and arrows
+ * on the cut-off edge for mouse users. Past five sports each
  * tab takes at least a fifth of the row, so no more than five show at once.
  */
 function SportTabs({
@@ -121,7 +121,7 @@ function SportTabs({
       </div>
 
       {edges.left && (
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex w-10 items-center" style={fade("left")}>
+        <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-10 items-center lg:flex" style={fade("left")}>
           <button
             type="button"
             aria-label="Scroll sports left"
@@ -133,7 +133,7 @@ function SportTabs({
         </div>
       )}
       {edges.right && (
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex w-10 items-center justify-end" style={fade("right")}>
+        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-10 items-center justify-end lg:flex" style={fade("right")}>
           <button
             type="button"
             aria-label="Scroll sports right"
