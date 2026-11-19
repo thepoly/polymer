@@ -317,8 +317,12 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
 
       <header className="hidden lg:block">
         <div className={`${compact ? "fixed" : "relative"} top-0 left-0 right-0 z-50 bg-bg-main/95 backdrop-blur-md`}>
-          <div className="font-meta relative mx-auto flex max-w-[1280px] items-center justify-between gap-6 px-4 pt-1.5 pb-0.5 md:px-6 xl:px-[30px]">
-            <div className="flex items-center gap-5 text-[11px] font-medium uppercase tracking-[0.1em] text-text-main">
+          {/* Three columns (links | date | weather + controls), so the date
+              stays centred without being laid over the links: at 1024px an
+              absolutely centred date ran into "Submit". Vol./No. waits for
+              xl, where there's room for it. */}
+          <div className="font-meta relative mx-auto grid max-w-[1280px] grid-cols-[1fr_auto_minmax(0,1fr)] items-center gap-6 px-4 pt-1.5 pb-0.5 md:px-6 xl:px-[30px]">
+            <div className="flex items-center gap-5 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.1em] text-text-main">
               {secondaryNavItems.map((item) => (
                 <Link
                   key={item.label}
@@ -335,13 +339,14 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
               ))}
             </div>
 
-            <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 text-[11px] font-medium uppercase tracking-[0.1em]">
+            <div className="flex items-center gap-2.5 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.1em]">
               <span className="text-text-main" suppressHydrationWarning>{currentDate}</span>
-              <span className="text-accent font-semibold dark:text-text-main">
+              <span className="hidden text-accent font-semibold dark:text-text-main xl:inline">
                 {`Vol. ${volume ? toRoman(volume) : '0'} No. ${edition ?? 0}`}
               </span>
             </div>
 
+            <div className="flex min-w-0 items-center justify-end gap-6">
             {weather && (() => {
               const WeatherIcon = pickWeatherIcon(weather.shortForecast);
               const t = Math.max(0, Math.min(1, (weather.temperature - 25) / (80 - 25)));
@@ -351,20 +356,20 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
               const lightness = isDarkMode ? 68 : 42;
               const tempColor = `hsl(${hue.toFixed(0)}, 72%, ${lightness}%)`;
               return (
+                // Centred in the space between the date and the controls; a
+                // long forecast is cut short before the temperature is
                 <div
-                  className="pointer-events-none absolute left-3/4 -translate-x-1/2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.1em] whitespace-nowrap text-text-main"
+                  className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.1em] whitespace-nowrap text-text-main"
                   title={weather.shortForecast ? `Troy, NY — ${weather.shortForecast}` : 'Troy, NY'}
                 >
-                  <WeatherIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>
-                    {weather.shortForecast ? `${weather.shortForecast} ` : ''}
-                    <span style={{ color: tempColor }}>{`${Math.round(weather.temperature)}°`}</span>
-                  </span>
+                  <WeatherIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  {weather.shortForecast && <span className="min-w-0 truncate">{weather.shortForecast}</span>}
+                  <span className="shrink-0" style={{ color: tempColor }}>{`${Math.round(weather.temperature)}°`}</span>
                 </div>
               );
             })()}
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <div className="relative">
                 <button
                   className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border transition-colors ${
@@ -406,6 +411,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
               
               <SearchOverlayTrigger onClick={() => openSearchOverlay()} />
 
+            </div>
             </div>
           </div>
         </div>
