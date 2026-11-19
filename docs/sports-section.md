@@ -54,7 +54,7 @@ from the selected tab's direction, on the underline's timing. The heading
 and tabs stay fixed. Height changes ease with the slide; outgoing content
 is hidden from assistive technology and cannot receive focus. A new choice
 or resize clears the previous slide, and reduced motion swaps immediately.
-There is no extra gap from Standings to the Headlines rule below 768px.
+The gap from Standings to the Headlines rule is 12px below 768px.
 Between 768px and 1023px wide the gap is 20px; desktop retains 24px.
 
 At desktop widths (1024px and up), the sport tabs also support mouse grab
