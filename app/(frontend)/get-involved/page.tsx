@@ -34,7 +34,7 @@ export default function GetInvolvedPage() {
           }
         `}</style>
         <div className="border-b border-rule-strong pb-8 md:pb-10">
-          <h1 className="font-copy text-[50px] font-normal leading-[0.95] tracking-[-0.02em] md:text-[76px] md:text-balance">Get involved with The Poly</h1>
+          <h1 className="font-copy text-[clamp(24px,8vw,72px)] font-normal leading-[0.95] tracking-[-0.02em] lg:text-[76px] lg:text-balance">Get involved with The Poly</h1>
         </div>
 
         <nav aria-label="Get involved paths" className="border-b border-rule py-4 lg:hidden">
@@ -43,14 +43,14 @@ export default function GetInvolvedPage() {
             { label: 'Submit an op-ed or letter', href: '#opinion' },
             { label: 'Send a news tip', href: '#tip' },
           ].map(path => (
-            <a key={path.href} href={path.href} className={`flex min-h-11 items-center justify-between gap-3 font-meta text-[13px] font-semibold text-text-main hover:text-accent ${focusStyle}`}>
+            <a key={path.href} href={path.href} className={`flex min-h-11 items-center justify-between gap-3 font-meta text-[16px] font-semibold text-text-main hover:text-accent md:text-[18px] ${focusStyle}`}>
               {path.label}<ArrowDown aria-hidden="true" className="h-4 w-4 shrink-0" />
             </a>
           ))}
         </nav>
 
         <div className="lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start lg:gap-x-16">
-          <section id="join" aria-labelledby="join-heading" className="grid min-w-0 scroll-mt-24 grid-cols-1 gap-8 border-b border-rule pb-2 pt-8 md:py-10 lg:gap-y-0 lg:border-b-0">
+          <section id="join" aria-labelledby="join-heading" className="grid min-w-0 scroll-mt-24 grid-cols-1 gap-8 pb-2 pt-8 md:py-10 lg:gap-y-0">
             <div className="min-w-0 lg:contents">
               <div className="contents lg:block lg:pb-6">
                 <PathLabel>Join the staff</PathLabel>

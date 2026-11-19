@@ -113,8 +113,9 @@ update both pages if these change. Below 1024px, meetings appear first and
 native jump links remain visible. Desktop groups the staff introduction,
 meeting times and desk list in the left column, with op-ed submissions and
 news tips stacked in the right column. From 768px, the content aligns with
-the header container and the title uses balanced wrapping; phone insets and
-wrapping stay unchanged.
+the header container. Below 1024px, the title scales to fit on one line and
+the path index uses larger links; the staff section has no trailing divider.
+Desktop retains its 76px title with balanced wrapping.
 Jump-link smooth scrolling is disabled for reduced motion.
 Metadata is static and the route is included in the sitemap; no SEO schema or
 submission/contact/staff behavior changes are required.
