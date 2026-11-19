@@ -1,3 +1,4 @@
+import * as opinionSingleton from './20261117_000000_opinion_layout_singleton';
 import * as migration_20260211_224237_initial_baseline from './20260211_224237_initial_baseline';
 import * as migration_20260213_223303_remove_copy_workflow from './20260213_223303_remove_copy_workflow';
 import * as migration_20260217_015404_add_photographer_to_media from './20260217_015404_add_photographer_to_media';
@@ -51,6 +52,9 @@ import * as migration_20261022_000000_add_sports_page_layout from './20261022_00
 import * as migration_20261022_010000_add_schools_and_game_result from './20261022_010000_add_schools_and_game_result'
 import * as migration_20261022_020000_add_article_sport from './20261022_020000_add_article_sport'
 import * as migration_20261112_000000_add_user_portfolio from './20261112_000000_add_user_portfolio'
+import * as migration_20261112_000000_add_news_page_layout from './20261112_000000_add_news_page_layout'
+import * as migration_20261112_010000_add_student_gov_updates from './20261112_010000_add_student_gov_updates'
+import * as migration_20261113_000000_add_student_gov_terms from './20261113_000000_add_student_gov_terms'
 
 export const migrations = [
   {
@@ -318,4 +322,20 @@ export const migrations = [
     down: migration_20261112_000000_add_user_portfolio.down,
     name: '20261112_000000_add_user_portfolio',
   },
+  {
+    up: migration_20261112_000000_add_news_page_layout.up,
+    down: migration_20261112_000000_add_news_page_layout.down,
+    name: '20261112_000000_add_news_page_layout',
+  },
+  {
+    up: migration_20261112_010000_add_student_gov_updates.up,
+    down: migration_20261112_010000_add_student_gov_updates.down,
+    name: '20261112_010000_add_student_gov_updates',
+  },
+  {
+    up: migration_20261113_000000_add_student_gov_terms.up,
+    down: migration_20261113_000000_add_student_gov_terms.down,
+    name: '20261113_000000_add_student_gov_terms',
+  },
+  { up: opinionSingleton.up, down: opinionSingleton.down, name: '20261117_000000_opinion_layout_singleton' },
 ];

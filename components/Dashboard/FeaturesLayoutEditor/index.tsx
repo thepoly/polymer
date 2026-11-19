@@ -36,14 +36,6 @@ type ArticleData = {
   writeInAuthors?: Array<{ name: string }>;
 };
 
-type EventEntry = {
-  title: string;
-  date: string;
-  time: string;
-  location: string;
-  url: string;
-};
-
 type SpotlightPhoto = {
   url: string;
   caption?: string;
@@ -59,14 +51,11 @@ type FeaturesLayout = {
   featured: (number | null)[];
   rightArticles: (number | null)[];
   rightImages: boolean[];
-  events: EventEntry[];
   // Row 2
   theArts: (number | null)[];
   theArtsImages: boolean[];
   photoSpotlight: SpotlightPhoto[];
   spotlightSubs: (number | null)[];
-  collarCity: (number | null)[];
-  collarCityImages: boolean[];
   wideArticle: (number | null)[];
 };
 
@@ -86,13 +75,10 @@ const EMPTY_LAYOUT: FeaturesLayout = {
   featured: [null, null, null],
   rightArticles: [null, null, null],
   rightImages: [false, false, false],
-  events: [],
   theArts: [null, null, null],
   theArtsImages: [false, false, false],
   photoSpotlight: [],
   spotlightSubs: [null, null],
-  collarCity: [null, null, null],
-  collarCityImages: [false, false, false],
   wideArticle: [null],
 };
 
@@ -112,10 +98,9 @@ const RIGHT_LABELS = [
   'Article 3',
 ];
 const THE_ARTS_LABELS = ['Article 1', 'Article 2', 'Article 3'];
-const COLLAR_CITY_LABELS = ['Article 1', 'Article 2', 'Article 3'];
 
-// Slot ID format: "oc-0", "feat-1", "right-2", "arts-0", "collar-1"
-type ColumnKey = 'onCampus' | 'featured' | 'rightArticles' | 'theArts' | 'spotlightSubs' | 'collarCity' | 'wideArticle';
+// Slot ID format: "oc-0", "feat-1", "right-2", "arts-0", "spotsub-1", "wide-0"
+type ColumnKey = 'onCampus' | 'featured' | 'rightArticles' | 'theArts' | 'spotlightSubs' | 'wideArticle';
 
 const parseSlotId = (slotId: string): { column: ColumnKey; index: number } | null => {
   const [prefix, idxStr] = slotId.split('-');
@@ -125,7 +110,6 @@ const parseSlotId = (slotId: string): { column: ColumnKey; index: number } | nul
   if (prefix === 'right') return { column: 'rightArticles', index };
   if (prefix === 'arts') return { column: 'theArts', index };
   if (prefix === 'spotsub') return { column: 'spotlightSubs', index };
-  if (prefix === 'collar') return { column: 'collarCity', index };
   if (prefix === 'wide') return { column: 'wideArticle', index };
   return null;
 };
@@ -161,7 +145,7 @@ const extractDocId = (): string | null => {
 
 const collectUsedIds = (layout: FeaturesLayout): Set<number> => {
   const ids = new Set<number>();
-  for (const col of [layout.onCampus, layout.featured, layout.rightArticles, layout.theArts, layout.spotlightSubs, layout.collarCity, layout.wideArticle]) {
+  for (const col of [layout.onCampus, layout.featured, layout.rightArticles, layout.theArts, layout.spotlightSubs, layout.wideArticle]) {
     for (const id of col) {
       if (id !== null) ids.add(id);
     }
@@ -585,7 +569,7 @@ function SpotlightBrowser({
         </div>
       )}
 
-      <button className="fle-event-add-btn" onClick={handleToggle}>
+      <button className="fle-add-btn" onClick={handleToggle}>
         {browserOpen ? 'Close Browser' : '+ Add Photo'}
       </button>
 
@@ -744,17 +728,12 @@ export function FeaturesLayoutEditor() {
               rightImages: savedLayout.rightImages && savedLayout.rightImages.length >= 3
                 ? savedLayout.rightImages.slice(0, 3)
                 : [false, false, false],
-              events: savedLayout.events || [],
               theArts: padArray(savedLayout.theArts, 3),
               theArtsImages: savedLayout.theArtsImages && savedLayout.theArtsImages.length >= 3
                 ? savedLayout.theArtsImages.slice(0, 3)
                 : [false, false, false],
               photoSpotlight: savedLayout.photoSpotlight || [],
               spotlightSubs: padArray(savedLayout.spotlightSubs, 2),
-              collarCity: padArray(savedLayout.collarCity, 3),
-              collarCityImages: savedLayout.collarCityImages && savedLayout.collarCityImages.length >= 3
-                ? savedLayout.collarCityImages.slice(0, 3)
-                : [false, false, false],
               wideArticle: padArray(savedLayout.wideArticle, 1),
             });
           }
@@ -819,17 +798,6 @@ export function FeaturesLayoutEditor() {
     markDirty();
   }, [markDirty]);
 
-  const toggleCollarCityImage = useCallback((index: number) => {
-    setLayout((prev) => {
-      const imgs = [...prev.collarCityImages];
-      const currentImageCount = imgs.filter(Boolean).length;
-      if (!imgs[index] && currentImageCount >= 2) return prev;
-      imgs[index] = !imgs[index];
-      return { ...prev, collarCityImages: imgs };
-    });
-    markDirty();
-  }, [markDirty]);
-
   const addSpotlightPhoto = useCallback((photo: SpotlightPhoto) => {
     setLayout((prev) => ({ ...prev, photoSpotlight: [...prev.photoSpotlight, photo] }));
     markDirty();
@@ -840,47 +808,6 @@ export function FeaturesLayoutEditor() {
       const photos = [...prev.photoSpotlight];
       photos.splice(index, 1);
       return { ...prev, photoSpotlight: photos };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  // ---- Events ----
-  const addEvent = useCallback(() => {
-    setLayout((prev) => {
-      if (prev.events.length >= 5) return prev;
-      return {
-        ...prev,
-        events: [...prev.events, { title: '', date: '', time: '', location: '', url: '' }],
-      };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const updateEvent = useCallback((index: number, patch: Partial<EventEntry>) => {
-    setLayout((prev) => {
-      const events = [...prev.events];
-      events[index] = { ...events[index], ...patch };
-      return { ...prev, events };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const removeEvent = useCallback((index: number) => {
-    setLayout((prev) => {
-      const events = [...prev.events];
-      events.splice(index, 1);
-      return { ...prev, events };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const moveEvent = useCallback((index: number, dir: -1 | 1) => {
-    setLayout((prev) => {
-      const events = [...prev.events];
-      const swap = index + dir;
-      if (swap < 0 || swap >= events.length) return prev;
-      [events[index], events[swap]] = [events[swap], events[index]];
-      return { ...prev, events };
     });
     markDirty();
   }, [markDirty]);
@@ -983,7 +910,6 @@ export function FeaturesLayoutEditor() {
   const imageCount = layout.onCampusImages.filter(Boolean).length;
   const rightImageCount = layout.rightImages.filter(Boolean).length;
   const artsImageCount = layout.theArtsImages.filter(Boolean).length;
-  const collarImageCount = layout.collarCityImages.filter(Boolean).length;
 
   return (
     <DndContext
@@ -1017,7 +943,7 @@ export function FeaturesLayoutEditor() {
               {/* On-Campus column (thin left) */}
               <div className="fle-column">
                 <div className="fle-column-header">
-                  <span className="fle-column-title">On-Campus</span>
+                  <span className="fle-column-title">On Campus</span>
                   <span style={{ fontSize: '0.62rem', opacity: 0.35 }}>{imageCount}/3 imgs</span>
                 </div>
                 {ON_CAMPUS_LABELS.map((label, i) => (
@@ -1078,61 +1004,10 @@ export function FeaturesLayoutEditor() {
               {/* Right column */}
               <div className="fle-column">
                 <div className="fle-column-header">
-                  <span className="fle-column-title">Right Column</span>
+                  <span className="fle-column-title">Latest</span>
                   <span style={{ fontSize: '0.62rem', opacity: 0.35 }}>{rightImageCount}/2 imgs</span>
                 </div>
 
-                {/* Events section */}
-                <div className="fle-events-section">
-                  <div className="fle-events-header">Upcoming Events ({layout.events.length}/5)</div>
-                  {layout.events.map((event, i) => (
-                      <div key={i} className="fle-event-entry">
-                        <input
-                          type="text"
-                          placeholder="Event title"
-                          value={event.title}
-                          onChange={(e) => updateEvent(i, { title: e.target.value })}
-                        />
-                        <input
-                          type="date"
-                          value={event.date}
-                          onChange={(e) => updateEvent(i, { date: e.target.value })}
-                        />
-                        <input
-                          type="text"
-                          placeholder="00:00 AM/PM"
-                          value={event.time}
-                          onChange={(e) => updateEvent(i, { time: e.target.value })}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Location (optional)"
-                          value={event.location}
-                          onChange={(e) => updateEvent(i, { location: e.target.value })}
-                        />
-                        <div className="fle-event-entry-row">
-                          <input
-                            type="url"
-                            placeholder="URL (optional)"
-                            value={event.url || ''}
-                            onChange={(e) => updateEvent(i, { url: e.target.value })}
-                          />
-                          <div className="fle-event-actions">
-                            <button className="fle-event-btn" onClick={() => moveEvent(i, -1)} disabled={i === 0} title="Move up">&#8593;</button>
-                            <button className="fle-event-btn" onClick={() => moveEvent(i, 1)} disabled={i === layout.events.length - 1} title="Move down">&#8595;</button>
-                            <button className="fle-event-btn fle-event-remove" onClick={() => removeEvent(i)} title="Remove">&times;</button>
-                          </div>
-                        </div>
-                      </div>
-                  ))}
-                  {layout.events.length < 5 && (
-                    <button className="fle-event-add-btn" onClick={addEvent}>
-                      + Add Event
-                    </button>
-                  )}
-                </div>
-
-                {/* Article slots */}
                 {RIGHT_LABELS.map((label, i) => (
                   <DropSlot
                     key={`right-${i}`}
@@ -1203,8 +1078,8 @@ export function FeaturesLayoutEditor() {
                 ))}
               </div>
 
-              {/* Photo Spotlight column (big middle) */}
-              <div className="fle-column">
+              {/* Photo Spotlight (middle + right, as on the page) */}
+              <div className="fle-column" style={{ gridColumn: '2 / span 2' }}>
                 <SpotlightBrowser
                   photos={layout.photoSpotlight}
                   onAdd={addSpotlightPhoto}
@@ -1230,40 +1105,6 @@ export function FeaturesLayoutEditor() {
                 </div>
               </div>
 
-              {/* Collar City Column (right) */}
-              <div className="fle-column">
-                <div className="fle-column-header">
-                  <span className="fle-column-title">Collar City Column</span>
-                  <span style={{ fontSize: '0.62rem', opacity: 0.35 }}>{collarImageCount}/2 imgs</span>
-                </div>
-                {COLLAR_CITY_LABELS.map((label, i) => (
-                  <DropSlot
-                    key={`collar-${i}`}
-                    slotId={`collar-${i}`}
-                    label={label}
-                    article={getArticle('collarCity', i)}
-                    showImage={layout.collarCityImages[i]}
-                    onClear={() => clearSlot(`collar-${i}`)}
-                    isImageSlot={layout.collarCityImages[i]}
-                    imageToggle={
-                      collarImageCount >= 2 && !layout.collarCityImages[i] ? (
-                        <span style={{ fontSize: '0.62rem', opacity: 0.2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          locked
-                        </span>
-                      ) : (
-                        <label className="fle-image-toggle" title="Toggle image">
-                          <input
-                            type="checkbox"
-                            checked={layout.collarCityImages[i]}
-                            onChange={() => toggleCollarCityImage(i)}
-                          />
-                          img
-                        </label>
-                      )
-                    }
-                  />
-                ))}
-              </div>
             </div>
           </div>
 

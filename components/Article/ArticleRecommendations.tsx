@@ -102,10 +102,13 @@ const getArticleLabel = (article: RecommendationArticle) => {
 };
 
 const getHeadlineClasses = (article: RecommendationArticle, variant: 'lead' | 'list') => {
+  const weight = article.section === 'news'
+    ? 'font-normal [&_strong]:font-normal [&_b]:font-normal'
+    : 'font-bold';
   const base =
     variant === 'lead'
-      ? 'font-copy font-bold leading-[1.12] tracking-[-0.01em] text-[28px] md:text-[32px]'
-      : 'font-copy font-bold leading-[1.12] tracking-[-0.01em] text-[22px] md:text-[24px]';
+      ? 'font-copy leading-[1.12] tracking-[-0.01em] text-[28px] md:text-[32px]'
+      : 'font-copy leading-[1.12] tracking-[-0.01em] text-[22px] md:text-[24px]';
 
   const sectionStyles = [
     article.section === 'features'
@@ -124,7 +127,7 @@ const getHeadlineClasses = (article: RecommendationArticle, variant: 'lead' | 'l
     .filter(Boolean)
     .join(' ');
 
-  return `${base} text-text-main transition-colors ${sectionStyles}`;
+  return `${base} ${weight} text-text-main transition-colors ${sectionStyles}`;
 };
 
 const prioritizeRecommendations = (articles: RecommendationArticle[], currentArticle: Article) => {
@@ -214,13 +217,14 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
   const leadImage = getFeaturedImage(leadArticle.featuredImage);
   const supportingArticles = pool.filter((article) => article.id !== leadArticle.id).slice(0, 4);
   const sectionLabel = sectionLabels[currentArticle.section];
+  const isNews = currentArticle.section === 'news';
 
   return (
     <section
-      className="mx-auto mt-14 md:mt-20 max-w-[1200px] px-4 md:px-6 pb-14 md:pb-20"
+      className={`mx-auto max-w-[1200px] px-4 md:px-6 ${isNews ? 'mt-7 md:mt-10 pb-[22px] md:pb-[34px]' : 'mt-14 md:mt-20 pb-14 md:pb-20'}`}
       data-article-recommendations
     >
-      <div className="pt-2 md:pt-3">
+      <div className={isNews ? 'pt-1 md:pt-1.5' : 'pt-2 md:pt-3'}>
         <div className="mb-8 flex flex-col gap-4 border-b border-rule pb-6 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
             <p className="font-meta text-[14px] font-bold uppercase tracking-[0.12em] text-accent">

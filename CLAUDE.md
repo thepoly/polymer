@@ -53,12 +53,13 @@ Collections:
 - `articles`: drafts/publish enabled (`versions.drafts: true`); `publishedDate` is set on first publish in a `beforeChange` hook; `lastModifiedBy` is stamped on every change; `opinionType` auto-derives from the kicker for opinion pieces
 - `live-articles`: live-blog entries with append-only `updates`; mirrors the photo-gallery / carousel rich-text blocks
 - `layout`: homepage curation (lead, slots, top-4, layout template, sections, volume/issue) — drafts enabled
-- `opinion-page-layout`, `features-page-layout`, `sports-page-layout`, `staff-page-layout`: per-section page composition
+- `opinion-page-layout`, `features-page-layout`, `sports-page-layout`, `news-page-layout`, `staff-page-layout`: per-section page composition
+- `student-gov-updates`, `student-gov-terms`: Student Senate / Executive Board timeline updates and terms (GM Week to GM Week); see `docs/news-section.md`
 - `users`: staff/auth/roles + slug, headshot, retired flag, "one-liner", and seen-newsroom-notice flag
 - `media`: uploaded assets (alt, title, caption, source URL, photographer relationship, write-in photographer)
 - `job-titles`: staff position metadata
 - `submissions`: public op-ed / letter submissions (anonymous create, staff triage)
-- `event-submissions`: public event submissions for the calendar
+- `event-submissions`: archived event submissions (read-only; the public event form and Features events box were removed)
 - `logos`: branded section logos and homepage assets
 - `device-tokens`: registered Android and iOS FCM tokens (anonymous create via `/api/push/register`, admin-only read/delete)
 - `schools`: opponents RPI teams play, each with a logo (upload collection; seeded from RPI Athletics schedules by `pnpm db:seed:schools`). Sports articles link one as `opponent`, alongside `homeAway`, `rpiScore`, `opponentScore` and `gameStatus`
@@ -222,6 +223,7 @@ Mixing PM2 users creates split daemons/process lists and inconsistent runtime ow
 
 - **Pre-commit checks:** Always run `pnpm lint` and `pnpm typecheck` before committing. Do not commit code that fails either check.
 - **Linting & Code Quality:** Ensure code changes are lint-safe before completing your task. Either review your code rigorously for common ESLint and React purity warnings, or execute `pnpm lint` to automatically verify.
+- **Lint baseline and CMS previews:** Expect zero ESLint errors and warnings. Plain images in the five named CMS layout editor files are intentional; `eslint.config.mjs` contains a scoped `@next/next/no-img-element` exception. Public-site image checks and preview alt-text checks remain enabled. See [`docs/local-development.md`](docs/local-development.md#lint-expectations-and-cms-image-previews) for the policy and exact file scope.
 - **Database Migrations:** When adding or modifying Payload collection fields that change the DB schema (new fields, new collections, enum changes), you MUST create corresponding migrations in BOTH paths:
   1. A TypeScript migration file in `migrations/` and register it in `migrations/index.ts` (used by CI via `pnpm exec payload migrate`)
   2. The equivalent SQL in `scripts/run_deploy_sql_migrations.sh` with a tracking INSERT entry (used by production deploy)

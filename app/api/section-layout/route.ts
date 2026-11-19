@@ -10,7 +10,8 @@ type UserWithMeta = {
 
 const SECTIONS = ['news', 'features', 'opinion', 'sports'];
 
-function canEditSection(user: UserWithMeta, section: string): boolean {
+// Admins and EICs edit every section's pins; there are no per-section rights yet
+function canEditSections(user: UserWithMeta): boolean {
   const roles = user.roles || [];
   return roles.includes('admin') || roles.includes('eic');
 }
@@ -27,7 +28,7 @@ export async function GET() {
     }
 
     const userMeta = user as unknown as UserWithMeta;
-    const editableSections = SECTIONS.filter((s) => canEditSection(userMeta, s));
+    const editableSections = canEditSections(userMeta) ? SECTIONS : [];
 
     if (editableSections.length === 0) {
       return NextResponse.json({ editableSections: [] });
@@ -74,7 +75,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid section' }, { status: 400 });
     }
 
-    if (!canEditSection(userMeta, section)) {
+    if (!canEditSections(userMeta)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 

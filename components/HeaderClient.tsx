@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useState, useEffect, useSyncExternalStore } from "react";
+import { startTransition, useState, useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { toRoman } from "@/lib/toRoman";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,7 +19,22 @@ import { useTheme } from "@/components/ThemeProvider";
 import type { ThemeLogoSrcs, HeaderAnimationConfig } from "@/lib/getTheme";
 import LiveStrip, { type LiveArticleStripEntry } from "@/components/LiveStrip";
 import { HEADER_WAVE_CONVERGE, HEADER_WAVE_SVG_H, generateWaveFleet } from "@/lib/headerWaveFleet";
+import { BAR_SLIDE_MS, measureBar, slideBar, type BarSpot } from "@/components/slidingBar";
+import { slideSectionBarIn, slideSectionBarOut } from "@/components/sectionBarTravel";
 const HOME_DARK_MODE_PROMPT_COOKIE = "home-dark-mode-prompt-seen";
+
+/**
+ * The section bar on the page before this one, so the next page's bar can
+ * slide over from it. Each page draws its own header, so this lives outside
+ * the component: it survives moving between pages, not a reload. Undefined
+ * until a header has drawn on a desktop-width screen; null when that page
+ * wasn't in a section. The previous path identifies arrivals from the
+ * homepage, which enter from the rule's left edge.
+ */
+let lastSectionBar: BarSpot | null | undefined;
+let lastHeaderPath: string | undefined;
+type LogoBarExit = { bar: BarSpot; at: number };
+let pendingLogoExit: LogoBarExit | null = null;
 
 function formatCurrentDate() {
   return new Date().toLocaleDateString("en-US", {
@@ -91,7 +106,7 @@ function pickWeatherIcon(forecast: string): React.ComponentType<{ className?: st
   return Cloud;
 }
 
-export default function Header({ compact = false, mobileTight = false, logoSrcs, headerAnimation = DEFAULT_HEADER_ANIMATION, volume, edition, liveEntries, weather }: { compact?: boolean; mobileTight?: boolean; logoSrcs?: HeaderLogoSrcs; headerAnimation?: HeaderAnimationConfig; volume?: number | null; edition?: number | null; liveEntries?: LiveArticleStripEntry[]; weather?: HeaderWeather }) {
+export default function Header({ compact = false, mobileTight = false, flushMobileBottom = false, logoSrcs, headerAnimation = DEFAULT_HEADER_ANIMATION, volume, edition, liveEntries, weather }: { compact?: boolean; mobileTight?: boolean; flushMobileBottom?: boolean; logoSrcs?: HeaderLogoSrcs; headerAnimation?: HeaderAnimationConfig; volume?: number | null; edition?: number | null; liveEntries?: LiveArticleStripEntry[]; weather?: HeaderWeather }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showDarkModePrompt, setShowDarkModePrompt] = useState(false);
   const currentDate = useCurrentDate();
@@ -102,6 +117,78 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
   const router = useRouter();
   const pathname = usePathname();
   const currentPath = pathname ?? "";
+  // The section you're in (its front page or anything under it)
+  const activeSectionHref =
+    primaryNavItems.find((item) => currentPath === item.href || currentPath.startsWith(`${item.href}/`))?.href ?? null;
+  const sectionNavRef = useRef<HTMLElement>(null);
+  const logoExitRef = useRef<LogoBarExit | null>(null);
+  const sectionEntryRef = useRef<string | null>(null);
+
+  // Slide the section bar over from where it was on the last page. The bar
+  // rests inside the active link (plain CSS); this only animates it in.
+  useLayoutEffect(() => {
+    const previousPath = lastHeaderPath;
+    lastHeaderPath = currentPath;
+    // Keep the captured move through Strict Mode's effect restart too.
+    const exit = logoExitRef.current ?? pendingLogoExit;
+    pendingLogoExit = null;
+    const nav = sectionNavRef.current;
+    const bar = nav?.querySelector<HTMLElement>("[data-slide-bar]") ?? null;
+    const measure = (): BarSpot | null => (nav && bar ? measureBar(bar) : null);
+    // Below desktop width the section links are hidden: nothing to slide,
+    // and a slide on the next page would start from a bogus spot
+    if (!nav || nav.getBoundingClientRect().width === 0) {
+      logoExitRef.current = null;
+      sectionEntryRef.current = null;
+      lastSectionBar = undefined;
+      return;
+    }
+    const here = measure();
+    const previous = lastSectionBar;
+    lastSectionBar = here;
+
+    if (currentPath === "/" && exit && performance.now() - exit.at < 10000) {
+      sectionEntryRef.current = null;
+      logoExitRef.current = exit;
+      return slideSectionBarOut(nav, exit.bar, () => {
+        if (logoExitRef.current === exit) logoExitRef.current = null;
+      });
+    }
+    logoExitRef.current = null;
+
+    let stopEntry: (() => void) | undefined;
+    if (bar && (previousPath === "/" || sectionEntryRef.current === currentPath)) {
+      sectionEntryRef.current = currentPath;
+      stopEntry = slideSectionBarIn(nav, () => {
+        if (sectionEntryRef.current === currentPath) sectionEntryRef.current = null;
+      });
+    } else {
+      sectionEntryRef.current = null;
+      // Section-to-section slides keep their existing movement. Arrivals
+      // from other pages still grow from the middle of the selected label.
+      const from: BarSpot | null =
+        previous === null && here ? { left: here.left + here.width / 2, width: 0 } : (previous ?? null);
+      if (from) slideBar(nav, from, previous === null ? BAR_SLIDE_MS * 0.75 : BAR_SLIDE_MS);
+    }
+
+    if (!bar) return;
+    // Measure again once the web font is in and on resize, so the next
+    // page slides from where the bar really is
+    let cancelled = false;
+    const save = () => {
+      if (cancelled) return;
+      const spot = measure();
+      if (spot && spot.width > 0) lastSectionBar = spot;
+    };
+    document.fonts?.ready.then(save);
+    window.addEventListener("resize", save);
+    return () => {
+      cancelled = true;
+      stopEntry?.();
+      window.removeEventListener("resize", save);
+    };
+  }, [activeSectionHref, currentPath]);
+
   const shouldEnableAnimatedHeaderTransition =
     headerAnimation.enabled !== false &&
     (phase !== "idle" || shouldRenderAnimatedHeader(currentPath));
@@ -130,6 +217,17 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
     if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || e.button !== 0) return;
     if (!href.startsWith("/")) return;
     const currentRoute = pathname ?? window.location.pathname;
+    pendingLogoExit = null;
+    if (href === "/" && currentRoute !== "/") {
+      const nav = sectionNavRef.current;
+      const bar = nav?.closest("[data-section-rule]")?.querySelector<HTMLElement>("[data-entering-section-bar]")
+        ?? nav?.querySelector<HTMLElement>("[data-slide-bar]");
+      if (nav && bar && nav.clientWidth > 0) {
+        const navBox = nav.getBoundingClientRect();
+        const box = bar.getBoundingClientRect();
+        pendingLogoExit = { bar: { left: box.left - navBox.left + nav.scrollLeft, width: box.width }, at: performance.now() };
+      }
+    }
 
     if (isAnimating) {
       e.preventDefault();
@@ -189,12 +287,18 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
 
   return (
     <>
-      <header className={`${compact ? "sticky top-0" : ""} ${mobileTight ? "mobile-header-tight" : ""} safe-area-top z-50 bg-bg-main lg:hidden`}>
+      <header className={`${compact ? "sticky top-0" : ""} ${mobileTight ? "mobile-header-tight" : ""} ${flushMobileBottom ? "max-lg:pb-0!" : ""} safe-area-top z-50 bg-bg-main lg:hidden`}>
         <div className="mobile-chrome-header-inner safe-area-mobile-header-x mx-auto max-w-[1280px]">
             <div className="grid h-[56px] grid-cols-[1fr_auto_1fr] items-center">
             <div className="flex justify-start">
-              <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="relative -top-[2px] flex h-9 w-9 items-center justify-center overflow-hidden text-text-main">
-                <span className="relative block h-5 w-5">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={isMobileMenuOpen}
+                aria-controls="mobile-menu"
+                className="relative -top-[2px] flex h-9 w-9 items-center justify-center overflow-hidden text-text-main"
+              >
+                <span aria-hidden="true" className="relative block h-5 w-5">
                   <Menu
                     className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
                       isMobileMenuOpen ? "-translate-x-6 opacity-0" : "translate-x-0 opacity-100"
@@ -213,6 +317,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
               onClick={(e) => handleLinkClick(e, "/")}
               onMouseEnter={() => prefetchLink("/")}
               onFocus={() => prefetchLink("/")}
+              aria-label="The Polytechnic, home page"
               className="relative block h-[56px] w-[min(72vw,300px)] justify-self-center"
             >
               <Image
@@ -224,8 +329,8 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
               />
             </Link>
             <div className="flex justify-end">
-              <button onClick={() => openSearchOverlay()} className="relative -top-[2px] flex h-9 w-9 items-center justify-center text-text-main">
-                <span className="relative block h-5 w-5">
+              <button onClick={() => openSearchOverlay()} aria-label="Search" className="relative -top-[2px] flex h-9 w-9 items-center justify-center text-text-main">
+                <span aria-hidden="true" className="relative block h-5 w-5">
                   <Search className="absolute inset-0 m-auto h-4 w-4" />
                 </span>
               </button>
@@ -243,6 +348,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
       </header>
 
       <MobileMenuDrawer
+        id="mobile-menu"
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
         onOpen={() => setIsMobileMenuOpen(true)}
@@ -262,8 +368,12 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
 
       <header className="hidden lg:block">
         <div className={`${compact ? "fixed" : "relative"} top-0 left-0 right-0 z-50 bg-bg-main/95 backdrop-blur-md`}>
-          <div className="font-meta relative mx-auto flex max-w-[1280px] items-center justify-between gap-6 px-4 pt-1.5 pb-0.5 md:px-6 xl:px-[30px]">
-            <div className="flex items-center gap-5 text-[11px] font-medium uppercase tracking-[0.1em] text-text-main">
+          {/* Three columns (links | date | weather + controls), so the date
+              stays centred without being laid over the links: at 1024px an
+              absolutely centred date ran into "Submit". Vol./No. waits for
+              xl, where there's room for it. */}
+          <div className="font-meta relative mx-auto grid max-w-[1280px] grid-cols-[1fr_auto_minmax(0,1fr)] items-center gap-6 px-4 pt-1.5 pb-0.5 md:px-6 xl:px-[30px]">
+            <div className="flex items-center gap-5 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.1em] text-text-main">
               {secondaryNavItems.map((item) => (
                 <Link
                   key={item.label}
@@ -280,13 +390,14 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
               ))}
             </div>
 
-            <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 flex items-center gap-2.5 text-[11px] font-medium uppercase tracking-[0.1em]">
+            <div className="flex items-center gap-2.5 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.1em]">
               <span className="text-text-main" suppressHydrationWarning>{currentDate}</span>
-              <span className="text-accent font-semibold dark:text-text-main">
+              <span className="hidden text-accent font-semibold dark:text-text-main xl:inline">
                 {`Vol. ${volume ? toRoman(volume) : '0'} No. ${edition ?? 0}`}
               </span>
             </div>
 
+            <div className="flex min-w-0 items-center justify-end gap-6">
             {weather && (() => {
               const WeatherIcon = pickWeatherIcon(weather.shortForecast);
               const t = Math.max(0, Math.min(1, (weather.temperature - 25) / (80 - 25)));
@@ -296,20 +407,20 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
               const lightness = isDarkMode ? 68 : 42;
               const tempColor = `hsl(${hue.toFixed(0)}, 72%, ${lightness}%)`;
               return (
+                // Centred in the space between the date and the controls; a
+                // long forecast is cut short before the temperature is
                 <div
-                  className="pointer-events-none absolute left-3/4 -translate-x-1/2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.1em] whitespace-nowrap text-text-main"
+                  className="flex min-w-0 flex-1 items-center justify-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.1em] whitespace-nowrap text-text-main"
                   title={weather.shortForecast ? `Troy, NY — ${weather.shortForecast}` : 'Troy, NY'}
                 >
-                  <WeatherIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>
-                    {weather.shortForecast ? `${weather.shortForecast} ` : ''}
-                    <span style={{ color: tempColor }}>{`${Math.round(weather.temperature)}°`}</span>
-                  </span>
+                  <WeatherIcon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  {weather.shortForecast && <span className="min-w-0 truncate">{weather.shortForecast}</span>}
+                  <span className="shrink-0" style={{ color: tempColor }}>{`${Math.round(weather.temperature)}°`}</span>
                 </div>
               );
             })()}
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2">
               <div className="relative">
                 <button
                   className={`flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border transition-colors ${
@@ -317,6 +428,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                       ? "border-rule text-text-main hover:border-white hover:bg-white hover:text-black"
                       : "border-rule text-text-main hover:border-black hover:bg-black hover:text-white"
                   }`}
+                  aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
                   onClick={(e) => {
                     setShowDarkModePrompt(false);
                     const rect = e.currentTarget.getBoundingClientRect();
@@ -327,7 +439,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                     );
                   }}
                 >
-                  {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                  {isDarkMode ? <Sun className="h-3.5 w-3.5" aria-hidden="true" /> : <Moon className="h-3.5 w-3.5" aria-hidden="true" />}
                 </button>
 
                 {showDarkModePrompt && (
@@ -341,8 +453,11 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                       >
                         Close
                       </button>
+                      {/* Only light-mode readers see this, and the site
+                          already follows their device, so it offers dark
+                          mode rather than arguing for it */}
                       <p className="pr-12 font-meta text-[13px] leading-[1.35] text-text-main">
-                        Try dark mode. You won&apos;t regret it. It&apos;s better than light mode.
+                        Prefer dark mode? Switch here.
                       </p>
                     </div>
                   </div>
@@ -351,6 +466,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
               
               <SearchOverlayTrigger onClick={() => openSearchOverlay()} />
 
+            </div>
             </div>
           </div>
         </div>
@@ -395,7 +511,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
 
             `}} />
 
-            <div className="relative">
+            <div className="relative" data-section-rule>
             <div className="flex items-end justify-between gap-8 pb-0.5">
               <div
                 className={`absolute left-0 right-0 bottom-0 h-px overflow-visible pointer-events-none ${
@@ -529,6 +645,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                 onClick={(e) => handleLinkClick(e, "/")}
                 onMouseEnter={() => prefetchLink("/")}
                 onFocus={() => prefetchLink("/")}
+                aria-label="The Polytechnic, home page"
                 className="relative -top-2 block h-[76px] w-[456px] max-w-full shrink-0 cursor-pointer"
               >
                 <Image
@@ -540,19 +657,60 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                 />
               </Link>
 
-              <nav className="font-meta relative mr-4 flex flex-wrap items-center justify-end gap-x-7 gap-y-1.5 pb-0">
-                {primaryNavItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    onClick={(e) => handleLinkClick(e, item.href)}
-                    onMouseEnter={() => prefetchLink(item.href)}
-                    onFocus={() => prefetchLink(item.href)}
-                    className="relative py-0.5 text-[16px] font-semibold uppercase tracking-[0.08em] text-text-main hover:text-accent transition-colors"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
+              <nav ref={sectionNavRef} className="group/sections font-meta relative mr-4 flex flex-wrap items-center justify-end gap-x-7 gap-y-1.5 pb-0">
+                {/* Red copy of the links, shown only while the bar slides:
+                    cut to the bar's span, it turns each letter red as the bar
+                    passes under (see above). Same layout as the links. */}
+                <div
+                  aria-hidden="true"
+                  data-slide-ink
+                  className="pointer-events-none absolute inset-0 z-10 hidden flex-wrap items-center justify-end gap-x-7 gap-y-1.5 group-data-[sliding]/sections:flex"
+                >
+                  {primaryNavItems.map((item) => (
+                    <span
+                      key={item.label}
+                      className="py-0.5 text-[16px] font-semibold uppercase tracking-[0.08em] text-accent"
+                    >
+                      {item.label}
+                    </span>
+                  ))}
+                </div>
+                {primaryNavItems.map((item) => {
+                  // The section you're in is set in red with a bar on the
+                  // rule, in place of a big title on the section page itself.
+                  // The bar slides over between sections (see above); while
+                  // it does, the red comes from the copy above instead.
+                  const active = item.href === activeSectionHref;
+                  return (
+                    <Link
+                      key={item.label}
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      onClick={(e) => handleLinkClick(e, item.href)}
+                      onMouseEnter={() => prefetchLink(item.href)}
+                      onFocus={() => prefetchLink(item.href)}
+                      // No color fade on the active link: it swaps with the
+                      // red copy the instant a slide ends
+                      className={`relative py-0.5 text-[16px] font-semibold uppercase tracking-[0.08em] ${
+                        active
+                          ? "text-accent group-data-[sliding]/sections:text-text-main"
+                          : "text-text-main transition-colors hover:text-accent"
+                      }`}
+                    >
+                      {item.label}
+                      {active && (
+                        // z-20: the bar hangs below the header into whatever
+                        // comes next (the sports score strip starts on the
+                        // rule), which would otherwise paint over its lower half
+                        <span
+                          aria-hidden="true"
+                          data-slide-bar
+                          className="pointer-events-none absolute -bottom-[4px] left-0 right-0 z-20 h-[4px] bg-accent"
+                        />
+                      )}
+                    </Link>
+                  );
+                })}
               </nav>
             </div>
             {liveEntries && liveEntries.length > 0 && (
@@ -582,6 +740,10 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
           </div>
         )}
       </header>
+
+      {/* Where "Skip to content" (components/SkipLink.tsx) lands: the page
+          starts right after the header, wherever a page draws it */}
+      <div id="main-content" tabIndex={-1} className="outline-none" />
 
       {/* <MaraudersFootsteps /> */}
     </>

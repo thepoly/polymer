@@ -53,10 +53,14 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify Payload CLI backport
+        run: pnpm test:payload-cli
+
       - name: Run Payload Migrations
         # `payload migrate` has exited 0 without applying anything, which only
         # surfaced later as missing tables in the build.
         run: |
+          set -o pipefail
           echo "y" | pnpm exec payload migrate 2>&1 | tee migrate.log
           grep -q 'Done\.' migrate.log || { echo "::error::payload migrate did not finish"; exit 1; }
 

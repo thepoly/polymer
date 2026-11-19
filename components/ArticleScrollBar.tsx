@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Moon, Search, Sun } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import { openSearchOverlay } from '@/components/SearchOverlayHost';
+import ArticleSectionMenu from '@/components/ArticleSectionMenu';
 import posthog from 'posthog-js';
 
 type Props = {
@@ -103,8 +104,8 @@ const ARTICLE_LOGO_SHIFT_THRESHOLD = 100;
 export default function ArticleScrollBar({ title, richTitle, section, hideUntilScroll = false }: Props) {
   const isHome = !title || !section;
   // Home / hideUntilScroll: controls whether the whole bar fades in.
-  // Article (default): bar is always visible, but `atTop` controls the
-  // logo-centered vs logo-left layout.
+  // Article (default): phones keep the centered logo; larger screens switch
+  // from the centered logo to navigation after scrolling.
   const [visible, setVisible] = useState(!isHome && !hideUntilScroll);
   const [atTop, setAtTop] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
@@ -137,7 +138,8 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
           setVisible(y > threshold);
         }
       }
-      setAtTop(y <= ARTICLE_LOGO_SHIFT_THRESHOLD);
+      const isPhone = !window.matchMedia('(min-width: 768px)').matches;
+      setAtTop(isPhone || y <= ARTICLE_LOGO_SHIFT_THRESHOLD);
       if (y > ARTICLE_LOGO_SHIFT_THRESHOLD + 50) setShareOpen(false);
     };
 
@@ -207,6 +209,9 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
   return (
     <div
       className="fixed top-0 left-0 right-0 z-[51] bg-bg-main border-b border-border-main"
+      // Invisible until scrolled to: out of the tab order and the
+      // accessibility tree until then too
+      inert={(isHome || hideUntilScroll) && !visible}
       style={{
         opacity: (isHome || hideUntilScroll) && !visible ? 0 : 1,
         pointerEvents: (isHome || hideUntilScroll) && !visible ? 'none' : 'auto',
@@ -214,14 +219,24 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
       }}
     >
       <div className="relative flex items-center h-[56px] px-4 md:px-6">
+        {/* Scrolled article tablets show a menu instead of the desktop logo. */}
+        {!isHome && !atTop && (
+          <ArticleSectionMenu
+            onThemeToggle={() => triggerThemeTransition(window.innerWidth, 0, toggleDarkMode)}
+          />
+        )}
+
         {/* Left logo: hidden on articles while at top (a centered copy shows
             there instead); always shown on home mode. */}
         <Link
           href="/"
-          className={`shrink-0 transition-opacity duration-300 ease-out ${
+          className={`shrink-0 transition-opacity duration-300 ease-out ${!isHome ? 'hidden lg:block' : ''} ${
             !isHome && atTop ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
           aria-hidden={!isHome && atTop ? true : undefined}
+          // Hidden copies are taken out of the tab order too
+          tabIndex={!isHome && atTop ? -1 : undefined}
+          aria-label="The Polytechnic, home page"
         >
           <div className="relative h-[56px] w-[180px]">
             <Image
@@ -233,9 +248,8 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
           </div>
         </Link>
 
-        {/* Centered logo: article-only, only while at top of page. Fades
-            out as the user scrolls, at which point section|title takes
-            its place. */}
+        {/* Phones keep this logo centered; tablets and desktops replace it
+            with section/title navigation after scrolling. */}
         {!isHome && (
           <Link
             href="/"
@@ -243,8 +257,10 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
               atTop ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
             aria-hidden={!atTop}
+            tabIndex={atTop ? undefined : -1}
+            aria-label="The Polytechnic, home page"
           >
-            <div className="relative h-[56px] w-[180px]">
+            <div className="relative h-[56px] w-[calc(100vw-192px)] max-w-[180px]">
               <Image
                 src={logoSrc}
                 alt="The Polytechnic"
@@ -266,12 +282,20 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
           >
             <a
               href={sectionHref}
+              tabIndex={atTop ? -1 : undefined}
               className="font-bold uppercase tracking-wide text-text-main shrink-0 transition-colors hover:text-accent"
             >
               {sectionLabel}
             </a>
             <span className="text-rule-strong shrink-0">|</span>
-            <span className="text-text-muted truncate">{richTitle || title}</span>
+            <a
+              href={sectionHref}
+              tabIndex={atTop ? -1 : undefined}
+              className="lg:hidden font-normal [&_strong]:font-normal [&_b]:font-normal text-text-muted truncate hover:text-accent"
+            >
+              {richTitle || title}
+            </a>
+            <span className="hidden lg:block font-normal [&_strong]:font-normal [&_b]:font-normal text-text-muted truncate">{richTitle || title}</span>
           </div>
         )}
 

@@ -13,7 +13,7 @@ const Submissions: CollectionConfig = {
   },
   access: {
     read: ({ req: { user } }) => !!user,
-    create: () => true,
+    create: () => false, // Anonymous intake goes through /api/submit with rate limiting.
     update: ({ req: { user } }) => {
       if (!user) return false
       const roles = (user as unknown as { roles?: string[] }).roles || []

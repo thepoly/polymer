@@ -1,5 +1,5 @@
 "use client";
-import { extractTextFromLexical, renderLexicalHeadline } from '@/utils/formatArticle';
+import { fillOpinionSlots } from '@/lib/opinionLayout';
 
 import React, { useMemo } from "react";
 import Image from "next/image";
@@ -13,12 +13,7 @@ import EditorsChoice from "./EditorsChoice";
 import { opinionGroups } from "./opinionGroups";
 import RainbowDivider, { AnimatedLine } from "./RainbowDivider";
 import type { Article as ComponentArticle } from "@/components/FrontPage/types";
-import type { Article as PayloadArticle, User, Media } from "@/payload-types";
 import { Byline } from "@/components/FrontPage/Byline";
-
-function isPopulatedUser(author: number | User): author is User {
-  return typeof author !== "number" && "firstName" in author;
-}
 
 /* ── Article card — optionally shows image ── */
 
@@ -68,7 +63,7 @@ function OpinionCard({ article, withImage = false, priority = false }: { article
 export default function OpinionSectionPage({
   title,
   articles,
-  rawArticles,
+  spotlightAuthors,
   pinnedCol1,
   pinnedCol2,
   pinnedCol3,
@@ -82,10 +77,10 @@ export default function OpinionSectionPage({
 }: {
   title: string;
   articles: ComponentArticle[];
-  rawArticles: PayloadArticle[];
-  pinnedCol1: ComponentArticle[];
-  pinnedCol2: ComponentArticle[];
-  pinnedCol3: ComponentArticle[];
+  spotlightAuthors: SpotlightAuthor[];
+  pinnedCol1: (ComponentArticle | null)[];
+  pinnedCol2: (ComponentArticle | null)[];
+  pinnedCol3: (ComponentArticle | null)[];
   col1Images?: boolean[];
   col2Images?: boolean[];
   col3Images?: boolean[];
@@ -94,107 +89,23 @@ export default function OpinionSectionPage({
   groupedArticles: Record<string, ComponentArticle[]>;
   pinnedSpotlightAuthors?: SpotlightAuthor[];
 }) {
-  const spotlightAuthors = useMemo(() => {
-    const authorMap = new Map<
-      number,
-      {
-        user: User;
-        count: number;
-        latestArticle: { title: string; richTitle?: React.ReactNode; url: string };
-      }
-    >();
-
-    for (const raw of rawArticles) {
-      if (!raw.authors) continue;
-      for (const author of raw.authors) {
-        if (!isPopulatedUser(author)) continue;
-        const existing = authorMap.get(author.id);
-        if (existing) {
-          existing.count += 1;
-        } else {
-          authorMap.set(author.id, {
-            user: author,
-            count: 1,
-            latestArticle: {
-              title: extractTextFromLexical(raw.title),
-              richTitle: renderLexicalHeadline(raw.title),
-              url: getArticleUrl({
-                section: raw.section,
-                slug: raw.slug,
-                publishedDate: raw.publishedDate,
-                createdAt: raw.createdAt,
-              }),
-            },
-          });
-        }
-      }
-    }
-
-    const real = Array.from(authorMap.values())
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8)
-      .map<SpotlightAuthor>((entry) => {
-        const { user } = entry;
-        const headshot =
-          user.headshot && typeof user.headshot !== "number"
-            ? (user.headshot as Media).url || null
-            : null;
-        return {
-          id: user.id,
-          name: `${user.firstName} ${user.lastName}`,
-          headshot,
-          latestArticle: entry.latestArticle,
-        };
-      });
-
-    return real;
-  }, [rawArticles]);
-
-  // Build a set of all pinned/EC IDs so we can exclude them from auto-fill
-  const pinnedIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (const a of [...pinnedCol1, ...pinnedCol2, ...pinnedCol3, ...editorsChoiceArticles]) {
-      ids.add(String(a.id));
-    }
-    return ids;
-  }, [pinnedCol1, pinnedCol2, pinnedCol3, editorsChoiceArticles]);
-
-  // Auto-fill pool: articles not already pinned
-  const autoFillPool = useMemo(() =>
-    articles.filter((a) => !pinnedIds.has(String(a.id))),
-    [articles, pinnedIds]
-  );
-
-  // Fill each column: pinned first, then auto-fill to reach slot count
-  // Slot count = max(default, pinned articles, image array length)
-  const { col1, col2, col3 } = useMemo(() => {
-    const fillColumn = (pinned: ComponentArticle[], slotCount: number, ref: { idx: number }): ComponentArticle[] => {
-      const result: ComponentArticle[] = [...pinned];
-      while (result.length < slotCount && ref.idx < autoFillPool.length) {
-        result.push(autoFillPool[ref.idx++]);
-      }
-      return result;
-    };
-    const ref = { idx: 0 };
-    const col1Slots = Math.max(5, pinnedCol1.length, col1Images.length);
-    const col2Slots = Math.max(4, pinnedCol2.length, col2Images.length);
-    const col3Slots = Math.max(4, pinnedCol3.length, col3Images.length);
-    return {
-      col1: fillColumn(pinnedCol1, col1Slots, ref),
-      col2: fillColumn(pinnedCol2, col2Slots, ref),
-      col3: fillColumn(pinnedCol3, col3Slots, ref),
-    };
-  }, [pinnedCol1, pinnedCol2, pinnedCol3, autoFillPool, col1Images.length, col2Images.length, col3Images.length]);
+  const [col1, col2, col3] = useMemo(() => {
+    const pad = (pins: (ComponentArticle | null)[], count: number) =>
+      Array.from({ length: Math.max(count, pins.length) }, (_, i) => pins[i] || null);
+    return fillOpinionSlots([
+      pad(pinnedCol1, Math.max(5, col1Images.length)),
+      pad(pinnedCol2, Math.max(4, col2Images.length)),
+      pad(pinnedCol3, Math.max(4, col3Images.length)),
+    ], articles, editorsChoiceArticles);
+  }, [pinnedCol1, pinnedCol2, pinnedCol3, col1Images.length, col2Images.length, col3Images.length, articles, editorsChoiceArticles]);
 
   const hasSpotlightAuthors =
     spotlightAuthors.length > 0 ||
     Boolean(pinnedSpotlightAuthors && pinnedSpotlightAuthors.length > 0);
 
-  const mobileOrderedArticles = [
-    ...col1,
-    ...col2,
-    ...col3,
-  ].filter((article): article is ComponentArticle => Boolean(article));
+  const mobileOrderedArticles = [col1, col2, col3].flatMap((column, columnIndex) =>
+    column.flatMap((article, slot) => article ? [{ article, withImage: [col1Images, col2Images, col3Images][columnIndex][slot] ?? false }] : []),
+  );
 
   return (
     <div className="mx-auto max-w-[1280px] px-4 py-5 pb-8 md:px-6 xl:px-[30px]">
@@ -219,12 +130,12 @@ export default function OpinionSectionPage({
       </div>
 
       <div className="lg:hidden">
-        {mobileOrderedArticles.slice(0, 2).map((article, index) => (
+        {mobileOrderedArticles.slice(0, 2).map(({ article, withImage }, index) => (
           <OpinionCard
             key={`mobile-top-${article.id}`}
             article={article}
-            withImage={index === 0}
-            priority={index === 0}
+            withImage={withImage}
+            priority={index === 0 && withImage}
           />
         ))}
 
@@ -234,8 +145,8 @@ export default function OpinionSectionPage({
           </div>
         )}
 
-        {mobileOrderedArticles.slice(2, 5).map((article) => (
-          <OpinionCard key={`mobile-middle-${article.id}`} article={article} />
+        {mobileOrderedArticles.slice(2, 5).map(({ article, withImage }) => (
+          <OpinionCard key={`mobile-middle-${article.id}`} article={article} withImage={withImage} />
         ))}
 
         {editorsChoiceArticles.length > 0 && (
@@ -247,8 +158,8 @@ export default function OpinionSectionPage({
           </div>
         )}
 
-        {mobileOrderedArticles.slice(5).map((article) => (
-          <OpinionCard key={`mobile-rest-${article.id}`} article={article} />
+        {mobileOrderedArticles.slice(5).map(({ article, withImage }) => (
+          <OpinionCard key={`mobile-rest-${article.id}`} article={article} withImage={withImage} />
         ))}
       </div>
 
@@ -262,7 +173,7 @@ export default function OpinionSectionPage({
         {/* ── Col 1: first 3 slots, CTA, remaining slots ── */}
         <div className="lg:border-r lg:border-rule lg:pr-6">
           {col1.slice(0, 3).map((article, i) => (
-            <OpinionCard key={`col1-${article.id}`} article={article} withImage={col1Images[i] ?? false} priority={i === 0 && (col1Images[0] ?? true)} />
+            article && <OpinionCard key={`col1-${article.id}`} article={article} withImage={col1Images[i] ?? false} priority={i === 0 && (col1Images[0] ?? true)} />
           ))}
 
           {/* Guest writer CTA */}
@@ -279,7 +190,7 @@ export default function OpinionSectionPage({
           </div>
 
           {col1.slice(3).map((article, i) => (
-            <OpinionCard key={`col1-after-${article.id}`} article={article} withImage={col1Images[i + 3] ?? false} />
+            article && <OpinionCard key={`col1-after-${article.id}`} article={article} withImage={col1Images[i + 3] ?? false} />
           ))}
         </div>
 
@@ -294,7 +205,7 @@ export default function OpinionSectionPage({
           )}
 
           {col2.slice(1).map((article, i) => (
-            <OpinionCard key={`col2-${article.id}`} article={article} withImage={col2Images[i + 1] ?? false} />
+            article && <OpinionCard key={`col2-${article.id}`} article={article} withImage={col2Images[i + 1] ?? false} />
           ))}
         </div>
 
@@ -310,7 +221,7 @@ export default function OpinionSectionPage({
           )}
 
           {col3.map((article, i) => (
-            <OpinionCard key={`col3-${article.id}`} article={article} withImage={col3Images[i] ?? false} />
+            article && <OpinionCard key={`col3-${article.id}`} article={article} withImage={col3Images[i] ?? false} />
           ))}
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 
-export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
+export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
     ALTER TABLE "articles" RENAME COLUMN "title" TO "old_title";
     ALTER TABLE "articles" ADD COLUMN "title" jsonb;
@@ -75,7 +75,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   `)
 }
 
-export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
+export async function down({ db }: MigrateDownArgs): Promise<void> {
   await db.execute(sql`
     ALTER TABLE "articles" RENAME COLUMN "title" TO "rich_title";
     ALTER TABLE "articles" ADD COLUMN "title" varchar;

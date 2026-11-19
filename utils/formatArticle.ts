@@ -10,7 +10,7 @@ type PublicAuthorLike = {
   slug?: string | null;
 };
 
-type PublicMediaLike = Pick<Media, 'url' | 'alt'> & Partial<Pick<Media, 'focalX' | 'focalY'>> & {
+type PublicMediaLike = Pick<Media, 'url' | 'alt'> & Partial<Pick<Media, 'focalX' | 'focalY' | 'width' | 'height'>> & {
   title?: string | null;
   photographer?: number | { id: number | string; firstName: string; lastName: string; slug?: string | null } | null;
   writeInPhotographer?: string | null;
@@ -160,6 +160,8 @@ export const formatArticle = (
     image: featuredImage?.url || null,
     imageFull: featuredImage?.url || null,
     imageFocus: featuredImage ? focalObjectPosition(featuredImage) : null,
+    imageAspect:
+      featuredImage?.width && featuredImage?.height ? featuredImage.width / featuredImage.height : null,
     imageCaption: article.imageCaption || null,
     imagePhotographer,
     imagePhotographerId,

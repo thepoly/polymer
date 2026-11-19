@@ -8,6 +8,7 @@ import type { Article as ComponentArticle } from "@/components/FrontPage/types";
 import { Byline } from "@/components/FrontPage/Byline";
 import { AnimatedLine } from "@/components/Opinion/RainbowDivider";
 import { newsCategories } from "./newsCategories";
+import { NEWS_CONTACT_MAILTO } from "./newsLayout";
 
 /* ── Layout constants — shared with the Features page ── */
 
@@ -15,9 +16,6 @@ const COLUMN_GAP = "clamp(16px, 2vw, 24px)";
 const SECTION_RULE_GAP = "clamp(18px, 3vw, 24px)";
 const SECTION_RULE_INSET = 7;
 const LOWER_SECTION_EXTRA_TOP_SPACE = 8;
-
-const NEWS_CONTACT_MAILTO =
-  "mailto:news@poly.rpi.edu,eic@poly.rpi.edu?subject=News%2C%20Request%2FComment";
 
 /* ── Article card — optionally shows image ── */
 

@@ -11,43 +11,105 @@ over time.
 | --- | --- | --- |
 | Score strip (top) | For each sport in the standings card: RPI's last two finals and next game | rpiathletics.com calendar feed ([`lib/schedule.ts`](../lib/schedule.ts)) |
 | Lead + scoreboard | Lead story with a scoreboard (logos, score, sport, status, date played) | The lead article's game result + `schools` |
-| Below-lead stories | One wide story, or two when the scoreboard is off | Layout editor, auto-filled with the newest stories |
-| Standings card | Every sport in season (at least 3). Five tabs fit; any more scroll sideways (trackpad or finger swipe, or the arrows). Top five teams, with RPI held at its real rank | ECAC Hockey and Liberty League standings pages ([`lib/standings.ts`](../lib/standings.ts)) |
+| Below-lead stories | One wide story, or two when no scoreboard shows | Layout editor, auto-filled with the newest stories |
+| Standings card | Every sport in season (at least 3). Five tabs fit; any more scroll sideways (trackpad or finger swipe, desktop mouse drag, or the arrows). Top five teams, with RPI held at its real rank | ECAC Hockey and Liberty League standings pages ([`lib/standings.ts`](../lib/standings.ts)) |
 | Headlines | Three stories | Layout editor / newest stories |
 | More Headlines | A carousel of seven photo cards, ending in a link to `/sports/all` | Layout editor / newest unused stories |
 | `/sports/all` | Every sports story by month, filterable by sport, 24 per page | Articles |
 
-The page components are in [`components/Sports/`](../components/Sports/),
-and the route is the `sports` branch of
-[`app/(frontend)/[section]/page.tsx`](../app/(frontend)/[section]/page.tsx).
-Both pages revalidate every 60 seconds.
+Below 1024px, the score strip reaches both screen edges and joins directly
+to the date/volume bar, sharing its bottom rule without a gap or doubled
+border. The header keeps its usual spacing when there is no score strip.
+Below 768px, Standings tab/table surfaces also reach both screen edges;
+its text, heading rule and source link retain the page's reading inset.
+Standings keeps its existing tablet and desktop widths.
+
+More Headlines scrolls horizontally by finger swipe or trackpad. On desktop,
+readers can also drag the cards with a mouse or use the arrows to move four
+cards at a time. The arrows are hidden below the desktop breakpoint (1024px).
+Their 48px circles use a translucent fill, 10px backdrop blur, a fine border
+and a soft shadow. Hover strengthens the fill and turns the arrow red;
+keyboard focus gets an accent outline. Dark mode uses a smoky dark fill,
+and browsers without backdrop blur get a more opaque fallback.
+Dragging a card does not open its story; a normal click or tap still does.
+Quick finger flicks in the score strip and More Headlines coast farther than
+slow drags; desktop mouse dragging in both rows also coasts after release. Touching a
+moving row stops it, and holding still before release prevents a coast.
+Vertical page scrolling and pinch zoom remain available. With reduced motion
+enabled, the rows stop on release. Trackpads keep their native momentum.
+
+The page components are in [`components/Sports/`](../components/Sports/).
+On mobile, Standings initially selects the leftmost displayed sport, even if
+its conference play has not started. Desktop initially prefers the lead
+story's sport when conference play has started. A reader's chosen tab stays
+selected when resizing between mobile and desktop.
+The active sport's underline matches its label width, rather than the wider
+button used to space the tabs.
+It slides between selections with the masthead section underline's 420ms
+timing and easing. Rapid selections continue from its current position;
+resizing keeps it aligned, and reduced motion switches it immediately.
+The standings content swaps with the same full-width slide used between
+Senate and E-Board: the old table leaves one side as the new table follows
+from the selected tab's direction, on the underline's timing. The heading
+and tabs stay fixed. Height changes ease with the slide; outgoing content
+is hidden from assistive technology and cannot receive focus. A new choice
+or resize clears the previous slide, and reduced motion swaps immediately.
+The gap from Standings to the Headlines rule is 12px below 768px.
+Between 768px and 1023px wide the gap is 20px; desktop retains 24px.
+
+At desktop widths (1024px and up), the sport tabs also support mouse grab
+scrolling and coast after release. Dragging does not select a different tab;
+normal clicks and keyboard activation still do. Pressing the row, using an
+arrow, scrolling with a wheel, or focusing a tab stops the coast. Reduced
+motion disables coasting and makes arrow scrolling immediate. Mobile keeps
+native touch scrolling.
+
+The route is the `sports` branch of
+[`app/(frontend)/[section]/page.tsx`](../app/(frontend)/[section]/page.tsx),
+which gets everything besides the newest stories from
+[`lib/sportsPage.ts`](../lib/sportsPage.ts). The layout's JSON is defined
+and read in [`lib/sportsLayout.ts`](../lib/sportsLayout.ts).
+
+`/sports` revalidates every 60 seconds. `/sports/all` reads its query
+string, so it renders on every request; the count behind its sport tabs is
+cached for 60 seconds.
 
 ## For editors
 
 **On a sports article** (right under Section; shown only for sports):
-- **Sport.** Choosing one fills an empty kicker with the sport's name.
-  For a story that isn't about one team, pick "General / Multiple Sports",
-  or leave Sport blank and write a kicker, which is then used as the
-  story's label on `/sports`.
+- **Sport.** The kicker follows it: an empty kicker gets the sport's name,
+  and changing the sport changes a kicker that still names the old one. A
+  kicker an editor wrote stays. For a story that isn't about one team, pick
+  "General / Multiple Sports" (which adds no label) or leave Sport blank,
+  and write a kicker if you want one; it is then the story's label on
+  `/sports`.
 - **Game result** (all optional): opponent (a school), home / away /
-  neutral, RPI score, opponent score, and status. Leave status blank for
-  "Final"; type "Final/OT" and similar when it applies. The scoreboard only
-  appears when the lead story has an opponent.
+  neutral, RPI score, opponent score, and status. Scores are whole numbers.
+  Leave status blank for "Final"; type "Final/OT" and similar when it
+  applies. The scoreboard only appears when the lead story has an opponent
+  and both scores, so a game preview gets none.
+- Moving a story out of Sports clears its sport and game result.
 
 **Sports Layout** (in the newsroom):
 - Drag stories into the lead, below-lead, Headlines and More Headlines
   slots. Empty slots fill themselves with the newest stories, so the page
   works before anyone sets it up.
+- A pinned story that has been unpublished is marked "not published"; its
+  slot fills itself until the story is published again. A pin whose story
+  was deleted says so and can be removed with ×.
 - **Scoreboard** switch, and **Date played** under it. The scoreboard
   otherwise shows the publish date, which is often a day after the game.
   The date belongs to the story it was typed for: change the lead and it
-  goes back to the publish date.
+  goes back to the publish date. When the lead has no final score, the
+  editor says why there's no scoreboard and offers the second below-lead
+  slot instead.
 - **Scores banner** switch. Turning it off shows the plain
   "Sports | Contact" header and stops the site contacting RPI Athletics.
 - **Lead title overlay** switch.
 - **Standings**: each sport shows whether it's in season. **Show** or
   **Hide** forces a sport on or off for 7 days, then the calendar takes
-  over again. **Auto** goes back to the calendar now.
+  over again. **Auto** goes back to the calendar now. Show can't bring
+  back a sport whose conference page can't be read.
 - More Headlines cards can be reframed by dragging the photo. Otherwise
   they use the photo's focal point.
 - The **Schools** button beside "Create New" opens the list of opponents.
@@ -177,6 +239,9 @@ not just `/sports`:
   feed data).
 - Schools logos are stored in the same media directory as `media` and
   `logos` uploads (`MEDIA_DIR`), like the other upload collections.
+- A **Show** override for a sport whose conference page failed to load or
+  parse does nothing, and the layout editor can't tell which sports are
+  affected: it would need the page's standings status passed to it.
 - The pending `fix/dedupe-migration-tracking` branch changes the format of
   the tracking rows at the top of `run_deploy_sql_migrations.sh`. Whichever
   of the two merges second must rewrite this PR's three rows as

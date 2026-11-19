@@ -16,6 +16,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { getPayload } from 'payload'
 import config from '../payload.config'
+import { SPORTS_USER_AGENT } from '../lib/sidearm'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DATA_FILE = path.resolve(__dirname, 'data', 'schools.json')
@@ -45,7 +46,7 @@ async function downloadLogo(school: SeedSchool) {
   if (!school.logoUrl) return null
   try {
     const res = await fetch(school.logoUrl, {
-      headers: { 'User-Agent': 'The Polytechnic (poly.rpi.edu) sports desk' },
+      headers: { 'User-Agent': SPORTS_USER_AGENT },
       signal: AbortSignal.timeout(20_000),
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)

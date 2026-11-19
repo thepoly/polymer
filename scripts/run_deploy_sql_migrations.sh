@@ -4,7 +4,7 @@ set -euo pipefail
 
 : "${DATABASE_URL:?DATABASE_URL must be set}"
 
-psql "$DATABASE_URL" <<'SQL'
+psql -v ON_ERROR_STOP=1 "$DATABASE_URL" <<'SQL'
 -- Ensure migration tracking is up to date
 DELETE FROM payload_migrations WHERE batch = -1;
 INSERT INTO payload_migrations (name, batch, updated_at, created_at)
@@ -60,7 +60,10 @@ VALUES
   ('20261022_000000_add_sports_page_layout', 32, NOW(), NOW()),
   ('20261022_010000_add_schools_and_game_result', 32, NOW(), NOW()),
   ('20261022_020000_add_article_sport', 32, NOW(), NOW()),
-  ('20261112_000000_add_user_portfolio', 33, NOW(), NOW())
+  ('20261112_000000_add_user_portfolio', 33, NOW(), NOW()),
+  ('20261112_000000_add_news_page_layout', 35, NOW(), NOW()),
+  ('20261112_010000_add_student_gov_updates', 35, NOW(), NOW()),
+  ('20261113_000000_add_student_gov_terms', 36, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 -- 20260317: Add opinion_type and image_caption columns
@@ -1599,4 +1602,132 @@ CREATE INDEX IF NOT EXISTS "users_rels_order_idx" ON "users_rels" USING btree ("
 CREATE INDEX IF NOT EXISTS "users_rels_parent_idx" ON "users_rels" USING btree ("parent_id");
 CREATE INDEX IF NOT EXISTS "users_rels_path_idx" ON "users_rels" USING btree ("path");
 CREATE INDEX IF NOT EXISTS "users_rels_media_id_idx" ON "users_rels" USING btree ("media_id");
+
+-- 20261112_000000: News section page layout (editor-pinned lead story and
+-- where its text sits). The whole layout lives in one jsonb column.
+CREATE TABLE IF NOT EXISTS "news_page_layout" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "name" varchar NOT NULL DEFAULT 'News Layout',
+  "layout" jsonb,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "news_page_layout_created_at_idx" ON "news_page_layout" USING btree ("created_at");
+ALTER TABLE "payload_locked_documents_rels" ADD COLUMN IF NOT EXISTS "news_page_layout_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_news_page_layout_fk"
+    FOREIGN KEY ("news_page_layout_id") REFERENCES "public"."news_page_layout"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_news_page_layout_id_idx"
+  ON "payload_locked_documents_rels" ("news_page_layout_id");
+
+-- 20261112_010000: Student Senate / Executive Board timeline updates (short
+-- title + blurb items shown on /news/senate, /news/executive-board and the
+-- Student Government box on /news).
+DO $$ BEGIN
+  CREATE TYPE "public"."enum_student_gov_updates_body" AS ENUM('senate', 'eboard');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE TABLE IF NOT EXISTS "student_gov_updates" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "title" varchar NOT NULL,
+  "body" "enum_student_gov_updates_body" NOT NULL,
+  "blurb" varchar NOT NULL,
+  "date" timestamp(3) with time zone NOT NULL,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "student_gov_updates_date_idx" ON "student_gov_updates" USING btree ("date");
+CREATE INDEX IF NOT EXISTS "student_gov_updates_updated_at_idx" ON "student_gov_updates" USING btree ("updated_at");
+CREATE INDEX IF NOT EXISTS "student_gov_updates_created_at_idx" ON "student_gov_updates" USING btree ("created_at");
+ALTER TABLE "payload_locked_documents_rels" ADD COLUMN IF NOT EXISTS "student_gov_updates_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels" ADD CONSTRAINT "payload_locked_documents_rels_student_gov_updates_fk"
+    FOREIGN KEY ("student_gov_updates_id") REFERENCES "public"."student_gov_updates"("id") ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_student_gov_updates_id_idx"
+  ON "payload_locked_documents_rels" ("student_gov_updates_id");
+
+-- 20261113_000000: Student Senate / Executive Board terms (GM Week to GM Week)
+-- and their leaders; timeline entries are put in a term by date.
+DO $$ BEGIN
+  CREATE TYPE "public"."enum_student_gov_terms_body" AS ENUM('senate', 'eboard');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE TYPE "public"."enum_student_gov_terms_leaders_how" AS ENUM('elected', 'runoff', 'appointed');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE TABLE IF NOT EXISTS "student_gov_terms" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "name" varchar,
+  "slug" varchar,
+  "body" "enum_student_gov_terms_body" NOT NULL,
+  "number" numeric,
+  "starts_on" timestamp(3) with time zone NOT NULL,
+  "gm_week_on" timestamp(3) with time zone,
+  "gm_week_story_id" integer,
+  "has_coverage" boolean DEFAULT true,
+  "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+  "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "student_gov_terms_leaders" (
+  "_order" integer NOT NULL,
+  "_parent_id" integer NOT NULL,
+  "id" varchar PRIMARY KEY NOT NULL,
+  "name" varchar NOT NULL,
+  "ordinal" numeric,
+  "how" "enum_student_gov_terms_leaders_how" DEFAULT 'elected',
+  "started_on" timestamp(3) with time zone
+);
+
+DO $$ BEGIN
+  ALTER TABLE "student_gov_terms_leaders" ADD CONSTRAINT "student_gov_terms_leaders_parent_id_fk"
+    FOREIGN KEY ("_parent_id") REFERENCES "public"."student_gov_terms"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE "student_gov_terms" ADD CONSTRAINT "student_gov_terms_gm_week_story_id_articles_id_fk"
+    FOREIGN KEY ("gm_week_story_id") REFERENCES "public"."articles"("id") ON DELETE set null ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+CREATE INDEX IF NOT EXISTS "student_gov_terms_leaders_order_idx" ON "student_gov_terms_leaders" USING btree ("_order");
+CREATE INDEX IF NOT EXISTS "student_gov_terms_leaders_parent_id_idx" ON "student_gov_terms_leaders" USING btree ("_parent_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "student_gov_terms_slug_idx" ON "student_gov_terms" USING btree ("slug");
+CREATE INDEX IF NOT EXISTS "student_gov_terms_starts_on_idx" ON "student_gov_terms" USING btree ("starts_on");
+CREATE INDEX IF NOT EXISTS "student_gov_terms_gm_week_story_idx" ON "student_gov_terms" USING btree ("gm_week_story_id");
+CREATE INDEX IF NOT EXISTS "student_gov_terms_updated_at_idx" ON "student_gov_terms" USING btree ("updated_at");
+CREATE INDEX IF NOT EXISTS "student_gov_terms_created_at_idx" ON "student_gov_terms" USING btree ("created_at");
+
+ALTER TABLE "payload_locked_documents_rels"
+  ADD COLUMN IF NOT EXISTS "student_gov_terms_id" integer;
+DO $$ BEGIN
+  ALTER TABLE "payload_locked_documents_rels"
+    ADD CONSTRAINT "payload_locked_documents_rels_student_gov_terms_fk"
+    FOREIGN KEY ("student_gov_terms_id") REFERENCES "public"."student_gov_terms"("id")
+    ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_student_gov_terms_id_idx"
+  ON "payload_locked_documents_rels" ("student_gov_terms_id");
+
+-- 20261117: Enforce the opinion layout singleton without deleting archived layouts.
+DO $$ BEGIN
+  IF to_regclass('public.opinion_page_layout_name_idx') IS NULL THEN
+    LOCK TABLE "opinion_page_layout" IN EXCLUSIVE MODE;
+    UPDATE "opinion_page_layout" SET "name" = 'Archived Opinion Layout #' || "id"
+      WHERE "id" <> (SELECT "id" FROM "opinion_page_layout" ORDER BY "created_at" DESC, "id" DESC LIMIT 1);
+    UPDATE "opinion_page_layout" SET "name" = 'Opinion Layout'
+      WHERE "id" = (SELECT "id" FROM "opinion_page_layout" ORDER BY "created_at" DESC, "id" DESC LIMIT 1);
+    CREATE UNIQUE INDEX "opinion_page_layout_name_idx" ON "opinion_page_layout" ("name");
+  END IF;
+END $$;
+INSERT INTO payload_migrations (name, batch, updated_at, created_at)
+SELECT '20261117_000000_opinion_layout_singleton', 34, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM payload_migrations WHERE name = '20261117_000000_opinion_layout_singleton');
 SQL

@@ -633,7 +633,7 @@ export default function MaraudersFootsteps() {
     }
 
     frameRef.current = requestAnimationFrame(stepWalkerRef.current);
-  }, [stepWalker]);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => {

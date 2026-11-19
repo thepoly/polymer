@@ -5,6 +5,7 @@ import { Article, Media, User } from '@/payload-types';
 import { opinionTypeLabels } from './opinionTypeLabels';
 import { renderLexicalHeadline } from '@/utils/formatArticle';
 import { ArticleByline } from '@/components/Article';
+import { ArticleSectionLabel } from '@/components/Article/ArticleSectionLabel';
 
 type Props = {
   article: Article;
@@ -19,30 +20,23 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
   const writeInPhotographer = featuredImage
     ? ((featuredImage as unknown as Record<string, unknown>).writeInPhotographer as string | null | undefined)
     : null;
+  const hasCaptionLine = Boolean(
+    imageCaption || (featuredImage?.photographer && typeof featuredImage.photographer === 'object') || writeInPhotographer,
+  );
 
   return (
     <div
       className="flex flex-col items-center mb-8 gap-4"
-      style={{ paddingTop: '18px' }}
+      style={{ paddingTop: '9px' }}
     >
-      {/* Kicker + Opinion Type */}
-      <div className="flex flex-col items-center gap-1 mb-1">
-        <span className="font-meta text-accent font-bold uppercase text-[16px] tracking-widest">
-          Opinion
-        </span>
-        {opinionType && opinionType !== 'opinion' && (
-          <span className="font-meta font-bold uppercase text-[16px] tracking-wide text-text-main">
-            {typeLabel}
-          </span>
-        )}
-      </div>
-
-      {/* Divider */}
-      <div className="w-8 border-t border-rule-strong mb-1" />
+      <ArticleSectionLabel
+        section={article.section}
+        kicker={article.kicker?.trim() || (opinionType && opinionType !== 'opinion' ? typeLabel : null)}
+      />
 
       {/* Title */}
       <div className="flex flex-col gap-4 max-w-[680px] w-full mx-auto">
-        <h1 data-ie-field="title" className="font-copy font-light text-[39px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center">
+        <h1 data-ie-field="title" className="font-copy font-normal [&_strong]:font-normal [&_b]:font-normal text-[39px] md:text-[40px] lg:text-[48px] text-text-main leading-[1.1] text-center">
           {renderLexicalHeadline(article.title)}
         </h1>
       </div>
@@ -86,7 +80,9 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
         );
       })()}
 
-      <div className={`w-full max-w-[680px] mx-auto ${hasFeaturedImage ? '' : '-mt-1'}`}>
+      {/* A photo with nothing under it: a clear gap, so the byline isn't
+          read as the photo's credit */}
+      <div className={`w-full max-w-[680px] mx-auto ${!hasFeaturedImage ? '-mt-1' : hasCaptionLine ? '' : 'mt-4'}`}>
         <ArticleByline article={article} showDate={false} />
       </div>
     </div>

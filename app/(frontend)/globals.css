@@ -302,6 +302,13 @@ h6.font-display.italic {
   font-family: var(--font-meta);
 }
 
+/* flow-root keeps the floated letter inside its own paragraph: a one-line
+   first paragraph is otherwise shorter than the letter, and the next
+   paragraph wraps around it, its first line pushed in. */
+.drop-cap {
+  display: flow-root;
+}
+
 .drop-cap::first-letter {
   float: left;
   font-size: 3.5em;
@@ -319,6 +326,96 @@ h6.font-display.italic {
   line-height: inherit;
   margin-right: 0;
   padding-top: 0;
+}
+
+/* FitGroup (components/FitGroup.tsx): text whose size is fitted after load
+   stays hidden until the first fit, then fades in, so it never visibly jumps
+   size. If scripts never run, the delayed animation shows it anyway. */
+[data-fit-group]:not([data-fitted]) [data-fit-content] {
+  opacity: 0;
+  animation: fit-reveal 0s 1.2s forwards;
+}
+[data-fit-group] [data-fit-content] {
+  transition: opacity 0.15s ease-out;
+}
+@keyframes fit-reveal {
+  to { opacity: 1; }
+}
+
+/* BalanceColumns (components/BalanceColumns.tsx): two columns squared off to
+   end on the same line. Optional content stays hidden until the script finds
+   room for it; a column that drops its trims hides them; a small leftover gap
+   is spread between the short column's children. While measuring, columns
+   keep their own height instead of stretching to the row. */
+[data-balance-opt]:not([data-on]) {
+  display: none;
+}
+[data-balance-col][data-trimmed] [data-balance-trim] {
+  display: none;
+}
+[data-balance-col][data-feather] {
+  justify-content: space-between;
+}
+[data-balance-root][data-balancing] [data-balance-col] {
+  align-self: start;
+}
+
+/* NewsTopicTabs (components/News/NewsTopicTabs.tsx): topic panels stacked in
+   one grid cell. The selected one sets the height; the one leaving overlaps
+   it while it goes; the rest stay laid out (so their photos load early) but
+   out of the way and invisible. A change is one continuous swipe: the whole
+   set slides off one side of the column and the new set follows right behind
+   it from the other, moving together like one strip (--topic-dir: 1 when the
+   new set comes in from the right, -1 from the left). The column clips them
+   at its edges (overflow-x: clip on the panels' container). */
+[data-topic-panel] {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+[data-topic-panel][data-state="idle"] {
+  position: absolute;
+  inset: 0 0 auto 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+[data-topic-panel][data-state="out"] {
+  pointer-events: none;
+}
+/* Same duration and curve for both, so the two sets stay one gutter apart */
+[data-topic-panel][data-state="in"] {
+  animation: topic-in 760ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+[data-topic-panel][data-state="out"] {
+  animation: topic-out 760ms cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+@keyframes topic-in {
+  from {
+    transform: translateX(calc(var(--topic-dir, 1) * (100% + 48px)));
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes topic-out {
+  from {
+    transform: none;
+  }
+  to {
+    transform: translateX(calc(var(--topic-dir, 1) * (-100% - 48px)));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-topic-panel][data-state="in"] {
+    animation: topic-fade 200ms ease-out both;
+  }
+  [data-topic-panel][data-state="out"] {
+    animation: none;
+    opacity: 0;
+  }
+}
+@keyframes topic-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes search-icon-slide {

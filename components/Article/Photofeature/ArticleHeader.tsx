@@ -11,6 +11,7 @@ import { openSearchOverlay } from '@/components/SearchOverlayHost';
 import { useTheme } from '@/components/ThemeProvider';
 import { focalObjectPosition } from '@/utils/focalPoint';
 import { resolveCredit } from '@/components/Article/PhotoCaption';
+import { ArticleSectionLabel } from '@/components/Article/ArticleSectionLabel';
 
 type Props = {
   article: Article;
@@ -77,14 +78,16 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
               onClick={() => setIsMenuOpen(true)}
               className="flex h-9 w-9 items-center justify-center text-white hover:opacity-80 transition-opacity"
               aria-label="Open menu"
+              aria-expanded={isMenuOpen}
+              aria-controls="photofeature-menu"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
 
           {/* Center: Logo */}
           <div className="flex justify-center">
-            <Link href="/" className="relative w-[6.5rem] md:w-[9.5rem] h-7 hover:opacity-90 transition-opacity">
+            <Link href="/" aria-label="The Polytechnic, home page" className="relative w-[6.5rem] md:w-[9.5rem] h-7 hover:opacity-90 transition-opacity">
               <Image
                 src={logoSrcs.mobileDark}
                 alt="The Polytechnic"
@@ -109,8 +112,11 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         {/* Bottom Content Area (z-10) */}
         <div className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-center text-center px-4 pb-8 sm:pb-10 md:pb-12 pointer-events-none">
           <div className="max-w-[90vw] w-full space-y-1">
-            
-            <h1 data-ie-field="title" className={`font-copy font-bold text-[43px] md:text-[38px] lg:text-[47px] text-white leading-[1.05] tracking-[-0.02em] drop-shadow-lg ${article.section === "opinion" ? "font-light" : ""} ${article.section === "sports" ? "font-light" : ""} ${article.section === "features" ? "font-light" : ""} pointer-events-auto`}>
+            <div className="pb-4 drop-shadow-lg">
+              <ArticleSectionLabel section={article.section} kicker={article.kicker} inverse />
+            </div>
+
+            <h1 data-ie-field="title" className="font-copy font-normal [&_strong]:font-normal [&_b]:font-normal text-[43px] md:text-[38px] lg:text-[47px] text-white leading-[1.05] tracking-[-0.02em] drop-shadow-lg pointer-events-auto">
               {renderLexicalHeadline(article.title)}
             </h1>
 
@@ -230,6 +236,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
       </div>
 
       <MobileMenuDrawer
+        id="photofeature-menu"
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
         onOpen={() => setIsMenuOpen(true)}

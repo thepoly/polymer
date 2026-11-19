@@ -13,8 +13,16 @@ import { User } from "@/payload-types";
 import ThemeStyle from "@/components/ThemeStyle";
 import BottomNav from "@/components/BottomNav";
 import SearchOverlayHost from "@/components/SearchOverlayHost";
+import SkipLink from "@/components/SkipLink";
 import { getTheme } from "@/lib/getTheme";
 import { getSeo } from "@/lib/getSeo";
+import {
+  SYSTEM_THEME_SCRIPT,
+  THEME_COOKIE,
+  THEME_PICKED_COOKIE,
+  THEME_SYSTEM_COOKIE,
+  resolveThemeChoice,
+} from "@/lib/themePreference";
 
 const cinzel = Cinzel({
   variable: "--font-cinzel",
@@ -113,10 +121,15 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // The reader's pick, or else (until the head script checks the device)
+  // the device setting seen last visit. See lib/themePreference.ts.
   const cookieStore = await cookies();
-  const themeCookie = cookieStore.get("theme")?.value;
-
-  const isDarkMode = themeCookie === "dark";
+  const themeChoice = resolveThemeChoice(
+    cookieStore.get(THEME_COOKIE)?.value,
+    cookieStore.get(THEME_PICKED_COOKIE)?.value,
+  );
+  const systemDarkGuess = cookieStore.get(THEME_SYSTEM_COOKIE)?.value === "dark";
+  const isDarkMode = themeChoice ? themeChoice === "dark" : systemDarkGuess;
 
   const siteTheme = await getTheme();
 
@@ -156,8 +169,11 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" className={isDarkMode ? "dark" : ""}>
+    // suppressHydrationWarning: the head script may change <html>'s class
+    // and colour scheme before React hydrates
+    <html lang="en" className={isDarkMode ? "dark" : ""} style={{ colorScheme: isDarkMode ? "dark" : "light" }} suppressHydrationWarning>
       <head>
+        {themeChoice === null && <script dangerouslySetInnerHTML={{ __html: SYSTEM_THEME_SCRIPT }} />}
         <ThemeStyle lightMode={siteTheme.lightMode} darkMode={siteTheme.darkMode} headerAnimation={siteTheme.headerAnimation} />
         <link
           rel="preload"
@@ -177,7 +193,8 @@ export default async function RootLayout({
       <body
         className={`${cinzel.variable} ${barlowCondensed.variable} ${bebasNeuePro.variable} antialiased`}
       >
-        <ThemeProvider initialDarkMode={isDarkMode} logoSrcs={siteTheme.logoSrcs}>
+        <SkipLink />
+        <ThemeProvider initialChoice={themeChoice} initialSystemDark={systemDarkGuess} logoSrcs={siteTheme.logoSrcs}>
           <SiteAnalytics user={analyticsUser} />
           <WebVitals />
           <HeaderTransitionProvider>

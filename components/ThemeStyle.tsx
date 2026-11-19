@@ -63,6 +63,5 @@ export default function ThemeStyle({ lightMode, darkMode, headerAnimation }: Pro
   // over the bare :root block in globals.css regardless of stylesheet load order.
   const css = `html:root {\n${colorVars(lightMode)}\n${waveVars(headerAnimation)}\n}\nhtml.dark:root {\n${colorVars(darkMode)}\n}`
   // Values are sanitized above — only valid CSS color syntax passes through.
-  // eslint-disable-next-line react/no-danger
   return <style dangerouslySetInnerHTML={{ __html: css }} />
 }

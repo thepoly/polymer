@@ -11,6 +11,7 @@
 // A live sport only shows once its table is this season's and RPI has played;
 // see selectStandings.
 import type { SportValue } from './sports'
+import { troyDay } from './troyTime'
 
 type StandingsSport = {
   sport: SportValue
@@ -69,16 +70,6 @@ export type StandingsAvailability = {
   rpiGames: number
 }
 
-/** Today as YYYY-MM-DD in Troy, so windows flip at local midnight */
-function localDay(now: Date): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/New_York',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now)
-}
-
 type SeasonInfo = {
   phase: Phase
   /** Calendar year the current (or most recent) season started */
@@ -88,7 +79,8 @@ type SeasonInfo = {
 }
 
 export function seasonInfo(entry: StandingsSport, now: Date): SeasonInfo {
-  const today = localDay(now)
+  // Troy's date, so windows flip at local midnight
+  const today = troyDay(now)
   const year = Number(today.slice(0, 4))
   // Dates after `appear` in the calendar belong to the same season year;
   // earlier ones (e.g. a March end for an October start) fall in the next.

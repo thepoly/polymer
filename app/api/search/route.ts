@@ -31,20 +31,6 @@ function queryForms(q: string): string[] {
   return [...forms].filter(f => f.trim().length > 0);
 }
 
-type PayloadSearchArticle = {
-  id: number;
-  title: string;
-  slug?: string | null;
-  subdeck?: string | null;
-  featuredImage?: number | { url?: string | null } | null;
-  section: string;
-  kicker?: string | null;
-  publishedDate?: string | null;
-  createdAt: string;
-  authors?: Array<number | { firstName: string; lastName: string }> | null;
-  _status?: string | null;
-};
-
 const articleSearchSelect = {
   title: true,
   plainTitle: true,

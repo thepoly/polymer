@@ -38,7 +38,11 @@ export function MobileMenuDrawer({
   onThemeToggle,
   onSearchOpen,
   className,
+  id,
+  swipeToOpen = true,
 }: {
+  /** For the menu button's aria-controls */
+  id?: string;
   isOpen: boolean;
   onClose: () => void;
   onOpen: () => void;
@@ -47,6 +51,8 @@ export function MobileMenuDrawer({
   onThemeToggle: () => void;
   onSearchOpen: () => void;
   className?: string;
+  /** A secondary trigger can share this drawer without adding another global open gesture. */
+  swipeToOpen?: boolean;
 }) {
   const [dragX, setDragX] = useState<number | null>(null);
   const dragXRef = useRef<number | null>(null);
@@ -86,6 +92,9 @@ export function MobileMenuDrawer({
     };
 
     const onTouchStart = (e: TouchEvent) => {
+      // Photofeature articles can also mount a hero drawer. Only the open
+      // drawer should handle a gesture when another trigger is in use.
+      if (!isOpen && (!swipeToOpen || document.querySelector('[data-mobile-menu-open]'))) return;
       const touch = e.touches[0];
       activeTouchIdRef.current = touch.identifier;
       touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
@@ -171,7 +180,7 @@ export function MobileMenuDrawer({
       window.removeEventListener('blur', forceCloseTransientState);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [commitDrag, getDrawerPx, isOpen, onClose, onOpen, resetGesture]);
+  }, [commitDrag, getDrawerPx, isOpen, onClose, onOpen, resetGesture, swipeToOpen]);
 
   useEffect(() => {
     if (isOpen || dragX !== null) {
@@ -186,7 +195,7 @@ export function MobileMenuDrawer({
   const progress = dragX !== null && drawerPx !== null ? dragX / drawerPx : isOpen ? 1 : 0;
 
   return (
-    <div className={`fixed inset-0 z-[60] ${className ?? 'lg:hidden'} ${showDrawer ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+    <div data-mobile-menu-open={showDrawer ? '' : undefined} className={`fixed inset-0 z-[60] ${className ?? 'lg:hidden'} ${showDrawer ? 'pointer-events-auto' : 'pointer-events-none'}`}>
       <div
         className="absolute inset-0"
         style={{
@@ -196,8 +205,12 @@ export function MobileMenuDrawer({
         onClick={onClose}
       />
 
+      {/* Off screen while closed: inert, so its links aren't tabbed to or
+          read out until it opens */}
       <div
         ref={panelRef}
+        id={id}
+        inert={!showDrawer}
         className={`absolute top-0 left-0 bottom-0 bg-bg-main will-change-transform ${showDrawer ? 'shadow-2xl' : 'shadow-none'}`}
         style={{
           width: `${DRAWER_WIDTH * 100}vw`,

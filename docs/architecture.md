@@ -46,6 +46,44 @@ and content flag:
 - opinion → `components/Article/OpinionLayout`
 - first paragraph contains `#photofeature#` → `components/Article/PhotofeatureLayout`
 
+Text article headers leave 29.25px below the fixed article strip on phones
+and 35.25px from the `md` breakpoint (Opinion: 21px / 27px), a 25% reduction
+from 39px / 47px (Opinion: 28px / 36px). Layouts reserve 60px for the 56px
+strip, its 1px border and clearance. Standard article margins are 6.25px /
+12.25px with 20px header padding; Opinion uses 9px / 15px with 9px padding.
+Mobile photofeatures use the same spacing; their desktop hero stays full-screen.
+
+All four sections use `components/Article/ArticleSectionLabel.tsx` above the
+article title: centered accent section name, uppercase kicker in the main
+text color, and a short rule. Empty kickers and kickers matching the section
+are omitted. Opinion uses its stored kicker, falling back to its type label
+for older articles. Photofeature heroes use white kicker text and a white rule
+over the photo; mobile photofeatures use the standard header.
+
+Article titles use regular weight, including bold spans stored in rich-text
+headlines. These overrides apply only to the title within standard, Opinion,
+photofeature and live articles, and to the title in the sticky article strip;
+italic emphasis is preserved.
+
+News recommendation titles at the bottom of articles also use regular weight,
+including bold spans in their rich-text headlines. The News block leaves
+32px above its heading and 34px below its content on phones, and 46px above
+and below from `md`, halving its previous surrounding gaps. Bottom spacing
+includes the footer's existing 12px margin.
+
+On phones (below 768px), the article strip keeps its logo centered while
+scrolling. Tablets (768–1023px) start with a centered logo; after 100px of
+scrolling they show a burger menu on the left and centered `Section | Title`.
+Both tablet text links return to the section page. The burger opens the same
+`MobileMenuDrawer` as the mobile header, including section navigation,
+secondary links, theme toggle, archive search, dimmed backdrop and swipe-to-close.
+It closes on selection, backdrop clicks, Escape, resizing or returning to the
+top, and returns focus to its button on Escape. A secondary drawer trigger
+does not add another global swipe-to-open gesture, and closed drawers ignore
+touches while another drawer is open.
+Theme/share controls stay on the right. Desktop and homepage strips retain
+their existing behavior.
+
 Homepage composition is **data-driven**: the `layout` collection (one
 versioned global-ish doc) describes what's pinned, what's lead, and which
 sections render below. `app/(frontend)/page.tsx` reads layout and supplements
@@ -53,6 +91,15 @@ empty slots with recent stories from each section.
 
 The header animation, theme colors, and SEO defaults all come from globals
 (`theme`, `seo`) so they can be edited from the admin without a deploy.
+
+The desktop section underline slides between section links. Opening a
+section from the landing page brings its underline in from outside the
+rule's left edge and slides it beneath the selected label at a fixed width.
+Choosing the masthead logo from a section carries that underline onto the
+landing-page rule and slides it off the left edge, without delaying navigation.
+It uses the section slide's 420ms timing and easing, with the active-colour text
+following the bar. Reduced motion and mobile skip these entrance and exit
+animations; resizing or navigating again cleans them up.
 
 ### Payload — `app/(payload)/` and `payload.config.ts`
 
@@ -84,7 +131,7 @@ Roughly grouped:
 - **public read**: `health`, `search`, `search/spellcheck`,
   `search/archive-date`, `archive/day`, `staff/[slug]`, `weather`,
   `logos/file`, `section-layout`
-- **public write**: `submit`, `submit-event`, `push/register`
+- **public write**: `submit`, `push/register`
 - **internal**: `push/send` (requires `x-internal-secret`), `inline-edit`,
   `admin/archive`, `newsroom/admin-move-notice`
 

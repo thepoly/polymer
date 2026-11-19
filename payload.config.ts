@@ -79,6 +79,9 @@ import Layout from './collections/Layout.ts'
 import OpinionPageLayout from './collections/OpinionPageLayout.ts'
 import FeaturesPageLayout from './collections/FeaturesPageLayout.ts'
 import SportsPageLayout from './collections/SportsPageLayout.ts'
+import NewsPageLayout from './collections/NewsPageLayout.ts'
+import StudentGovUpdates from './collections/StudentGovUpdates.ts'
+import StudentGovTerms from './collections/StudentGovTerms.ts'
 import Schools from './collections/Schools.ts'
 import StaffPageLayout from './collections/StaffPageLayout.ts'
 import Submissions from './collections/Submissions.ts'
@@ -112,6 +115,8 @@ export default buildConfig({
         Logo: '@/components/Dashboard/Login/Logo#Logo',
         Icon: '@/components/Dashboard/Icon#Icon',
       },
+      // Arrow beside "News Layout" opening the Senate / Executive Board page editors
+      afterNavLinks: ['@/components/Dashboard/NewsLayoutNavDropdown#NewsLayoutNavDropdown'],
       views: {
         dashboard: {
           Component: '@/components/Dashboard#default',
@@ -119,7 +124,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Media, Logos, Articles, LiveArticles, JobTitles, Layout, OpinionPageLayout, FeaturesPageLayout, SportsPageLayout, Schools, StaffPageLayout, Submissions, EventSubmissions, DeviceTokens],
+  collections: [Users, Media, Logos, Articles, LiveArticles, JobTitles, Layout, OpinionPageLayout, FeaturesPageLayout, SportsPageLayout, NewsPageLayout, StudentGovUpdates, StudentGovTerms, Schools, StaffPageLayout, Submissions, EventSubmissions, DeviceTokens],
   globals: [Theme, Seo],
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [

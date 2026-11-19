@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
 
@@ -11,6 +11,13 @@ export interface SpotlightAuthor {
   latestArticle: { title: string; richTitle?: React.ReactNode; url: string };
 }
 
+const subscribeReducedMotion = (notify: () => void) => {
+  const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+  query.addEventListener('change', notify);
+  return () => query.removeEventListener('change', notify);
+};
+const reducedMotionSnapshot = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 export default function AuthorSpotlightCarousel({
   authors,
   pinnedAuthors,
@@ -20,38 +27,21 @@ export default function AuthorSpotlightCarousel({
 }) {
   const displayAuthors = pinnedAuthors && pinnedAuthors.length > 0 ? pinnedAuthors : authors;
   const [activeIndex, setActiveIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
+  const [manualPause, setManualPause] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const reducedMotion = useSyncExternalStore(subscribeReducedMotion, reducedMotionSnapshot, () => true);
   const count = displayAuthors.length;
-
-  // Derive a safe index — if the list shrinks, clamp without a cascading render
   const safeIndex = count === 0 ? 0 : Math.min(activeIndex, count - 1);
-
-  const restartInterval = useCallback(() => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = null;
-  }, []);
-
-  const advance = useCallback(() => {
-    setActiveIndex((prev) => (prev + 1) % count);
-    restartInterval();
-  }, [count, restartInterval]);
-
-  const retreat = useCallback(() => {
-    setActiveIndex((prev) => (prev - 1 + count) % count);
-    restartInterval();
-  }, [count, restartInterval]);
+  const paused = manualPause || hovered || focused || reducedMotion;
+  const advance = () => setActiveIndex((safeIndex + 1) % count);
+  const retreat = () => setActiveIndex((safeIndex - 1 + count) % count);
 
   useEffect(() => {
     if (paused || count <= 1) return;
-    intervalRef.current = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % count);
-    }, 5000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [paused, count]);
+    const timer = setTimeout(() => setActiveIndex((safeIndex + 1) % count), 5000);
+    return () => clearTimeout(timer);
+  }, [paused, count, safeIndex]);
 
   if (count === 0) return null;
 
@@ -60,8 +50,11 @@ export default function AuthorSpotlightCarousel({
   return (
     <div
       className="relative py-4 border-y border-rule my-4"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocusCapture={() => setFocused(true)}
+      onBlurCapture={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false); }}
+      role="region" aria-roledescription="carousel" aria-label="Opinion author spotlight"
     >
       {count > 1 && (
         <>
@@ -119,7 +112,10 @@ export default function AuthorSpotlightCarousel({
 
       {/* Navigation: arrows + dots */}
       {count > 1 && (
-        <div className="flex items-center justify-center mt-2">
+        <div className="flex flex-wrap gap-3 items-center justify-center mt-2">
+          {!reducedMotion && <button type="button" onClick={() => setManualPause((value) => !value)} aria-pressed={manualPause} className="font-meta text-sm">
+            {manualPause ? 'Resume rotation' : 'Pause rotation'}
+          </button>}
           <div className="flex gap-1.5 items-center">
             {displayAuthors.map((_, i) => (
               <button
@@ -131,6 +127,7 @@ export default function AuthorSpotlightCarousel({
                     : "w-1.5 h-1.5 bg-text-muted/30 hover:bg-text-muted/60"
                 }`}
                 aria-label={`Show ${displayAuthors[i].name}`}
+                aria-current={i === safeIndex ? "true" : undefined}
               />
             ))}
           </div>
