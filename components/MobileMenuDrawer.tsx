@@ -395,8 +395,8 @@ export function MobileMenuDrawer({
                 </Link>
               ))}
               </div>
-              <Link href="/submit" onClick={event => followLink(event, '/submit')} className={`group mt-1.5 flex min-h-11 items-center gap-2 font-meta text-[15px] font-semibold text-accent ${focusStyle}`}>
-                Write for the Poly<ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-x-[3px] motion-reduce:transition-none" />
+              <Link href="/get-involved" onClick={event => followLink(event, '/get-involved')} className={`group mt-1.5 flex min-h-11 items-center gap-2 font-meta text-[15px] font-semibold text-accent ${focusStyle}`}>
+                Get involved<ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-x-[3px] motion-reduce:transition-none" />
               </Link>
             </nav>
         </div>

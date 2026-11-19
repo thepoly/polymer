@@ -77,7 +77,7 @@ scrolling they show a burger menu on the left and centered `Section | Title`.
 Both tablet text links return to the section page. The burger opens the same
 `MobileMenuDrawer` as the mobile header and photofeature hero. It is a portalled
 modal dialog with a visible close button, section descriptions/current-section
-marker, archive search, paper links, `/submit` writing link, dark-mode switch
+marker, archive search, paper links, `/get-involved` link, dark-mode switch
 and colophon. Phone width is min(86vw, 360px); tablets use 380px. Changing the
 theme keeps the drawer open, preserving its focus, scroll position and page
 isolation. Its search uses the same `UnderlinedSearchForm` as section-page
@@ -103,6 +103,16 @@ does not add another global swipe-to-open gesture, and closed drawers ignore
 touches while another drawer is open.
 Theme/share controls stay on the right. Desktop and homepage strips retain
 their existing behavior.
+
+The drawer's "Get involved" link opens `/get-involved`, a server-rendered hub
+for joining staff, submitting an op-ed/letter through `/submit`, and sending a
+news tip. Only the mutually exclusive native desk accordion and clipboard
+button need client components. The copy button selects the email text if
+clipboard access fails. Meetings use the times/room already on `/contact`;
+update both pages if these change. Phone layouts put the meetings first and
+provide native jump links, with smooth scrolling disabled for reduced motion.
+Metadata is static and the route is included in the sitemap; no SEO schema or
+submission/contact/staff behavior changes are required.
 
 Homepage composition is **data-driven**: the `layout` collection (one
 versioned global-ish doc) describes what's pinned, what's lead, and which
