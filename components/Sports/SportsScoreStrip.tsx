@@ -109,12 +109,13 @@ function GameCell({ game, rpiTeam }: { game: ScheduleGame; rpiTeam: GameTeam }) 
 
 /**
  * RPI's last two finals and next game in each standings sport (see
- * lib/schedule.ts for how gaps are filled), one group per sport. The row scrolls sideways (finger or trackpad swipe), with arrows
- * on the cut-off edge for mouse users, who can't swipe sideways.
+ * lib/schedule.ts for how gaps are filled), one group per sport. The row
+ * supports finger and trackpad swipes, plus desktop mouse dragging with a
+ * coast. Desktop arrows sit on the cut-off edges.
  */
 export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: SportSchedule[]; rpiTeam: GameTeam }) {
   const listRef = useRef<HTMLDivElement>(null);
-  const { handlers, stopMomentum } = useMomentumScroll(listRef);
+  const { handlers, stopMomentum } = useMomentumScroll(listRef, { mouseDrag: true });
   // Cut-off edges for the arrows, and the visible part of the strip (as
   // fractions of its full width) for the red progress bar on the bottom rule
   const view = useScrollEdges(listRef);
@@ -177,7 +178,7 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
         ref={listRef}
         // On desktop the strip sits right under the header's rule, which serves
         // as its top one; the phone header has no such rule, so it gets its own
-        className="flex overflow-x-auto overscroll-x-contain touch-pan-y touch-pinch-zoom border-y border-rule lg:border-t-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex overflow-x-auto overscroll-x-contain touch-pan-y touch-pinch-zoom border-y border-rule lg:border-t-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:cursor-grab lg:select-none lg:active:cursor-grabbing lg:[&_a]:cursor-[inherit]"
         {...handlers}
       >
         {schedule.map((s, i) => (

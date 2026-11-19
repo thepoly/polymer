@@ -22,7 +22,7 @@ readers can also drag the cards with a mouse or use the arrows to move four
 cards at a time. The arrows are hidden below the desktop breakpoint (1024px).
 Dragging a card does not open its story; a normal click or tap still does.
 Quick finger flicks in the score strip and More Headlines coast farther than
-slow drags; desktop headline dragging also coasts after release. Touching a
+slow drags; desktop mouse dragging in both rows also coasts after release. Touching a
 moving row stops it, and holding still before release prevents a coast.
 Vertical page scrolling and pinch zoom remain available. With reduced motion
 enabled, the rows stop on release. Trackpads keep their native momentum.
