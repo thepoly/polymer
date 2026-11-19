@@ -127,13 +127,13 @@ function ArrowButton({ direction, hidden, onClick }: { direction: "prev" | "next
       aria-label={direction === "prev" ? "Previous headlines" : "Next headlines"}
       onClick={onClick}
       disabled={hidden}
-      className={`absolute z-10 hidden h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/75 text-[#111] shadow-[0_8px_24px_-6px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl backdrop-saturate-150 transition-[opacity,scale,background-color] duration-300 ease-out hover:scale-105 hover:bg-white/90 active:scale-95 disabled:pointer-events-none disabled:opacity-0 dark:border-white/15 dark:bg-black/40 dark:text-white dark:shadow-[0_8px_24px_-6px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] dark:hover:bg-black/55 lg:flex ${
+      className={`absolute z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-white/85 text-[#111] shadow-[0_3px_12px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-[10px] backdrop-saturate-125 supports-[backdrop-filter:blur(1px)]:bg-white/45 transition-[opacity,color,background-color] duration-200 ease-out hover:bg-white/70 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent disabled:pointer-events-none disabled:opacity-0 motion-reduce:transition-none dark:border-white/30 dark:bg-black/75 dark:text-white dark:shadow-[0_3px_12px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.15)] dark:supports-[backdrop-filter:blur(1px)]:bg-black/45 dark:hover:bg-black/65 dark:hover:text-accent lg:flex ${
         direction === "prev" ? "left-4" : "right-4"
       }`}
       // Vertically centred on the cards, inside the room kept for their shadow
       style={{ top: "calc((100% - 16px) / 2)" }}
     >
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         {direction === "prev" ? <path d="M19 12H5M11 6l-6 6 6 6" /> : <path d="M5 12h14M13 6l6 6-6 6" />}
       </svg>
     </button>

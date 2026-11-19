@@ -20,6 +20,10 @@ over time.
 More Headlines scrolls horizontally by finger swipe or trackpad. On desktop,
 readers can also drag the cards with a mouse or use the arrows to move four
 cards at a time. The arrows are hidden below the desktop breakpoint (1024px).
+Their 48px circles use a translucent fill, 10px backdrop blur, a fine border
+and a soft shadow. Hover strengthens the fill and turns the arrow red;
+keyboard focus gets an accent outline. Dark mode uses a smoky dark fill,
+and browsers without backdrop blur get a more opaque fallback.
 Dragging a card does not open its story; a normal click or tap still does.
 Quick finger flicks in the score strip and More Headlines coast farther than
 slow drags; desktop mouse dragging in both rows also coasts after release. Touching a
