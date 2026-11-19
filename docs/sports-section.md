@@ -17,6 +17,11 @@ over time.
 | More Headlines | A carousel of seven photo cards, ending in a link to `/sports/all` | Layout editor / newest unused stories |
 | `/sports/all` | Every sports story by month, filterable by sport, 24 per page | Articles |
 
+More Headlines scrolls horizontally by finger swipe or trackpad. On desktop,
+readers can also drag the cards with a mouse or use the arrows to move four
+cards at a time. The arrows are hidden below the desktop breakpoint (1024px).
+Dragging a card does not open its story; a normal click or tap still does.
+
 The page components are in [`components/Sports/`](../components/Sports/).
 The route is the `sports` branch of
 [`app/(frontend)/[section]/page.tsx`](../app/(frontend)/[section]/page.tsx),
