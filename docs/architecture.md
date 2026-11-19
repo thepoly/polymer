@@ -66,7 +66,10 @@ photofeature and live articles, and to the title in the sticky article strip;
 italic emphasis is preserved.
 
 News recommendation titles at the bottom of articles also use regular weight,
-including bold spans in their rich-text headlines.
+including bold spans in their rich-text headlines. The News block leaves
+32px above its heading and 34px below its content on phones, and 46px above
+and below from `md`, halving its previous surrounding gaps. Bottom spacing
+includes the footer's existing 12px margin.
 
 On phones (below 768px), the article strip keeps its logo centered while
 scrolling. Tablets (768–1023px) start with a centered logo; after 100px of
