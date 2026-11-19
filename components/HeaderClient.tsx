@@ -410,8 +410,11 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
                       >
                         Close
                       </button>
+                      {/* Only light-mode readers see this, and the site
+                          already follows their device, so it offers dark
+                          mode rather than arguing for it */}
                       <p className="pr-12 font-meta text-[13px] leading-[1.35] text-text-main">
-                        Try dark mode. You won&apos;t regret it. It&apos;s better than light mode.
+                        Prefer dark mode? Switch here.
                       </p>
                     </div>
                   </div>
