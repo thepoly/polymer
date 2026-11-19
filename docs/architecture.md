@@ -46,6 +46,13 @@ and content flag:
 - opinion → `components/Article/OpinionLayout`
 - first paragraph contains `#photofeature#` → `components/Article/PhotofeatureLayout`
 
+Text article headers leave approximately 40px below the fixed article strip on
+phones and 48px from the `md` breakpoint (Opinion: 29px / 37px). The layouts
+reserve 60px for the 56px strip and clearance, then combine a 16px / 24px
+article margin with 20px header padding (Opinion: 9px). This halves the
+previous opening space; the strip's bottom border accounts for 1px of it.
+Mobile photofeatures use the same spacing; their desktop hero stays full-screen.
+
 Homepage composition is **data-driven**: the `layout` collection (one
 versioned global-ish doc) describes what's pinned, what's lead, and which
 sections render below. `app/(frontend)/page.tsx` reads layout and supplements

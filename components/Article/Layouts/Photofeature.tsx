@@ -11,8 +11,8 @@ export const PhotofeatureLayout = ({ article, content }: { article: Article, con
     <main className={`min-h-screen overflow-x-hidden bg-bg-main transition-colors duration-300${isFollytechnic ? ' follytechnic' : ''}`}>
 
       {/* Mobile: standard layout header */}
-      <div className="sm:hidden pt-[64px]">
-        <article className="container mx-auto px-4 mt-8">
+      <div className="sm:hidden pt-[60px]">
+        <article className="container mx-auto px-4 mt-4">
           <StandardArticleHeader article={article} />
           <LegacyArchiveLink article={article} />
           <ArticleContent content={content} />

@@ -26,7 +26,7 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
   return (
     <div
       className="flex flex-col items-center mb-8 gap-4"
-      style={{ paddingTop: '18px' }}
+      style={{ paddingTop: '9px' }}
     >
       {/* Kicker + Opinion Type */}
       <div className="flex flex-col items-center gap-1 mb-1">

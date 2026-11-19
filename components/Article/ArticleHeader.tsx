@@ -22,7 +22,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
   const featuredImageWrapperClassName = 'relative aspect-[3/2] w-screen max-w-none bg-gray-100 dark:bg-zinc-800 overflow-hidden scroll-mt-20 left-1/2 right-1/2 -ml-[50vw] -mr-[50vw] md:left-auto md:right-auto md:ml-0 md:mr-0 md:w-full';
 
   return (
-    <div className="flex flex-col gap-10 mb-8" style={{ paddingTop: '40px' }}>
+    <div className="flex flex-col gap-10 mb-8" style={{ paddingTop: '20px' }}>
       <div className="flex flex-col gap-4 max-w-[680px] w-full mx-auto">
         {article.kicker && (
             <span data-ie-field="kicker" className="font-meta text-accent font-[600] uppercase text-[13px] md:text-[13px] tracking-[0.08em] transition-colors">
