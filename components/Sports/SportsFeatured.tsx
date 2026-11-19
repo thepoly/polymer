@@ -10,6 +10,7 @@ import SportsHeading from "./SportsHeading";
 import SportsByline from "./SportsByline";
 import { cardPosition, shortDate, sportName } from "./sportsFormat";
 import type { FeaturedFocus } from "@/lib/sportsLayout";
+import { useMomentumScroll } from "./useMomentumScroll";
 
 const GAP = 16;
 // Carousel card widths: one and a peek on phones, then 2.25, 3 and 4 across
@@ -146,8 +147,7 @@ function ArrowButton({ direction, hidden, onClick }: { direction: "prev" | "next
 export default function SportsFeatured({ articles, focus }: { articles: ComponentArticle[]; focus: FeaturedFocus }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ pointerId: number; x: number; scrollLeft: number; moved: boolean } | null>(null);
-  const suppressClickRef = useRef(false);
+  const { handlers, stopMomentum } = useMomentumScroll(viewportRef, { mouseDrag: true });
   const [edges, setEdges] = useState({ atStart: true, atEnd: false });
 
   useEffect(() => {
@@ -172,6 +172,7 @@ export default function SportsFeatured({ articles, focus }: { articles: Componen
   }, [articles.length]);
 
   const move = (direction: 1 | -1) => {
+    stopMomentum();
     const viewport = viewportRef.current;
     const track = trackRef.current;
     const first = track?.firstElementChild;
@@ -185,39 +186,6 @@ export default function SportsFeatured({ articles, focus }: { articles: Componen
     });
   };
 
-  const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    suppressClickRef.current = false;
-    if (event.pointerType !== "mouse" || event.button !== 0 || !event.isPrimary) return;
-    dragRef.current = {
-      pointerId: event.pointerId,
-      x: event.clientX,
-      scrollLeft: event.currentTarget.scrollLeft,
-      moved: false,
-    };
-  };
-
-  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    const distance = event.clientX - drag.x;
-    if (!drag.moved && Math.abs(distance) < 6) return;
-    if (!drag.moved) {
-      drag.moved = true;
-      suppressClickRef.current = true;
-      event.currentTarget.setPointerCapture(event.pointerId);
-    }
-    event.preventDefault();
-    event.currentTarget.scrollTo({ left: drag.scrollLeft - distance, behavior: "instant" });
-  };
-
-  const endDrag = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (dragRef.current?.pointerId !== event.pointerId) return;
-    dragRef.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-  };
-
   return (
     <section aria-labelledby="sports-featured-heading" className="mt-6">
       <SportsHeading id="sports-featured-heading">More Headlines</SportsHeading>
@@ -227,23 +195,8 @@ export default function SportsFeatured({ articles, focus }: { articles: Componen
       <div className="relative -mt-2 -mb-12">
         <div
           ref={viewportRef}
-          className="overflow-x-auto overflow-y-hidden pt-2 pb-12 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:cursor-grab lg:select-none lg:active:cursor-grabbing lg:[&_a]:cursor-inherit"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
-          onLostPointerCapture={endDrag}
-          onPointerLeave={(event) => {
-            if (!event.currentTarget.hasPointerCapture(event.pointerId)) endDrag(event);
-          }}
-          onDragStart={(event) => event.preventDefault()}
-          onClickCapture={(event) => {
-            if (suppressClickRef.current && event.detail > 0) {
-              event.preventDefault();
-              event.stopPropagation();
-            }
-            suppressClickRef.current = false;
-          }}
+          className="overflow-x-auto overflow-y-hidden pt-2 pb-12 touch-pan-y touch-pinch-zoom [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:cursor-grab lg:select-none lg:active:cursor-grabbing lg:[&_a]:cursor-inherit"
+          {...handlers}
         >
           <div ref={trackRef} className="flex" style={{ gap: GAP }}>
             {articles.map((article, i) => (

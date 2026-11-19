@@ -21,6 +21,11 @@ More Headlines scrolls horizontally by finger swipe or trackpad. On desktop,
 readers can also drag the cards with a mouse or use the arrows to move four
 cards at a time. The arrows are hidden below the desktop breakpoint (1024px).
 Dragging a card does not open its story; a normal click or tap still does.
+Quick finger flicks in the score strip and More Headlines coast farther than
+slow drags; desktop headline dragging also coasts after release. Touching a
+moving row stops it, and holding still before release prevents a coast.
+Vertical page scrolling and pinch zoom remain available. With reduced motion
+enabled, the rows stop on release. Trackpads keep their native momentum.
 
 The page components are in [`components/Sports/`](../components/Sports/).
 The route is the `sports` branch of

@@ -6,6 +6,7 @@ import type { GameTeam } from "@/components/FrontPage/types";
 import type { ScheduleGame, SportSchedule } from "@/lib/schedule";
 import { sportLabel } from "@/lib/sports";
 import { useScrollEdges } from "./useScrollEdges";
+import { useMomentumScroll } from "./useMomentumScroll";
 
 /* ── Dates ── */
 
@@ -87,7 +88,7 @@ function GameCell({ game, rpiTeam }: { game: ScheduleGame; rpiTeam: GameTeam }) 
       </div>
     </>
   );
-  const className = "block w-[176px] shrink-0 snap-start border-l border-rule px-3 py-3.5 sm:w-[190px]";
+  const className = "block w-[176px] shrink-0 border-l border-rule px-3 py-3.5 sm:w-[190px]";
 
   return game.link ? (
     <a
@@ -113,6 +114,7 @@ function GameCell({ game, rpiTeam }: { game: ScheduleGame; rpiTeam: GameTeam }) 
  */
 export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: SportSchedule[]; rpiTeam: GameTeam }) {
   const listRef = useRef<HTMLDivElement>(null);
+  const { handlers, stopMomentum } = useMomentumScroll(listRef);
   // Cut-off edges for the arrows, and the visible part of the strip (as
   // fractions of its full width) for the red progress bar on the bottom rule
   const view = useScrollEdges(listRef);
@@ -128,8 +130,10 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
     return () => el.removeEventListener("scroll", reveal);
   }, [revealed]);
 
-  const scrollBy = (direction: 1 | -1) =>
+  const scrollBy = (direction: 1 | -1) => {
+    stopMomentum();
     listRef.current?.scrollBy({ left: direction * listRef.current.clientWidth * 0.8, behavior: "smooth" });
+  };
 
   // A full-height tab built into the strip's edge, for mouse users (touch
   // devices swipe). Red chevron; fills red on hover.
@@ -173,7 +177,8 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
         ref={listRef}
         // On desktop the strip sits right under the header's rule, which serves
         // as its top one; the phone header has no such rule, so it gets its own
-        className="flex snap-x snap-proximity overflow-x-auto overscroll-x-contain border-y border-rule lg:border-t-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex overflow-x-auto overscroll-x-contain touch-pan-y touch-pinch-zoom border-y border-rule lg:border-t-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        {...handlers}
       >
         {schedule.map((s, i) => (
           <div key={s.sport} role="group" aria-label={sportLabel(s.sport) ?? s.sport} className="flex shrink-0">
@@ -182,7 +187,7 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
               target="_blank"
               rel="noopener noreferrer"
               title="Full schedule on RPI Athletics"
-              className={`flex w-[92px] shrink-0 snap-start items-center justify-center bg-text-main/[0.04] px-2 text-center font-meta text-[11px] font-semibold uppercase leading-tight tracking-[0.06em] text-text-main transition-colors hover:text-accent ${i > 0 ? "border-l border-rule" : ""}`}
+              className={`flex w-[92px] shrink-0 items-center justify-center bg-text-main/[0.04] px-2 text-center font-meta text-[11px] font-semibold uppercase leading-tight tracking-[0.06em] text-text-main transition-colors hover:text-accent ${i > 0 ? "border-l border-rule" : ""}`}
             >
               {sportLabel(s.sport)}
             </a>
