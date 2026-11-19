@@ -302,6 +302,13 @@ h6.font-display.italic {
   font-family: var(--font-meta);
 }
 
+/* flow-root keeps the floated letter inside its own paragraph: a one-line
+   first paragraph is otherwise shorter than the letter, and the next
+   paragraph wraps around it, its first line pushed in. */
+.drop-cap {
+  display: flow-root;
+}
+
 .drop-cap::first-letter {
   float: left;
   font-size: 3.5em;
