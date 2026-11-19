@@ -27,13 +27,21 @@ export default function GetInvolvedPage() {
   return (
     <div className="min-h-screen bg-bg-main text-text-main">
       <Header />
-      <main data-get-involved-page className="mx-auto w-full max-w-[1180px] px-5 pb-0 pt-8 md:pb-16 md:pt-12">
-        <style>{`@media (prefers-reduced-motion: no-preference) { html:has([data-get-involved-page]) { scroll-behavior: smooth; } }`}</style>
+      <main data-get-involved-page className="mx-auto w-full max-w-[1280px] px-5 pb-0 pt-8 md:px-6 md:pb-16 md:pt-12 xl:px-[30px]">
+        <style>{`
+          @media (prefers-reduced-motion: no-preference) {
+            html:has([data-get-involved-page]) { scroll-behavior: smooth; }
+          }
+          /* Avoid a body scroll container that would prevent sticky meetings. */
+          @media (min-width: 1024px) {
+            body:has([data-get-involved-page]) { overflow-x: clip; }
+          }
+        `}</style>
         <div className="border-b border-rule-strong pb-8 md:pb-10">
-          <h1 className="font-copy text-[50px] font-normal leading-[0.95] tracking-[-0.02em] md:text-[76px]">Get involved with The Poly</h1>
+          <h1 className="font-copy text-[50px] font-normal leading-[0.95] tracking-[-0.02em] md:text-[76px] md:text-balance">Get involved with The Poly</h1>
         </div>
 
-        <nav aria-label="Get involved paths" className="border-b border-rule py-4 md:hidden">
+        <nav aria-label="Get involved paths" className="border-b border-rule py-4 lg:hidden">
           {[
             { label: 'Join the staff', href: '#join' },
             { label: 'Submit an op-ed or letter', href: '#opinion' },
@@ -45,7 +53,7 @@ export default function GetInvolvedPage() {
           ))}
         </nav>
 
-        <section id="join" aria-labelledby="join-heading" className="grid scroll-mt-24 grid-cols-1 gap-8 border-b border-rule pb-2 pt-8 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md:gap-10 md:py-10">
+        <section id="join" aria-labelledby="join-heading" className="grid scroll-mt-24 grid-cols-1 gap-8 border-b border-rule pb-2 pt-8 md:py-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-12">
           <div className="min-w-0">
             <PathLabel>Join the staff</PathLabel>
             <h2 id="join-heading" className="mt-4 font-copy text-[34px] font-normal leading-[1.05] md:text-[44px]">Come to a meeting.</h2>
@@ -59,7 +67,7 @@ export default function GetInvolvedPage() {
             </div>
           </div>
 
-          <aside aria-label="Weekly meetings" className="@container order-first self-start bg-accent p-5 text-white dark:text-bg-main md:order-none md:p-6">
+          <aside aria-label="Weekly meetings" className="@container order-first self-start bg-accent p-5 text-white dark:text-bg-main md:p-6 lg:order-none lg:sticky lg:top-8">
             <p className="font-meta text-[11px] font-bold uppercase leading-[1.4] tracking-[0.12em]">Weekly meetings · Open to everyone</p>
             <div className="mt-6 grid grid-cols-2 divide-x divide-current">
               <div className="min-w-0 pr-3 md:pr-4">
@@ -77,8 +85,8 @@ export default function GetInvolvedPage() {
           </aside>
         </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2">
-          <section id="opinion" aria-labelledby="opinion-heading" className="min-w-0 scroll-mt-24 py-8 md:py-10 md:pr-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 lg:gap-x-16">
+          <section id="opinion" aria-labelledby="opinion-heading" className="min-w-0 scroll-mt-24 py-8 md:py-10">
             <PathLabel>Submit an op-ed or letter</PathLabel>
             <h2 id="opinion-heading" className="mb-[18px] mt-4 font-copy text-[30px] font-normal leading-[1.1] md:text-[34px]">Share your view</h2>
             <p className="font-copy text-[18px] leading-[1.55]">Our editors review every submission and will be in touch.</p>
@@ -95,7 +103,7 @@ export default function GetInvolvedPage() {
             <Link href="/submit" className={`mt-6 ${primaryStyle}`}>Start a submission<ArrowRight aria-hidden="true" className="h-4 w-4" /></Link>
           </section>
 
-          <section id="tip" aria-labelledby="tip-heading" className="min-w-0 scroll-mt-24 border-t border-rule pb-3 pt-8 md:border-l md:border-t-0 md:py-10 md:pl-10">
+          <section id="tip" aria-labelledby="tip-heading" className="min-w-0 scroll-mt-24 border-t border-rule pb-3 pt-8 md:py-10 lg:border-t-0">
             <PathLabel>Send a news tip</PathLabel>
             <h2 id="tip-heading" className="mb-[18px] mt-4 font-copy text-[30px] font-normal leading-[1.1] md:text-[34px]">Seen something newsworthy?</h2>
             <div className="flex flex-wrap items-center gap-3 bg-[var(--opinions-choice-bg)] p-5">

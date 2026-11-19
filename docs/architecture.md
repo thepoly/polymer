@@ -109,8 +109,13 @@ for joining staff, submitting an op-ed/letter through `/submit`, and sending a
 news tip. Only the mutually exclusive native desk accordion and clipboard
 button need client components. The copy button selects the email text if
 clipboard access fails. Meetings use the times/room already on `/contact`;
-update both pages if these change. Phone layouts put the meetings first and
-provide native jump links, with smooth scrolling disabled for reduced motion.
+update both pages if these change. Below 1024px, meetings appear first and
+native jump links remain visible. Desktop uses two columns with a sticky
+meetings block; a page-scoped desktop body overflow override uses `clip` to
+avoid an intervening scroll container. From 768px, the content aligns with the
+header container and the title uses balanced wrapping; phone insets and
+wrapping stay unchanged.
+Jump-link smooth scrolling is disabled for reduced motion.
 Metadata is static and the route is included in the sitemap; no SEO schema or
 submission/contact/staff behavior changes are required.
 
