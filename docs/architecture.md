@@ -78,8 +78,12 @@ Both tablet text links return to the section page. The burger opens the same
 `MobileMenuDrawer` as the mobile header and photofeature hero. It is a portalled
 modal dialog with a visible close button, section descriptions/current-section
 marker, archive search, paper links, `/submit` writing link, dark-mode switch
-and colophon. Phone width is min(86vw, 360px); tablets use 380px. The panel
-scrolls on short screens, with its footer last and split safe-area padding.
+and colophon. Phone width is min(86vw, 360px); tablets use 380px. Its search
+uses the same `UnderlinedSearchForm` as section-page footers: a typing field,
+accent underline and rainbow wave, submitting a GET request to `/search`.
+Drawer searches are site-wide; section footers retain their section filter.
+Submitting closes the drawer without returning focus to the menu trigger.
+The panel scrolls on short screens, with its footer last and split safe-area padding.
 Opening moves focus inside; Tab stays in the dialog and the page behind is
 inert. Close restores prior inert/scroll state and focus, except when following
 a link or opening search. The 220ms swipe/slide uses the rendered panel width;

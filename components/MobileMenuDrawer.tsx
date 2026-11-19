@@ -4,7 +4,8 @@ import { useState, useRef, useEffect, useCallback, useId, useSyncExternalStore, 
 import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, ChevronRight, Moon, Search, X } from 'lucide-react';
+import { ArrowRight, ChevronRight, Moon, X } from 'lucide-react';
+import UnderlinedSearchForm from '@/components/UnderlinedSearchForm';
 
 export const primaryNavItems = [
   { label: 'News', href: '/news', description: 'Campus, Student Senate, Troy' },
@@ -244,9 +245,11 @@ export function MobileMenuDrawer({
     const observer = new MutationObserver(isolatePage);
     observer.observe(document.body, { childList: true });
 
-    const focusable = () => Array.from(panel.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]'))
+    const focusable = () => Array.from(panel.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), [tabindex]'))
       .filter(element => element.tabIndex >= 0 && element.getClientRects().length > 0 && !element.closest('[inert]'));
-    const timer = window.setTimeout(() => closeRef.current?.focus(),
+    const timer = window.setTimeout(() => {
+      if (!panel.contains(document.activeElement)) closeRef.current?.focus();
+    },
       window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : DRAWER_TRANSITION_MS);
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -369,14 +372,10 @@ export function MobileMenuDrawer({
                 </Link>
               ))}
             </nav>
-            <button
-              type="button"
-              onClick={() => { skipFocusReturnRef.current = true; onClose(); onSearchOpen(); }}
-              className={`flex min-h-12 w-full cursor-pointer items-center gap-2.5 rounded-[2px] border border-rule-strong px-3.5 text-left font-meta text-[14px] font-medium leading-[1.3] text-text-muted hover:border-accent ${focusStyle}`}
-            >
-              <Search aria-hidden="true" className="h-4 w-4 shrink-0" />
-              <span>Search every issue since 1885</span>
-            </button>
+            <UnderlinedSearchForm
+              label="Search past issues"
+              onSubmit={() => { skipFocusReturnRef.current = true; onClose(); }}
+            />
             <nav aria-label="About the paper">
               <div className="mb-1.5 flex items-center gap-3 font-meta text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
                 The paper<span aria-hidden="true" className="h-px flex-1 bg-rule" />
