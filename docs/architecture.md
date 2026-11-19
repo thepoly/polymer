@@ -104,7 +104,8 @@ touches while another drawer is open.
 Theme/share controls stay on the right. Desktop and homepage strips retain
 their existing behavior.
 
-The drawer's "Get involved" link opens `/get-involved`, a server-rendered hub
+The desktop header's "Submit" and drawer's "Get involved" links open
+`/get-involved`, a server-rendered hub
 for joining staff, submitting an op-ed/letter through `/submit`, and sending a
 news tip. Only the mutually exclusive native desk accordion and clipboard
 button need client components. The copy button selects the email text if
