@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, ChevronRight, Moon, X } from 'lucide-react';
 import UnderlinedSearchForm from '@/components/UnderlinedSearchForm';
+import DrawerLatestArticles from '@/components/DrawerLatestArticles';
 
 export const primaryNavItems = [
   { label: 'News', href: '/news', description: 'Campus, Student Senate, Troy' },
@@ -400,6 +401,7 @@ export function MobileMenuDrawer({
             </nav>
         </div>
         <div className="safe-area-mobile-drawer-footer mt-auto flex shrink-0 flex-col gap-3.5 pt-[22px]">
+          <DrawerLatestArticles isOpen={isOpen} onLinkClick={followLink} />
           <button
             type="button"
             role="switch"
