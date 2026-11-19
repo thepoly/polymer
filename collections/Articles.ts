@@ -340,7 +340,7 @@ const Articles: CollectionConfig = {
       type: 'richText',
       required: true,
       editor: lexicalEditor({
-        features: ({ defaultFeatures }) => [
+        features: () => [
           BoldFeature(),
           ItalicFeature(),
         ],

@@ -1,7 +1,7 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-postgres'
 import { getPlainText } from '../utils/getPlainText'
 
-export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
+export async function up({ db }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
     ALTER TABLE "articles" ADD COLUMN IF NOT EXISTS "plain_title" varchar;
     ALTER TABLE "_articles_v" ADD COLUMN IF NOT EXISTS "version_plain_title" varchar;
@@ -22,7 +22,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   }
 }
 
-export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
+export async function down({ db }: MigrateDownArgs): Promise<void> {
   await db.execute(sql`
     ALTER TABLE "articles" DROP COLUMN IF EXISTS "plain_title";
     ALTER TABLE "_articles_v" DROP COLUMN IF EXISTS "version_plain_title";

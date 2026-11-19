@@ -3,7 +3,6 @@ import React from 'react';
 export const Byline = ({
     author,
     date,
-    isoDate,
     className = "",
     variant = "default",
 }: {

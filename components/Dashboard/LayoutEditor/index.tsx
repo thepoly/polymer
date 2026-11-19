@@ -761,22 +761,6 @@ const ALL_ARIES_IDS = ['lead', 'left-0', 'left-1', 'left-2', 'left-3', 'left-4',
 const isAriesSlotId = (id: string) => ALL_ARIES_IDS.includes(id);
 const isAriesBottomSlotId = (id: string) => id.startsWith('bottom-');
 const getArticleHasImage = (article: ArticleData | null | undefined): boolean => Boolean(article && getImageUrl(article));
-const getAriesBottomRequirement = (
-  bottom: (number | null)[],
-  articleMap: Map<number, ArticleData>,
-  excludedSlotIds: string[] = [],
-): 'image' | 'text' | null => {
-  const excluded = new Set(excludedSlotIds);
-  for (let i = 0; i < bottom.length; i++) {
-    if (excluded.has(`bottom-${i}`)) continue;
-    const id = bottom[i];
-    if (id === null) continue;
-    const article = articleMap.get(id);
-    if (!article) continue;
-    return getArticleHasImage(article) ? 'image' : 'text';
-  }
-  return null;
-};
 
 // ---------------------------------------------------------------------------
 // Aries Slot Droppable
@@ -1140,7 +1124,6 @@ function SectionEditor({ sectionName, layout, articleMap, onRemovePin, onAddSlot
 }) {
   const displayName = sectionName.charAt(0).toUpperCase() + sectionName.slice(1);
   const sectionColor = SECTION_COLORS[sectionName] || '#888';
-  const currentSkel = SKELETON_LIBRARY.find((s) => s.id === layout.skeleton);
   const pinnedCount = layout.pinnedArticles.filter((id) => id > 0).length;
 
   const pins = layout.pinnedArticles;
