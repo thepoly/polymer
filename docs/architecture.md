@@ -46,11 +46,11 @@ and content flag:
 - opinion → `components/Article/OpinionLayout`
 - first paragraph contains `#photofeature#` → `components/Article/PhotofeatureLayout`
 
-Text article headers leave approximately 40px below the fixed article strip on
-phones and 48px from the `md` breakpoint (Opinion: 29px / 37px). The layouts
-reserve 60px for the 56px strip and clearance, then combine a 16px / 24px
-article margin with 20px header padding (Opinion: 9px). This halves the
-previous opening space; the strip's bottom border accounts for 1px of it.
+Text article headers leave 29.25px below the fixed article strip on phones
+and 35.25px from the `md` breakpoint (Opinion: 21px / 27px), a 25% reduction
+from 39px / 47px (Opinion: 28px / 36px). Layouts reserve 60px for the 56px
+strip, its 1px border and clearance. Standard article margins are 6.25px /
+12.25px with 20px header padding; Opinion uses 9px / 15px with 9px padding.
 Mobile photofeatures use the same spacing; their desktop hero stays full-screen.
 
 All four sections use `components/Article/ArticleSectionLabel.tsx` above the

@@ -8,7 +8,7 @@ export const OpinionLayout = ({ article, content }: { article: Article, content?
   const isFollytechnic = (article as unknown as Record<string, unknown>).isFollytechnic as boolean | null | undefined;
   return (
     <main className={`min-h-screen bg-bg-main pt-[60px] transition-colors duration-300${isFollytechnic ? ' follytechnic' : ''}`}>
-      <article className="container mx-auto px-4 md:px-6 mt-4 md:mt-6">
+      <article className="container mx-auto px-4 md:px-6 mt-[9px] md:mt-[15px]">
         <OpinionArticleHeader article={article} />
         <LegacyArchiveLink article={article} />
         <ArticleContent content={content || article.content} />

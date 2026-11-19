@@ -12,7 +12,7 @@ export const PhotofeatureLayout = ({ article, content }: { article: Article, con
 
       {/* Mobile: standard layout header */}
       <div className="sm:hidden pt-[60px]">
-        <article className="container mx-auto px-4 mt-4">
+        <article className="container mx-auto px-4 mt-[6.25px]">
           <StandardArticleHeader article={article} />
           <LegacyArchiveLink article={article} />
           <ArticleContent content={content} />
