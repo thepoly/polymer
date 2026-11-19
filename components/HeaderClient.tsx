@@ -358,10 +358,7 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
         handleLinkClick={handleLinkClick}
         isDarkMode={isDarkMode}
         onThemeToggle={() => {
-          triggerThemeTransition(window.innerWidth, 0, () => {
-            setIsMobileMenuOpen(false);
-            toggleDarkMode();
-          });
+          triggerThemeTransition(window.innerWidth, 0, toggleDarkMode);
         }}
         onSearchOpen={() => {
           setIsMobileMenuOpen(false);

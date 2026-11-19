@@ -47,10 +47,7 @@ export default function ArticleSectionMenu({ onThemeToggle }: { onThemeToggle: (
           setOpen(false);
         }}
         isDarkMode={isDarkMode}
-        onThemeToggle={() => {
-          setOpen(false);
-          onThemeToggle();
-        }}
+        onThemeToggle={onThemeToggle}
         onSearchOpen={() => {
           setOpen(false);
           openSearchOverlay();

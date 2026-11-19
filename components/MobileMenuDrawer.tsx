@@ -407,7 +407,7 @@ export function MobileMenuDrawer({
             role="switch"
             aria-label="Dark mode"
             aria-checked={isDarkMode}
-            onClick={() => { onClose(); onThemeToggle(); }}
+            onClick={onThemeToggle}
             className={`flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 border-y border-rule font-meta text-[13px] font-semibold uppercase tracking-[0.06em] text-text-main ${focusStyle}`}
           >
             <span className="flex items-center gap-2"><Moon aria-hidden="true" className="h-4 w-4" />Dark mode</span>
