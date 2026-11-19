@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
-import type { FrameStyle } from "./timelinePage";
+import { panelTintStyles, type FrameStyle } from "./timelinePage";
 import { STUDENT_GOV, type StudentGovBody } from "./studentGov";
 import StudentGovBodySwitch from "./StudentGovBodySwitch";
 
@@ -54,6 +54,7 @@ export default function StudentGovMonthPanel({
   otherHref,
   months,
   photo,
+  panelTint,
 }: {
   title: string;
   /** "57th Senate · 2026–27" / "2026–27" */
@@ -64,6 +65,7 @@ export default function StudentGovMonthPanel({
   months: PanelMonth[];
   /** The term's photo, or null for plain red */
   photo: PanelPhoto | null;
+  panelTint: number;
 }) {
   const [activeKey, setActiveKey] = useState<string | null>(months[0]?.key ?? null);
   const visible = useRef(new Set<string>());
@@ -133,6 +135,7 @@ export default function StudentGovMonthPanel({
   }, [desktop]);
 
   const active = months.find((m) => m.key === activeKey) ?? months[0] ?? null;
+  const tint = panelTintStyles(panelTint);
 
   return (
     // From lg the header's rule (square line caps) starts half a pixel before
@@ -145,7 +148,8 @@ export default function StudentGovMonthPanel({
     // switch (data-swipe-keep) stay put, the switch's bar sliding over.
     <aside
       data-swipe-chunk="panel"
-      className="relative h-[440px] w-full overflow-hidden bg-[#2a0a10] text-white min-[860px]:h-full min-[860px]:w-[38%] min-[860px]:max-w-[560px] min-[860px]:shrink-0 lg:-translate-x-[0.5px]"
+      className="relative h-[440px] w-full overflow-hidden text-white min-[860px]:h-full min-[860px]:w-[38%] min-[860px]:max-w-[560px] min-[860px]:shrink-0 lg:-translate-x-[0.5px]"
+      style={{ backgroundColor: tint.backgroundColor }}
     >
       <div className="relative h-full">
         {photo && (
@@ -155,11 +159,11 @@ export default function StudentGovMonthPanel({
             fill
             priority
             sizes={photo.sizes}
-            className={`object-cover contrast-[1.15] grayscale ${FRAME_CLASS}`}
-            style={frameVars(photo)}
+            className={`object-cover ${FRAME_CLASS}`}
+            style={{ ...frameVars(photo), filter: tint.filter }}
           />
         )}
-        <div aria-hidden="true" className="absolute inset-0 bg-[#D6001C] opacity-[0.78] mix-blend-multiply" />
+        <div aria-hidden="true" className="absolute inset-0 bg-[#D6001C] mix-blend-multiply" style={{ opacity: tint.opacity }} />
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.6)_0%,rgba(0,0,0,0.35)_30%,rgba(0,0,0,0)_50%,rgba(0,0,0,0)_55%,rgba(0,0,0,0.85)_100%)]"

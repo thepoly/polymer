@@ -290,6 +290,7 @@ export async function StudentGovTimelinePage({ body, segment }: { body: StudentG
         otherHref={otherHref}
         markers={markers}
         photo={photo}
+        panelTint={page.panelTint}
         terms={termRows.length > 0 && <StudentGovTermList body={body} rows={termRows} otherHref={otherHref} />}
       />
       {/* The photo panel runs right down to the footer's rule */}

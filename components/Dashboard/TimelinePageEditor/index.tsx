@@ -11,6 +11,7 @@ import './timeline-page-editor.css';
 import { STUDENT_GOV, matchesKicker, type StudentGovBody } from '@/components/News/studentGov';
 import {
   EMPTY_TIMELINE_PAGE,
+  DEFAULT_PANEL_TINT,
   ENTRY_IMAGES,
   ENTRY_SIZES,
   IMAGE_SIDE_WIDTHS,
@@ -19,6 +20,8 @@ import {
   monthKeyLabel,
   monthKeyOf,
   normalizeTimelinePages,
+  normalizePanelTint,
+  panelTintStyles,
   resolveStream,
   type EntrySize,
   type ResolvedEntryLayout,
@@ -316,6 +319,7 @@ function PanelPreview({
   month,
   onFrame,
   dimmed,
+  panelTint,
 }: {
   src: string | null;
   frame: PhotoFrame;
@@ -324,6 +328,7 @@ function PanelPreview({
   month: string;
   onFrame?: (frame: PhotoFrame) => void;
   dimmed?: boolean;
+  panelTint: number;
 }) {
   const imgRef = useRef<HTMLImageElement>(null);
   // Pointer and framing when the grab started
@@ -335,6 +340,7 @@ function PanelPreview({
     setGrabbing(false);
   };
   const position = `${frame.x}% ${frame.y}%`;
+  const tint = panelTintStyles(panelTint);
 
   return (
     <div
@@ -342,6 +348,7 @@ function PanelPreview({
         grabbing ? 'tpe-preview-grabbing' : ''
       } ${dimmed ? 'tpe-preview-dimmed' : ''}`}
       title={onFrame && src ? 'Drag the photo to reposition it' : undefined}
+      style={{ backgroundColor: tint.backgroundColor }}
       onPointerDown={(e) => {
         if (!onFrame || !imgRef.current?.naturalWidth) return;
         e.currentTarget.setPointerCapture(e.pointerId);
@@ -373,12 +380,12 @@ function PanelPreview({
           src={src}
           alt=""
           draggable={false}
-          style={{ objectPosition: position, transformOrigin: position, transform: `scale(${frame.zoom})` }}
+          style={{ objectPosition: position, transformOrigin: position, transform: `scale(${frame.zoom})`, filter: tint.filter }}
         />
       ) : (
         <span className="tpe-preview-empty">No photo</span>
       )}
-      <span className="tpe-preview-tint" aria-hidden="true" />
+      <span className="tpe-preview-tint" aria-hidden="true" style={{ opacity: tint.opacity }} />
       <span className="tpe-preview-scrim" aria-hidden="true" />
       <span className="tpe-preview-title" aria-hidden="true">
         {title}
@@ -399,6 +406,7 @@ function ScreenFrameEditor({
   title,
   month,
   onPhoto,
+  panelTint,
 }: {
   screen: Screen;
   /** The slot's own photo; null when it borrows one (preview only) */
@@ -408,6 +416,7 @@ function ScreenFrameEditor({
   title: string;
   month: string;
   onPhoto: (next: TimelinePhoto) => void;
+  panelTint: number;
 }) {
   const frame = frameFor(photo, shown, screen);
   const set = (next: PhotoFrame | null) => photo && onPhoto({ ...photo, [screen]: next });
@@ -427,6 +436,7 @@ function ScreenFrameEditor({
         title={title}
         month={month}
         dimmed={dimmed}
+        panelTint={panelTint}
         onFrame={photo ? set : undefined}
       />
       {photo && (
@@ -461,6 +471,7 @@ function PhotoPanel({
   media,
   entries,
   onChange,
+  onTintChange,
 }: {
   /** Page title drawn on the previews ("Student Senate") */
   title: string;
@@ -471,6 +482,7 @@ function PhotoPanel({
   /** That term's entries, newest first */
   entries: StreamEntry[];
   onChange: (next: TimelinePageConfig['photos'], picked?: MediaDoc) => void;
+  onTintChange: (tint: number) => void;
 }) {
   const [target, setTarget] = useState<PhotoTarget>('term');
   const [picking, setPicking] = useState(false);
@@ -518,6 +530,48 @@ function PhotoPanel({
         the Stream&rsquo;s Term menu, and a default for terms without their own.
       </p>
 
+      <div className="tpe-tint-controls">
+        <label htmlFor="tpe-panel-tint">Red tint</label>
+        <div className="tpe-row">
+          <input
+            id="tpe-panel-tint"
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={config.panelTint}
+            aria-describedby="tpe-panel-tint-help"
+            onChange={(e) => onTintChange(Number(e.target.value))}
+          />
+          <label className="tpe-tint-number">
+            <input
+              type="number"
+              className="tpe-input"
+              min={0}
+              max={100}
+              step={1}
+              value={config.panelTint}
+              aria-label="Red tint percentage"
+              aria-describedby="tpe-panel-tint-help"
+              onChange={(e) => {
+                if (e.target.value !== '') onTintChange(normalizePanelTint(e.target.valueAsNumber));
+              }}
+            />
+            %
+          </label>
+          <button type="button" className="tpe-btn" disabled={config.panelTint === 0} onClick={() => onTintChange(0)}>
+            Remove tint
+          </button>
+          <button type="button" className="tpe-btn" disabled={config.panelTint === DEFAULT_PANEL_TINT} onClick={() => onTintChange(DEFAULT_PANEL_TINT)}>
+            Reset tint
+          </button>
+        </div>
+        <p id="tpe-panel-tint-help" className="tpe-help">
+          0% shows the original colors; 100% gives the strongest red tint. Applies to all terms on this page,
+          on computers and phones. Press Activate to save.
+        </p>
+      </div>
+
       <div className="tpe-slot-chips" role="tablist" aria-label="Photo for">
         {(['term', 'default'] as PhotoTarget[]).map((key) => {
           const p = key === 'default' ? photos.default : photos.terms[term.slug];
@@ -553,6 +607,7 @@ function PhotoPanel({
             dimmed={!own}
             title={title}
             month={previewMonth}
+            panelTint={config.panelTint}
             onPhoto={(next) => setOwn(next)}
           />
         ))}
@@ -1297,7 +1352,7 @@ function StreamPreview({
  * Dashboard editor for the Senate or Executive Board timeline: the left
  * panel's photos, new updates, and the stream (each entry's size, photo
  * placement and position; hide entries; edit or delete updates). Photos,
- * hidden entries and layouts are saved with "Activate" into `news-page-layout` → `timelinePages[body]`;
+ * tint, hidden entries and layouts are saved with "Activate" into `news-page-layout` → `timelinePages[body]`;
  * updates are their own documents and save as soon as they're changed.
  */
 export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
@@ -1693,6 +1748,7 @@ export function TimelinePageEditor({ body }: { body: StudentGovBody }) {
             term={{ slug: term.slug, name: termFullName(term) }}
             media={media}
             entries={yearEntries}
+            onTintChange={(panelTint) => update((prev) => ({ ...prev, panelTint }))}
             onChange={(photos, picked) => {
               if (picked) setMedia((prev) => new Map(prev).set(picked.id, picked));
               update((prev) => ({ ...prev, photos }));

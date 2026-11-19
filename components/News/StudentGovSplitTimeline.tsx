@@ -265,6 +265,7 @@ export default function StudentGovSplitTimeline({
   otherHref,
   markers,
   photo,
+  panelTint,
   terms,
 }: {
   body: StudentGovBody;
@@ -280,6 +281,7 @@ export default function StudentGovSplitTimeline({
   markers: StreamMarkers;
   /** The term's panel photo, or null for plain red */
   photo: PanelPhoto | null;
+  panelTint: number;
   /** The body's list of terms, at the very end of the stream */
   terms?: React.ReactNode;
 }) {
@@ -312,6 +314,7 @@ export default function StudentGovSplitTimeline({
         otherHref={otherHref}
         months={months.map(({ key, short }) => ({ key, short }))}
         photo={photo}
+        panelTint={panelTint}
       />
 
       {/* Moving between bodies, the stream slides as one (data-swipe-chunk,

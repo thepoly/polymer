@@ -233,6 +233,7 @@ updates save as soon as they're added or edited.
 | Hide / Show | Takes a kicker-matched entry off the timeline and the News page box (the article is untouched) |
 | Remove | Takes an archive addition back off |
 | Panel photo | One photo for the term picked in the Term menu, plus a default for terms without their own; framed separately for computers and phones |
+| Red tint | Panel photo setting from 0–100%, with Remove tint (original photo colors) and Reset tint (78%, the existing look). Applies to every term and both screen sizes for this body; save with Activate |
 | Add an update | New update for this body; Edit / Delete on each update in the stream |
 | Archive finder | Finds stories about this body that aren't on the timeline (below) |
 | Terms | Opens Student Gov Terms |

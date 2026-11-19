@@ -15,6 +15,25 @@ export type PhotoFrame = { x: number; y: number; zoom: number };
 export const MIN_ZOOM = 1;
 export const MAX_ZOOM = 3;
 
+/** Existing red duotone strength, used for layouts saved before this control. */
+export const DEFAULT_PANEL_TINT = 78;
+
+export function normalizePanelTint(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value)
+    ? Math.min(100, Math.max(0, Math.round(value)))
+    : DEFAULT_PANEL_TINT;
+}
+
+/** Shared by the public panel and both editor previews. Zero restores the photo's colors. */
+export function panelTintStyles(tint: number) {
+  const amount = Math.min(normalizePanelTint(tint) / DEFAULT_PANEL_TINT, 1);
+  return {
+    opacity: normalizePanelTint(tint) / 100,
+    filter: `grayscale(${amount}) contrast(${1 + 0.15 * amount})`,
+    backgroundColor: `rgb(${22 + 20 * amount}, ${22 - 12 * amount}, ${22 - 6 * amount})`,
+  };
+}
+
 /** A photo for the left panel, framed separately for computers and phones */
 export type TimelinePhoto = {
   /** `media` id */
@@ -158,6 +177,8 @@ export function resolveStream(
 }
 
 export type TimelinePageConfig = {
+  /** Red tint strength (0–100), shared by all terms and screens for this body. */
+  panelTint: number;
   /**
    * The photo panel shows one photo for a whole term (year): the term's own,
    * else the default, else none (plain red). Article photos are never used.
@@ -185,6 +206,7 @@ export type TimelinePagesLayout = Record<StudentGovBody, TimelinePageConfig>;
 export const entryKey = (kind: "article" | "update", id: number | string) => `${kind}-${id}`;
 
 export const EMPTY_TIMELINE_PAGE: TimelinePageConfig = {
+  panelTint: DEFAULT_PANEL_TINT,
   photos: { default: null, terms: {} },
   hidden: [],
   included: [],
@@ -275,6 +297,7 @@ export function normalizeTimelinePage(raw: unknown): TimelinePageConfig {
     }
   }
   return {
+    panelTint: normalizePanelTint(value.panelTint),
     photos: { default: normalizePhoto(photos.default), terms },
     hidden: Array.isArray(value.hidden) ? value.hidden.filter((h): h is string => typeof h === "string") : [],
     included: Array.isArray(value.included)
