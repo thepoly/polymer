@@ -8,6 +8,7 @@ import { MAX_TABS } from "@/lib/standingsSchedule";
 import SportsHeading from "./SportsHeading";
 import { useScrollEdges } from "./useScrollEdges";
 import { useMomentumScroll } from "./useMomentumScroll";
+import { useStandingsSwipe } from "./useStandingsSwipe";
 
 export type StandingsTeam = { logo: string | null; url: string | null };
 
@@ -248,7 +249,16 @@ export default function SportsStandings({
   const [active, setActive] = useState<string>();
   const preferred = desktop ? standings.find((s) => s.sport === defaultSport && s.confStarted) : undefined;
   const current = standings.find((s) => s.sport === active) ?? preferred ?? standings[0];
+  const { viewportRef, contentRef, prepareSwipe } = useStandingsSwipe(current?.sport);
   if (!current) return null;
+
+  const selectSport = (sport: SportStandings["sport"]) => {
+    if (sport === current.sport) return;
+    const from = standings.findIndex(s => s.sport === current.sport);
+    const to = standings.findIndex(s => s.sport === sport);
+    prepareSwipe(to > from ? 1 : -1);
+    setActive(sport);
+  };
 
   // Divisional tables show (and rank by) the division record
   const abbr = current.divisionRecords ? "Div" : CONFERENCE_ABBR[current.conference] ?? "Conf";
@@ -261,65 +271,70 @@ export default function SportsStandings({
         <SportsHeading gap={10}>Standings</SportsHeading>
       </div>
 
-      <SportTabs standings={standings} activeSport={current.sport} onSelect={setActive} />
+      <SportTabs standings={standings} activeSport={current.sport} onSelect={selectSport} />
 
-      {/* Divisional sports show RPI's division */}
-      {current.division && (
-        <p className="mb-1.5 px-4 font-meta text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted md:px-0">
-          {current.division} Division
-        </p>
-      )}
+      <div ref={viewportRef} data-standings-viewport className="relative overflow-hidden">
+        <div ref={contentRef} data-standings-content={current.sport}>
 
-      {current.confStarted ? (
-        <table className="w-full table-fixed font-meta text-[13px] tabular-nums">
-          <thead>
-            <tr className="text-[11px] uppercase tracking-[0.06em] text-text-muted">
-              <th className="w-11 pb-1.5 pl-4 text-left font-medium md:w-7 md:pl-0">#</th>
-              <th className="pb-1.5 text-left font-medium">Team</th>
-              <th className="w-[58px] pb-1.5 text-right font-medium">{abbr}</th>
-              {current.hasPoints && <th className="w-9 pb-1.5 text-right font-medium">Pts</th>}
-              <th className="w-[78px] pb-1.5 pr-4 text-right font-medium md:w-[62px] md:pr-0">Overall</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr
-                key={row.team}
-                className={`border-t border-rule ${
-                  row.isRpi ? "bg-accent/[0.07] font-semibold text-text-main" : "text-text-main"
-                }`}
-              >
-                <td className="py-2 pl-5 text-text-muted md:pl-1">{row.rank}</td>
-                <td className="py-2">
-                  <TeamCell row={row} team={teams[row.team]} />
-                </td>
-                <td className="py-2 text-right">{row.conf}</td>
-                {current.hasPoints && <td className="py-2 text-right">{row.pts ?? "–"}</td>}
-                <td className="py-2 pr-5 text-right text-text-muted md:pr-1">{row.overall}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        <p className="px-4 font-copy text-[16px] leading-[1.35] text-text-main md:px-0">
-          {current.conference} play hasn&apos;t started yet.
-          {rpi && (
-            <>
-              {" "}
-              RPI is <span className="font-semibold tabular-nums">{rpi.overall}</span> overall.
-            </>
+          {/* Divisional sports show RPI's division */}
+          {current.division && (
+            <p className="mb-1.5 px-4 font-meta text-[11px] font-semibold uppercase tracking-[0.08em] text-text-muted md:px-0">
+              {current.division} Division
+            </p>
           )}
-        </p>
-      )}
 
-      <a
-        href={current.sourceUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mx-4 mt-2.5 inline-block font-meta text-[11px] uppercase tracking-[0.06em] text-text-muted hover:text-accent transition-colors md:mx-0"
-      >
-        Full standings: {current.conference} &#8599;
-      </a>
+          {current.confStarted ? (
+            <table className="w-full table-fixed font-meta text-[13px] tabular-nums">
+              <thead>
+                <tr className="text-[11px] uppercase tracking-[0.06em] text-text-muted">
+                  <th className="w-11 pb-1.5 pl-4 text-left font-medium md:w-7 md:pl-0">#</th>
+                  <th className="pb-1.5 text-left font-medium">Team</th>
+                  <th className="w-[58px] pb-1.5 text-right font-medium">{abbr}</th>
+                  {current.hasPoints && <th className="w-9 pb-1.5 text-right font-medium">Pts</th>}
+                  <th className="w-[78px] pb-1.5 pr-4 text-right font-medium md:w-[62px] md:pr-0">Overall</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr
+                    key={row.team}
+                    className={`border-t border-rule ${
+                      row.isRpi ? "bg-accent/[0.07] font-semibold text-text-main" : "text-text-main"
+                    }`}
+                  >
+                    <td className="py-2 pl-5 text-text-muted md:pl-1">{row.rank}</td>
+                    <td className="py-2">
+                      <TeamCell row={row} team={teams[row.team]} />
+                    </td>
+                    <td className="py-2 text-right">{row.conf}</td>
+                    {current.hasPoints && <td className="py-2 text-right">{row.pts ?? "–"}</td>}
+                    <td className="py-2 pr-5 text-right text-text-muted md:pr-1">{row.overall}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="px-4 font-copy text-[16px] leading-[1.35] text-text-main md:px-0">
+              {current.conference} play hasn&apos;t started yet.
+              {rpi && (
+                <>
+                  {" "}
+                  RPI is <span className="font-semibold tabular-nums">{rpi.overall}</span> overall.
+                </>
+              )}
+            </p>
+          )}
+
+          <a
+            href={current.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mx-4 mt-2.5 inline-block font-meta text-[11px] uppercase tracking-[0.06em] text-text-muted hover:text-accent transition-colors md:mx-0"
+          >
+            Full standings: {current.conference} &#8599;
+          </a>
+        </div>
+      </div>
     </section>
   );
 }
