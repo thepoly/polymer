@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
+import { BAR_SLIDE_EASING, BAR_SLIDE_MS, type BarSpot } from "@/components/slidingBar";
 import type { SportStandings, StandingsRow } from "@/lib/standings";
 import { MAX_TABS } from "@/lib/standingsSchedule";
 import SportsHeading from "./SportsHeading";
@@ -61,6 +62,12 @@ function TeamCell({ row, team }: { row: StandingsRow; team?: StandingsTeam }) {
   );
 }
 
+function measureSportBar(nav: HTMLElement, element: HTMLElement): BarSpot {
+  const navBox = nav.getBoundingClientRect();
+  const box = element.getBoundingClientRect();
+  return { left: box.left - navBox.left + nav.scrollLeft, width: box.width };
+}
+
 /**
  * Tabs spread across the full width when they fit. When they don't, the row
  * scrolls sideways (finger or trackpad swipe, or desktop mouse drag), with a
@@ -77,9 +84,58 @@ function SportTabs({
   onSelect: (sport: SportStandings["sport"]) => void;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
+  const previousBar = useRef<BarSpot | null>(null);
   const desktop = useSyncExternalStore(subscribeToDesktop, isDesktopViewport, () => false);
   const { handlers, stopMomentum } = useMomentumScroll(listRef, { mouseDrag: desktop, touchDrag: false });
   const edges = useScrollEdges(listRef);
+
+  useLayoutEffect(() => {
+    const nav = listRef.current;
+    const bar = nav?.querySelector<HTMLElement>("[data-slide-bar]");
+    const label = bar?.parentElement;
+    if (!nav || !bar || !label) return;
+    // Measure the label, so an in-flight bar transform never changes its
+    // destination. Content coordinates also keep this correct when scrolled.
+    const here = measureSportBar(nav, label);
+    const from = previousBar.current;
+    previousBar.current = here;
+    const animation = from && from.width > 0 && here.width > 0 &&
+      (from.left !== here.left || from.width !== here.width) &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? bar.animate([
+        { transformOrigin: "left", transform: `translateX(${from.left - here.left}px) scaleX(${from.width / here.width})` },
+        { transformOrigin: "left", transform: "translateX(0) scaleX(1)" },
+      ], { duration: BAR_SLIDE_MS, easing: BAR_SLIDE_EASING })
+      : null;
+
+    let cancelled = false;
+    const save = () => {
+      if (cancelled) return;
+      const spot = measureSportBar(nav, label);
+      // A font or responsive layout change should leave the bar under its
+      // label, without continuing a slide measured in the previous layout.
+      if (spot.left !== here.left || spot.width !== here.width) animation?.cancel();
+      previousBar.current = spot;
+    };
+    const observer = new ResizeObserver(save);
+    observer.observe(nav);
+    observer.observe(label);
+    document.fonts?.ready.then(save);
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+      animation?.cancel();
+    };
+  }, [activeSport]);
+
+  const selectSport = (sport: SportStandings["sport"]) => {
+    stopMomentum();
+    const nav = listRef.current;
+    const bar = nav?.querySelector<HTMLElement>("[data-slide-bar]");
+    // Rapid selections continue from the bar's current visible position.
+    if (nav && bar) previousBar.current = measureSportBar(nav, bar);
+    onSelect(sport);
+  };
 
   // Keep the selected tab in view without scrolling the page itself
   useEffect(() => {
@@ -125,7 +181,7 @@ function SportTabs({
               type="button"
               role="tab"
               aria-selected={selected}
-              onClick={() => onSelect(s.sport)}
+              onClick={() => selectSport(s.sport)}
               style={tabWidth}
               className={`shrink-0 pb-2 text-left font-meta text-[11px] uppercase tracking-[0.04em] whitespace-nowrap transition-colors xl:text-[12px] xl:tracking-[0.06em] ${
                 selected

@@ -45,6 +45,9 @@ story's sport when conference play has started. A reader's chosen tab stays
 selected when resizing between mobile and desktop.
 The active sport's underline matches its label width, rather than the wider
 button used to space the tabs.
+It slides between selections with the masthead section underline's 420ms
+timing and easing. Rapid selections continue from its current position;
+resizing keeps it aligned, and reduced motion switches it immediately.
 There is no extra gap from Standings to the Headlines rule below 768px.
 Between 768px and 1023px wide the gap is 20px; desktop retains 24px.
 
