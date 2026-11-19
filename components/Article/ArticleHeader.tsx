@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Article, Media, User } from '@/payload-types';
 import { renderLexicalHeadline } from '@/utils/formatArticle';
 import { ArticleByline } from './ArticleByline';
+import { ArticleSectionLabel } from './ArticleSectionLabel';
 
 type Props = {
   article: Article;
@@ -24,11 +25,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
   return (
     <div className="flex flex-col gap-10 mb-8" style={{ paddingTop: '20px' }}>
       <div className="flex flex-col gap-4 max-w-[680px] w-full mx-auto">
-        {article.kicker && (
-            <span data-ie-field="kicker" className="font-meta text-accent font-[600] uppercase text-[13px] md:text-[13px] tracking-[0.08em] transition-colors">
-                {article.kicker}
-            </span>
-        )}
+        <ArticleSectionLabel section={article.section} kicker={article.kicker} />
         <h1 data-ie-field="title" className={`font-bold text-[39px] md:text-[34px] lg:text-[42px] text-text-main leading-[1.05] tracking-[-0.02em] transition-colors font-copy ${article.section === "opinion" ? "font-light" : ""} ${article.section === "sports" ? "font-light" : ""} ${article.section === "features" ? "font-light" : ""}`}>
           {renderLexicalHeadline(article.title)}
         </h1>

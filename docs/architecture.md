@@ -53,6 +53,13 @@ article margin with 20px header padding (Opinion: 9px). This halves the
 previous opening space; the strip's bottom border accounts for 1px of it.
 Mobile photofeatures use the same spacing; their desktop hero stays full-screen.
 
+All four sections use `components/Article/ArticleSectionLabel.tsx` above the
+article title: centered accent section name, uppercase kicker in the main
+text color, and a short rule. Empty kickers and kickers matching the section
+are omitted. Opinion uses its stored kicker, falling back to its type label
+for older articles. Photofeature heroes use white kicker text and a white rule
+over the photo; mobile photofeatures use the standard header.
+
 Homepage composition is **data-driven**: the `layout` collection (one
 versioned global-ish doc) describes what's pinned, what's lead, and which
 sections render below. `app/(frontend)/page.tsx` reads layout and supplements

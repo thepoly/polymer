@@ -5,6 +5,7 @@ import { Article, Media, User } from '@/payload-types';
 import { opinionTypeLabels } from './opinionTypeLabels';
 import { renderLexicalHeadline } from '@/utils/formatArticle';
 import { ArticleByline } from '@/components/Article';
+import { ArticleSectionLabel } from '@/components/Article/ArticleSectionLabel';
 
 type Props = {
   article: Article;
@@ -28,20 +29,10 @@ export const OpinionArticleHeader: React.FC<Props> = ({ article }) => {
       className="flex flex-col items-center mb-8 gap-4"
       style={{ paddingTop: '9px' }}
     >
-      {/* Kicker + Opinion Type */}
-      <div className="flex flex-col items-center gap-1 mb-1">
-        <span className="font-meta text-accent font-bold uppercase text-[16px] tracking-widest">
-          Opinion
-        </span>
-        {opinionType && opinionType !== 'opinion' && (
-          <span className="font-meta font-bold uppercase text-[16px] tracking-wide text-text-main">
-            {typeLabel}
-          </span>
-        )}
-      </div>
-
-      {/* Divider */}
-      <div className="w-8 border-t border-rule-strong mb-1" />
+      <ArticleSectionLabel
+        section={article.section}
+        kicker={article.kicker?.trim() || (opinionType && opinionType !== 'opinion' ? typeLabel : null)}
+      />
 
       {/* Title */}
       <div className="flex flex-col gap-4 max-w-[680px] w-full mx-auto">
