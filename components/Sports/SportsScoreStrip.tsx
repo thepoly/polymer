@@ -171,14 +171,13 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
   return (
     <section
       aria-label="RPI scores and schedule"
-      className="relative -mx-4 mb-3 sm:mb-5 md:mx-0"
+      className="relative -mx-4 mb-3 sm:mb-5 md:-mx-6 lg:mx-0"
       onMouseEnter={() => setRevealed(true)}
     >
       <div
         ref={listRef}
-        // On desktop the strip sits right under the header's rule, which serves
-        // as its top one; the phone header has no such rule, so it gets its own
-        className="flex overflow-x-auto overscroll-x-contain touch-pan-y touch-pinch-zoom border-y border-rule lg:border-t-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:cursor-grab lg:select-none lg:active:cursor-grabbing lg:[&_a]:cursor-[inherit]"
+        // The header's bottom rule also serves as the strip's top border.
+        className="flex overflow-x-auto overscroll-x-contain touch-pan-y touch-pinch-zoom border-b border-rule [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:cursor-grab lg:select-none lg:active:cursor-grabbing lg:[&_a]:cursor-[inherit]"
         {...handlers}
       >
         {schedule.map((s, i) => (

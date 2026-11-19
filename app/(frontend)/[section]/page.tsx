@@ -619,7 +619,7 @@ export default async function SectionPageRoute({ params }: Args) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c') }}
       />
-      <Header />
+      <Header flushMobileBottom={Boolean(sportsPage?.schedule.length)} />
       {isOpinion ? (
         <OpinionSectionPage
           title={sectionTitle}

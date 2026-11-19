@@ -17,9 +17,12 @@ over time.
 | More Headlines | A carousel of seven photo cards, ending in a link to `/sports/all` | Layout editor / newest unused stories |
 | `/sports/all` | Every sports story by month, filterable by sport, 24 per page | Articles |
 
-Below 768px, the score strip and Standings tab/table surfaces reach both
-screen edges. Standings text, its heading rule and its source link retain
-the page's reading inset. Tablet and desktop keep their existing widths.
+Below 1024px, the score strip reaches both screen edges and joins directly
+to the date/volume bar, sharing its bottom rule without a gap or doubled
+border. The header keeps its usual spacing when there is no score strip.
+Below 768px, Standings tab/table surfaces also reach both screen edges;
+its text, heading rule and source link retain the page's reading inset.
+Standings keeps its existing tablet and desktop widths.
 
 More Headlines scrolls horizontally by finger swipe or trackpad. On desktop,
 readers can also drag the cards with a mouse or use the arrows to move four

@@ -101,7 +101,7 @@ function pickWeatherIcon(forecast: string): React.ComponentType<{ className?: st
   return Cloud;
 }
 
-export default function Header({ compact = false, mobileTight = false, logoSrcs, headerAnimation = DEFAULT_HEADER_ANIMATION, volume, edition, liveEntries, weather }: { compact?: boolean; mobileTight?: boolean; logoSrcs?: HeaderLogoSrcs; headerAnimation?: HeaderAnimationConfig; volume?: number | null; edition?: number | null; liveEntries?: LiveArticleStripEntry[]; weather?: HeaderWeather }) {
+export default function Header({ compact = false, mobileTight = false, flushMobileBottom = false, logoSrcs, headerAnimation = DEFAULT_HEADER_ANIMATION, volume, edition, liveEntries, weather }: { compact?: boolean; mobileTight?: boolean; flushMobileBottom?: boolean; logoSrcs?: HeaderLogoSrcs; headerAnimation?: HeaderAnimationConfig; volume?: number | null; edition?: number | null; liveEntries?: LiveArticleStripEntry[]; weather?: HeaderWeather }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showDarkModePrompt, setShowDarkModePrompt] = useState(false);
   const currentDate = useCurrentDate();
@@ -244,7 +244,7 @@ export default function Header({ compact = false, mobileTight = false, logoSrcs,
 
   return (
     <>
-      <header className={`${compact ? "sticky top-0" : ""} ${mobileTight ? "mobile-header-tight" : ""} safe-area-top z-50 bg-bg-main lg:hidden`}>
+      <header className={`${compact ? "sticky top-0" : ""} ${mobileTight ? "mobile-header-tight" : ""} ${flushMobileBottom ? "max-lg:pb-0!" : ""} safe-area-top z-50 bg-bg-main lg:hidden`}>
         <div className="mobile-chrome-header-inner safe-area-mobile-header-x mx-auto max-w-[1280px]">
             <div className="grid h-[56px] grid-cols-[1fr_auto_1fr] items-center">
             <div className="flex justify-start">

@@ -10,10 +10,13 @@ export type { HeaderLogoSrcs }
 export default async function Header({
   compact,
   mobileTight,
+  flushMobileBottom,
   liveEntries,
 }: {
   compact?: boolean
   mobileTight?: boolean
+  /** Join following content directly to the mobile date/volume rule. */
+  flushMobileBottom?: boolean
   liveEntries?: LiveArticleStripEntry[]
 }) {
   const [theme, edition, weather] = await Promise.all([
@@ -26,6 +29,7 @@ export default async function Header({
     <HeaderClient
       compact={compact}
       mobileTight={mobileTight}
+      flushMobileBottom={flushMobileBottom}
       logoSrcs={theme.logoSrcs}
       headerAnimation={theme.headerAnimation}
       volume={edition.volume}
