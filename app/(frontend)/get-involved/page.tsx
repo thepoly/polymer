@@ -27,7 +27,7 @@ export default function GetInvolvedPage() {
   return (
     <div className="min-h-screen bg-bg-main text-text-main">
       <Header />
-      <main data-get-involved-page className="mx-auto w-full max-w-[1180px] px-5 pb-12 pt-8 md:pb-16 md:pt-12">
+      <main data-get-involved-page className="mx-auto w-full max-w-[1180px] px-5 pb-0 pt-8 md:pb-16 md:pt-12">
         <style>{`@media (prefers-reduced-motion: no-preference) { html:has([data-get-involved-page]) { scroll-behavior: smooth; } }`}</style>
         <div className="border-b border-rule-strong pb-8 md:pb-10">
           <h1 className="font-copy text-[50px] font-normal leading-[0.95] tracking-[-0.02em] md:text-[76px]">Get involved with The Poly</h1>
@@ -45,7 +45,7 @@ export default function GetInvolvedPage() {
           ))}
         </nav>
 
-        <section id="join" aria-labelledby="join-heading" className="grid scroll-mt-24 grid-cols-1 gap-8 border-b border-rule py-8 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md:gap-10 md:py-10">
+        <section id="join" aria-labelledby="join-heading" className="grid scroll-mt-24 grid-cols-1 gap-8 border-b border-rule pb-2 pt-8 md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] md:gap-10 md:py-10">
           <div className="min-w-0">
             <PathLabel>Join the staff</PathLabel>
             <h2 id="join-heading" className="mt-4 font-copy text-[34px] font-normal leading-[1.05] md:text-[44px]">Come to a meeting.</h2>
@@ -95,7 +95,7 @@ export default function GetInvolvedPage() {
             <Link href="/submit" className={`mt-6 ${primaryStyle}`}>Start a submission<ArrowRight aria-hidden="true" className="h-4 w-4" /></Link>
           </section>
 
-          <section id="tip" aria-labelledby="tip-heading" className="min-w-0 scroll-mt-24 border-t border-rule py-8 md:border-l md:border-t-0 md:py-10 md:pl-10">
+          <section id="tip" aria-labelledby="tip-heading" className="min-w-0 scroll-mt-24 border-t border-rule pb-3 pt-8 md:border-l md:border-t-0 md:py-10 md:pl-10">
             <PathLabel>Send a news tip</PathLabel>
             <h2 id="tip-heading" className="mb-[18px] mt-4 font-copy text-[30px] font-normal leading-[1.1] md:text-[34px]">Seen something newsworthy?</h2>
             <div className="flex flex-wrap items-center gap-3 bg-[var(--opinions-choice-bg)] p-5">
