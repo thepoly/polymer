@@ -1,7 +1,15 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ThemeLogoSrcs } from "@/lib/getTheme";
+import {
+  COOKIE_MAX_AGE,
+  SYSTEM_DARK_QUERY,
+  THEME_COOKIE,
+  THEME_PICKED_COOKIE,
+  THEME_SYSTEM_COOKIE,
+  type ThemeChoice,
+} from "@/lib/themePreference";
 
 type ThemeContextType = {
   isDarkMode: boolean;
@@ -38,18 +46,78 @@ export const useTheme = () => {
   return context;
 };
 
+function setCookie(name: string, value: string | null) {
+  try {
+    document.cookie = value === null
+      ? `${name}=; path=/; max-age=0; SameSite=Lax`
+      : `${name}=${value}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
+  } catch {
+    /* iOS Private Browsing */
+  }
+}
+
+function subscribeToSystemTheme(callback: () => void) {
+  const query = window.matchMedia(SYSTEM_DARK_QUERY);
+  query.addEventListener("change", callback);
+  return () => query.removeEventListener("change", callback);
+}
+
+function getSystemDark() {
+  return window.matchMedia(SYSTEM_DARK_QUERY).matches;
+}
+
+/**
+ * Light or dark: the reader's pick, or else their device's setting, followed
+ * live (see lib/themePreference.ts for the cookies). The layout's head script
+ * has already set the right class before hydration.
+ */
 export default function ThemeProvider({
   children,
-  initialDarkMode = false,
+  initialChoice = null,
+  initialSystemDark = false,
   logoSrcs = FALLBACK_LOGO_SRCS,
 }: {
   children: React.ReactNode;
-  initialDarkMode?: boolean;
+  /** The reader's pick from their cookies, or null to follow the device */
+  initialChoice?: ThemeChoice;
+  /** The server's guess at the device setting (the last one seen) */
+  initialSystemDark?: boolean;
   logoSrcs?: ThemeLogoSrcs;
 }) {
-  const [isDarkMode, setIsDarkMode] = useState(initialDarkMode);
+  const [choice, setChoice] = useState<ThemeChoice>(initialChoice);
+  // Hydrates with the server's guess (so the markup matches), then reads the
+  // device and re-renders if the guess was wrong
+  const systemDark = useSyncExternalStore(subscribeToSystemTheme, getSystemDark, () => initialSystemDark);
+  const isDarkMode = choice ? choice === "dark" : systemDark;
   const [isStandalonePwa, setIsStandalonePwa] = useState(false);
   const konamiIndexRef = useRef(0);
+
+  // A pick is remembered; with none, the old auto-written `theme` cookie is
+  // cleared so the app shells fall back to the device setting too
+  useEffect(() => {
+    if (choice) {
+      setCookie(THEME_COOKIE, choice);
+      setCookie(THEME_PICKED_COOKIE, "1");
+    } else {
+      setCookie(THEME_COOKIE, null);
+      setCookie(THEME_PICKED_COOKIE, null);
+    }
+  }, [choice]);
+
+  // Keep the server's guess at the device setting current
+  useEffect(() => {
+    setCookie(THEME_SYSTEM_COOKIE, systemDark ? "dark" : "light");
+  }, [systemDark]);
+
+  const isDarkModeRef = useRef(isDarkMode);
+  useEffect(() => {
+    isDarkModeRef.current = isDarkMode;
+  }, [isDarkMode]);
+
+  // Picking is always relative to what's showing now
+  const toggleDarkMode = useCallback(() => {
+    setChoice(isDarkModeRef.current ? "light" : "dark");
+  }, []);
 
   useEffect(() => {
     const standaloneQuery = window.matchMedia("(display-mode: standalone)");
@@ -99,7 +167,7 @@ export default function ThemeProvider({
       }
 
       if (nextIndex === KONAMI_CODE.length) {
-        setIsDarkMode((prevMode) => !prevMode);
+        toggleDarkMode();
         nextIndex = 0;
       }
 
@@ -108,7 +176,7 @@ export default function ThemeProvider({
 
     window.addEventListener("keydown", handleKeyDown, { passive: false });
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [toggleDarkMode]);
 
   // Colours fade between themes while .theme-fading is on <html> (see
   // globals.css); every way of switching theme passes through here. Only when
@@ -128,25 +196,14 @@ export default function ThemeProvider({
   }, [isDarkMode]);
 
   useEffect(() => {
-    const themeColor = isDarkMode ? "#0a0a0a" : "#ffffff";
+    // From the device itself, not systemDark: on the hydration pass that's
+    // still the server's guess, and acting on a wrong guess would undo the
+    // head script for a frame
+    const isDark = choice ? choice === "dark" : getSystemDark();
+    const themeColor = isDark ? "#0a0a0a" : "#ffffff";
 
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-      document.documentElement.style.colorScheme = "dark";
-      try {
-        document.cookie = "theme=dark; path=/; max-age=31536000"; // 1 year
-      } catch {
-        /* iOS Private Browsing */
-      }
-    } else {
-      document.documentElement.classList.remove("dark");
-      document.documentElement.style.colorScheme = "light";
-      try {
-        document.cookie = "theme=light; path=/; max-age=31536000";
-      } catch {
-        /* iOS Private Browsing */
-      }
-    }
+    document.documentElement.classList.toggle("dark", isDark);
+    document.documentElement.style.colorScheme = isDark ? "dark" : "light";
 
     let themeMeta = document.querySelector('meta[name="theme-color"][data-runtime-theme-color="true"]');
     if (!themeMeta) {
@@ -166,7 +223,7 @@ export default function ThemeProvider({
     }
     statusBarMeta.setAttribute(
       "content",
-      isStandalonePwa ? "black-translucent" : isDarkMode ? "black" : "default",
+      isStandalonePwa ? "black-translucent" : isDark ? "black" : "default",
     );
 
     // Android app bridge: drive the native status + nav bars from the in-app
@@ -180,7 +237,7 @@ export default function ThemeProvider({
       const polyTheme = (window as unknown as { PolyTheme?: { setDark?: (d: boolean) => void } }).PolyTheme;
       if (polyTheme?.setDark) {
         try {
-          polyTheme.setDark(isDarkMode);
+          polyTheme.setDark(isDark);
         } catch {
           /* swallow */
         }
@@ -195,11 +252,8 @@ export default function ThemeProvider({
     return () => {
       cancelled = true;
     };
-  }, [isDarkMode, isStandalonePwa]);
-
-  const toggleDarkMode = () => {
-    setIsDarkMode((prev) => !prev);
-  };
+    // systemDark: re-run when the device setting changes
+  }, [choice, systemDark, isStandalonePwa]);
 
   return (
     <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode, logoSrcs }}>
