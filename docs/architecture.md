@@ -108,7 +108,11 @@ The desktop header's "Submit" and drawer's "Get involved" links open
 `/get-involved`, a server-rendered hub
 for joining staff, submitting an op-ed/letter through `/submit`, and sending a
 news tip. Only the mutually exclusive native desk accordion and clipboard
-button need client components. The copy button selects the email text if
+button need client components. Desk rows animate their measured height over
+220ms on opening and closing, continuing from their current height on rapid
+clicks. Closing content is inert; reduced motion and width changes settle
+immediately. Native grouped details remain available without JavaScript.
+The copy button selects the email text if
 clipboard access fails. Meetings use the times/room already on `/contact`;
 update both pages if these change. Below 1024px, meetings appear first and
 native jump links remain visible. Desktop groups the staff introduction,
