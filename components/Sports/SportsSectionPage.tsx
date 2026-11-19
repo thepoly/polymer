@@ -553,7 +553,7 @@ export default function SportsSectionPage({
           {belowLead2 && <SportsWideCard article={belowLead2} flip />}
         </div>
 
-        <div className="flex flex-col gap-10 md:gap-5 lg:gap-0 lg:border-l lg:border-rule lg:pl-6">
+        <div className="flex flex-col md:gap-5 lg:gap-0 lg:border-l lg:border-rule lg:pl-6">
           {standings.length > 0 && (
             <div>
               <SportsStandings standings={standings} teams={standingsTeams} defaultSport={lead?.sport} />
