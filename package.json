@@ -14,6 +14,7 @@
     "test:search-limit": "playwright test --project=desktop-chromium tests/search-limit.spec.ts",
     "test:deploy-smoke": "node scripts/deploy-smoke.mjs",
     "test:unit": "vitest run",
+    "test:payload-cli": "node --test tests/payload-cli.test.mjs",
     "generate:types": "payload generate:types",
     "db:up": "docker compose up -d --wait db",
     "db:down": "docker compose down",

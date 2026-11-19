@@ -76,6 +76,7 @@ will prompt you to create the first admin user.
 | `pnpm test:search-limit` | Search query bounds test (desktop chromium) |
 | `pnpm test:deploy-smoke` | Manual post-deploy smoke (`scripts/deploy-smoke.mjs`) |
 | `pnpm generate:types` | Regenerate `payload-types.ts` after collection changes |
+| `pnpm test:payload-cli` | Verify the pinned Payload CLI backport without database access |
 | `pnpm exec payload migrate` | Run pending migrations |
 | `pnpm exec payload migrate:create <name>` | Scaffold a new migration |
 
@@ -114,6 +115,16 @@ exception limited to these files and this rule. Any future exception needs
 its own rationale rather than a blanket Dashboard or repository exclusion.
 
 ## Troubleshooting
+
+### Payload CLI exits without running migrations
+
+Payload 3.80.0 can exit 0 while its config import is unfinished because of
+Lexical's asynchronous Node entry points. The version-specific pnpm patch in
+[`patches/`](../patches/README.md) backports the upstream CLI resolver and
+unfinished-command exit handling. A normal `pnpm install --frozen-lockfile`
+applies it; `pnpm test:payload-cli` checks its behavior. Keep CI's `Done.`
+completion check. A Payload upgrade must explicitly retire the patch after
+compatibility and migration review.
 
 ### "missing secret key" on boot
 
