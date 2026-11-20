@@ -383,26 +383,32 @@ export function MobileMenuDrawer({
               onSubmit={() => { skipFocusReturnRef.current = true; onClose(); }}
             />
             <nav aria-label="About the paper">
-              <div className="mb-1.5 flex items-center gap-3 font-meta text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
+              <div className="mb-4 flex items-center gap-3 font-meta text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
                 The paper<span aria-hidden="true" className="h-px flex-1 bg-rule" />
               </div>
-              <div className="grid grid-cols-2 gap-x-3">
-              {secondaryNavItems.filter(item => item.label !== 'Submit').map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  onClick={(e) => followLink(e, item.href)}
-                  target={isExternalHref(item.href) ? '_blank' : undefined}
-                  rel={isExternalHref(item.href) ? 'noopener noreferrer' : undefined}
-                  className={`flex min-h-11 items-center font-meta text-[15px] font-medium text-text-main hover:text-accent ${focusStyle}`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-              </div>
-              <Link href="/get-involved" onClick={event => followLink(event, '/get-involved')} className={`group mt-1.5 flex min-h-11 items-center gap-2 font-meta text-[15px] font-semibold text-accent ${focusStyle}`}>
-                Get involved<ArrowRight aria-hidden="true" className="h-4 w-4 transition-transform group-hover:translate-x-[3px] motion-reduce:transition-none" />
+              <Link href="/get-involved" onClick={event => followLink(event, '/get-involved')} className={`group block border-b border-rule pb-4 ${focusStyle}`}>
+                <span className="flex items-center justify-between gap-3">
+                  <span className="font-copy text-[28px] font-semibold leading-[1.15] text-text-main group-hover:text-accent">Get involved</span>
+                  <ArrowRight aria-hidden="true" className="h-5 w-5 shrink-0 text-accent transition-transform group-hover:translate-x-[3px] motion-reduce:transition-none" />
+                </span>
+                <span className="mt-2 block font-meta text-[15px] font-medium leading-[1.4] text-text-muted">Join the staff, submit an op-ed, or send a tip.</span>
               </Link>
+              <ul className="mt-2 flex items-center justify-between gap-1 font-meta text-[clamp(10px,3vw,13px)] font-semibold uppercase tracking-[0.06em]">
+                {secondaryNavItems.filter(item => item.label !== 'Submit').map((item, index) => (
+                  <li key={item.label} className="flex items-center gap-1.5">
+                    {index > 0 && <span aria-hidden="true" className="text-text-muted">·</span>}
+                    <Link
+                      href={item.href}
+                      onClick={(e) => followLink(e, item.href)}
+                      target={isExternalHref(item.href) ? '_blank' : undefined}
+                      rel={isExternalHref(item.href) ? 'noopener noreferrer' : undefined}
+                      className={`flex min-h-11 items-center whitespace-nowrap text-text-main hover:text-accent ${focusStyle}`}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </nav>
         </div>
         <div className="safe-area-mobile-drawer-footer mt-auto flex shrink-0 flex-col gap-3.5 pt-[22px]">

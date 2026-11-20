@@ -79,7 +79,11 @@ Both tablet text links return to the section page. The burger opens the same
 modal dialog with a visible close button, section descriptions/current-section
 marker in rows with 12px vertical padding and a 72px minimum height,
 archive search, paper links, `/get-involved` link, dark-mode switch
-and colophon. Phone width is min(86vw, 360px); tablets use 380px. Changing the
+and colophon. The paper group leads with a large Get involved link, accent
+arrow and "Join the staff, submit an op-ed, or send a tip." description. A rule
+separates it from one row of uppercase About, Archives, Staff and Contact links,
+with decorative dot separators and 44px-tall targets. The row's type scales
+to fit narrow phones. Phone width is min(86vw, 360px); tablets use 380px. Changing the
 theme keeps the drawer open, preserving its focus, scroll position and page
 isolation. During a circular theme reveal with the drawer open, the page's
 view-transition layer supplies a steady 4px blur directly, avoiding browser
