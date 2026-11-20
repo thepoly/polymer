@@ -81,7 +81,17 @@ marker in rows with 12px vertical padding and a 72px minimum height,
 archive search, paper links, `/get-involved` link, dark-mode switch
 and colophon. Phone width is min(86vw, 360px); tablets use 380px. Changing the
 theme keeps the drawer open, preserving its focus, scroll position and page
-isolation. Its search uses the same `UnderlinedSearchForm` as section-page
+isolation. During a circular theme reveal with the drawer open, the page's
+view-transition layer supplies a steady 4px blur directly, avoiding browser
+bugs that omit backdrop filters from snapshots. The backdrop's own blur is
+disabled only during that capture/animation so it is not applied twice;
+its dimming remains. Live blur resumes immediately afterward to avoid an
+unblurred frame during the handoff; the backdrop's dimming still fades.
+The panel captures separately to stay sharp and follows
+the same circular reveal. Only the open panel claims a transition name, so
+photofeature hero and tablet triggers coexist. Without view transitions, the
+existing color fade retains the live backdrop blur.
+Its search uses the same `UnderlinedSearchForm` as section-page
 footers: a typing field, accent underline and rainbow wave, submitting a GET
 request to `/search`.
 Drawer searches are site-wide; section footers retain their section filter.

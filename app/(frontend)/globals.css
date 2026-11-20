@@ -474,19 +474,39 @@ h6.font-display.italic {
 /* ── Theme circle-reveal transition ── */
 
 ::view-transition-old(root),
-::view-transition-new(root) {
+::view-transition-new(root),
+::view-transition-old(drawer-panel),
+::view-transition-new(drawer-panel) {
   animation: none;
   mix-blend-mode: normal;
 }
 
-::view-transition-old(root) {
+::view-transition-old(root),
+::view-transition-old(drawer-panel) {
   z-index: 1;
 }
 
-::view-transition-new(root) {
+::view-transition-new(root),
+::view-transition-new(drawer-panel) {
   z-index: 2;
   clip-path: circle(0px at var(--theme-x, 50%) var(--theme-y, 50%));
   animation: theme-circle-reveal 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Blur the page's animation layer directly: some browsers omit backdrop
+   filters from snapshots. Its captured backdrop still supplies the dimming.
+   Disable that backdrop's own blur while capturing to avoid blurring twice. */
+.theme-switching [data-mobile-menu-open] [data-mobile-menu-backdrop] {
+  backdrop-filter: none !important;
+}
+
+:root.theme-switching:has([data-mobile-menu-open])::view-transition-group(root) {
+  filter: blur(4px);
+}
+
+::view-transition-group(drawer-panel) {
+  z-index: 2;
+  animation: none;
 }
 
 @keyframes theme-circle-reveal {

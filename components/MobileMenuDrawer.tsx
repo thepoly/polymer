@@ -317,9 +317,13 @@ export function MobileMenuDrawer({
 
   const drawer = (
     <div ref={rootRef} data-mobile-menu-open={showDrawer ? '' : undefined} className={`fixed inset-0 z-[60] ${className ?? 'lg:hidden'} ${showDrawer ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+      {/* The page snapshots supply blur during theme transitions; the open
+          panel has its own sharp layer. Other article triggers stay unnamed.
+          Blur resumes immediately afterward; only the dimming fades. */}
       <div
+        data-mobile-menu-backdrop=""
         aria-hidden="true"
-        className="absolute inset-0 transition-[background-color,backdrop-filter] duration-[220ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none"
+        className="absolute inset-0 transition-colors duration-[220ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none"
         style={{
           backgroundColor: `rgba(0,0,0,${0.4 * progress})`,
           backdropFilter: progress > 0 ? `blur(${Math.min(4, 4 * progress)}px)` : 'none',
@@ -341,6 +345,7 @@ export function MobileMenuDrawer({
         className={`absolute top-0 left-0 bottom-0 flex w-[86vw] max-w-[360px] flex-col overflow-y-auto overscroll-contain bg-bg-main will-change-transform md:w-[380px] md:max-w-[380px] transition-transform duration-[220ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none ${showDrawer ? 'shadow-[0_0_0_1px_var(--rule-color),12px_0_40px_rgba(0,0,0,0.18)]' : ''}`}
         style={{
           transform: `translate3d(${translateX}, 0, 0)`,
+          viewTransitionName: isOpen ? 'drawer-panel' : undefined,
           transition: dragX !== null ? 'none' : undefined,
         }}
       >
