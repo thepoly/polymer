@@ -27,7 +27,7 @@ export default function GetInvolvedPage() {
   return (
     <div className="min-h-screen bg-bg-main text-text-main">
       <Header />
-      <main data-get-involved-page className="mx-auto w-full max-w-[1280px] px-5 pb-0 pt-8 md:px-6 md:pb-16 md:pt-12 lg:pb-3 xl:px-[30px]">
+      <main data-get-involved-page className="mx-auto w-full max-w-[1280px] px-5 pb-0 pt-8 md:px-6 md:pb-3 md:pt-12 xl:px-[30px]">
         <style>{`
           @media (prefers-reduced-motion: no-preference) {
             html:has([data-get-involved-page]) { scroll-behavior: smooth; }
@@ -87,7 +87,7 @@ export default function GetInvolvedPage() {
           </section>
 
           <div className="grid min-w-0 grid-cols-1">
-            <section id="opinion" aria-labelledby="opinion-heading" className="min-w-0 scroll-mt-24 py-8 md:py-10 lg:pt-6">
+            <section id="opinion" aria-labelledby="opinion-heading" className="min-w-0 scroll-mt-24 pb-0 pt-8 md:pt-10 lg:pt-6">
               <PathLabel>Submit an op-ed or letter</PathLabel>
               <h2 id="opinion-heading" className="mb-[18px] mt-4 font-copy text-[30px] font-normal leading-[1.1] md:text-[34px]">Share your view</h2>
               <p className="font-copy text-[18px] leading-[1.55]">Our editors review every submission and will be in touch.</p>
@@ -104,7 +104,7 @@ export default function GetInvolvedPage() {
               <Link href="/submit" className={`mt-6 ${primaryStyle}`}>Start a submission<ArrowRight aria-hidden="true" className="h-4 w-4" /></Link>
             </section>
 
-            <section id="tip" aria-labelledby="tip-heading" className="min-w-0 scroll-mt-24 border-t border-rule pb-3 pt-8 md:py-10 lg:pb-0">
+            <section id="tip" aria-labelledby="tip-heading" className="min-w-0 scroll-mt-24 pb-0 pt-6">
               <PathLabel>Send a news tip</PathLabel>
               <h2 id="tip-heading" className="mb-[18px] mt-4 font-copy text-[30px] font-normal leading-[1.1] md:text-[34px]">Seen something newsworthy?</h2>
               <div className="flex flex-wrap items-center gap-3 bg-[var(--opinions-choice-bg)] p-5">
@@ -113,7 +113,7 @@ export default function GetInvolvedPage() {
               </div>
             </section>
 
-            <div className="mt-10 grid grid-cols-1 gap-8 border-t border-rule-strong pt-6 sm:grid-cols-2 lg:mt-6">
+            <div className="mt-6 grid grid-cols-1 gap-8 border-t border-rule-strong pt-6 sm:grid-cols-2">
               <div className="min-w-0">
                 <h3 className="font-copy text-[22px] font-normal leading-[1.15]">Running an event?</h3>
                 <p className="mt-2 font-copy text-[16px] leading-[1.45] text-text-muted">Send the details to the Features desk.</p>

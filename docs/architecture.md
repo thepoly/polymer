@@ -122,11 +122,12 @@ the header container. Below 1024px, the title scales to fit on one line and
 the path index uses larger links; the staff section has no trailing divider.
 Desktop retains its 76px title with balanced wrapping, without a hero divider,
 and uses a 24px gap before the column labels.
-Desktop also leaves just 24px between the taller column's content and the
-footer rule.
+Tablet and desktop leave 24px between the final content and the footer rule.
+The news-tip section has no top divider and starts 24px after the submission
+button, preserving the short hairline beside its label.
 An events/advertising block follows news tips, stacking below 640px. It shows
 `features@poly.rpi.edu` for event details and `business@poly.rpi.edu` for ads;
-both reuse the copy control with distinct accessible labels. On desktop,
+both reuse the copy control with distinct accessible labels. At all widths,
 the block's rule sits 24px below the news email box.
 Jump-link smooth scrolling is disabled for reduced motion.
 Metadata is static and the route is included in the sitemap; no SEO schema or
