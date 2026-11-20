@@ -8,6 +8,7 @@ import { formatRelativeTime } from '@/components/LiveArticle/relativeTime';
 import { troyDay, TROY_TIME_ZONE } from '@/lib/troyTime';
 
 const TABLET_QUERY = '(min-width: 768px) and (max-width: 1023px)';
+const PHONE_QUERY = '(max-width: 767px)';
 const sections = ['news', 'features', 'opinion', 'sports'];
 type LatestArticle = {
   href: string;
@@ -20,13 +21,13 @@ type LatestArticle = {
 let cached: { expires: number; articles: LatestArticle[] } | undefined;
 let pending: Promise<LatestArticle[]> | undefined;
 
-function subscribeToTablet(callback: () => void) {
-  const media = window.matchMedia(TABLET_QUERY);
-  media.addEventListener('change', callback);
-  return () => media.removeEventListener('change', callback);
+function subscribeToViewport(callback: () => void) {
+  const queries = [PHONE_QUERY, TABLET_QUERY].map(query => window.matchMedia(query));
+  queries.forEach(media => media.addEventListener('change', callback));
+  return () => queries.forEach(media => media.removeEventListener('change', callback));
 }
-const isTablet = () => window.matchMedia(TABLET_QUERY).matches;
-const serverSnapshot = () => false;
+const articleCount = () => window.matchMedia(TABLET_QUERY).matches ? 3 : window.matchMedia(PHONE_QUERY).matches ? 1 : 0;
+const serverSnapshot = () => 0;
 
 function publicationLabel(date: Date, now: Date) {
   const day = troyDay(date);
@@ -95,25 +96,25 @@ export default function DrawerLatestArticles({ isOpen, onLinkClick }: {
   isOpen: boolean;
   onLinkClick: (event: MouseEvent<HTMLAnchorElement>, href: string) => void;
 }) {
-  const tablet = useSyncExternalStore(subscribeToTablet, isTablet, serverSnapshot);
+  const count = useSyncExternalStore(subscribeToViewport, articleCount, serverSnapshot);
   const [articles, setArticles] = useState<LatestArticle[]>([]);
 
   useEffect(() => {
-    if (!isOpen || !tablet) return;
+    if (!isOpen || count === 0) return;
     let active = true;
     void loadLatest().then(items => { if (active) setArticles(items); }).catch(() => {
       // Keep navigation available if the optional latest feed cannot load.
     });
     return () => { active = false; };
-  }, [isOpen, tablet]);
+  }, [isOpen, count]);
 
-  if (!tablet || articles.length === 0) return null;
+  if (count === 0 || articles.length === 0) return null;
   return (
-    <section aria-label="Latest articles" className="hidden pb-2 md:block lg:hidden">
+    <section aria-label="Latest articles" className="pb-2 lg:hidden">
       <h2 className="mb-2 flex items-center gap-3 font-meta text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
         Latest<span aria-hidden="true" className="h-px flex-1 bg-rule" />
       </h2>
-      {articles.map(article => (
+      {articles.slice(0, count).map(article => (
         <Link
           key={article.href}
           href={article.href}

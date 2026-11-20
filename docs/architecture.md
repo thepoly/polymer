@@ -86,13 +86,13 @@ request to `/search`.
 Drawer searches are site-wide; section footers retain their section filter.
 Submitting closes the drawer without returning focus to the menu trigger.
 The panel scrolls on short screens, with its footer last and split safe-area padding.
-At tablet widths, its lower area includes the three latest published stories
+Its lower area includes one latest published story on phones and three on tablets,
 across all sections, with section labels, regular-weight headlines and dates
-in Troy's time zone. The optional feed loads when a tablet drawer opens, using
+in Troy's time zone. The optional feed loads when a phone or tablet drawer opens, using
 the public collection API without credentials and selecting only summary
 fields. Requests are shared/cached for one minute; future/invalid items are
 excluded, and an empty or unavailable feed leaves the navigation usable.
-Phones neither display nor request this list. Story links close the modal.
+Both sizes share the feed cache. Story links close the modal.
 Opening moves focus inside; Tab stays in the dialog and the page behind is
 inert. Close restores prior inert/scroll state and focus, except when following
 a link or opening search. The 220ms swipe/slide uses the rendered panel width;
