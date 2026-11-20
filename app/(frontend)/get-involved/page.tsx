@@ -104,7 +104,7 @@ export default function GetInvolvedPage() {
               <Link href="/submit" className={`mt-6 ${primaryStyle}`}>Start a submission<ArrowRight aria-hidden="true" className="h-4 w-4" /></Link>
             </section>
 
-            <section id="tip" aria-labelledby="tip-heading" className="min-w-0 scroll-mt-24 border-t border-rule pb-3 pt-8 md:py-10">
+            <section id="tip" aria-labelledby="tip-heading" className="min-w-0 scroll-mt-24 border-t border-rule pb-3 pt-8 md:py-10 lg:pb-0">
               <PathLabel>Send a news tip</PathLabel>
               <h2 id="tip-heading" className="mb-[18px] mt-4 font-copy text-[30px] font-normal leading-[1.1] md:text-[34px]">Seen something newsworthy?</h2>
               <div className="flex flex-wrap items-center gap-3 bg-[var(--opinions-choice-bg)] p-5">
@@ -113,7 +113,7 @@ export default function GetInvolvedPage() {
               </div>
             </section>
 
-            <div className="mt-10 grid grid-cols-1 gap-8 border-t border-rule-strong pt-6 sm:grid-cols-2">
+            <div className="mt-10 grid grid-cols-1 gap-8 border-t border-rule-strong pt-6 sm:grid-cols-2 lg:mt-6">
               <div className="min-w-0">
                 <h3 className="font-copy text-[22px] font-normal leading-[1.15]">Running an event?</h3>
                 <p className="mt-2 font-copy text-[16px] leading-[1.45] text-text-muted">Send the details to the Features desk.</p>

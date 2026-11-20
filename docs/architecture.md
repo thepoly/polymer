@@ -126,7 +126,8 @@ Desktop also leaves just 24px between the taller column's content and the
 footer rule.
 An events/advertising block follows news tips, stacking below 640px. It shows
 `features@poly.rpi.edu` for event details and `business@poly.rpi.edu` for ads;
-both reuse the copy control with distinct accessible labels.
+both reuse the copy control with distinct accessible labels. On desktop,
+the block's rule sits 24px below the news email box.
 Jump-link smooth scrolling is disabled for reduced motion.
 Metadata is static and the route is included in the sitemap; no SEO schema or
 submission/contact/staff behavior changes are required.
