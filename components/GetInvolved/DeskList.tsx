@@ -4,13 +4,11 @@ import { useEffect, useRef } from 'react';
 import { Minus, Plus } from 'lucide-react';
 
 const desks = [
-  { name: 'News', summary: 'Reporting on RPI and Troy', body: 'Student government, administration, and campus and Troy news.', email: 'news@poly.rpi.edu' },
-  { name: 'Features', summary: 'Profiles, culture, events', body: 'Profiles, clubs, arts and the events calendar.', email: 'features@poly.rpi.edu' },
-  { name: 'Sports', summary: 'Game coverage, athletes', body: 'Game recaps, previews and athlete profiles.', email: 'sports@poly.rpi.edu' },
-  { name: 'Opinion', summary: 'Columns and editorials', body: 'Regular columns and staff editorials.', email: 'edop@poly.rpi.edu' },
+  { name: 'News', summary: 'Student government and admin', body: 'Cover Senate and E-Board meetings, interview administrators, and chase breaking news.', email: 'news@poly.rpi.edu' },
+  { name: 'Features', summary: 'Arts, events, and Troy', body: 'Write about campus and club events, cover concerts, or find the best coffee in Troy.', email: 'features@poly.rpi.edu' },
+  { name: 'Sports', summary: 'Game coverage, athletes', body: 'Recap games, preview matchups and follow the Engineers through the season.', email: 'sports@poly.rpi.edu' },
+  { name: 'Opinion', summary: 'Editorials and essays', body: "Take a position on campus issues, review what you're reading or watching, or write for the Editorial Notebook.", email: 'edop@poly.rpi.edu' },
   { name: 'Photo', summary: 'Assignments and galleries', body: 'Games, events and portraits for stories and galleries.', email: 'photo@poly.rpi.edu' },
-  { name: 'Copy', summary: 'Editing and headlines', body: 'Edit every story for accuracy and style, and write headlines.', email: 'editors@poly.rpi.edu' },
-  { name: 'Business', summary: 'Ads and budget', body: 'Advertising, budget and outreach.', email: 'business@poly.rpi.edu' },
 ];
 
 export default function DeskList() {
