@@ -77,7 +77,8 @@ scrolling they show a burger menu on the left and centered `Section | Title`.
 Both tablet text links return to the section page. The burger opens the same
 `MobileMenuDrawer` as the mobile header and photofeature hero. It is a portalled
 modal dialog with a visible close button, section descriptions/current-section
-marker, archive search, paper links, `/get-involved` link, dark-mode switch
+marker in rows with 12px vertical padding and a 72px minimum height,
+archive search, paper links, `/get-involved` link, dark-mode switch
 and colophon. Phone width is min(86vw, 360px); tablets use 380px. Changing the
 theme keeps the drawer open, preserving its focus, scroll position and page
 isolation. Its search uses the same `UnderlinedSearchForm` as section-page

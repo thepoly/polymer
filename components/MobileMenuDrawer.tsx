@@ -361,7 +361,7 @@ export function MobileMenuDrawer({
                   href={item.href}
                   onClick={(e) => followLink(e, item.href)}
                   aria-current={activeSectionHref === item.href ? 'page' : undefined}
-                  className={`group relative flex min-h-[60px] items-center justify-between gap-3 border-b border-rule py-[7px] pr-1 text-text-main last:border-b-0 ${focusStyle}`}
+                  className={`group relative flex min-h-[72px] items-center justify-between gap-3 border-b border-rule py-3 pr-1 text-text-main last:border-b-0 ${focusStyle}`}
                 >
                   <span>
                     <span className={`block font-copy text-[27px] leading-none group-hover:text-accent ${activeSectionHref === item.href ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
