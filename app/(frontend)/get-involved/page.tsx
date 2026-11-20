@@ -116,10 +116,11 @@ export default function GetInvolvedPage() {
             <div className="mt-10 grid grid-cols-1 gap-8 border-t border-rule-strong pt-6 sm:grid-cols-2">
               <div className="min-w-0">
                 <h3 className="font-copy text-[22px] font-normal leading-[1.15]">Running an event?</h3>
-                <p className="mt-2 font-copy text-[16px] leading-[1.45] text-text-muted">Add it to the Features calendar.</p>
-                <Link href="/features/submit-event" className={`mt-3 inline-flex min-h-11 items-center gap-2 font-meta text-[13px] font-semibold text-accent ${focusStyle}`}>
-                  <span className="border-b border-accent">Submit an event</span><ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
-                </Link>
+                <p className="mt-2 font-copy text-[16px] leading-[1.45] text-text-muted">Send the details to the Features desk.</p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <span id="get-involved-events-email" className="select-all font-copy text-[18px]">features@poly.rpi.edu</span>
+                  <CopyButton value="features@poly.rpi.edu" targetId="get-involved-events-email" label="Copy Features desk email address" />
+                </div>
               </div>
               <div className="min-w-0">
                 <h3 className="font-copy text-[22px] font-normal leading-[1.15]">Advertise with The Poly</h3>

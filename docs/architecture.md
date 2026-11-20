@@ -124,10 +124,9 @@ Desktop retains its 76px title with balanced wrapping, without a hero divider,
 and uses a 24px gap before the column labels.
 Desktop also leaves just 24px between the taller column's content and the
 footer rule.
-An events/advertising block follows news tips, stacking below 640px. The
-advertising address reuses the copy control with its own accessible label.
-The event link uses `/features/submit-event`, which currently redirects to
-Features because the earlier event form was removed.
+An events/advertising block follows news tips, stacking below 640px. It shows
+`features@poly.rpi.edu` for event details and `business@poly.rpi.edu` for ads;
+both reuse the copy control with distinct accessible labels.
 Jump-link smooth scrolling is disabled for reduced motion.
 Metadata is static and the route is included in the sitemap; no SEO schema or
 submission/contact/staff behavior changes are required.
