@@ -118,8 +118,10 @@ update both pages if these change. Below 1024px, meetings appear first and
 native jump links remain visible. Desktop groups the staff introduction,
 meeting times and desk list in the left column, with op-ed submissions and
 news tips stacked in the right column. From 768px, the content aligns with
-the header container. Below 1024px, the title scales to fit on one line and
-the path index uses larger links; the staff section has no trailing divider.
+the header container. Below 1024px, the title stays on one line at 26–30px on
+phones and 40–44px on tablets, with 24px below the date strip and 20px before
+its divider. The path index uses 16px text and 44px tap targets with compact
+padding; the staff section has no trailing divider.
 Desktop retains its 76px title with balanced wrapping, without a hero divider,
 and uses a 24px gap before the column labels.
 Tablet and desktop leave 24px between the final content and the footer rule.

@@ -26,24 +26,24 @@ function PathLabel({ children }: { children: string }) {
 export default function GetInvolvedPage() {
   return (
     <div className="min-h-screen bg-bg-main text-text-main">
-      <Header />
-      <main data-get-involved-page className="mx-auto w-full max-w-[1280px] px-5 pb-0 pt-8 md:px-6 md:pb-3 md:pt-12 xl:px-[30px]">
+      <Header flushMobileBottom />
+      <main data-get-involved-page className="mx-auto w-full max-w-[1280px] px-5 pb-0 pt-6 md:px-6 md:pb-3 lg:pt-12 xl:px-[30px]">
         <style>{`
           @media (prefers-reduced-motion: no-preference) {
             html:has([data-get-involved-page]) { scroll-behavior: smooth; }
           }
         `}</style>
-        <div className="border-b border-rule-strong pb-8 md:pb-10 lg:border-b-0 lg:pb-0">
-          <h1 className="font-copy text-[clamp(24px,8vw,72px)] font-normal leading-[0.95] tracking-[-0.02em] lg:text-[76px] lg:text-balance">Get involved with The Poly</h1>
+        <div className="border-b border-rule-strong pb-5 lg:border-b-0 lg:pb-0">
+          <h1 className="font-copy text-[clamp(26px,7.2vw,30px)] font-normal leading-[0.95] tracking-[-0.02em] md:text-[clamp(40px,5.4vw,44px)] lg:text-[76px] lg:text-balance">Get involved with The Poly</h1>
         </div>
 
-        <nav aria-label="Get involved paths" className="border-b border-rule py-4 lg:hidden">
+        <nav aria-label="Get involved paths" className="border-b border-rule py-1 lg:hidden">
           {[
             { label: 'Join the staff', href: '#join' },
             { label: 'Submit an op-ed or letter', href: '#opinion' },
             { label: 'Send a news tip', href: '#tip' },
           ].map(path => (
-            <a key={path.href} href={path.href} className={`flex min-h-11 items-center justify-between gap-3 font-meta text-[16px] font-semibold text-text-main hover:text-accent md:text-[18px] ${focusStyle}`}>
+            <a key={path.href} href={path.href} className={`flex min-h-11 items-center justify-between gap-3 font-meta text-[16px] font-semibold text-text-main hover:text-accent ${focusStyle}`}>
               {path.label}<ArrowDown aria-hidden="true" className="h-4 w-4 shrink-0" />
             </a>
           ))}
