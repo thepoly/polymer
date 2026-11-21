@@ -8,7 +8,7 @@ import { NEWS_TOPICS, TOPIC_CARDS, topicOf, type NewsTopicKey } from '@/componen
  * Newest published news stories for each topic row on /news, from the whole
  * archive (no date window), so a topic that's quiet lately still fills.
  * Returns a few more than a row shows, so the page can skip stories already
- * placed higher up and still have six.
+ * placed higher up and still fill the four tablet cards (three elsewhere).
  */
 export async function getNewsTopicArticles(
   payload: Payload,
@@ -17,7 +17,7 @@ export async function getNewsTopicArticles(
     NewsTopicKey,
     ComponentArticle[]
   >
-  // Enough that stories above the row can be skipped and six still remain
+  // Enough that stories above the row can be skipped and four still remain
   const perTopic = TOPIC_CARDS + 12
   const sets = await Promise.all(NEWS_TOPICS.map((topic) => collectPages((page) => payload.find({
     collection: 'articles',

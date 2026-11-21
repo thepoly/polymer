@@ -18,7 +18,7 @@ it needs a code change or a deploy.
 | Lead story | Two thirds of the width, kicker, headline and byline north / south / east / west of the photo, or over it; no subdeck | Pinned in the News Layout editor; otherwise the newest news story with a photo |
 | Stories under the lead | Full-width strips: kicker, headline and byline on the left, the story's photo on the right, as tall as the text beside it (16:10 at the shortest, square at the tallest); no subdeck (text only if the story has no photo, or if the News Layout editor's Photos switch is off) | Pinned in the News Layout editor (two slots); an empty slot takes the next newest news story. Two when the lead's text is beside its photo, one when it's over the photo. With the text above or below the photo, one only if the lead ends well short of the Student Government column (even if the strip then runs past it, when that column can grow to meet it) |
 | Student Government column | A Senate box and an Executive Board box, in either order | Each box: the latest 2 or 3 timeline entries, or one pinned article |
-| Topic row | Directly under the opening columns: four headers (Administration, Academia, Campus Infrastructure, Interview); clicking one swipes in its six newest stories, 3×2 on computers | Stories whose kicker is in that topic's list in [`components/News/newsTopics.ts`](../components/News/newsTopics.ts), any capitalisation, from the whole archive, skipping anything shown above, unless the editor chose that tab's stories (News Layout editor, Topic row → Stories). Opens on the first topic with stories. [`components/News/NewsTopicTabs.tsx`](../components/News/NewsTopicTabs.tsx) |
+| Topic row | Directly under the opening columns: four headers (Administration, Academia, Campus Infrastructure, Interview); clicking one swipes in its three newest stories on phones and desktops, or four in a 2×2 grid on tablets (768–1023px) | Stories whose kicker is in that topic's list in [`components/News/newsTopics.ts`](../components/News/newsTopics.ts), any capitalisation, from the whole archive, skipping anything shown above, unless the editor chose that tab's stories (News Layout editor, Topic row → Stories). Opens on the first topic with stories. [`components/News/NewsTopicTabs.tsx`](../components/News/NewsTopicTabs.tsx) |
 
 On computers the two columns are squared off to end on the same line
 ([`BalanceColumns`](fit-text.md#balancecolumns-two-columns-that-end-together)).
@@ -206,11 +206,13 @@ not reserve stories or remove them from automatic secondary or topic picks.
 photo**. Under the photo adds a second choice, **Subdeck**: show or hide it
 under the byline.
 
-**Stories** (`topicPicks`): per topic tab, **Six newest** (the default) or
-**Choose stories**, which shows six slots to drop articles into, in card
-order. Any news story can be chosen, whatever its kicker, and a chosen story
+**Stories** (`topicPicks`): per topic tab, **Newest stories** (the default) or
+**Choose stories**, which shows four slots to drop articles into, in card
+order. Phones and desktops show the first three available stories; tablets
+(768–1023px) show up to four. Any news story can be
+chosen, whatever its kicker, and a chosen story
 shows even if it's also higher up the page. An empty slot takes the next
-newest story in that topic. Switching back to Six newest keeps the picks, so
+newest story in that topic. Switching back to Newest stories keeps the picks, so
 switching to Choose stories again restores them.
 
 Save with **Activate**. Editor:
@@ -425,7 +427,8 @@ live in the `news_page_layout` jsonb.
   column, a Faculty Senate story) for exercising the finder. Local only.
 - `pnpm db:seed:news-topics` ([`scripts/seed-news-topics.ts`](../scripts/seed-news-topics.ts))
   adds seven placeholder stories per topic in the topic row, backdated 3 to
-  15 weeks, so every topic fills its six cards. Needs `pnpm db:seed` first.
+  15 weeks, so every topic fills its four tablet cards (three on phones and
+  desktops). Needs `pnpm db:seed` first.
   Safe to re-run. Local only.
 
 ## Known gaps and follow-ups

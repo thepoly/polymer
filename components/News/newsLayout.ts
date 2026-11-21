@@ -164,7 +164,7 @@ export type NewsLayout = {
   featured?: (number | null)[];
   /** Topic row card style */
   topicCards?: TopicCardStyle;
-  /** Per topic tab: the six newest, or stories the editor chose */
+  /** Per topic tab: newest or chosen stories; fourth slot is tablet-only. */
   topicPicks?: Partial<Record<NewsTopicKey, TopicPicks>>;
   /**
    * Senate and Executive Board bullets as larger headlines with no summary
