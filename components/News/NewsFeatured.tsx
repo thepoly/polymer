@@ -103,22 +103,3 @@ export function OverlayCard({ article, sizes }: { article: ComponentArticle; siz
     </TransitionLink>
   );
 }
-
-/**
- * "Featured" row under the top block of /news: up to four stories side by
- * side (two across on tablets, one on phones), with no heading or rule
- * above. Stories are pinned in the News Layout
- * editor; empty slots take the newest stories with photos.
- */
-export default function NewsFeatured({ articles }: { articles: ComponentArticle[] }) {
-  if (articles.length === 0) return null;
-  return (
-    <section aria-label="Featured" className="mt-10 lg:mt-12">
-      <div className="grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
-        {articles.map((article) => (
-          <FeaturedCard key={article.id} article={article} />
-        ))}
-      </div>
-    </section>
-  );
-}

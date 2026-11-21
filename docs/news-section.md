@@ -14,12 +14,11 @@ it needs a code change or a deploy.
 
 | Part | What it shows | Where the data comes from |
 | --- | --- | --- |
-| Header | Section title, Archive link, Contact link (emails `news@` and `eic@`) | [`components/News/NewsPage.tsx`](../components/News/NewsPage.tsx) |
-| Lead story | Two thirds of the width, text north / south / east / west of the photo, or over it | Pinned in the News Layout editor; otherwise the newest news story with a photo |
-| Stories under the lead | Full-width strips: kicker, headline, byline and subdeck on the left, the story's photo on the right, as tall as the text beside it (16:10 at the shortest, square at the tallest), so a short subdeck leaves no gap under it (text only if the story has no photo, or if the News Layout editor's Photos switch is off) | Pinned in the News Layout editor (two slots); an empty slot takes the next newest news story. Two when the lead's text is beside its photo, one when it's over the photo. With the text above or below the photo, one only if the lead ends well short of the Student Government column (even if the strip then runs past it, when that column can grow to meet it) |
+| Heading and search | Screen-reader-only News heading at every width; search, Archive and Contact links (emails `news@` and `eic@`) at the foot | [`components/News/NewsPage.tsx`](../components/News/NewsPage.tsx) |
+| Lead story | Two thirds of the width, kicker, headline and byline north / south / east / west of the photo, or over it; no subdeck | Pinned in the News Layout editor; otherwise the newest news story with a photo |
+| Stories under the lead | Full-width strips: kicker, headline and byline on the left, the story's photo on the right, as tall as the text beside it (16:10 at the shortest, square at the tallest); no subdeck (text only if the story has no photo, or if the News Layout editor's Photos switch is off) | Pinned in the News Layout editor (two slots); an empty slot takes the next newest news story. Two when the lead's text is beside its photo, one when it's over the photo. With the text above or below the photo, one only if the lead ends well short of the Student Government column (even if the strip then runs past it, when that column can grow to meet it) |
 | Student Government column | A Senate box and an Executive Board box, in either order | Each box: the latest 2 or 3 timeline entries, or one pinned article |
-| Featured row | Under the two columns, full width: four cards with photo, headline, byline and subdeck (two across on tablets, one on phones) | Pinned in the News Layout editor (four slots); an empty slot takes the next newest news story with a photo. [`components/News/NewsFeatured.tsx`](../components/News/NewsFeatured.tsx) |
-| Topic row | Under Featured: four headers (Administration, Academia, Campus Infrastructure, Interview); clicking one swipes in its six newest stories, 3×2 on computers | Stories whose kicker is in that topic's list in [`components/News/newsTopics.ts`](../components/News/newsTopics.ts), any capitalisation, from the whole archive, skipping anything shown above, unless the editor chose that tab's stories (News Layout editor, Topic row → Stories). Opens on the first topic with stories. [`components/News/NewsTopicTabs.tsx`](../components/News/NewsTopicTabs.tsx) |
+| Topic row | Directly under the opening columns: four headers (Administration, Academia, Campus Infrastructure, Interview); clicking one swipes in its six newest stories, 3×2 on computers | Stories whose kicker is in that topic's list in [`components/News/newsTopics.ts`](../components/News/newsTopics.ts), any capitalisation, from the whole archive, skipping anything shown above, unless the editor chose that tab's stories (News Layout editor, Topic row → Stories). Opens on the first topic with stories. [`components/News/NewsTopicTabs.tsx`](../components/News/NewsTopicTabs.tsx) |
 
 On computers the two columns are squared off to end on the same line
 ([`BalanceColumns`](fit-text.md#balancecolumns-two-columns-that-end-together)).
@@ -198,10 +197,9 @@ lead's text is beside its photo, and each slot's label says whether the
 current text position shows it. A story pinned here that is also the lead is
 skipped.
 
-**Featured**: four slots, left to right, for the Featured row (`featured`).
-An empty slot takes the next newest story with a photo. No story appears
-twice on the page: a story pinned to Featured is kept out of the automatic
-picks under the lead, and automatic Featured picks skip everything above.
+The former four-card Featured row and its editor controls have been removed.
+Saved `featured` pins are retained in the layout JSON but ignored: they do
+not reserve stories or remove them from automatic secondary or topic picks.
 
 **Topic row**: how the topic row's cards look (`topicCards`). Headlines
 **Over the photo** (white on a dark gradient; the default) or **Under the

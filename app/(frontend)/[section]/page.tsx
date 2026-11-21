@@ -9,7 +9,6 @@ import NewsPage from '@/components/News/NewsPage';
 import {
   DEFAULT_LEAD_TEXT_POSITION,
   isLeadTextPosition,
-  normalizeFeatured,
   normalizeLeadFrame,
   normalizeSecondary,
   normalizeTopicCards,
@@ -360,9 +359,7 @@ export default async function SectionPageRoute({ params }: Args) {
   let newsLeadFrame: LeadFrame | null = null;
   // Stories pinned under the lead, by slot; null where nothing is pinned or the pin is unpublished
   let newsSecondaryPins: (ComponentArticle | null)[] = [];
-  // Stories pinned in the Featured row, by slot
-  let newsFeaturedPins: (ComponentArticle | null)[] = [];
-  // Tabbed topic row under Featured
+  // Tabbed topic row directly under the opening columns
   let newsTopics: Record<NewsTopicKey, ComponentArticle[]> | null = null;
   let newsTopicCards = normalizeTopicCards(null);
   // Topic tabs the editor chose stories for, by slot; other tabs show the newest
@@ -388,7 +385,6 @@ export default async function SectionPageRoute({ params }: Args) {
       }
       newsLeadFrame = normalizeLeadFrame(layoutJson?.leadFrame);
       const secondaryIds = normalizeSecondary(layoutJson?.secondary);
-      const featuredIds = normalizeFeatured(layoutJson?.featured);
       newsTopicCards = normalizeTopicCards(layoutJson?.topicCards);
       const topicPicks = normalizeTopicPicks(layoutJson?.topicPicks);
       const manualTopics = NEWS_TOPICS.filter((t) => topicPicks[t.key].manual).map((t) => t.key);
@@ -396,13 +392,12 @@ export default async function SectionPageRoute({ params }: Args) {
       newsSecondaryPhotos = layoutJson?.secondaryPhotos !== false;
       const pinnedById = await getArticlesById(
         payload,
-        [...secondaryIds, ...featuredIds, ...manualTopics.flatMap((key) => topicPicks[key].articles)].filter(
+        [...secondaryIds, ...manualTopics.flatMap((key) => topicPicks[key].articles)].filter(
           (id): id is number => id !== null,
         ),
       );
       const pinnedOrNull = (id: number | null) => (id !== null ? pinnedById.get(id) ?? null : null);
       newsSecondaryPins = secondaryIds.map(pinnedOrNull);
-      newsFeaturedPins = featuredIds.map(pinnedOrNull);
       newsTopicPins = Object.fromEntries(manualTopics.map((key) => [key, topicPicks[key].articles.map(pinnedOrNull)]));
       if (layoutJson?.lead) {
         const leadResponse = await payload.find({
@@ -662,7 +657,6 @@ export default async function SectionPageRoute({ params }: Args) {
           leadFrame={newsLeadFrame}
           secondaryPins={newsSecondaryPins}
           secondaryPhotos={newsSecondaryPhotos}
-          featuredPins={newsFeaturedPins}
           topics={newsTopics}
           topicCards={newsTopicCards}
           topicPins={newsTopicPins}

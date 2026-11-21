@@ -37,12 +37,10 @@ const HEADLINE = "clamp(30px, 5.4cqw, 46px)";
 /** Half of the column's --balance-scale, as a multiplier: the lead's text grows at half the strips' rate */
 const HALF_SCALE = "(1 + (var(--balance-scale, 1) - 1) * 0.5)";
 /**
- * Largest the lead's headline and subdeck get above or below the photo,
- * however much BalanceColumns scales the column (a little over the base
- * sizes, 46px and 17px)
+ * Largest the lead's headline gets above or below the photo, however much
+ * BalanceColumns scales the column (a little over the 46px base size)
  */
 const STACKED_HEADLINE_MAX = 48;
-const STACKED_SUBDECK_MAX = 18;
 const FLEX_BESIDE = "1.7778,1";
 
 /**
@@ -127,11 +125,6 @@ function OverlayLead({ article, image, frames }: { article: ComponentArticle; im
               variant="features"
               className="mt-3 text-[13px] md:[&_span]:text-white"
             />
-            {article.excerpt && (
-              <p className="mt-3 max-w-[60ch] font-meta text-[17px] font-medium leading-[1.5] text-text-main md:text-white/90">
-                {article.excerpt}
-              </p>
-            )}
           </div>
         </div>
         {credit && <p className="mt-1.5 font-meta text-[12px] italic text-text-muted">{credit}</p>}
@@ -143,7 +136,7 @@ function OverlayLead({ article, image, frames }: { article: ComponentArticle; im
 /**
  * Lead story at the top left of /news, two thirds of the page wide.
  *
- * `position` puts the text (kicker, headline, byline, subdeck) north, south,
+ * `position` puts the text (kicker, headline, byline) north, south,
  * east or west of the photo, or over it, on tablet and desktop. Phones always
  * stack the text under the photo, since a side-by-side layout doesn't fit.
  *
@@ -200,18 +193,6 @@ export default function NewsLead({
         variant="features"
         className="mt-3 text-[13px]"
       />
-      {article.excerpt && (
-        <p
-          className="mt-3 font-meta font-medium leading-[1.5] text-text-main"
-          style={{
-            fontSize: sideBySide
-              ? `calc(18px * ${HALF_SCALE})`
-              : `min(${STACKED_SUBDECK_MAX}px, calc(17px * ${HALF_SCALE}))`,
-          }}
-        >
-          {article.excerpt}
-        </p>
-      )}
     </div>
   );
 

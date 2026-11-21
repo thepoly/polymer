@@ -97,9 +97,6 @@ export function leadFrameStyles(
 /** Strips under the lead an editor can pin: two at most are ever shown */
 export const SECONDARY_SLOTS = 2;
 
-/** Cards in the Featured row */
-export const FEATURED_SLOTS = 4;
-
 /** A saved list of pinned article ids, as exactly `slots` entries; null fills automatically */
 const normalizeSlots = (raw: unknown, slots: number): (number | null)[] => {
   const list = Array.isArray(raw) ? raw : [];
@@ -108,9 +105,6 @@ const normalizeSlots = (raw: unknown, slots: number): (number | null)[] => {
 
 /** Article ids pinned under the lead, one per slot */
 export const normalizeSecondary = (raw: unknown) => normalizeSlots(raw, SECONDARY_SLOTS);
-
-/** Article ids pinned in the Featured row, one per slot */
-export const normalizeFeatured = (raw: unknown) => normalizeSlots(raw, FEATURED_SLOTS);
 
 /** How the topic row's cards look */
 export type TopicCardStyle = {
@@ -164,8 +158,8 @@ export type NewsLayout = {
    */
   secondaryPhotos?: boolean;
   /**
-   * Stories pinned in the Featured row, left to right. A null slot takes the
-   * next newest story with a photo.
+   * Legacy Featured-row pins, retained in saved JSON but no longer rendered
+   * or used to reserve stories. The editor preserves this value on save.
    */
   featured?: (number | null)[];
   /** Topic row card style */

@@ -27,9 +27,7 @@ import {
   DEFAULT_LEAD_TEXT_POSITION,
   LEAD_TEXT_POSITIONS,
   isLeadTextPosition,
-  FEATURED_SLOTS,
   SECONDARY_SLOTS,
-  normalizeFeatured,
   normalizeLeadFrame,
   normalizeSecondary,
   normalizeTopicCards,
@@ -350,7 +348,6 @@ function TopicCardsEditor({ value, onChange }: { value: TopicCardStyle; onChange
 // ---------------------------------------------------------------------------
 
 const SUB_SLOT_IDS = Array.from({ length: SECONDARY_SLOTS }, (_, i) => `sub-${i}`);
-const FEATURED_SLOT_IDS = Array.from({ length: FEATURED_SLOTS }, (_, i) => `feat-${i}`);
 /** "topic-academia-2": third chosen story on the Academia tab */
 const topicSlotId = (key: NewsTopicKey, index: number) => `topic-${key}-${index}`;
 const parseTopicSlot = (slotId: string): { key: NewsTopicKey; index: number } | null => {
@@ -818,7 +815,6 @@ function NewsPageEditor() {
   const [leadFrame, setLeadFrame] = useState<LeadFrame | null>(null);
   const [secondary, setSecondary] = useState<(number | null)[]>(() => normalizeSecondary(null));
   const [secondaryPhotos, setSecondaryPhotos] = useState(true);
-  const [featured, setFeatured] = useState<(number | null)[]>(() => normalizeFeatured(null));
   const [topicCards, setTopicCards] = useState<TopicCardStyle>(() => normalizeTopicCards(null));
   const [topicPicks, setTopicPicks] = useState<Record<NewsTopicKey, TopicPicks>>(() => normalizeTopicPicks(null));
   const [activeTopic, setActiveTopic] = useState<NewsTopicKey>(NEWS_TOPICS[0].key);
@@ -836,12 +832,11 @@ function NewsPageEditor() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const articleMap = new Map(articles.map((a) => [a.id, a]));
-  // Slots: "lead-0", "sub-0", "sub-1", "feat-0" to "feat-3", "gov-senate", "gov-eboard". A box's pin only counts
+  // Slots: "lead-0", "sub-0", "sub-1", "gov-senate", "gov-eboard". A box's pin only counts
   // while the box is in article mode.
   const slotArticleId = (slotId: string): number | null => {
     if (slotId === 'lead-0') return lead;
     if (slotId.startsWith('sub-')) return secondary[Number(slotId.slice(4))] ?? null;
-    if (slotId.startsWith('feat-')) return featured[Number(slotId.slice(5))] ?? null;
     if (slotId === 'gov-senate' || slotId === 'gov-eboard') {
       const box = studentGov[slotId === 'gov-senate' ? 'senate' : 'eboard'];
       return box.mode === 'article' ? box.article : null;
@@ -853,7 +848,7 @@ function NewsPageEditor() {
   };
   const topicSlotIds = NEWS_TOPICS.flatMap((t) => Array.from({ length: TOPIC_CARDS }, (_, i) => topicSlotId(t.key, i)));
   const usedIds = new Set<number>(
-    ['lead-0', ...SUB_SLOT_IDS, ...FEATURED_SLOT_IDS, 'gov-senate', 'gov-eboard', ...topicSlotIds]
+    ['lead-0', ...SUB_SLOT_IDS, 'gov-senate', 'gov-eboard', ...topicSlotIds]
       .map(slotArticleId)
       .filter((id): id is number => id !== null),
   );
@@ -909,7 +904,6 @@ function NewsPageEditor() {
           setLeadFrame(normalizeLeadFrame(savedLayout.leadFrame));
           setSecondary(normalizeSecondary(savedLayout.secondary));
           setSecondaryPhotos(savedLayout.secondaryPhotos !== false);
-          setFeatured(normalizeFeatured(savedLayout.featured));
           setTopicCards(normalizeTopicCards(savedLayout.topicCards));
           const picks = normalizeTopicPicks(savedLayout.topicPicks);
           setTopicPicks(picks);
@@ -922,7 +916,6 @@ function NewsPageEditor() {
           const placedIds = [
             savedLayout.lead ?? null,
             ...normalizeSecondary(savedLayout.secondary),
-            ...normalizeFeatured(savedLayout.featured),
             gov.senate.article,
             gov.eboard.article,
             ...NEWS_TOPICS.flatMap((t) => picks[t.key].articles),
@@ -979,9 +972,6 @@ function NewsPageEditor() {
     } else if (slotId.startsWith('sub-')) {
       const index = Number(slotId.slice(4));
       setSecondary((prev) => prev.map((current, i) => (i === index ? id : current)));
-    } else if (slotId.startsWith('feat-')) {
-      const index = Number(slotId.slice(5));
-      setFeatured((prev) => prev.map((current, i) => (i === index ? id : current)));
     } else if (slotId === 'gov-senate' || slotId === 'gov-eboard') {
       const body: StudentGovBody = slotId === 'gov-senate' ? 'senate' : 'eboard';
       setStudentGov((prev) => ({ ...prev, [body]: { ...prev[body], article: id } }));
@@ -1044,7 +1034,7 @@ function NewsPageEditor() {
       // The Senate / Executive Board editors save into the same JSON, so
       // merge over the latest copy instead of replacing it
       const latest = await readNewsLayout(docIdRef.current);
-      const layout: NewsLayout = { ...(latest?.layout ?? {}), lead, leadTextPosition, leadFrame, secondary, secondaryPhotos, featured, topicCards, topicPicks, bulletsHeadlinesOnly, studentGov };
+      const layout: NewsLayout = { ...(latest?.layout ?? {}), lead, leadTextPosition, leadFrame, secondary, secondaryPhotos, topicCards, topicPicks, bulletsHeadlinesOnly, studentGov };
       await activateNewsLayout(docIdRef.current, layout, latest.updatedAt);
       confirmSaved(sentRevision);
     } catch (err) {
@@ -1148,7 +1138,7 @@ function NewsPageEditor() {
                   }}
                 />
                 <span style={{ fontSize: '0.62rem', opacity: 0.5 }}>
-                  Each story runs as a headline, byline and summary, with its photo cropped square on the right
+                  Each story runs as a kicker, headline and byline, with its photo on the right
                   (a story without a photo runs text only either way). How many show follows the lead&rsquo;s text position: two
                   beside the photo, one over it, and one above or below it only when the lead ends well short of the
                   Student Government column.
@@ -1191,28 +1181,6 @@ function NewsPageEditor() {
                 <span style={{ fontSize: '0.62rem', opacity: 0.5 }}>
                   Headlines only drops the summaries and sets the headlines larger. The column gets shorter, so the
                   story strips under the lead only appear when there&rsquo;s room for them.
-                </span>
-              </div>
-              {/* Featured row: runs the full width under the two columns, as on the page */}
-              <div className="fle-column" style={{ gridColumn: '1 / -1' }}>
-                <div className="fle-column-header">
-                  <span className="fle-column-title">Featured</span>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${FEATURED_SLOTS}, minmax(0, 1fr))`, gap: 10 }}>
-                  {FEATURED_SLOT_IDS.map((slotId, i) => (
-                    <DropSlot
-                      key={slotId}
-                      slotId={slotId}
-                      label={`Featured ${i + 1}`}
-                      article={featured[i] !== null ? articleMap.get(featured[i] as number) ?? null : null}
-                      emptyHint="Drop article"
-                      onClear={() => setSlotArticle(slotId, null)}
-                    />
-                  ))}
-                </div>
-                <span style={{ fontSize: '0.62rem', opacity: 0.5 }}>
-                  Four cards with photos, left to right. An empty slot uses the next newest story with a photo that
-                  isn&rsquo;t already on the page.
                 </span>
               </div>
               {/* Topic row: Administration, Academia, Campus Infrastructure, Interview */}

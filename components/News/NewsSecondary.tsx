@@ -10,15 +10,15 @@ import { newsBylineDate } from "./newsLayout";
 const STRIP_PHOTO_SIZES = "(max-width: 640px) 30vw, (max-width: 1024px) 26vw, 220px";
 
 /**
- * One story under the lead, as a horizontal strip: kicker, headline, byline
- * and subdeck on the left, and the story's photo on the right, its top level
+ * One story under the lead, as a horizontal strip: kicker, headline and
+ * byline on the left, and the story's photo on the right, its top level
  * with the kicker and its height the text's (16:10 at the shortest, square at
  * the tallest). A story without a photo runs its text the lead's full width.
  *
  * Its type follows the column's `--balance-scale` (BalanceColumns): the
- * headline by the full scale, the subdeck by six tenths of it, so the strip
- * gets deeper when the lead's column has to reach the bottom of the Student
- * Government column. The photo keeps its size.
+ * headline by the full scale, so the strip gets deeper when the lead's
+ * column has to reach the bottom of the Student Government column. The
+ * photo keeps its size.
  */
 function Strip({ article, optional, photo }: { article: ComponentArticle; optional: boolean; photo: boolean }) {
   const image = photo ? article.image : null;
@@ -56,18 +56,10 @@ function Strip({ article, optional, photo }: { article: ComponentArticle; option
               variant="features"
               className="mt-2.5 text-[12px]"
             />
-            {article.excerpt && (
-              <p
-                className="mt-2.5 font-meta font-medium leading-[1.5] text-text-main"
-                style={{ fontSize: "calc(16px * (1 + (var(--balance-scale, 1) - 1) * 0.6))" }}
-              >
-                {article.excerpt}
-              </p>
-            )}
           </div>
           {image && (
             // The photo follows the text's height, from 16:10 up to square, so a
-            // short subdeck doesn't leave a gap under it beside a tall photo.
+            // short text doesn't leave a gap under it beside a tall photo.
             // The cell stretches to the row; the box inside is held to those
             // shapes by its own width (cqw).
             <div className="@container self-stretch">

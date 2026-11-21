@@ -22,13 +22,12 @@ function placements(props: Partial<Parameters<typeof NewsPage>[0]>) {
 describe('News story placement', () => {
   const boxes: StudentGovBoxContent[] = [{ body: 'senate', kind: 'article', article: story(1), session: null }]
 
-  it('does not reuse a box pin as the automatic lead, secondary pin, or featured pin', () => {
-    const found = placements({ studentGovBoxes: boxes, secondaryPins: [story(1)], featuredPins: [story(1)] })
+  it('does not reuse a box pin as the automatic lead or a secondary pin', () => {
+    const found = placements({ studentGovBoxes: boxes, secondaryPins: [story(1)] })
     expect((found.get('NewsLead')?.article as Article).id).toBe(2)
     const secondary = found.get('NewsSecondary')?.articles as Article[]
-    const featured = found.get('NewsFeatured')?.articles as Article[]
-    expect([...secondary, ...featured].some(a => a.id === 1 || a.id === 2)).toBe(false)
-    expect(new Set([...secondary, ...featured].map(a => a.id)).size).toBe(secondary.length + featured.length)
+    expect(secondary.some(a => a.id === 1 || a.id === 2)).toBe(false)
+    expect(new Set(secondary.map(a => a.id)).size).toBe(secondary.length)
   })
 
   it('does not duplicate the only available story to fill an automatic lead', () => {

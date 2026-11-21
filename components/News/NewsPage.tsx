@@ -1,7 +1,7 @@
 import React from "react";
 import type { Article as ComponentArticle } from "@/components/FrontPage/types";
 import BalanceColumns from "@/components/BalanceColumns";
-import NewsFeatured, { FeaturedCard, OverlayCard } from "./NewsFeatured";
+import { FeaturedCard, OverlayCard } from "./NewsFeatured";
 import NewsTopicTabs from "./NewsTopicTabs";
 import { NEWS_TOPICS, TOPIC_CARDS, type NewsTopicKey } from "./newsTopics";
 import NewsLead from "./NewsLead";
@@ -11,7 +11,6 @@ import SectionSearchPrompt from "@/components/SectionSearchPrompt";
 import {
   DEFAULT_LEAD_TEXT_POSITION,
   DEFAULT_TOPIC_CARDS,
-  FEATURED_SLOTS,
   NEWS_CONTACT_MAILTO,
   leadFrameStyles,
   type LeadFrame,
@@ -34,8 +33,7 @@ const LEAD_COLUMN_SCALE = "1,1.5";
 const STACKED_LEAD_COLUMN_SCALE = "1,1.25";
 
 /**
- * New /news section page (work in progress on the `news-page` branch).
- * Built top to bottom, one component at a time; layout choices come from the
+ * /news section page. Layout choices come from the
  * News Layout editor in the dashboard (collection `news-page-layout`).
  *
  * The previous layout, `NewsSectionPage.tsx`, is kept in the repo but no
@@ -49,7 +47,6 @@ export default function NewsPage({
   leadFrame = null,
   secondaryPins = [],
   secondaryPhotos = true,
-  featuredPins = [],
   topics = null,
   topicCards = DEFAULT_TOPIC_CARDS,
   topicPins = {},
@@ -67,8 +64,6 @@ export default function NewsPage({
   secondaryPins?: (ComponentArticle | null)[];
   /** Stories under the lead show their photo on the right (News Layout editor) */
   secondaryPhotos?: boolean;
-  /** Stories the editor pinned in the Featured row, by slot; null slots fill automatically */
-  featuredPins?: (ComponentArticle | null)[];
   /** Newest stories per topic for the tabbed row, a few spare in each */
   topics?: Record<NewsTopicKey, ComponentArticle[]> | null;
   /** Topic row card style, set in the News Layout editor */
@@ -132,12 +127,7 @@ export default function NewsPage({
     }
     return filled;
   };
-  // Featured pins are claimed before the strips auto-fill, so a story pinned
-  // to the Featured row isn't used up under the lead first
-  for (const pin of featuredPins.slice(0, FEATURED_SLOTS)) if (pin) shown.add(pin.id);
   const secondary = fillSlots(secondaryPins, stripCount);
-  // Featured cards lead with their photo, so only stories with one fill in
-  const featured = fillSlots(featuredPins, FEATURED_SLOTS, (a) => Boolean(a.image));
   // Topic rows: six each. A tab with chosen stories shows them in the
   // editor's order (even if they're also higher up: the editor picked them
   // for this tab), and its empty slots take the topic's newest stories.
@@ -164,17 +154,8 @@ export default function NewsPage({
     // Side padding matches the site header's, so the page lines up with the
     // rule under the logo at every width
     <div className="mx-auto max-w-[1280px] px-4 pt-5 pb-8 md:px-6 xl:px-[30px]">
-      {/* Title. On desktop the masthead already marks News (red, with a bar
-          on the rule), so the title is for screen readers only and the lead
-          starts right under the header. The mobile header has no section
-          links, so the title shows there, small. Archive and Contact are at
-          the foot of the page (SectionSearchPrompt). */}
-      <h1
-        className="mt-2 mb-6 text-center font-meta uppercase tracking-[0.04em] text-[#D6001C] dark:text-white transition-colors text-[32px] sm:text-[40px] lg:sr-only"
-        style={{ fontWeight: 400, lineHeight: 1 }}
-      >
-        {title}
-      </h1>
+      {/* Keep a page heading for screen readers without a visible title row. */}
+      <h1 className="sr-only">{title}</h1>
 
       {/* Top block: lead takes two thirds, right column the rest. On desktop
           the two columns are squared off to end on the same line: the shorter
@@ -209,8 +190,6 @@ export default function NewsPage({
           className="lg:pl-[clamp(16px,2vw,24px)]"
         />
       </BalanceColumns>
-
-      <NewsFeatured articles={featured} />
 
       {topics && (
         <NewsTopicTabs tabs={NEWS_TOPICS.map(({ key, label }) => ({ key, label }))} initial={firstTopic}>
