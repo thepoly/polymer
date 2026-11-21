@@ -21,6 +21,48 @@ import {
 /** How wide a topic row photo is drawn, for the download size */
 const TOPIC_CARD_SIZES = "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 410px";
 
+/** Separate responsive sets keep tablet-only placements out of its topic cards. */
+function renderTopicStories({
+  articles,
+  cardStyle,
+  tablet,
+  label,
+}: {
+  articles: ComponentArticle[];
+  cardStyle: TopicCardStyle;
+  tablet: boolean;
+  label: string;
+}) {
+  if (articles.length === 0) {
+    return (
+      <p data-topic-card className={`${tablet ? "hidden md:block lg:hidden" : "md:hidden lg:block"} py-6 font-meta text-[15px] text-text-muted`}>
+        No {label} stories yet.
+      </p>
+    );
+  }
+  return (
+    <div
+      data-topic-grid={tablet ? "tablet" : "default"}
+      className={`${tablet ? "hidden md:grid lg:hidden" : "grid md:hidden lg:grid"} grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${cardStyle.overlay ? "gap-5" : "gap-x-5 gap-y-8"}`}
+    >
+      {articles.map((article, i) => (
+        <div
+          key={article.id}
+          data-topic-card
+          className={!tablet && i >= 3 ? "hidden lg:block" : undefined}
+          style={{ "--i": i } as React.CSSProperties}
+        >
+          {cardStyle.overlay ? (
+            <OverlayCard article={article} sizes={TOPIC_CARD_SIZES} />
+          ) : (
+            <FeaturedCard article={article} large subdeck={cardStyle.subdeck} sizes={TOPIC_CARD_SIZES} />
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /**
  * How far the lead column's type may grow to reach the bottom of the Student
  * Government column (BalanceColumns). The strips under the lead take the
@@ -128,17 +170,22 @@ export default function NewsPage({
     return filled;
   };
   const secondary = fillSlots(secondaryPins, stripCount);
+  // This extra row only appears on tablets. Keep its exclusions separate so
+  // phone and desktop topic selections retain their existing stories.
+  const tabletStories = articles.filter((article) => !shown.has(article.id)).slice(0, 3);
+  const tabletShown = new Set(shown);
+  for (const article of tabletStories) tabletShown.add(article.id);
   // Topic rows: three on phones, four on tablets, six on desktops.
   // A tab with chosen stories shows them in the
   // editor's order (even if they're also higher up: the editor picked them
   // for this tab), and its empty slots take the topic's newest stories.
   // Newest stories leave out anything already shown above.
-  const topicSets = NEWS_TOPICS.map((t) => {
-    const pins = (topicPins[t.key] ?? []).slice(0, TOPIC_CARDS);
+  const topicSetsFor = (excluded: Set<number | string>, count: number) => NEWS_TOPICS.map((t) => {
+    const pins = (topicPins[t.key] ?? []).slice(0, count);
     const pinned = new Set<number | string>();
     for (const pin of pins) if (pin) pinned.add(pin.id);
-    const newest = (topics?.[t.key] ?? []).filter((a) => !shown.has(a.id) && !pinned.has(a.id));
-    const slots = Array.from({ length: TOPIC_CARDS }, (_, i) => pins[i] ?? null);
+    const newest = (topics?.[t.key] ?? []).filter((a) => !excluded.has(a.id) && !pinned.has(a.id));
+    const slots = Array.from({ length: count }, (_, i) => pins[i] ?? null);
     const seen = new Set<number | string>();
     return slots
       .map((pin) => pin ?? newest.shift() ?? null)
@@ -148,6 +195,8 @@ export default function NewsPage({
         return true;
       });
   });
+  const topicSets = topicSetsFor(shown, TOPIC_CARDS);
+  const tabletTopicSets = topicSetsFor(tabletShown, 4);
   // Open on the first topic that has stories
   const firstTopic = Math.max(0, topicSets.findIndex((set) => set.length > 0));
 
@@ -185,6 +234,18 @@ export default function NewsPage({
           )}
           <NewsSecondary articles={secondary} optional={stripsOptional} photos={secondaryPhotos} />
         </div>
+        {tabletStories.length > 0 && (
+          <section
+            data-tablet-news-row
+            aria-labelledby="news-tablet-stories-heading"
+            className="hidden md:grid md:grid-cols-3 md:gap-5 lg:hidden"
+          >
+            <h2 id="news-tablet-stories-heading" className="sr-only">More News</h2>
+            {tabletStories.map((article) => (
+              <FeaturedCard key={article.id} article={article} subdeck={false} sizes="(min-width: 768px) and (max-width: 1023px) 33vw, 1px" />
+            ))}
+          </section>
+        )}
         <StudentGovColumn
           boxes={studentGovBoxes}
           headlinesOnly={bulletsHeadlinesOnly}
@@ -194,34 +255,12 @@ export default function NewsPage({
 
       {topics && (
         <NewsTopicTabs tabs={NEWS_TOPICS.map(({ key, label }) => ({ key, label }))} initial={firstTopic}>
-          {topicSets.map((set, t) =>
-            set.length > 0 ? (
-              <div
-                key={NEWS_TOPICS[t].key}
-                // Overlay cards sit close, as one block of photos; cards with text under need room
-                className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${topicCards.overlay ? "gap-5" : "gap-x-5 gap-y-8"}`}
-              >
-                {set.map((article, i) => (
-                  <div
-                    key={article.id}
-                    data-topic-card
-                    className={i >= 4 ? "hidden lg:block" : i === 3 ? "hidden md:block" : undefined}
-                    style={{ "--i": i } as React.CSSProperties}
-                  >
-                    {topicCards.overlay ? (
-                      <OverlayCard article={article} sizes={TOPIC_CARD_SIZES} />
-                    ) : (
-                      <FeaturedCard article={article} large subdeck={topicCards.subdeck} sizes={TOPIC_CARD_SIZES} />
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p key={NEWS_TOPICS[t].key} data-topic-card className="py-6 font-meta text-[15px] text-text-muted">
-                No {NEWS_TOPICS[t].label} stories yet.
-              </p>
-            ),
-          )}
+          {topicSets.map((set, t) => (
+            <React.Fragment key={NEWS_TOPICS[t].key}>
+              {renderTopicStories({ articles: set, cardStyle: topicCards, tablet: false, label: NEWS_TOPICS[t].label })}
+              {renderTopicStories({ articles: tabletTopicSets[t], cardStyle: topicCards, tablet: true, label: NEWS_TOPICS[t].label })}
+            </React.Fragment>
+          ))}
         </NewsTopicTabs>
       )}
 
