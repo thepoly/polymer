@@ -49,8 +49,8 @@ export const NEWS_TOPICS = [
 
 export type NewsTopicKey = (typeof NEWS_TOPICS)[number]['key'];
 
-/** Maximum cards per topic: four on tablets, the first three elsewhere. */
-export const TOPIC_CARDS = 4;
+/** Maximum cards per topic: three on phones, four on tablets, six on desktops. */
+export const TOPIC_CARDS = 6;
 
 const normalize = (kicker: string) => kicker.trim().replace(/\s+/g, ' ').toLowerCase();
 

@@ -1,7 +1,7 @@
 /**
  * Seed placeholder news articles for the topic row on /news (Administration,
  * Academia, Campus Infrastructure, Interview), seven per topic, so every
- * topic has four stories for tablets (three elsewhere) even after those higher up the
+ * topic has six stories for desktops (three on phones, four on tablets) even after those higher up the
  * page are left out. Kickers come from each topic's list in
  * components/News/newsTopics.ts.
  *

@@ -49,7 +49,7 @@ const NewsPageLayout: CollectionConfig = {
     //   featured: (number | null)[],        // legacy row pins, preserved but ignored
     //   topicCards: { overlay, subdeck },    // topic row card style
     //   topicPicks: { [topic]: { manual, articles: (number | null)[] } },
-    //                                        // newest or chosen; fourth slot is tablet-only
+    //                                        // newest or chosen; three/four/six by screen size
     //   bulletsHeadlinesOnly: boolean,       // Senate / E-Board bullets without summaries
     //   leadFrame: { article, desktop, mobile } | null,
     //                                        // crop of that story's lead photo

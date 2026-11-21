@@ -1195,7 +1195,7 @@ function NewsPageEditor() {
                     markDirty();
                   }}
                 />
-                {/* Stories per tab: the newest, or chosen ones; fourth card is tablet-only */}
+                {/* Stories per tab: newest or chosen; three/four/six by screen size */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <span style={{ fontSize: '0.72rem', fontWeight: 600 }}>Stories</span>
                   <div role="tablist" aria-label="Topic" style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -1231,7 +1231,7 @@ function NewsPageEditor() {
                         onChange={(v) => setTopicManual(topic.key, v === 'manual')}
                       />
                       {picks.manual ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
                           {Array.from({ length: TOPIC_CARDS }, (_, i) => {
                             const id = picks.articles[i];
                             return (
@@ -1249,8 +1249,8 @@ function NewsPageEditor() {
                       ) : null}
                       <span style={{ fontSize: '0.62rem', opacity: 0.5 }}>
                         {picks.manual
-                          ? `Phones and desktops show the first three available stories; tablets show up to four. Any story can go here, whatever its kicker. An empty slot uses the next newest ${topic.label} story that isn't already on the page.`
-                          : `Shows the three newest ${topic.label} stories on phones and desktops, or four on tablets (by kicker), skipping stories already higher up the page. Choose stories to pick them yourself; picks are kept if you switch back.`}
+                          ? `Phones show the first three available stories, tablets show up to four, and desktops show up to six. Any story can go here, whatever its kicker. An empty slot uses the next newest ${topic.label} story that isn't already on the page.`
+                          : `Shows the newest ${topic.label} stories (by kicker): three on phones, four on tablets, and six on desktops, skipping stories already higher up the page. Choose stories to pick them yourself; picks are kept if you switch back.`}
                       </span>
                     </>
                   );

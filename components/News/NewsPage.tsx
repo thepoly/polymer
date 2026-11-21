@@ -71,7 +71,7 @@ export default function NewsPage({
   /**
    * Topic tabs set to chosen stories in the News Layout editor, by slot; a
    * null slot takes the topic's next newest story. Tabs not here show the
-   * newest stories (three on phones/desktops, four on tablets).
+   * newest stories (three on phones, four on tablets, six on desktops).
    */
   topicPins?: Partial<Record<NewsTopicKey, (ComponentArticle | null)[]>>;
   /** Senate and Executive Board bullets as headlines only (News Layout editor) */
@@ -128,7 +128,7 @@ export default function NewsPage({
     return filled;
   };
   const secondary = fillSlots(secondaryPins, stripCount);
-  // Topic rows: up to four each; the fourth is tablet-only.
+  // Topic rows: three on phones, four on tablets, six on desktops.
   // A tab with chosen stories shows them in the
   // editor's order (even if they're also higher up: the editor picked them
   // for this tab), and its empty slots take the topic's newest stories.
@@ -205,7 +205,7 @@ export default function NewsPage({
                   <div
                     key={article.id}
                     data-topic-card
-                    className={i === 3 ? "hidden md:block lg:hidden" : undefined}
+                    className={i >= 4 ? "hidden lg:block" : i === 3 ? "hidden md:block" : undefined}
                     style={{ "--i": i } as React.CSSProperties}
                   >
                     {topicCards.overlay ? (
