@@ -14,6 +14,7 @@ const STRIP_PHOTO_SIZES = "(max-width: 640px) 30vw, (max-width: 1024px) 26vw, 22
  * byline on the left, and the story's photo on the right, its top level
  * with the kicker and its height the text's (16:10 at the shortest, square at
  * the tallest). A story without a photo runs its text the lead's full width.
+ * Tablets (768–1023px) also show the subdeck beneath the byline.
  *
  * Its type follows the column's `--balance-scale` (BalanceColumns): the
  * headline by the full scale, so the strip gets deeper when the lead's
@@ -56,6 +57,11 @@ function Strip({ article, optional, photo }: { article: ComponentArticle; option
               variant="features"
               className="mt-2.5 text-[12px]"
             />
+            {article.excerpt && (
+              <p data-news-secondary-subdeck className="mt-2.5 hidden font-meta text-[16px] font-medium leading-[1.5] text-text-main md:block lg:hidden">
+                {article.excerpt}
+              </p>
+            )}
           </div>
           {image && (
             // The photo follows the text's height, from 16:10 up to square, so a
