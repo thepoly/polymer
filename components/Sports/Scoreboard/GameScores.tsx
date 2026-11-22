@@ -67,7 +67,11 @@ export function GameScores({ games, rpiTeam, lead = false, sport, dateOverride, 
   const scores = games.length === 1
     ? <ScoreboardBar game={games[0]} rpiTeam={rpiTeam} lead={lead} sport={sport} dateOverride={dateOverride} published={published} />
     : <SeriesBoards games={games} rpiTeam={rpiTeam} lead={lead} sport={sport} />
-  return lead ? scores : <div className="mt-1.5 border-y border-rule py-3">{scores}</div>
+  return lead ? scores : (
+    <div className={`mt-1.5 py-3 ${games.length > 1 ? 'border-y border-rule' : ''}`}>
+      {scores}
+    </div>
+  )
 }
 
 type LinkedGameScoresProps = GameScoresProps & { sportValue?: string | null }

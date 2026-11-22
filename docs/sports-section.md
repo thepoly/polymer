@@ -87,7 +87,7 @@ cached for 60 seconds.
   status for each game. For a weekend recap, add both games in playing order.
   Both games can use the same school or different opponents. Leave Games
   empty for a story without a game.
-- An article with one game shows a ruled score band beneath its deck, or
+- An article with one game shows a score band beneath its deck, or
   beneath its headline when the deck is empty. With two games, both boards
   stay side by side on phones and larger screens. A desktop photofeature
   carries the band immediately below its full-screen hero.
