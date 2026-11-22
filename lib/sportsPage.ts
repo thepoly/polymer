@@ -132,9 +132,8 @@ export async function loadSportsPage(payload: Payload): Promise<SportsPageData> 
   // sports, in the card's order. Which sports those are is only known once
   // the tables are in, so the schedule starts loading alongside them and is
   // handed the answer when it arrives; a slow feed then costs one wait
-  // instead of two in a row. When editors switch the strip off, RPI
-  // Athletics isn't contacted at all, and a failure falls back to the plain
-  // header rather than an error page.
+  // instead of two in a row. The banner switch skips this schedule lookup.
+  // A feed failure falls back to the plain header.
   const standingsLoading = getSportsStandings({ overrides: layout.standingsOverrides })
   const [standings, schedule] = await Promise.all([
     standingsLoading,

@@ -96,6 +96,10 @@ cached for 60 seconds.
   scores show a dash. A tie gives both teams equal emphasis. The series
   record counts only games with both scores, in RPI win–loss–tie order.
   Two dates from the same Friday through Sunday are labeled “Weekend”.
+- Team logos and names link to the athletics websites in Schools. A game
+  status links to the RPI Athletics recap or box score when the calendar
+  has a unique match for its sport, date, opponent and entered scores.
+  The lead's date override can supply the date for a single game.
 - Moving a story out of Sports clears its sport and games.
 
 **Sports Layout** (in the newsroom):
@@ -112,7 +116,7 @@ cached for 60 seconds.
   Single games fall back to the publication date when the game date is empty.
   A lead without a board makes room for the second below-lead story.
 - **Scores banner** switch. Turning it off shows the plain
-  "Sports | Contact" header and stops the site contacting RPI Athletics.
+  "Sports | Contact" header and skips the banner's schedule lookup.
 - **Lead title overlay** switch.
 - **Standings**: each sport shows whether it's in season. **Show** or
   **Hide** forces a sport on or off for 7 days, then the calendar takes

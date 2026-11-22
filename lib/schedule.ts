@@ -3,6 +3,7 @@
 // same platform as the conference standings pages). It isn't an official API:
 // if a fetch fails or the feed changes, the last good data keeps showing, and
 // a sport with no usable games is left out of the strip.
+import type { GameResult } from '@/components/FrontPage/types'
 import { fetchSidearm } from './sidearm'
 import type { SportValue } from './sports'
 import { troyDay } from './troyTime'
@@ -202,6 +203,42 @@ function toGame(e: FeedEvent, today: string): ScheduleGame | null {
     result,
     link: result ? absolute(r?.recap?.url) ?? absolute(r?.boxscore?.url) : null,
   }
+}
+
+/** Look up the game in its own calendar month, including games that have scrolled off the strip. */
+export async function linkArticleGames(
+  games: GameResult[],
+  sport?: string | null,
+  dateOverride?: string | null,
+): Promise<GameResult[]> {
+  if (!Object.values(FEED_SPORTS).some((value) => value === sport)) return games
+
+  const dates = games.map((game) => {
+    const date = games.length === 1 && dateOverride ? dateOverride : game.date
+    return date && /^\d{4}-\d{2}-\d{2}/.test(date) ? date.slice(0, 10) : null
+  })
+  const months = [...new Set(dates.flatMap((day) => day ? [day.slice(0, 7)] : []))]
+  const windows = new Map(await Promise.all(months.map(async (month) => [month, await fetchWindow(month)] as const)))
+
+  const normalize = (name: string) => name.trim().toLowerCase().replace(/\s+/g, ' ')
+  return games.map((game, index) => {
+    const day = dates[index]
+    if (!day) return game
+
+    const schoolNames = [game.opponent.name, game.opponent.shortName].map(normalize)
+    const matches = new Map<number, ScheduleGame>()
+    for (const event of windows.get(day.slice(0, 7)) ?? []) {
+      if (FEED_SPORTS[event.sport?.global_sport_shortname ?? ''] !== sport || typeof event.date !== 'string' || event.date.slice(0, 10) !== day) continue
+      const scheduled = toGame(event, day)
+      if (!scheduled) continue
+      if (![scheduled.opponent.name, scheduled.opponent.shortName].some((name) => schoolNames.includes(normalize(name)))) continue
+      if (game.rpiScore !== null && scheduled.result?.rpiScore !== game.rpiScore) continue
+      if (game.opponentScore !== null && scheduled.result?.opponentScore !== game.opponentScore) continue
+      matches.set(scheduled.id, scheduled)
+    }
+    const [match] = matches.values()
+    return matches.size === 1 && match?.link ? { ...game, link: match.link } : game
+  })
 }
 
 /**

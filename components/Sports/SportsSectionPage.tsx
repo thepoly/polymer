@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
@@ -11,7 +9,7 @@ import SportsStandings, { type StandingsTeam } from "./SportsStandings";
 import SportsScoreStrip from "./SportsScoreStrip";
 import SportsFeatured from "./SportsFeatured";
 import SportsHeading from "./SportsHeading";
-import { GameScores } from "./Scoreboard/GameScores";
+import { LinkedGameScores } from "./Scoreboard/GameScores";
 import { RPI_FALLBACK } from "./Scoreboard/results";
 import SportsByline from "./SportsByline";
 import { shortDate, sportName } from "./sportsFormat";
@@ -108,7 +106,7 @@ function SportsLeadStory({
     <article className="group flex flex-col">
       {games.length > 0 && (
         <div className="order-1 pt-4 lg:pt-0">
-          <GameScores games={games} rpiTeam={rpiTeam} sport={sport} dateOverride={gameDate} published={article.isoDate} lead />
+          <LinkedGameScores games={games} rpiTeam={rpiTeam} sport={sport} sportValue={article.sport} dateOverride={gameDate} published={article.isoDate} lead />
         </div>
       )}
 

@@ -16,6 +16,8 @@ export interface GameResult {
   opponentScore: number | null;
   status: string;
   date: string | null;
+  /** Matched recap or box score from the RPI Athletics calendar */
+  link?: string;
 }
 
 export interface Article {

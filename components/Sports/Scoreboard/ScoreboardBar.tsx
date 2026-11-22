@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { GameResult, GameTeam } from '@/components/FrontPage/types'
 import { dateLabel, gameDay, gameSides, scoreSentence } from './results'
 import { ScoreSide } from './ScoreSide'
+import { GameStatus } from './GameStatus'
 
 export function ScoreboardBar({ game, rpiTeam, lead, sport, dateOverride, published }: {
   game: GameResult
@@ -29,9 +30,11 @@ export function ScoreboardBar({ game, rpiTeam, lead, sport, dateOverride, publis
     const measure = () => {
       const fits = [...root.querySelectorAll<HTMLElement>('[data-score-side]')].every(side => {
         const name = side.querySelector<HTMLElement>('[data-team-name]')
-        if (!name || !side.querySelector('[data-team-logo]')) return true
+        const logo = side.querySelector('[data-team-logo]')
+        const score = side.lastElementChild
+        if (!name || !logo || !score) return true
         const gap = parseFloat(getComputedStyle(side).columnGap) || 0
-        const others = [...side.children].filter(el => el !== name).reduce((w, el) => w + el.getBoundingClientRect().width, 0)
+        const others = logo.getBoundingClientRect().width + score.getBoundingClientRect().width
         return name.scrollWidth + others + gap * 2 <= side.clientWidth
       })
       setHideNames(!fits)
@@ -47,14 +50,14 @@ export function ScoreboardBar({ game, rpiTeam, lead, sport, dateOverride, publis
       <p className="sr-only">{scoreSentence(game, sides, day)}</p>
       <div ref={board} className={`grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center ${lead ? 'mb-3 gap-3 pb-3 sm:gap-8 sm:pb-4' : 'gap-2.5 min-[360px]:gap-3 sm:gap-6'}`}>
         <ScoreSide side={left} left size={size} hideName={hideNames} />
-        <div aria-hidden="true" className={`flex flex-col items-center text-center font-meta uppercase ${lead ? 'gap-1' : 'gap-1.5'}`}>
-          {lead && sport && <span className="max-w-24 text-[11px] leading-tight tracking-[0.1em] text-text-muted sm:max-w-none sm:text-xs lg:text-[13px]">{sport}</span>}
+        <div className={`flex flex-col items-center text-center font-meta uppercase ${lead ? 'gap-1' : 'gap-1.5'}`}>
+          {lead && sport && <span aria-hidden="true" className="max-w-24 text-[11px] leading-tight tracking-[0.1em] text-text-muted sm:max-w-none sm:text-xs lg:text-[13px]">{sport}</span>}
           <div className={`flex items-center ${lead ? 'gap-2 text-xs sm:gap-3 sm:text-base' : 'gap-1.5 text-[10px] sm:gap-2'}`}>
-            <span className={left.result > 0 ? '' : 'invisible'}>◀</span>
-            <span className={`max-w-32 text-balance break-words font-semibold leading-tight tracking-[0.08em] ${lead ? 'text-sm sm:text-lg lg:text-[22px]' : 'text-xs sm:text-[13px]'}`}>{game.status}</span>
-            <span className={right.result > 0 ? '' : 'invisible'}>▶</span>
+            <span aria-hidden="true" className={left.result > 0 ? '' : 'invisible'}>◀</span>
+            <GameStatus game={game} className={`max-w-32 text-balance break-words font-semibold leading-tight tracking-[0.08em] ${lead ? 'text-sm sm:text-lg lg:text-[22px]' : 'text-xs sm:text-[13px]'}`} />
+            <span aria-hidden="true" className={right.result > 0 ? '' : 'invisible'}>▶</span>
           </div>
-          <span className={`tracking-[0.1em] text-text-muted ${lead ? 'text-[11px] sm:text-xs lg:text-[13px]' : 'text-[10px] sm:text-[11px]'}`}>
+          <span aria-hidden="true" className={`tracking-[0.1em] text-text-muted ${lead ? 'text-[11px] sm:text-xs lg:text-[13px]' : 'text-[10px] sm:text-[11px]'}`}>
             {date}{!lead && <span className="max-sm:hidden">{date && ' · '}{game.homeAway}</span>}
           </span>
         </div>
