@@ -348,10 +348,10 @@ export default function SportsSectionPage({
         </div>
       )}
 
-      {/* Top block: lead stories (~63%) | standings and headlines (~37%) */}
+      {/* Equal desktop tracks keep the scrolling standings tabs inside their column. */}
       <div
-        className="flex flex-col gap-10 lg:grid lg:gap-y-0"
-        style={{ gridTemplateColumns: "1.7fr 1fr", columnGap: COLUMN_GAP }}
+        className="flex flex-col gap-10 lg:grid lg:grid-cols-2 lg:gap-y-0"
+        style={{ columnGap: COLUMN_GAP }}
       >
         {/* Phone order: scoreboard, lead title, lead photo, wide card,
             standings, headlines. Desktop keeps the two-column layout. */}

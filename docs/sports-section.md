@@ -22,7 +22,8 @@ to the date/volume bar, sharing its bottom rule without a gap or doubled
 border. The header keeps its usual spacing when there is no score strip.
 Below 768px, Standings tab/table surfaces also reach both screen edges;
 its text, heading rule and source link retain the page's reading inset.
-Standings keeps its existing tablet and desktop widths.
+On desktop, the lead and standings/headlines occupy equal grid tracks.
+Overflowing sport tabs scroll within the standings column.
 
 More Headlines scrolls horizontally by finger swipe or trackpad. On desktop,
 readers can also drag the cards with a mouse or use the arrows to move four
