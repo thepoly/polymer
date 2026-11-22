@@ -56,6 +56,7 @@ import * as migration_20261112_000000_add_user_portfolio from './20261112_000000
 import * as migration_20261112_000000_add_news_page_layout from './20261112_000000_add_news_page_layout'
 import * as migration_20261112_010000_add_student_gov_updates from './20261112_010000_add_student_gov_updates'
 import * as migration_20261113_000000_add_student_gov_terms from './20261113_000000_add_student_gov_terms'
+import * as migration_20261119_000000_add_redirects from './20261119_000000_add_redirects'
 
 export const migrations = [
   {
@@ -339,5 +340,10 @@ export const migrations = [
     name: '20261113_000000_add_student_gov_terms',
   },
   { up: opinionSingleton.up, down: opinionSingleton.down, name: '20261117_000000_opinion_layout_singleton' },
+  {
+    up: migration_20261119_000000_add_redirects.up,
+    down: migration_20261119_000000_add_redirects.down,
+    name: '20261119_000000_add_redirects',
+  },
   { up: articleGames.up, down: articleGames.down, name: '20261121_000000_add_article_games' },
 ];

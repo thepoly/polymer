@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { getPayload } from 'payload'
 import payloadConfig from '@/payload.config'
+import { getPostHogClient } from '@/lib/posthog-server'
+import { POSTHOG_KEY } from '@/lib/posthog-config'
+import { REDIRECT_PATH_RE } from '@/lib/redirects'
 
 // Run in the Node.js runtime so we can import Payload directly. This avoids
 // making an internal HTTP fetch (which CodeQL flagged as SSRF because the URL
@@ -216,7 +219,100 @@ async function lookupLegacyWpRedirect(
   return to
 }
 
+// Custom tracked redirects from the `redirects` collection. The whole table
+// is small, so it's held in memory and refreshed at most every 30s — a new
+// or edited redirect goes live within that window.
+const CUSTOM_REDIRECT_TTL_MS = 30_000
+let customRedirects: { byPath: Map<string, string>; expiresAt: number } | null = null
+
+async function lookupCustomRedirect(path: string): Promise<string | null> {
+  const now = Date.now()
+  if (!customRedirects || customRedirects.expiresAt <= now) {
+    const payload = await getPayload({ config: payloadConfig })
+    const result = await payload.find({
+      collection: 'redirects',
+      limit: 0,
+      pagination: false,
+      depth: 0,
+      overrideAccess: true,
+      select: { path: true, destination: true },
+    })
+    const byPath = new Map<string, string>()
+    for (const doc of result.docs) {
+      if (doc.path && doc.destination) byPath.set(doc.path, doc.destination)
+    }
+    customRedirects = { byPath, expiresAt: now + CUSTOM_REDIRECT_TTL_MS }
+  }
+  return customRedirects.byPath.get(path) ?? null
+}
+
+/**
+ * The visitor's PostHog distinct id from the posthog-js cookie, so a redirect
+ * hit joins the rest of their session. Null for first-time visitors.
+ */
+function posthogDistinctId(req: NextRequest): string | null {
+  if (!POSTHOG_KEY) return null
+  const raw = req.cookies.get(`ph_${POSTHOG_KEY}_posthog`)?.value
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw) as { distinct_id?: unknown }
+    return typeof parsed.distinct_id === 'string' && parsed.distinct_id ? parsed.distinct_id : null
+  } catch {
+    return null
+  }
+}
+
+function trackRedirect(req: NextRequest, path: string, destination: string) {
+  try {
+    const knownId = posthogDistinctId(req)
+    const params = req.nextUrl.searchParams
+    const utm: Record<string, string> = {}
+    for (const key of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']) {
+      const value = params.get(key)
+      if (value) utm[key] = value
+    }
+    getPostHogClient()?.capture({
+      distinctId: knownId ?? crypto.randomUUID(),
+      event: 'redirect_followed',
+      properties: {
+        redirect_path: path,
+        redirect_destination: destination,
+        $current_url: req.nextUrl.href,
+        $pathname: req.nextUrl.pathname,
+        $referrer: req.headers.get('referer') || '$direct',
+        $raw_user_agent: req.headers.get('user-agent') || undefined,
+        ...utm,
+        // Anonymous hits shouldn't each mint a person profile.
+        ...(knownId ? {} : { $process_person_profile: false }),
+      },
+    })
+  } catch {
+    // Tracking must never break the redirect.
+  }
+}
+
 export async function middleware(req: NextRequest) {
+  // Custom tracked redirect (poly.rpi.edu/<path>) from the `redirects`
+  // collection. Checked first so it wins over the legacy shortlink codes.
+  const customPath = req.nextUrl.pathname.replace(/^\/|\/$/g, '').toLowerCase()
+  if (REDIRECT_PATH_RE.test(customPath)) {
+    try {
+      const destination = await lookupCustomRedirect(customPath)
+      if (destination) {
+        trackRedirect(req, customPath, destination)
+        const url = /^https?:\/\//i.test(destination)
+          ? destination
+          : new URL(destination, req.url).toString()
+        // 302 + no-store so browsers ask every time and each hit is counted.
+        const res = NextResponse.redirect(url, 302)
+        res.headers.set('Cache-Control', 'no-store')
+        return res
+      }
+    } catch {
+      // Fall through — the request is handled as if no redirect existed.
+    }
+  }
+
   // Legacy WP shortlink (5-char IDs from pluginSL_shorturl) → target URL.
   // The hand-curated `WP_LEGACY_SHORTLINKS` map wins; otherwise we look up
   // the DB-backed `legacy_shortlinks` table.

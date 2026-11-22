@@ -109,6 +109,10 @@ Short Student Senate / Executive Board items (title, blurb, date, `body`: `senat
 
 One Senate or E-Board term, GM Week to GM Week: `body`, Senate `number`, `startsOn` (first meeting; decides which term every entry falls in), `gmWeekOn`, `gmWeekStory` (→ `articles`), `hasCoverage`, and a `leaders` array (table `student_gov_terms_leaders`: name, ordinal, how, startedOn). `name` and the unique `slug` (`senate-57`, `eboard-2026-27`) are set by a `beforeValidate` hook. Seeded by `pnpm db:seed:terms`. Same access as the updates. See [`news-section.md`](news-section.md).
 
+### `redirects` — [`collections/Redirects.ts`](../collections/Redirects.ts)
+
+Short tracked links at `poly.rpi.edu/<path>`. `path` is one lowercase segment (validated against the site's own top-level routes in [`lib/redirects.ts`](../lib/redirects.ts)); `destination` is a full URL or a site-relative path. `middleware.ts` holds the table in memory (30s refresh), answers a match with a `302` + `Cache-Control: no-store`, and captures a `redirect_followed` PostHog event (`redirect_path`, `redirect_destination`, referrer, user agent, any `utm_*` params). Staff (`admin`, `eic`, `editor`) manage them in the admin.
+
 ### `device-tokens` — [`collections/DeviceTokens.ts`](../collections/DeviceTokens.ts)
 
 Registered Android FCM tokens. Schema:

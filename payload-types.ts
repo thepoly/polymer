@@ -85,6 +85,7 @@ export interface Config {
     submissions: Submission;
     'event-submissions': EventSubmission;
     'device-tokens': DeviceToken;
+    redirects: Redirect;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -110,6 +111,7 @@ export interface Config {
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
     'event-submissions': EventSubmissionsSelect<false> | EventSubmissionsSelect<true>;
     'device-tokens': DeviceTokensSelect<false> | DeviceTokensSelect<true>;
+    redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -919,6 +921,17 @@ export interface DeviceToken {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects".
+ */
+export interface Redirect {
+  id: number;
+  path: string;
+  destination: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -1012,6 +1025,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'device-tokens';
         value: number | DeviceToken;
+      } | null)
+    | ({
+        relationTo: 'redirects';
+        value: number | Redirect;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1450,6 +1467,16 @@ export interface DeviceTokensSelect<T extends boolean = true> {
   token?: T;
   platform?: T;
   lastSeenAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects_select".
+ */
+export interface RedirectsSelect<T extends boolean = true> {
+  path?: T;
+  destination?: T;
   updatedAt?: T;
   createdAt?: T;
 }
