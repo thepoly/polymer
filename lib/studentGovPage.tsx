@@ -269,7 +269,7 @@ export async function StudentGovTimelinePage({ body, segment }: { body: StudentG
 
   return (
     <main className="min-h-screen bg-bg-main transition-colors duration-300">
-      <Header />
+      <Header flushMobileBottom />
       {/* Keyed by term: opening another term from the list starts its
           stream at the top, with a fresh panel and list, rather than keeping
           this term's scroll position */}

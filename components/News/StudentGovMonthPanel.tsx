@@ -2,7 +2,6 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import TransitionLink from "@/components/TransitionLink";
 import { panelTintStyles, type FrameStyle } from "./timelinePage";
 import { STUDENT_GOV, type StudentGovBody } from "./studentGov";
 import StudentGovBodySwitch from "./StudentGovBodySwitch";
@@ -144,8 +143,8 @@ export default function StudentGovMonthPanel({
     //
     // Moving between bodies, the panel slides as one (data-swipe-chunk,
     // pageSwipe.ts): the old body's photo, title, term and month go out one
-    // side and this one's follow right behind, while the breadcrumb and the
-    // switch (data-swipe-keep) stay put, the switch's bar sliding over.
+    // side and this one's follow right behind, while the switch
+    // (data-swipe-keep) stays put and its underline slides over.
     <aside
       data-swipe-chunk="panel"
       className="relative h-[440px] w-full overflow-hidden text-white min-[860px]:h-full min-[860px]:w-[38%] min-[860px]:max-w-[560px] min-[860px]:shrink-0 lg:-translate-x-[0.5px]"
@@ -172,22 +171,12 @@ export default function StudentGovMonthPanel({
         <div className="relative flex h-full flex-col justify-between gap-6 p-6 min-[860px]:p-11">
           <div>
             <div data-swipe-keep>
-              <nav aria-label="Breadcrumb" className="font-meta text-[12px] font-semibold uppercase tracking-[0.12em]">
-                <TransitionLink href="/news" className="hover:underline">
-                  News
-                </TransitionLink>
-                <span className="mx-2 opacity-70" aria-hidden="true">
-                  /
-                </span>
-                <span>Student Government</span>
-              </nav>
               <StudentGovBodySwitch
                 id="panel"
                 body={body}
                 otherHref={otherHref}
                 labels={{ senate: STUDENT_GOV.senate.label, eboard: STUDENT_GOV.eboard.label }}
                 tone="panel"
-                className="mt-4"
               />
             </div>
             <h1 className="mt-5 font-meta text-[40px] font-light uppercase leading-[1] tracking-[0.02em] min-[860px]:text-[clamp(40px,4.2vw,60px)]">
