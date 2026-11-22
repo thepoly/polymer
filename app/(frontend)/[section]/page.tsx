@@ -31,7 +31,8 @@ import { getNewsTopicArticles } from '@/lib/newsTopics';
 import { NEWS_TOPICS, type NewsTopicKey } from '@/components/News/newsTopics';
 import { getStoredTerms } from '@/lib/studentGovTerms';
 import { ordinal, resolveTerms, termYearLabel, troyDayKey, updateTermHref } from '@/components/News/studentGovTerms';
-import FeaturesSectionPage, { type SpotlightPhoto } from '@/components/Features/FeaturesSectionPage';
+import FeaturesSectionPage from '@/components/Features/FeaturesSectionPage';
+import { loadFeaturesPage } from '@/lib/featuresPage';
 import SportsSectionPage from '@/components/Sports/SportsSectionPage';
 import { SPORTS_GAME_SELECT, loadSportsPage } from '@/lib/sportsPage';
 import { Article as PayloadArticle, Media } from '@/payload-types';
@@ -517,93 +518,8 @@ export default async function SectionPageRoute({ params }: Args) {
     });
   }
 
-  // Fetch features page layout — 3-column Row 1 + Row 2. Layouts saved before
-  // Upcoming Events and the Collar City Column were removed may still carry
-  // `events` / `collarCity*` keys; they're ignored.
-  let featuresPinnedOnCampus: ComponentArticle[] = [];
-  let featuresPinnedFeatured: ComponentArticle[] = [];
-  let featuresPinnedRight: ComponentArticle[] = [];
-  let featuresOnCampusImages: boolean[] = [false, false, false];
-  let featuresRightImages: boolean[] = [false, false, false];
-  // Row 2
-  let featuresPinnedTheArts: ComponentArticle[] = [];
-  let featuresTheArtsImages: boolean[] = [false, false, false];
-  let featuresPhotoSpotlight: SpotlightPhoto[] = [];
-  let featuresPinnedSpotlightSubs: ComponentArticle[] = [];
-  let featuresPinnedWide: ComponentArticle[] = [];
-
-  if (section === 'features') {
-    type FeaturesLayoutShape = {
-      onCampus?: (number | null)[];
-      onCampusImages?: boolean[];
-      featured?: (number | null)[];
-      rightArticles?: (number | null)[];
-      rightImages?: boolean[];
-      theArts?: (number | null)[];
-      theArtsImages?: boolean[];
-      photoSpotlight?: SpotlightPhoto[];
-      spotlightSubs?: (number | null)[];
-      wideArticle?: (number | null)[];
-    };
-
-    try {
-      const layoutResponse = await payload.find({
-        collection: 'features-page-layout',
-        limit: 1,
-        depth: 0,
-        select: { layout: true },
-      });
-      const doc = layoutResponse.docs[0] as Record<string, unknown> | undefined;
-      const layoutJson = doc?.layout as FeaturesLayoutShape | undefined;
-
-      if (layoutJson) {
-        if (layoutJson.onCampusImages) featuresOnCampusImages = layoutJson.onCampusImages;
-        if (layoutJson.rightImages) featuresRightImages = layoutJson.rightImages;
-        if (layoutJson.theArtsImages) featuresTheArtsImages = layoutJson.theArtsImages;
-        featuresPhotoSpotlight = layoutJson.photoSpotlight || [];
-
-        // Collect all pinned IDs to fetch in one batch (Row 1 + Row 2)
-        const allPinnedIds = new Set<number>();
-        for (const col of [layoutJson.onCampus, layoutJson.featured, layoutJson.rightArticles, layoutJson.theArts, layoutJson.spotlightSubs, layoutJson.wideArticle]) {
-          if (col) for (const id of col) { if (id) allPinnedIds.add(id); }
-        }
-
-        if (allPinnedIds.size > 0) {
-          const pinnedResponse = await payload.find({
-            collection: 'articles',
-            where: {
-              and: [
-                { id: { in: Array.from(allPinnedIds) } },
-                { _status: { equals: 'published' } },
-              ],
-            },
-            limit: allPinnedIds.size,
-            depth: 1,
-            select: {
-              title: true, slug: true, subdeck: true, featuredImage: true,
-              section: true, kicker: true, publishedDate: true, createdAt: true,
-              authors: true, writeInAuthors: true, isFollytechnic: true,
-            },
-          });
-          const pinnedMap = new Map(
-            pinnedResponse.docs.map((a) => [a.id, formatArticle(a)]),
-          );
-
-          const resolveColumn = (ids: (number | null)[] | undefined): ComponentArticle[] =>
-            (ids || []).map((id) => (id ? pinnedMap.get(id) ?? null : null)).filter((a): a is ComponentArticle => a !== null);
-
-          featuresPinnedOnCampus = resolveColumn(layoutJson.onCampus);
-          featuresPinnedFeatured = resolveColumn(layoutJson.featured);
-          featuresPinnedRight = resolveColumn(layoutJson.rightArticles);
-          featuresPinnedTheArts = resolveColumn(layoutJson.theArts);
-          featuresPinnedSpotlightSubs = resolveColumn(layoutJson.spotlightSubs);
-          featuresPinnedWide = resolveColumn(layoutJson.wideArticle);
-        }
-      }
-    } catch {
-      // Table may not exist yet
-    }
-  }
+  // Features: the editors' layout resolved into stories, and The Lens
+  const featuresPage = section === 'features' ? await loadFeaturesPage(payload, formattedArticles) : null;
 
   // Sports: editors' layout and pins, standings, schedule and schools
   const sportsPage = section === 'sports' ? await loadSportsPage(payload) : null;
@@ -631,21 +547,8 @@ export default async function SectionPageRoute({ params }: Args) {
           groupedArticles={groupedArticles}
           pinnedSpotlightAuthors={pinnedSpotlightAuthors}
         />
-      ) : section === 'features' ? (
-        <FeaturesSectionPage
-          title={sectionTitle}
-          articles={formattedArticles}
-          pinnedOnCampus={featuresPinnedOnCampus}
-          pinnedFeatured={featuresPinnedFeatured}
-          pinnedRight={featuresPinnedRight}
-          onCampusImages={featuresOnCampusImages}
-          rightImages={featuresRightImages}
-          pinnedTheArts={featuresPinnedTheArts}
-          theArtsImages={featuresTheArtsImages}
-          photoSpotlight={featuresPhotoSpotlight}
-          pinnedSpotlightSubs={featuresPinnedSpotlightSubs}
-          pinnedWide={featuresPinnedWide}
-        />
+      ) : featuresPage ? (
+        <FeaturesSectionPage title={sectionTitle} {...featuresPage} />
       ) : sportsPage ? (
         <SportsSectionPage title={sectionTitle} articles={formattedArticles} {...sportsPage} />
       ) : isNews ? (

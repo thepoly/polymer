@@ -5,8 +5,8 @@
  * Run `pnpm db:seed` first; it creates the features editor and the fixture
  * photos this script reuses (the same four the news seed uses).
  *
- * Also creates a Features layout (Arts column pinned, Photo Spotlight) when
- * none exists yet. An existing layout is left alone, so editor changes aren't
+ * Also creates a Features layout (four photos in The Lens, every story slot
+ * left to fill automatically) when none exists yet. An existing layout is left alone, so editor changes aren't
  * overwritten.
  *
  * Usage: pnpm db:seed:features
@@ -14,6 +14,7 @@
 import { getPayload } from 'payload'
 import config from '../payload.config'
 import { getArticleUrl } from '../utils/getArticleUrl'
+import { EMPTY_FEATURES_LAYOUT } from '../lib/featuresLayout'
 
 type RichTextNode = Record<string, unknown>
 
@@ -42,8 +43,6 @@ type SeedFeaturesArticle = {
   subdeck: string
   writeIn?: string
   paragraphs: string[]
-  /** Pinned into a lower-row column of the seeded layout */
-  column?: 'theArts'
 }
 
 const ARTS = 'The Arts'
@@ -73,7 +72,6 @@ const ARTICLES: SeedFeaturesArticle[] = [
       'The director says the cramped space has pushed the cast to rely on each other more than the scenery.',
       'The production opens in the renovated theater the second weekend of December.',
     ],
-    column: 'theArts',
   },
   {
     slug: 'observatory-clear-night-volunteers',
@@ -133,7 +131,6 @@ const ARTICLES: SeedFeaturesArticle[] = [
       'Rehearsals happen wherever there is a free room, including a stairwell with good acoustics.',
       'Organizers expect a full house and have added a second performance.',
     ],
-    column: 'theArts',
   },
   {
     slug: 'hackathon-48-hours',
@@ -191,7 +188,6 @@ const ARTICLES: SeedFeaturesArticle[] = [
       'Students collected retired glassware, circuit boards and parts from broken instruments over a semester.',
       'The show runs through the end of the month and is free to visit.',
     ],
-    column: 'theArts',
   },
   {
     slug: 'residence-hall-kitchen-cooking',
@@ -445,11 +441,6 @@ async function main() {
     process.exit(0)
   }
 
-  const pinned = (column: 'theArts') =>
-    ARTICLES.filter((a) => a.column === column)
-      .slice(0, 3)
-      .map((a) => articleIds.get(a.slug) ?? null)
-
   // One spotlight photo per fixture, credited to the editor and linked to the
   // newest seeded article that uses it
   const spotlight = await Promise.all(
@@ -468,6 +459,7 @@ async function main() {
         articleUrl: getArticleUrl(article),
         photographerName: `${editor.firstName} ${editor.lastName}`,
         photographerUrl: `/staff/${editor.slug || editor.id}`,
+        addedAt: new Date().toISOString(),
       }
     }),
   )
@@ -476,21 +468,10 @@ async function main() {
     collection: 'features-page-layout',
     data: {
       name: 'Features Layout',
-      layout: {
-        onCampus: [null, null, null],
-        onCampusImages: [true, false, false],
-        featured: [null, null, null],
-        rightArticles: [null, null, null],
-        rightImages: [true, false, false],
-        theArts: pinned('theArts'),
-        theArtsImages: [true, false, false],
-        photoSpotlight: spotlight,
-        spotlightSubs: [null, null],
-        wideArticle: [null],
-      },
+      layout: { ...EMPTY_FEATURES_LAYOUT, lens: spotlight },
     },
   })
-  console.log('features layout created (Arts pinned, 4 spotlight photos).')
+  console.log('features layout created (4 photos in The Lens).')
   process.exit(0)
 }
 

@@ -96,8 +96,8 @@ export function StoryCard({
   );
 }
 
-/** Closes the row, pointing to every sports story */
-function EndCard({ slide }: { slide: number }) {
+/** Closes the row, pointing to every story in the section */
+function EndCard({ slide, href, label }: { slide: number; href: string; label: string }) {
   return (
     <div
       // A slide like the cards, so tabbing to its link brings it into view
@@ -107,10 +107,10 @@ function EndCard({ slide }: { slide: number }) {
       <span aria-hidden="true" className="mb-5 block h-[2px] w-8 bg-accent" />
       <p className="font-meta text-[26px] uppercase leading-[1.05] tracking-[0.04em] text-text-main">Want to see more?</p>
       <Link
-        href="/sports/all"
+        href={href}
         className="mt-6 border border-text-main px-5 py-3 font-meta text-[12px] font-semibold uppercase tracking-[0.08em] text-text-main transition-colors hover:border-accent hover:bg-accent hover:text-white"
       >
-        View all in Sports
+        {label}
       </Link>
     </div>
   );
@@ -144,7 +144,22 @@ function ArrowButton({ direction, hidden, onClick }: { direction: "prev" | "next
  * Featured photo cards scroll naturally by touch or trackpad, and can be
  * dragged with a mouse. Desktop arrows move a full set at a time.
  */
-export default function SportsFeatured({ articles, focus }: { articles: ComponentArticle[]; focus: FeaturedFocus }) {
+export default function SportsFeatured({
+  articles,
+  focus = {},
+  heading = "More Headlines",
+  headingId = "sports-featured-heading",
+  allHref = "/sports/all",
+  allLabel = "View all in Sports",
+}: {
+  articles: ComponentArticle[];
+  focus?: FeaturedFocus;
+  /** The row's heading, its id, and where the closing card points (Features reuses the row) */
+  heading?: string;
+  headingId?: string;
+  allHref?: string;
+  allLabel?: string;
+}) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const { handlers, stopMomentum } = useMomentumScroll(viewportRef, { mouseDrag: true });
@@ -187,8 +202,8 @@ export default function SportsFeatured({ articles, focus }: { articles: Componen
   };
 
   return (
-    <section aria-labelledby="sports-featured-heading" className="mt-6">
-      <SportsHeading id="sports-featured-heading">More Headlines</SportsHeading>
+    <section aria-labelledby={headingId} className="mt-6">
+      <SportsHeading id={headingId}>{heading}</SportsHeading>
 
       {/* Padding keeps card lift and shadows visible. The arrows stay outside
           the scrolling viewport so they remain fixed over the row. */}
@@ -204,7 +219,7 @@ export default function SportsFeatured({ articles, focus }: { articles: Componen
                 <StoryCard article={article} position={cardPosition(article, focus)} className="w-full" />
               </div>
             ))}
-            <EndCard slide={articles.length} />
+            <EndCard slide={articles.length} href={allHref} label={allLabel} />
           </div>
         </div>
         <ArrowButton direction="prev" hidden={edges.atStart} onClick={() => move(-1)} />

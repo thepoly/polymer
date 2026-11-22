@@ -834,3 +834,75 @@
 .fle-spotlight-image-pick:not(.fle-spotlight-image-used):hover .fle-spotlight-add-badge {
   opacity: 1;
 }
+
+/* ---- Cover / two-up / Photo Stories layout ---- */
+.fle-full {
+  margin-bottom: 16px;
+}
+.fle-canvas-two {
+  grid-template-columns: 2fr 1fr;
+  margin-bottom: 16px;
+}
+.fle-photo-stories {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.fle-note {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  opacity: 0.6;
+  margin: 2px 0 10px;
+}
+.fle-note-top {
+  max-width: 70ch;
+  margin-bottom: 16px;
+}
+
+/* ---- Photo Story photo picker ---- */
+.fle-photo-pick {
+  margin-top: 6px;
+}
+.fle-photo-pick-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.7rem;
+}
+.fle-photo-pick-current {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.fle-photo-pick-current img {
+  width: 28px;
+  height: 20px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+.fle-photo-pick-muted {
+  opacity: 0.5;
+}
+.fle-photo-pick-btn {
+  font-size: 0.7rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--theme-elevation-150, #333);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.fle-photo-pick-btn:hover {
+  border-color: var(--theme-elevation-400, #666);
+}
+.fle-photo-pick-selected {
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+.fle-photo-pick button.fle-spotlight-image-pick {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
