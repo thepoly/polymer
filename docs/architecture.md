@@ -117,8 +117,9 @@ to preserve article-local Follytechnic styling. The fixed article trigger
 closes the drawer on resize. Photofeatures support swipe-to-open through the
 drawer for the current breakpoint. Closed drawers ignore touches while
 another drawer is open.
-Theme/share controls stay on the right. Desktop and homepage strips retain
-their existing behavior.
+Theme/share controls stay on the right. During desktop pinch zoom, the
+article strip follows the visible viewport as it pans, and the title
+truncates within the available width.
 
 The desktop header's "Submit" and drawer's "Get involved" links open
 `/get-involved`, a server-rendered hub

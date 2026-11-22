@@ -110,6 +110,7 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
   const [atTop, setAtTop] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const toolbarRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { isDarkMode, toggleDarkMode, logoSrcs } = useTheme();
 
@@ -118,37 +119,70 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
   const sectionHref = section ? `/${section.toLowerCase()}` : '/';
 
   useEffect(() => {
+    const toolbar = toolbarRef.current;
+    const viewport = isHome ? null : window.visualViewport;
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    const tabletUp = window.matchMedia('(min-width: 768px)');
+    const photoUsesStandardHeader = window.matchMedia('(max-width: 639px)');
+    let positionedInVisualViewport = false;
+
+    const resetViewportPosition = () => {
+      if (!toolbar || !positionedInVisualViewport) return;
+      toolbar.style.removeProperty('translate');
+      toolbar.style.removeProperty('width');
+      positionedInVisualViewport = false;
+    };
+
     const handleScroll = () => {
-      const y = window.scrollY;
+      let y = window.scrollY;
       if (isHome) {
         setVisible(y > HOME_SCROLL_THRESHOLD);
         return;
       }
+
+      // Chromium pans the visible viewport separately during pinch zoom.
+      // Fixed positioning alone keeps the toolbar at the layout viewport's origin.
+      if (toolbar && viewport && desktop.matches && viewport.scale > 1) {
+        toolbar.style.translate = `${viewport.offsetLeft}px ${viewport.offsetTop}px`;
+        toolbar.style.width = `${viewport.width}px`;
+        positionedInVisualViewport = true;
+        y += viewport.offsetTop;
+      } else {
+        resetViewportPosition();
+      }
+
       if (hideUntilScroll) {
         // Photofeature desktop: hero is h-screen with its own header overlay.
         // Wait until the hero has scrolled most of the way out before fading
         // the bar in, so it doesn't double up on the in-hero header.
         // On mobile (< sm), the photofeature falls back to the standard
         // text header layout, so the bar should behave normally (always on).
-        const isMobile = window.matchMedia('(max-width: 639px)').matches;
-        if (isMobile) {
+        if (photoUsesStandardHeader.matches) {
           setVisible(true);
         } else {
           const threshold = Math.max(HOME_SCROLL_THRESHOLD, window.innerHeight - SCROLLBAR_HEIGHT);
           setVisible(y > threshold);
         }
       }
-      const isPhone = !window.matchMedia('(min-width: 768px)').matches;
-      setAtTop(isPhone || y <= ARTICLE_LOGO_SHIFT_THRESHOLD);
+      setAtTop(!tabletUp.matches || y <= ARTICLE_LOGO_SHIFT_THRESHOLD);
       if (y > ARTICLE_LOGO_SHIFT_THRESHOLD + 50) setShareOpen(false);
+    };
+
+    const handleViewportChange = () => {
+      if (desktop.matches) handleScroll();
     };
 
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleScroll);
+    viewport?.addEventListener('scroll', handleViewportChange, { passive: true });
+    viewport?.addEventListener('resize', handleViewportChange);
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
+      viewport?.removeEventListener('scroll', handleViewportChange);
+      viewport?.removeEventListener('resize', handleViewportChange);
+      resetViewportPosition();
     };
   }, [isHome, hideUntilScroll]);
 
@@ -208,6 +242,7 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
 
   const toolbar = (
     <div
+      ref={toolbarRef}
       className="fixed top-0 left-0 right-0 z-[51] bg-bg-main border-b border-border-main"
       // Invisible until scrolled to: out of the tab order and the
       // accessibility tree until then too
@@ -268,7 +303,7 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
             the user has scrolled past the logo-shift threshold. */}
         {!isHome && (
           <div
-            className={`hidden md:flex items-center gap-2 font-meta text-[13px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[50%] transition-opacity duration-300 ease-out ${
+            className={`hidden md:flex items-center gap-2 font-meta text-[13px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[50%] lg:max-w-[max(0px,min(50%,calc(100%_-_26.5rem)))] transition-opacity duration-300 ease-out ${
               atTop ? 'opacity-0 pointer-events-none' : 'opacity-100'
             }`}
             aria-hidden={atTop}
