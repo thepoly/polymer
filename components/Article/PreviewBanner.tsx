@@ -39,7 +39,7 @@ export function PreviewBanner({ articleId, status, updatedAt }: Props) {
   return (
     <div
       role="status"
-      className="sticky top-0 z-[60] flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-[#1f4d2e] px-4 py-2 font-meta text-[11px] font-semibold uppercase tracking-[0.12em] text-white"
+      className="sticky top-0 z-[60] flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-[#1f4d2e] px-4 py-2 font-meta text-[11px] font-semibold uppercase tracking-[0.12em] text-white max-lg:top-[calc(57px+var(--safe-area-top))]"
     >
       <span className="rounded-full bg-white/15 px-2 py-0.5">Preview</span>
       <span className="opacity-90">

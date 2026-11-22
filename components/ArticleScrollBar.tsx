@@ -104,8 +104,8 @@ const ARTICLE_LOGO_SHIFT_THRESHOLD = 100;
 export default function ArticleScrollBar({ title, richTitle, section, hideUntilScroll = false }: Props) {
   const isHome = !title || !section;
   // Home / hideUntilScroll: controls whether the whole bar fades in.
-  // Article (default): phones keep the centered logo; larger screens switch
-  // from the centered logo to navigation after scrolling.
+  // Phones keep the centered logo. Larger screens switch the center to
+  // section/title navigation after scrolling.
   const [visible, setVisible] = useState(!isHome && !hideUntilScroll);
   const [atTop, setAtTop] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
@@ -206,7 +206,7 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
     setShareOpen(false);
   };
 
-  return (
+  const toolbar = (
     <div
       className="fixed top-0 left-0 right-0 z-[51] bg-bg-main border-b border-border-main"
       // Invisible until scrolled to: out of the tab order and the
@@ -219,13 +219,6 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
       }}
     >
       <div className="relative flex items-center h-[56px] px-4 md:px-6">
-        {/* Scrolled article tablets show a menu instead of the desktop logo. */}
-        {!isHome && !atTop && (
-          <ArticleSectionMenu
-            onThemeToggle={() => triggerThemeTransition(window.innerWidth, 0, toggleDarkMode)}
-          />
-        )}
-
         {/* Left logo: hidden on articles while at top (a centered copy shows
             there instead); always shown on home mode. */}
         <Link
@@ -377,5 +370,18 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {!isHome && (
+        <ArticleSectionMenu
+          overPhotofeatureHero={hideUntilScroll && !visible}
+          swipeToOpen={hideUntilScroll}
+          onThemeToggle={() => triggerThemeTransition(window.innerWidth, 0, toggleDarkMode)}
+        />
+      )}
+      {toolbar}
+    </>
   );
 }

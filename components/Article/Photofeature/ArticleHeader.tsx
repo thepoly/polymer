@@ -71,10 +71,10 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         )}
 
         {/* Top Navigation Bar (z-50) */}
-        <div className="absolute top-0 left-0 right-0 z-50 px-3 py-3 md:px-5 md:py-4 grid grid-cols-3 items-center">
+        <div className="absolute top-0 left-0 right-0 z-50 grid grid-cols-3 items-center px-3 py-1.5 md:px-5 lg:py-4">
 
           {/* Left: Menu */}
-          <div className="flex items-center justify-start">
+          <div className="col-start-1 hidden items-center justify-start lg:flex">
             <button
               ref={menuButtonRef}
               onClick={() => setIsMenuOpen(true)}
@@ -88,7 +88,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
           </div>
 
           {/* Center: Logo */}
-          <div className="flex justify-center">
+          <div className="col-start-2 flex justify-center">
             <Link href="/" aria-label="The Polytechnic, home page" className="relative w-[6.5rem] md:w-[9.5rem] h-7 hover:opacity-90 transition-opacity">
               <Image
                 src={logoSrcs.mobileDark}
@@ -100,7 +100,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
           </div>
 
           {/* Right: Search */}
-          <div className="flex items-center justify-end">
+          <div className="col-start-3 flex items-center justify-end">
             <button
               onClick={() => openSearchOverlay({ forceDark: true })}
               className="flex h-11 w-11 items-center justify-center text-white hover:opacity-80 transition-opacity focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
@@ -250,7 +250,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
         isDarkMode={isDarkMode}
         onThemeToggle={toggleDarkMode}
         onSearchOpen={() => { setIsMenuOpen(false); openSearchOverlay({ forceDark: true }); }}
-        className=""
+        className="hidden lg:block"
       />
     </>
   );

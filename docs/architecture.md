@@ -71,10 +71,11 @@ including bold spans in their rich-text headlines. The News block leaves
 and below from `md`, halving its previous surrounding gaps. Bottom spacing
 includes the footer's existing 12px margin.
 
-On phones (below 768px), the article strip keeps its logo centered while
-scrolling. Tablets (768–1023px) start with a centered logo; after 100px of
-scrolling they show a burger menu on the left and centered `Section | Title`.
-Both tablet text links return to the section page. The burger opens the same
+Article pages below 1024px keep a menu button fixed at the top left throughout
+the article. Phones keep the logo centered while scrolling. Tablets start
+with the centered logo and switch to `Section | Title` after 100px of
+scrolling. Both tablet text links return to the section page. The same fixed
+button serves the photofeature hero and the article beneath it. The button opens the same
 `MobileMenuDrawer` as the mobile header and photofeature hero. It is a portalled
 modal dialog with a visible close button, section descriptions/current-section
 marker in rows with 12px vertical padding and a 72px minimum height,
@@ -92,8 +93,8 @@ disabled only during that capture/animation so it is not applied twice;
 its dimming remains. Live blur resumes immediately afterward to avoid an
 unblurred frame during the handoff; the backdrop's dimming still fades.
 The panel captures separately to stay sharp and follows
-the same circular reveal. Only the open panel claims a transition name, so
-photofeature hero and tablet triggers coexist. Without view transitions, the
+the same circular reveal. Only the open panel claims a transition name.
+Without view transitions, the
 existing color fade retains the live backdrop blur.
 Its search uses the same `UnderlinedSearchForm` as section-page
 footers: a typing field, accent underline and rainbow wave, submitting a GET
@@ -112,10 +113,10 @@ Opening moves focus inside; Tab stays in the dialog and the page behind is
 inert. Close restores prior inert/scroll state and focus, except when following
 a link or opening search. The 220ms swipe/slide uses the rendered panel width;
 reduced motion disables transitions. Font tokens are carried across the portal
-to preserve article-local Follytechnic styling. The tablet trigger closes on
-resize or returning to the top. A secondary drawer trigger
-does not add another global swipe-to-open gesture, and closed drawers ignore
-touches while another drawer is open.
+to preserve article-local Follytechnic styling. The fixed article trigger
+closes the drawer on resize. Photofeatures support swipe-to-open through the
+drawer for the current breakpoint. Closed drawers ignore touches while
+another drawer is open.
 Theme/share controls stay on the right. Desktop and homepage strips retain
 their existing behavior.
 
