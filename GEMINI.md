@@ -1,10 +1,12 @@
 # GEMINI.md
 
-This document is the canonical project + operations reference for Gemini/Codex-style agents in this repository. It mirrors `CLAUDE.md` so non-Claude agents have the same operational context.
+This document is the canonical project + operations reference for Gemini/Codex-style agents in this repository. It mirrors `CLAUDE.md` so non-Claude agents have the same operational context; when you change one, copy the change to the other.
 
 ## Project Overview
 
-Polymer is The Polytechnic's web platform (public newspaper site + Payload CMS admin) built on Next.js + Payload + PostgreSQL, with a Capacitor Android shell that wraps the production site and receives FCM breaking-news pushes.
+Polymer is The Polytechnic's web platform (public newspaper site + Payload CMS admin) built on Next.js + Payload + PostgreSQL, with Capacitor Android and iOS shells that wrap the production site and receive FCM breaking-news pushes.
+
+**This project is live in production with a real production database. Exercise caution with schema changes, migrations, and any destructive operations.**
 
 For deeper architectural context, see [`docs/`](docs/) (architecture, data model, migrations, search, push, analytics, deployment, local-development).
 
@@ -16,51 +18,52 @@ For deeper architectural context, see [`docs/`](docs/) (architecture, data model
 - PostgreSQL
 - TypeScript
 - Tailwind CSS 4
-- PostHog (`posthog-js` + `posthog-node`)
+- PostHog (`posthog-js` + `posthog-node`, self-hosted ingest at `t.poly.rpi.edu`)
 - pnpm 10
 
 ## Repository Layout
 
-- `app/(frontend)/`: public site routes (`/`, section pages, article pages, staff, search, `/live`, etc.)
-- `app/(payload)/`: Payload admin/app integration routes (`/admin`, `/newsroom`)
+- `app/(frontend)/`: public site routes (`/`, section pages, article pages, staff, search, `/live`, `/get-involved`, submission forms, `/about`, `/contact`, etc.)
+- `app/(payload)/`: Payload admin/app API integration routes (`/admin`, `/newsroom`)
 - `app/api/`: custom API routes (`/api/health`, search, push, weather, submit, etc.)
 - `collections/`: Payload collection + global definitions
 - `components/`: UI + article layout + dashboard components
-- `lib/`: server helpers (PostHog, FCM, theme, archive, weather)
+- `lib/`: server helpers (PostHog, FCM, theme, archive query, weather, homepage slot resolution)
 - `migrations/`: Payload-format TypeScript migrations registered via `migrations/index.ts`
-- `mobile/`: Capacitor Android shell
+- `mobile/`: Capacitor Android + iOS shells (separate `package.json`; install with `pnpm install --ignore-workspace`)
 - `scripts/`: deploy/runtime scripts (`run_deploy_sql_migrations.sh`, `deploy-smoke.mjs`, `generate-env.js`)
+- `patches/`: pnpm dependency patches (currently a Payload 3.80.0 CLI backport); see `patches/README.md` for provenance and when to remove each
 - `middleware.ts`: returns `410 Gone` for matching article URLs whose row is unpublished
-- `.github/workflows/`: CI, deploy, and Android release workflows
+- `.github/workflows/`: CI, production deploy, Android release, and iOS simulator build workflows
 
 ## Core Behavior
 
 - Article URL format: `/:section/:year/:month/:slug`
-- Homepage composition comes from `layout` + recent section stories (`app/(frontend)/page.tsx`)
+- Homepage composition comes from the `layout` collection + recent section stories (`app/(frontend)/page.tsx`)
 - Article layouts:
   - standard / news / sports / features → `StandardLayout`
   - opinion → `OpinionLayout`
   - `#photofeature#` flag in first content paragraph → `PhotofeatureLayout`
 - Live blog: `live-articles` collection drives `/live` and the homepage `LiveStrip` widget
-- Breaking news: when an article publishes with `breakingNews=true`, the `Articles.afterChange` hook calls `/api/push/send` (with `INTERNAL_PUSH_SECRET`) to fan out FCM messages.
+- Breaking news: when an article publishes with `breakingNews=true`, the `Articles.afterChange` hook calls `/api/push/send` (with `INTERNAL_PUSH_SECRET`) which fans out FCM messages to every `device-tokens` row.
 
 ## Data Model (Current)
 
 Collections:
 
-- `articles`: drafts/publish enabled (`versions.drafts: true`); `publishedDate` set on first publish; `lastModifiedBy` stamped on every change; `opinionType` derived from kicker
-- `live-articles`: live-blog entries with append-only updates
+- `articles`: drafts/publish enabled (`versions.drafts: true`); `publishedDate` is set on first publish in a `beforeChange` hook; `lastModifiedBy` is stamped on every change; `opinionType` auto-derives from the kicker for opinion pieces
+- `live-articles`: live-blog entries with append-only `updates`; mirrors the photo-gallery / carousel rich-text blocks
 - `layout`: homepage curation (lead, slots, top-4, layout template, sections, volume/issue) — drafts enabled
 - `opinion-page-layout`, `features-page-layout`, `sports-page-layout`, `news-page-layout`, `staff-page-layout`: per-section page composition
 - `student-gov-updates`, `student-gov-terms`: Student Senate / Executive Board timeline updates and terms (GM Week to GM Week); see `docs/news-section.md`
-- `users`: staff/auth/roles + slug, headshot, retired flag
-- `media`: uploaded assets (alt, title, caption, source URL, photographer)
+- `users`: staff/auth/roles + slug, headshot, retired flag, "one-liner", and seen-newsroom-notice flag
+- `media`: uploaded assets (alt, title, caption, source URL, photographer relationship, write-in photographer)
 - `job-titles`: staff position metadata
-- `submissions`: public op-ed / letter submissions
-- `event-submissions`: archived event submissions (read-only; the public event form was removed)
-- `logos`: branded section/homepage assets
-- `device-tokens`: registered Android FCM tokens
-- `schools`: opponents RPI teams play, each with a logo (seeded by `pnpm db:seed:schools`); sports articles link one as `opponent` with the game score
+- `submissions`: public op-ed / letter submissions (anonymous create, staff triage)
+- `event-submissions`: archived event submissions (read-only; the public event form and Features events box were removed)
+- `logos`: branded section logos and homepage assets
+- `device-tokens`: registered Android and iOS FCM tokens (anonymous create via `/api/push/register`, admin-only read/delete)
+- `schools`: opponents RPI teams play, each with a logo (upload collection; seeded from RPI Athletics schedules by `pnpm db:seed:schools`). Sports articles record up to two results in a `games` array (`opponent`, `date`, `homeAway`, `rpiScore`, `opponentScore`, `status`); the older single-game fields (`opponent`, `homeAway`, `rpiScore`, `opponentScore`, `gameStatus`) are hidden and kept for older articles and revisions
 
 Globals:
 
@@ -91,16 +94,16 @@ Required:
 
 Optional:
 
-- `LEGACY_DATABASE_URI`
+- `LEGACY_DATABASE_URI` (legacy Wagtail archive)
 - `NEXT_PUBLIC_SITE_URL`
 - `BASE_URL`
 - `PLAYWRIGHT_WEB_SERVER`
 - `PLAYWRIGHT_WEB_SERVER_COMMAND`
 - `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN`
-- `NEXT_PUBLIC_POSTHOG_HOST`
-- `INTERNAL_PUSH_SECRET`
-- `FCM_SERVICE_ACCOUNT_JSON` (raw JSON)
-- `PAYLOAD_DISABLE_PUSH=1` (disables Payload dev `db.push`)
+- `NEXT_PUBLIC_POSTHOG_HOST` (defaults to `https://t.poly.rpi.edu`)
+- `INTERNAL_PUSH_SECRET` (required to actually fan out breaking-news pushes)
+- `FCM_SERVICE_ACCOUNT_JSON` (raw JSON, not base64 — required for FCM v1)
+- `PAYLOAD_DISABLE_PUSH=1` (disables Payload's dev-mode `db.push` schema sync)
 
 `pnpm install` runs `scripts/generate-env.js` to create `.env` if missing.
 
@@ -108,12 +111,14 @@ Optional:
 
 - `pnpm dev`
 - `pnpm build`
-- `pnpm start`
+- `pnpm start` (binds to `127.0.0.1`; PM2/nginx fronts it in prod)
 - `pnpm lint`
 - `pnpm typecheck`
 - `pnpm test:smoke`
 - `pnpm test:search-limit`
 - `pnpm test:deploy-smoke` (manual smoke script; not used by deploy workflow)
+- `pnpm test:unit` (Vitest)
+- `pnpm test:payload-cli` (checks the Payload CLI patch; also runs in CI)
 - `pnpm generate:types`
 
 ## CI (Current)
@@ -124,10 +129,13 @@ Runs on PRs + pushes to `main`:
 
 1. Postgres service (`postgres:16`)
 2. `pnpm install --frozen-lockfile`
-3. `pnpm exec payload migrate`
-4. `pnpm lint`
-5. `pnpm typecheck`
-6. `pnpm build`
+3. `pnpm test:payload-cli`
+4. `pnpm exec payload migrate` (fails unless the CLI prints `Done.`)
+5. `pnpm lint`
+6. `pnpm typecheck`
+7. `pnpm build`
+
+Pull-request workflows don't run while a PR has merge conflicts with its base, so a conflicting PR shows no CI result at all.
 
 Playwright is not part of the current CI runtime path.
 
@@ -187,6 +195,8 @@ Use a single PM2 control plane: `actions-runner`.
 - Allowed: `sudo -u actions-runner pm2 ...`
 - Avoid: running app PM2 commands as `poly`
 
+Mixing PM2 users creates split daemons/process lists and inconsistent runtime ownership on port 3000.
+
 ### Runtime Process Config
 
 `ecosystem.config.cjs`:
@@ -205,19 +215,25 @@ Use a single PM2 control plane: `actions-runner`.
 - behavior:
   - returns `200` with `{ status: "ok" }` when app + Payload/Postgres check succeeds
   - returns `503` with `{ status: "error", checks.database: "error" }` on DB/Payload failure
+  - response is `Cache-Control: no-store`
 
 ## Push Notifications (Breaking News)
 
-- registration: `POST /api/push/register` (Android client)
+- registration: `POST /api/push/register` (Android + iOS clients; in-memory rate limit + token de-dupe)
 - fan-out: `POST /api/push/send` (internal; requires `x-internal-secret` matching `INTERNAL_PUSH_SECRET`)
-- transport: FCM HTTP v1 via `lib/fcm.ts` using `FCM_SERVICE_ACCOUNT_JSON`
+- transport: FCM HTTP v1 via `lib/fcm.ts` using `FCM_SERVICE_ACCOUNT_JSON`; iOS devices register FCM tokens too (APNs → FCM swap in the app), so there is no separate APNs sender
 - trigger: `Articles.afterChange` when an article transitions to published with `breakingNews=true`
+- if `INTERNAL_PUSH_SECRET` or `FCM_SERVICE_ACCOUNT_JSON` is unset, the fan-out becomes a no-op so dev/CI is unaffected
 
 ## Agent Operations
 
-- **Linting & Code Quality:** Ensure any code changes are lint-safe before completing your task. Either review your code rigorously for common ESLint and React purity warnings, or execute `pnpm lint` to automatically verify. Run `pnpm typecheck` too.
+- **Pre-commit checks:** Always run `pnpm lint` and `pnpm typecheck` before committing. Do not commit code that fails either check.
+- **Linting & Code Quality:** Ensure code changes are lint-safe before completing your task. Either review your code rigorously for common ESLint and React purity warnings, or execute `pnpm lint` to automatically verify.
 - **Lint baseline and CMS previews:** Expect zero ESLint errors and warnings. Plain images in the five named CMS layout editor files are intentional; `eslint.config.mjs` contains a scoped `@next/next/no-img-element` exception. Public-site image checks and preview alt-text checks remain enabled. See [`docs/local-development.md`](docs/local-development.md#lint-expectations-and-cms-image-previews) for the policy and exact file scope.
-- **Database Migrations:** When changing the DB schema, write BOTH a TypeScript migration in `migrations/` (registered in `migrations/index.ts`) AND the equivalent SQL in `scripts/run_deploy_sql_migrations.sh` with a tracking INSERT. See [`docs/migrations.md`](docs/migrations.md).
+- **Database Migrations:** When adding or modifying Payload collection fields that change the DB schema (new fields, new collections, enum changes), you MUST create corresponding migrations in BOTH paths:
+  1. A TypeScript migration file in `migrations/` and register it in `migrations/index.ts` (used by CI via `pnpm exec payload migrate`)
+  2. The equivalent SQL in `scripts/run_deploy_sql_migrations.sh` with a tracking INSERT entry (used by production deploy)
+  Failing to do this will break production — the site will crash on startup if Payload tries to query columns/tables that don't exist. See [`docs/migrations.md`](docs/migrations.md) for the full step-by-step.
 
 ## Incident Guardrails
 

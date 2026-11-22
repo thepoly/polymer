@@ -55,8 +55,10 @@ Mobile photofeatures use the same spacing; their desktop hero stays full-screen.
 
 All four sections use `components/Article/ArticleSectionLabel.tsx` above the
 article title: centered accent section name, uppercase kicker in the main
-text color, and a short rule. Empty kickers and kickers matching the section
-are omitted. Opinion uses its stored kicker, falling back to its type label
+text color, and a short rule. The section name links to its section page; a
+2px accent underline draws left to right on hover and keyboard focus (shown
+instantly with reduced motion), matching the section link in the sticky
+article strip. Empty kickers and kickers matching the section are omitted. Opinion uses its stored kicker, falling back to its type label
 for older articles. Photofeature heroes use white kicker text and a white rule
 over the photo; mobile photofeatures use the standard header.
 
@@ -69,7 +71,9 @@ News recommendation titles at the bottom of articles also use regular weight,
 including bold spans in their rich-text headlines. The News block leaves
 32px above its heading and 34px below its content on phones, and 46px above
 and below from `md`, halving its previous surrounding gaps. Bottom spacing
-includes the footer's existing 12px margin.
+includes the footer's existing 12px margin. The Sports block is tighter
+still: 24px from the author rule to Continue Reading and from the last
+recommendation to the footer rule at every width.
 
 Article pages below 1024px keep a menu button fixed at the top left throughout
 the article. Phones keep the logo centered while scrolling. Tablets start

@@ -23,7 +23,7 @@ For deeper architectural context, see [`docs/`](docs/) (architecture, data model
 
 ## Repository Layout
 
-- `app/(frontend)/`: public site routes (`/`, section pages, article pages, staff, search, `/live`, submission forms, `/about`, `/contact`, etc.)
+- `app/(frontend)/`: public site routes (`/`, section pages, article pages, staff, search, `/live`, `/get-involved`, submission forms, `/about`, `/contact`, etc.)
 - `app/(payload)/`: Payload admin/app API integration routes (`/admin`, `/newsroom`)
 - `app/api/`: custom API routes (`/api/health`, search, push, weather, submit, etc.)
 - `collections/`: Payload collection + global definitions
@@ -32,6 +32,7 @@ For deeper architectural context, see [`docs/`](docs/) (architecture, data model
 - `migrations/`: Payload-format TypeScript migrations registered via `migrations/index.ts`
 - `mobile/`: Capacitor Android + iOS shells (separate `package.json`; install with `pnpm install --ignore-workspace`)
 - `scripts/`: deploy/runtime scripts (`run_deploy_sql_migrations.sh`, `deploy-smoke.mjs`, `generate-env.js`)
+- `patches/`: pnpm dependency patches (currently a Payload 3.80.0 CLI backport); see `patches/README.md` for provenance and when to remove each
 - `middleware.ts`: returns `410 Gone` for matching article URLs whose row is unpublished
 - `.github/workflows/`: CI, production deploy, Android release, and iOS simulator build workflows
 
@@ -62,7 +63,7 @@ Collections:
 - `event-submissions`: archived event submissions (read-only; the public event form and Features events box were removed)
 - `logos`: branded section logos and homepage assets
 - `device-tokens`: registered Android and iOS FCM tokens (anonymous create via `/api/push/register`, admin-only read/delete)
-- `schools`: opponents RPI teams play, each with a logo (upload collection; seeded from RPI Athletics schedules by `pnpm db:seed:schools`). Sports articles link one as `opponent`, alongside `homeAway`, `rpiScore`, `opponentScore` and `gameStatus`
+- `schools`: opponents RPI teams play, each with a logo (upload collection; seeded from RPI Athletics schedules by `pnpm db:seed:schools`). Sports articles record up to two results in a `games` array (`opponent`, `date`, `homeAway`, `rpiScore`, `opponentScore`, `status`); the older single-game fields (`opponent`, `homeAway`, `rpiScore`, `opponentScore`, `gameStatus`) are hidden and kept for older articles and revisions
 
 Globals:
 
@@ -116,6 +117,8 @@ Optional:
 - `pnpm test:smoke`
 - `pnpm test:search-limit`
 - `pnpm test:deploy-smoke` (manual smoke script; not used by deploy workflow)
+- `pnpm test:unit` (Vitest)
+- `pnpm test:payload-cli` (checks the Payload CLI patch; also runs in CI)
 - `pnpm generate:types`
 
 ## CI (Current)
@@ -126,10 +129,13 @@ Runs on PRs + pushes to `main`:
 
 1. Postgres service (`postgres:16`)
 2. `pnpm install --frozen-lockfile`
-3. `pnpm exec payload migrate`
-4. `pnpm lint`
-5. `pnpm typecheck`
-6. `pnpm build`
+3. `pnpm test:payload-cli`
+4. `pnpm exec payload migrate` (fails unless the CLI prints `Done.`)
+5. `pnpm lint`
+6. `pnpm typecheck`
+7. `pnpm build`
+
+Pull-request workflows don't run while a PR has merge conflicts with its base, so a conflicting PR shows no CI result at all.
 
 Playwright is not part of the current CI runtime path.
 
