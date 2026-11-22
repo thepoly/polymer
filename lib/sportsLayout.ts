@@ -110,14 +110,6 @@ export function parseSportsLayout(raw: unknown): SportsLayout {
 }
 
 /**
- * Whether a story's game can go on the scoreboard: it needs both scores. A
- * preview of a game still to be played has an opponent but no result.
- */
-export const hasFinalScore = (
-  game: { rpiScore?: number | null; opponentScore?: number | null } | null | undefined,
-): boolean => game != null && game.rpiScore != null && game.opponentScore != null
-
-/**
  * The story an empty slot fills with: the newest one not placed anywhere yet,
  * preferring one with a photo since every slot shows one. `articles` is newest
  * first.

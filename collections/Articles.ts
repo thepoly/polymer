@@ -207,8 +207,14 @@ const Articles: CollectionConfig = {
         // Sport and game result belong to sports stories only. A story moved
         // to another section drops them, so it never keeps a hidden sport or
         // scoreboard that would come back if it moved again.
-        if ((data.section ?? originalDoc?.section) !== 'sports') {
-          for (const field of ['sport', 'opponent', 'homeAway', 'rpiScore', 'opponentScore', 'gameStatus'] as const) {
+        const outsideSports = (data.section ?? originalDoc?.section) !== 'sports'
+        if (outsideSports) {
+          if (data.sport || originalDoc?.sport) data.sport = null
+          if (data.games?.length || originalDoc?.games?.length) data.games = []
+        }
+        // Clearing the last game must also clear the legacy fallback.
+        if (outsideSports || data.games !== undefined) {
+          for (const field of ['opponent', 'homeAway', 'rpiScore', 'opponentScore', 'gameStatus'] as const) {
             if (data[field] != null || originalDoc?.[field] != null) data[field] = null
           }
         }
@@ -265,76 +271,44 @@ const Articles: CollectionConfig = {
         condition: (data: Record<string, unknown>) => data?.section === 'sports',
       },
     },
-    // Game result — sports stories about a single game. Drives the scoreboard
-    // above the lead story on /sports.
     {
-      type: 'row',
+      name: 'games',
+      type: 'array',
+      maxRows: 2,
+      labels: { singular: 'Game', plural: 'Games' },
+      admin: {
+        condition: (data) => data?.section === 'sports',
+        description: 'Add one game or both games of a series, in playing order. Leave empty for other stories.',
+      },
       fields: [
         {
-          name: 'opponent',
-          type: 'relationship',
-          relationTo: 'schools',
-          hasMany: false,
-          admin: {
-            width: '50%',
-            description: 'The school RPI played. Leave empty for stories that are not about one game. The /sports scoreboard shows once both scores are entered.',
-            condition: (data: Record<string, unknown>) => data?.section === 'sports',
-          },
-        },
-        {
-          name: 'homeAway',
-          type: 'select',
-          label: 'Home / Away',
-          options: [
-            { label: 'Home', value: 'home' },
-            { label: 'Away', value: 'away' },
-            { label: 'Neutral site', value: 'neutral' },
+          type: 'row',
+          fields: [
+            { name: 'opponent', type: 'relationship', relationTo: 'schools', required: true, admin: { width: '50%' } },
+            { name: 'date', label: 'Date played', type: 'date', admin: { width: '25%', date: { pickerAppearance: 'dayOnly' } } },
+            {
+              name: 'homeAway', label: 'Site', type: 'select', defaultValue: 'home',
+              options: [{ label: 'Home', value: 'home' }, { label: 'Away', value: 'away' }, { label: 'Neutral', value: 'neutral' }],
+              admin: { width: '25%' },
+            },
           ],
-          admin: {
-            width: '50%',
-            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
-          },
+        },
+        {
+          type: 'row',
+          fields: [
+            { name: 'rpiScore', label: 'RPI score', type: 'number', min: 0, validate: wholeScore, admin: { width: '25%' } },
+            { name: 'opponentScore', type: 'number', min: 0, validate: wholeScore, admin: { width: '25%' } },
+            { name: 'status', type: 'text', admin: { width: '50%', placeholder: 'Final, Final/OT, 7:00 PM…' } },
+          ],
         },
       ],
     },
-    {
-      type: 'row',
-      fields: [
-        {
-          name: 'rpiScore',
-          type: 'number',
-          label: 'RPI Score',
-          min: 0,
-          validate: wholeScore,
-          admin: {
-            width: '25%',
-            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
-          },
-        },
-        {
-          name: 'opponentScore',
-          type: 'number',
-          label: 'Opponent Score',
-          min: 0,
-          validate: wholeScore,
-          admin: {
-            width: '25%',
-            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
-          },
-        },
-        {
-          name: 'gameStatus',
-          type: 'text',
-          label: 'Game Status',
-          admin: {
-            width: '50%',
-            placeholder: 'Final',
-            description: 'e.g. Final, Final/OT, Final/2OT, Final/SO. Defaults to "Final".',
-            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
-          },
-        },
-      ],
-    },
+    // Retained for older articles and revisions.
+    { name: 'opponent', type: 'relationship', relationTo: 'schools', admin: { hidden: true } },
+    { name: 'homeAway', type: 'select', options: ['home', 'away', 'neutral'], admin: { hidden: true } },
+    { name: 'rpiScore', type: 'number', min: 0, validate: wholeScore, admin: { hidden: true } },
+    { name: 'opponentScore', type: 'number', min: 0, validate: wholeScore, admin: { hidden: true } },
+    { name: 'gameStatus', type: 'text', admin: { hidden: true } },
     {
       name: 'title',
       type: 'richText',

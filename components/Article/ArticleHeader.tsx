@@ -8,9 +8,10 @@ import { ArticleSectionLabel } from './ArticleSectionLabel';
 
 type Props = {
   article: Article;
+  scoreBand?: React.ReactNode;
 };
 
-export const ArticleHeader: React.FC<Props> = ({ article }) => {
+export const ArticleHeader: React.FC<Props> = ({ article, scoreBand }) => {
   const featuredImage = article.featuredImage as Media | null;
   const writeInPhotographer = featuredImage
     ? ((featuredImage as unknown as Record<string, unknown>).writeInPhotographer as string | null | undefined)
@@ -34,12 +35,13 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                 {article.subdeck}
             </h2>
         )}
+        {scoreBand}
       </div>
 
       {featuredImage?.url && (() => {
         const photographer = featuredImage.photographer && typeof featuredImage.photographer === 'object' ? featuredImage.photographer as User : null;
         return (
-          <div className="flex flex-col max-w-[680px] w-full mx-auto">
+          <div className={`flex flex-col max-w-[680px] w-full mx-auto ${scoreBand ? '-mt-6 sm:-mt-4' : ''}`}>
             <div
               id={`media-${featuredImage.id}`}
               className={featuredImageWrapperClassName}

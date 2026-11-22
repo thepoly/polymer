@@ -1,5 +1,6 @@
 'use client';
 
+import { getGames, type ArticleGameFields } from '@/utils/getGames';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   DndContext,
@@ -29,7 +30,6 @@ import {
   FEATURED_COUNT,
   HEADLINE_COUNT,
   autoFill,
-  hasFinalScore,
   parseSportsLayout,
   type FeaturedFocus,
   type ScoreboardDate,
@@ -40,7 +40,7 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-type ArticleData = {
+type ArticleData = ArticleGameFields & {
   id: number;
   title: Record<string, unknown>;
   plainTitle?: string;
@@ -54,10 +54,6 @@ type ArticleData = {
   authors?: Array<number | { firstName: string; lastName: string }>;
   writeInAuthors?: Array<{ name: string }>;
   _status?: string | null;
-  // The game result, which decides whether the lead gets a scoreboard
-  opponent?: unknown;
-  rpiScore?: number | null;
-  opponentScore?: number | null;
 };
 
 // Editor state keeps every slot group as an array so drag/drop is uniform
@@ -83,7 +79,7 @@ const ARTICLE_FIELDS =
   '&depth=1&select[title]=true&select[plainTitle]=true&select[slug]=true&select[section]=true&select[publishedDate]=true' +
   '&select[createdAt]=true&select[featuredImage]=true&select[subdeck]=true&select[kicker]=true' +
   '&select[authors]=true&select[writeInAuthors]=true&select[_status]=true' +
-  '&select[opponent]=true&select[rpiScore]=true&select[opponentScore]=true';
+  '&select[games]=true&select[opponent]=true&select[rpiScore]=true&select[opponentScore]=true';
 
 const BADGE_STYLE = { fontSize: '0.62rem', color: '#C41E3A', fontWeight: 600 } as const;
 
@@ -983,12 +979,12 @@ export function SportsLayoutEditor() {
   const leadId = slots.lead[0];
   // The story the page will lead with: the pinned one if it's published, else
   // the newest story not placed anywhere. As on the page, it gets a scoreboard
-  // only if it has an opponent and both scores, and the second below-lead
-  // slot is used whenever it doesn't.
+  // when it has at least one game.
   const pinnedLead = getArticle('lead', 0);
   const leadArticle =
     pinnedLead?._status === 'published' ? pinnedLead : autoFill(articles, usedIds, (a) => Boolean(getImageUrl(a)));
-  const scoreboardShows = showScoreboard && Boolean(leadArticle?.opponent) && hasFinalScore(leadArticle);
+  const games = leadArticle ? getGames(leadArticle) : [];
+  const scoreboardShows = showScoreboard && games.length > 0;
 
   return (
     <DndContext
@@ -1048,14 +1044,14 @@ export function SportsLayoutEditor() {
                 />
                 <label className="fle-image-toggle" title="Uses the lead story's opponent and score" style={{ alignSelf: 'flex-start' }}>
                   <input type="checkbox" checked={showScoreboard} onChange={toggleScoreboard} />
-                  Show scoreboard above the lead (from the story&apos;s game result, when it has one)
+                  Show scoreboard above the lead (from the story&apos;s games)
                 </label>
                 {showScoreboard && !scoreboardShows && leadArticle && (
                   <span style={{ fontSize: '0.62rem', opacity: 0.5, alignSelf: 'flex-start' }}>
-                    No scoreboard for &ldquo;{leadArticle.plainTitle}&rdquo;: the story needs an opponent and both scores.
+                    No scoreboard for &ldquo;{leadArticle.plainTitle}&rdquo;: add a game to the story to show its scoreboard.
                   </span>
                 )}
-                {scoreboardShows && leadId !== null && leadArticle?.id === leadId && (
+                {scoreboardShows && games.length === 1 && leadId !== null && leadArticle?.id === leadId && (
                   <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: '0.72rem', alignSelf: 'flex-start' }}>
                     <span style={{ fontWeight: 600 }}>Date played</span>
                     <input
@@ -1073,7 +1069,7 @@ export function SportsLayoutEditor() {
                       }}
                     />
                     <span style={{ fontSize: '0.62rem', opacity: 0.5 }}>
-                      Shown under the scoreboard. Leave empty to use the publish date.
+                      Overrides the game date for this lead. If both are empty, the publish date is shown.
                     </span>
                   </label>
                 )}

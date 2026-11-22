@@ -15,6 +15,7 @@ export interface GameResult {
   rpiScore: number | null;
   opponentScore: number | null;
   status: string;
+  date: string | null;
 }
 
 export interface Article {
@@ -47,5 +48,5 @@ export interface Article {
   /** Authors in byline order; href is the staff profile, null for write-ins */
   authorLinks?: { name: string; href: string | null }[];
   sport?: string | null;
-  game?: GameResult | null;
+  games?: GameResult[];
 }

@@ -186,6 +186,8 @@ jobs:
             -c "SELECT id FROM sports_page_layout LIMIT 0;" \
             -c "SELECT id, short_name, athletics_url FROM schools LIMIT 0;" \
             -c "SELECT opponent_id, home_away, rpi_score, opponent_score, game_status, sport FROM articles LIMIT 0;" \
+            -c "SELECT opponent_id, date, home_away, rpi_score, opponent_score, status FROM articles_games LIMIT 0;" \
+            -c "SELECT _uuid, opponent_id, date, home_away, rpi_score, opponent_score, status FROM _articles_v_version_games LIMIT 0;" \
             -c "SELECT id FROM staff_page_layout LIMIT 0;" \
             -c "SELECT id FROM theme LIMIT 0;" \
             -c "SELECT id FROM seo LIMIT 0;"

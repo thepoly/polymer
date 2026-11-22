@@ -342,15 +342,23 @@ export interface Article {
       )
     | null;
   /**
-   * The school RPI played. Leave empty for stories that are not about one game. The /sports scoreboard shows once both scores are entered.
+   * Add one game or both games of a series, in playing order. Leave empty for other stories.
    */
+  games?:
+    | {
+        opponent: number | School;
+        date?: string | null;
+        homeAway?: ('home' | 'away' | 'neutral') | null;
+        rpiScore?: number | null;
+        opponentScore?: number | null;
+        status?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   opponent?: (number | null) | School;
   homeAway?: ('home' | 'away' | 'neutral') | null;
   rpiScore?: number | null;
   opponentScore?: number | null;
-  /**
-   * e.g. Final, Final/OT, Final/2OT, Final/SO. Defaults to "Final".
-   */
   gameStatus?: string | null;
   title: {
     root: {
@@ -1161,6 +1169,17 @@ export interface LogosSelect<T extends boolean = true> {
 export interface ArticlesSelect<T extends boolean = true> {
   section?: T;
   sport?: T;
+  games?:
+    | T
+    | {
+        opponent?: T;
+        date?: T;
+        homeAway?: T;
+        rpiScore?: T;
+        opponentScore?: T;
+        status?: T;
+        id?: T;
+      };
   opponent?: T;
   homeAway?: T;
   rpiScore?: T;

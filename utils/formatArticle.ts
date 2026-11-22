@@ -1,3 +1,4 @@
+import { getGames, type ArticleGameFields } from './getGames';
 import { Media } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
 import React from 'react';
@@ -26,14 +27,7 @@ type WriteInAuthor = {
   photo?: unknown;
 };
 
-type SchoolLike = {
-  name: string;
-  shortName?: string | null;
-  url?: string | null;
-  athleticsUrl?: string | null;
-};
-
-type FormatArticleInput = {
+type FormatArticleInput = ArticleGameFields & {
   id: number | string;
   slug?: string | null;
   title: unknown;
@@ -50,11 +44,6 @@ type FormatArticleInput = {
   _status?: string | null;
   isFollytechnic?: boolean | null;
   sport?: string | null;
-  opponent?: number | SchoolLike | null;
-  homeAway?: 'home' | 'away' | 'neutral' | null;
-  rpiScore?: number | null;
-  opponentScore?: number | null;
-  gameStatus?: string | null;
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -183,20 +172,6 @@ export const formatArticle = (
       ...(article.writeInAuthors || []).filter((a) => a.name).map((a) => ({ name: a.name, href: null })),
     ],
     sport: article.sport || null,
-    // Only present when the opponent was populated (depth >= 1)
-    game: article.opponent && typeof article.opponent === 'object'
-      ? {
-          opponent: {
-            name: article.opponent.name,
-            shortName: article.opponent.shortName || article.opponent.name,
-            logo: article.opponent.url || null,
-            url: article.opponent.athleticsUrl || null,
-          },
-          homeAway: article.homeAway || 'home',
-          rpiScore: article.rpiScore ?? null,
-          opponentScore: article.opponentScore ?? null,
-          status: article.gameStatus || 'Final',
-        }
-      : null,
+    games: getGames(article),
   };
 };

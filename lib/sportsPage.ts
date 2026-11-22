@@ -7,6 +7,7 @@ import { RPI_SCHOOL_NAME } from '@/collections/Schools'
 import type { Article as ComponentArticle, GameTeam } from '@/components/FrontPage/types'
 import type { SportsSectionPageProps } from '@/components/Sports/SportsSectionPage'
 import type { StandingsTeam } from '@/components/Sports/SportsStandings'
+import { schoolTeam } from '@/utils/getGames'
 import { formatArticle } from '@/utils/formatArticle'
 import { getSportsSchedule, type SportSchedule } from './schedule'
 import { parseSportsLayout, type SportsLayout } from './sportsLayout'
@@ -15,6 +16,7 @@ import { getSportsStandings } from './standings'
 /** Sport + game-result fields sports stories carry (opponent populates at depth 1) */
 export const SPORTS_GAME_SELECT = {
   sport: true,
+  games: true,
   opponent: true,
   homeAway: true,
   rpiScore: true,
@@ -116,6 +118,11 @@ async function loadSchools(payload: Payload, teamNames: string[], opponentNames:
   }
 }
 
+export async function loadRpiTeam(payload: Payload): Promise<GameTeam | null> {
+  const [rpi] = await loadSchools(payload, [], [])
+  return rpi ? schoolTeam(rpi, 'RPI') : null
+}
+
 export async function loadSportsPage(payload: Payload): Promise<SportsPageData> {
   const layout = await loadSportsLayout(payload)
   const pin = await loadPinned(payload, layout)
@@ -145,9 +152,7 @@ export async function loadSportsPage(payload: Payload): Promise<SportsPageData> 
 
   // RPI's own school record supplies its side of the scoreboard
   const rpi = schools.find((s) => s.name === RPI_SCHOOL_NAME)
-  const rpiTeam: GameTeam | null = rpi
-    ? { name: rpi.name, shortName: rpi.shortName || 'RPI', logo: rpi.url || null, url: rpi.athleticsUrl || null }
-    : null
+  const rpiTeam = rpi ? schoolTeam(rpi, 'RPI') : null
 
   // Logos + athletics links for every team in the tables, matched to Schools
   // by short name (falling back to full name)

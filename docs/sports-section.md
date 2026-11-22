@@ -10,7 +10,7 @@ over time.
 | Part | What it shows | Where the data comes from |
 | --- | --- | --- |
 | Score strip (top) | For each sport in the standings card: RPI's last two finals and next game | rpiathletics.com calendar feed ([`lib/schedule.ts`](../lib/schedule.ts)) |
-| Lead + scoreboard | Lead story with a scoreboard (logos, score, sport, status, date played) | The lead article's game result + `schools` |
+| Lead + scoreboard | Lead story with a scoreboard (logos, score, sport, status, date played) | One or two games on the lead article + `schools` |
 | Below-lead stories | One wide story, or two when no scoreboard shows | Layout editor, auto-filled with the newest stories |
 | Standings card | Every sport in season (at least 3). Five tabs fit; any more scroll sideways (trackpad or finger swipe, desktop mouse drag, or the arrows). Top five teams, with RPI held at its real rank | ECAC Hockey and Liberty League standings pages ([`lib/standings.ts`](../lib/standings.ts)) |
 | Headlines | Three stories | Layout editor / newest stories |
@@ -83,12 +83,20 @@ cached for 60 seconds.
   "General / Multiple Sports" (which adds no label) or leave Sport blank,
   and write a kicker if you want one; it is then the story's label on
   `/sports`.
-- **Game result** (all optional): opponent (a school), home / away /
-  neutral, RPI score, opponent score, and status. Scores are whole numbers.
-  Leave status blank for "Final"; type "Final/OT" and similar when it
-  applies. The scoreboard only appears when the lead story has an opponent
-  and both scores, so a game preview gets none.
-- Moving a story out of Sports clears its sport and game result.
+- **Games.** Add the opponent, date played, site, whole-number scores and
+  status for each game. For a weekend recap, add both games in playing order.
+  Both games can use the same school or different opponents. Leave Games
+  empty for a story without a game.
+- An article with one game shows a ruled score band beneath its deck, or
+  beneath its headline when the deck is empty. With two games, both boards
+  stay side by side on phones and larger screens. A desktop photofeature
+  carries the band immediately below its full-screen hero.
+- Enter statuses such as “Final/OT” or “7:00 PM” as needed. A blank status
+  defaults to “Final” with both scores and “Scheduled” otherwise. Missing
+  scores show a dash. A tie gives both teams equal emphasis. The series
+  record counts only games with both scores, in RPI win–loss–tie order.
+  Two dates from the same Friday through Sunday are labeled “Weekend”.
+- Moving a story out of Sports clears its sport and games.
 
 **Sports Layout** (in the newsroom):
 - Drag stories into the lead, below-lead, Headlines and More Headlines
@@ -97,12 +105,12 @@ cached for 60 seconds.
 - A pinned story that has been unpublished is marked "not published"; its
   slot fills itself until the story is published again. A pin whose story
   was deleted says so and can be removed with ×.
-- **Scoreboard** switch, and **Date played** under it. The scoreboard
-  otherwise shows the publish date, which is often a day after the game.
-  The date belongs to the story it was typed for: change the lead and it
-  goes back to the publish date. When the lead has no final score, the
-  editor says why there's no scoreboard and offers the second below-lead
-  slot instead.
+- **Scoreboard** controls the lead slot. A single game uses the large
+  scoreboard. A series shows two boards above the lead, using each game’s
+  own date. On phones the headline and photo follow the boards.
+  **Date played** overrides the date for a pinned single-game lead only.
+  Single games fall back to the publication date when the game date is empty.
+  A lead without a board makes room for the second below-lead story.
 - **Scores banner** switch. Turning it off shows the plain
   "Sports | Contact" header and stops the site contacting RPI Athletics.
 - **Lead title overlay** switch.
@@ -118,7 +126,7 @@ cached for 60 seconds.
 
 ## Database changes
 
-Three migrations, in both paths (`migrations/` and
+Sports migrations are in both paths (`migrations/` and
 `scripts/run_deploy_sql_migrations.sh`):
 
 - `20261022_000000_add_sports_page_layout`: `sports_page_layout` table
@@ -129,10 +137,11 @@ Three migrations, in both paths (`migrations/` and
 - `20261022_020000_add_article_sport`: `sport` enum column on `articles`
   and `_articles_v`
 
-All changes are additive. The new columns are nullable, existing articles
-need no backfill, and nothing is dropped or renamed. The deploy's schema
-check ([`deploy.yml`](../.github/workflows/deploy.yml)) now also queries
-the new tables and columns.
+- `20261121_000000_add_article_games` adds ordered rows in `articles_games`
+  and `_articles_v_version_games`. Existing games and saved revisions are
+  copied into their first row. Older records with only the original fields
+  also render through the single-game fallback. The deploy schema check
+  covers both tables. A rollback can keep the first game in the legacy fields.
 
 Checked locally: a database migrated with the TypeScript migrations and one
 built with `main`'s migrations plus this branch's deploy SQL (run twice)

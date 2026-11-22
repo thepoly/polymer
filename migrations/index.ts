@@ -1,3 +1,4 @@
+import * as articleGames from './20261121_000000_add_article_games';
 import * as opinionSingleton from './20261117_000000_opinion_layout_singleton';
 import * as migration_20260211_224237_initial_baseline from './20260211_224237_initial_baseline';
 import * as migration_20260213_223303_remove_copy_workflow from './20260213_223303_remove_copy_workflow';
@@ -338,4 +339,5 @@ export const migrations = [
     name: '20261113_000000_add_student_gov_terms',
   },
   { up: opinionSingleton.up, down: opinionSingleton.down, name: '20261117_000000_opinion_layout_singleton' },
+  { up: articleGames.up, down: articleGames.down, name: '20261121_000000_add_article_games' },
 ];
