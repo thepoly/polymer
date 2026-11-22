@@ -216,6 +216,12 @@ shows even if it's also higher up the page. An empty slot takes the next
 newest story in that topic. Switching back to Newest stories keeps the picks, so
 switching to Choose stories again restores them.
 
+On phones, a slim arrow appears at the right of the topic headers when they
+overflow. It scrolls the headers to the end, then points left to return to
+the start, without selecting another topic. Swipe scrolling and keyboard
+tab selection remain available. The arrow is omitted when all headers fit
+and at tablet/desktop widths; reduced motion makes its scroll immediate.
+
 Save with **Activate**. Editor:
 [`components/Dashboard/NewsLayoutEditor/`](../components/Dashboard/NewsLayoutEditor/).
 

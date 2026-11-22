@@ -41,7 +41,23 @@ export default function NewsTopicTabs({
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const listRef = useRef<HTMLDivElement>(null);
   const [bar, setBar] = useState<{ left: number; width: number } | null>(null);
+  const [scrollControl, setScrollControl] = useState({ visible: false, back: false });
   const leaveTimer = useRef(0);
+
+  const measureScroll = useCallback(() => {
+    const list = listRef.current;
+    if (!list) return;
+    // Ignore space reserved for the arrow when deciding whether it is needed.
+    const padding = parseFloat(getComputedStyle(list).paddingRight) || 0;
+    const visible = !window.matchMedia("(min-width: 768px)").matches &&
+      list.scrollWidth - padding > list.clientWidth + 1;
+    setScrollControl((previous) => {
+      const back = !visible || list.scrollLeft <= 1
+        ? false
+        : list.scrollWidth - list.clientWidth - list.scrollLeft <= 1 ? true : previous.back;
+      return previous.visible === visible && previous.back === back ? previous : { visible, back };
+    });
+  }, []);
 
   // The red bar follows the selected header
   const measure = useCallback(() => {
@@ -52,11 +68,22 @@ export default function NewsTopicTabs({
   useEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver(() => {
+      measure();
+      measureScroll();
+    });
     observer.observe(list);
+    for (const tab of tabRefs.current) if (tab) observer.observe(tab);
     return () => observer.disconnect();
-  }, [measure]);
+  }, [measure, measureScroll]);
   useEffect(() => () => window.clearTimeout(leaveTimer.current), []);
+
+  const scrollHeaders = () => {
+    const list = listRef.current;
+    if (!list) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    list.scrollTo({ left: scrollControl.back ? 0 : list.scrollWidth - list.clientWidth, behavior: reduce ? "instant" : "smooth" });
+  };
 
   const select = (index: number, focus = false) => {
     if (index === active) return;
@@ -90,46 +117,64 @@ export default function NewsTopicTabs({
 
   return (
     <section aria-label="News by topic" className="mt-10">
-      <div
-        ref={listRef}
-        role="tablist"
-        aria-label="Topics"
-        onKeyDown={onKeyDown}
-        // Centered; "safe" keeps the first header reachable when the row scrolls (phones)
-        className="relative flex gap-x-8 overflow-x-auto [justify-content:safe_center] border-b border-[var(--rule-color)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        {tabs.map((tab, i) => {
-          const selected = i === active;
-          return (
-            <button
-              key={tab.key}
-              ref={(el) => {
-                tabRefs.current[i] = el;
-              }}
-              type="button"
-              role="tab"
-              id={`topic-tab-${tab.key}`}
-              aria-selected={selected}
-              aria-controls={`topic-panel-${tab.key}`}
-              tabIndex={selected ? 0 : -1}
-              onClick={() => select(i)}
-              className={`relative shrink-0 whitespace-nowrap pb-3 font-copy text-[clamp(20px,2vw,26px)] font-semibold leading-none tracking-[-0.01em] transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent ${
-                selected ? "text-text-main" : "text-text-muted hover:text-text-main"
-              } ${
-                // Until the sliding bar is measured, the selected header draws its own
-                selected && !bar ? "after:absolute after:inset-x-0 after:-bottom-px after:h-[3px] after:bg-accent" : ""
-              }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-        {bar && (
-          <span
-            aria-hidden="true"
-            className="pointer-events-none absolute -bottom-px left-0 h-[3px] bg-accent transition-[transform,width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
-            style={{ width: bar.width, transform: `translateX(${bar.left}px)` }}
-          />
+      <div className="relative">
+        <div
+          id="news-topic-tabs"
+          ref={listRef}
+          role="tablist"
+          aria-label="Topics"
+          onKeyDown={onKeyDown}
+          onScroll={measureScroll}
+          // Centered; "safe" keeps the first header reachable when the row scrolls (phones)
+          className={`relative flex gap-x-8 overflow-x-auto [justify-content:safe_center] border-b border-[var(--rule-color)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${scrollControl.visible ? "pr-14 scroll-pr-14 md:pr-0 md:scroll-pr-0" : ""}`}
+        >
+          {tabs.map((tab, i) => {
+            const selected = i === active;
+            return (
+              <button
+                key={tab.key}
+                ref={(el) => {
+                  tabRefs.current[i] = el;
+                }}
+                type="button"
+                role="tab"
+                id={`topic-tab-${tab.key}`}
+                aria-selected={selected}
+                aria-controls={`topic-panel-${tab.key}`}
+                tabIndex={selected ? 0 : -1}
+                onClick={() => select(i)}
+                className={`relative shrink-0 whitespace-nowrap pb-3 font-copy text-[clamp(20px,2vw,26px)] font-semibold leading-none tracking-[-0.01em] transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent ${
+                  selected ? "text-text-main" : "text-text-muted hover:text-text-main"
+                } ${
+                  // Until the sliding bar is measured, the selected header draws its own
+                  selected && !bar ? "after:absolute after:inset-x-0 after:-bottom-px after:h-[3px] after:bg-accent" : ""
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+          {bar && (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute -bottom-px left-0 h-[3px] bg-accent transition-[transform,width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+              style={{ width: bar.width, transform: `translateX(${bar.left}px)` }}
+            />
+          )}
+        </div>
+        {scrollControl.visible && (
+          <button
+            type="button"
+            aria-label={`Scroll News topics ${scrollControl.back ? "left" : "right"}`}
+            aria-controls="news-topic-tabs"
+            onClick={scrollHeaders}
+            className="absolute -top-3 right-0 flex h-11 w-14 items-center justify-center pl-3 text-text-muted transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:hidden"
+            style={{ background: "linear-gradient(to right, transparent, var(--background) 12px)" }}
+          >
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={scrollControl.back ? "rotate-180" : undefined}>
+              <path d="M4 12h16m-6-6 6 6-6 6" />
+            </svg>
+          </button>
         )}
       </div>
 
