@@ -218,13 +218,19 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
   const supportingArticles = pool.filter((article) => article.id !== leadArticle.id).slice(0, 4);
   const sectionLabel = sectionLabels[currentArticle.section];
   const isNews = currentArticle.section === 'news';
+  const isSports = currentArticle.section === 'sports';
+  const sectionSpacing = isSports
+    ? 'mt-6 pb-3'
+    : isNews
+      ? 'mt-7 md:mt-10 pb-[22px] md:pb-[34px]'
+      : 'mt-14 md:mt-20 pb-14 md:pb-20';
 
   return (
     <section
-      className={`mx-auto max-w-[1200px] px-4 md:px-6 ${isNews ? 'mt-7 md:mt-10 pb-[22px] md:pb-[34px]' : 'mt-14 md:mt-20 pb-14 md:pb-20'}`}
+      className={`mx-auto max-w-[1200px] px-4 md:px-6 ${sectionSpacing}`}
       data-article-recommendations
     >
-      <div className={isNews ? 'pt-1 md:pt-1.5' : 'pt-2 md:pt-3'}>
+      <div className={isSports ? undefined : isNews ? 'pt-1 md:pt-1.5' : 'pt-2 md:pt-3'}>
         <div className="mb-8 flex flex-col gap-4 border-b border-rule pb-6 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
             <p className="font-meta text-[14px] font-bold uppercase tracking-[0.12em] text-accent">
@@ -297,7 +303,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                 return (
                   <div
                     key={article.id}
-                    className={`${isLast ? '' : 'border-b border-rule'} ${index === 0 ? 'pt-5 lg:pt-0' : 'pt-5'} pb-5`}
+                    className={`${isLast ? '' : 'border-b border-rule'} ${index === 0 ? 'pt-5 lg:pt-0' : 'pt-5'} ${isSports && isLast ? '' : 'pb-5'}`}
                   >
                     <TransitionLink
                       href={getArticleUrl(article)}
