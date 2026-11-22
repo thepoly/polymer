@@ -168,7 +168,7 @@ export default function StudentGovMonthPanel({
           className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.6)_0%,rgba(0,0,0,0.35)_30%,rgba(0,0,0,0)_50%,rgba(0,0,0,0)_55%,rgba(0,0,0,0.85)_100%)]"
         />
 
-        <div className="relative flex h-full flex-col justify-between gap-6 p-6 min-[860px]:p-11">
+        <div className="relative flex h-full flex-col justify-between gap-6 p-6 min-[860px]:p-11 lg:pt-6">
           <div>
             <div data-swipe-keep>
               <StudentGovBodySwitch
