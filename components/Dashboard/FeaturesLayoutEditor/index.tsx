@@ -16,6 +16,13 @@ import {
   pointerWithin,
 } from '@dnd-kit/core';
 import './features-layout-editor.css';
+import {
+  EMPTY_FEATURES_LAYOUT,
+  normalizeFeaturesLayout,
+  type FeaturesLayout,
+  type FeaturesSlotKey,
+  type LensPhoto,
+} from '@/lib/featuresLayout';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,28 +43,8 @@ type ArticleData = {
   writeInAuthors?: Array<{ name: string }>;
 };
 
-type SpotlightPhoto = {
-  url: string;
-  caption?: string;
-  articleTitle?: string;
-  articleUrl?: string;
-  photographerName?: string;
-  photographerUrl?: string;
-};
-
-type FeaturesLayout = {
-  onCampus: (number | null)[];
-  onCampusImages: boolean[];
-  featured: (number | null)[];
-  rightArticles: (number | null)[];
-  rightImages: boolean[];
-  // Row 2
-  theArts: (number | null)[];
-  theArtsImages: boolean[];
-  photoSpotlight: SpotlightPhoto[];
-  spotlightSubs: (number | null)[];
-  wideArticle: (number | null)[];
-};
+// The Lens photos keep the Photo Spotlight's shape, plus when each was added
+type SpotlightPhoto = LensPhoto;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -69,49 +56,23 @@ const pointerThenCenter: CollisionDetection = (args) => {
   return closestCenter(args);
 };
 
-const EMPTY_LAYOUT: FeaturesLayout = {
-  onCampus: [null, null, null],
-  onCampusImages: [false, false, false],
-  featured: [null, null, null],
-  rightArticles: [null, null, null],
-  rightImages: [false, false, false],
-  theArts: [null, null, null],
-  theArtsImages: [false, false, false],
-  photoSpotlight: [],
-  spotlightSubs: [null, null],
-  wideArticle: [null],
+const STRIP_LABELS = ['Strip 1', 'Strip 2'];
+const PHOTO_STORY_LABELS = ['Photo Story 1', 'Photo Story 2', 'Photo Story 3'];
+
+// Slot ID format: "cover-0", "second-0", "strip-1", "photo-2"
+type ColumnKey = FeaturesSlotKey;
+const SLOT_COLUMNS: Record<string, ColumnKey> = {
+  cover: 'cover',
+  second: 'second',
+  strip: 'strips',
+  photo: 'photoStories',
 };
-
-const ON_CAMPUS_LABELS = [
-  'Article 1',
-  'Article 2',
-  'Article 3',
-];
-const FEATURED_LABELS = [
-  'Hero (large image)',
-  'Sub-feature Left (with image)',
-  'Sub-feature Right (with image)',
-];
-const RIGHT_LABELS = [
-  'Article 1',
-  'Article 2',
-  'Article 3',
-];
-const THE_ARTS_LABELS = ['Article 1', 'Article 2', 'Article 3'];
-
-// Slot ID format: "oc-0", "feat-1", "right-2", "arts-0", "spotsub-1", "wide-0"
-type ColumnKey = 'onCampus' | 'featured' | 'rightArticles' | 'theArts' | 'spotlightSubs' | 'wideArticle';
 
 const parseSlotId = (slotId: string): { column: ColumnKey; index: number } | null => {
   const [prefix, idxStr] = slotId.split('-');
+  const column = SLOT_COLUMNS[prefix];
   const index = Number(idxStr);
-  if (prefix === 'oc') return { column: 'onCampus', index };
-  if (prefix === 'feat') return { column: 'featured', index };
-  if (prefix === 'right') return { column: 'rightArticles', index };
-  if (prefix === 'arts') return { column: 'theArts', index };
-  if (prefix === 'spotsub') return { column: 'spotlightSubs', index };
-  if (prefix === 'wide') return { column: 'wideArticle', index };
-  return null;
+  return column && Number.isInteger(index) ? { column, index } : null;
 };
 
 // ---------------------------------------------------------------------------
@@ -145,7 +106,7 @@ const extractDocId = (): string | null => {
 
 const collectUsedIds = (layout: FeaturesLayout): Set<number> => {
   const ids = new Set<number>();
-  for (const col of [layout.onCampus, layout.featured, layout.rightArticles, layout.theArts, layout.spotlightSubs, layout.wideArticle]) {
+  for (const col of [layout.cover, layout.second, layout.strips, layout.photoStories]) {
     for (const id of col) {
       if (id !== null) ids.add(id);
     }
@@ -486,7 +447,7 @@ function SpotlightBrowser({
       const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}&pageSize=10`);
       const data = await res.json();
       const articles: SpotlightArticleResult[] = (data.articles || [])
-        .filter((a: { section?: string }) => ['features', 'opinion', 'news'].includes(a.section || ''))
+        .filter((a: { section?: string }) => ['features', 'opinion', 'news', 'sports'].includes(a.section || ''))
         .slice(0, 10)
         .map((a: { id: string | number; title: string; section: string; slug: string; publishedDate?: string; image?: string | null }) => ({
           id: typeof a.id === 'string' ? parseInt(a.id, 10) : a.id,
@@ -541,7 +502,12 @@ function SpotlightBrowser({
 
   return (
     <div className="fle-spotlight-section">
-      <div className="fle-spotlight-header">Photo Spotlight</div>
+      <div className="fle-spotlight-header">The Lens</div>
+      <p className="fle-note">
+        One of these shows each day, in turn, so a set of 6 to 10 lasts for weeks. Pick photos from any section.
+        If the list is empty, or every photo in it was added more than two months ago, the page shows recent
+        credited photos instead.
+      </p>
 
       {/* Selected photos — compact list */}
       {photos.length > 0 && (
@@ -623,13 +589,13 @@ function SpotlightBrowser({
                                     const d = new Date(article.publishedDate);
                                     articleUrl = `/${article.section}/${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${article.slug}`;
                                   }
-                                  onAdd({ url: img.url, caption: img.alt, articleTitle: article.plainTitle, articleUrl, photographerName: img.photographerName, photographerUrl: img.photographerUrl });
+                                  onAdd({ url: img.url, caption: img.alt, articleTitle: article.plainTitle, articleUrl, photographerName: img.photographerName, photographerUrl: img.photographerUrl, addedAt: new Date().toISOString() });
                                 }
                               }}
                             >
                               <img src={img.url} alt={img.alt || ''} />
                               {isUsed ? (
-                                <div className="fle-spotlight-used-overlay">Already in spotlight</div>
+                                <div className="fle-spotlight-used-overlay">Already in The Lens</div>
                               ) : (
                                 <div className="fle-spotlight-add-badge">+ Add</div>
                               )}
@@ -652,11 +618,108 @@ function SpotlightBrowser({
 }
 
 // ---------------------------------------------------------------------------
+// Photo Story photo picker
+// ---------------------------------------------------------------------------
+
+/**
+ * Under a pinned Photo Story: choose which of the story's photos its card
+ * shows. Left alone, the card shows the story's lead photo.
+ */
+function PhotoStoryImagePicker({
+  articleId,
+  selected,
+  onSelect,
+}: {
+  articleId: number;
+  selected: string | null;
+  onSelect: (url: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [images, setImages] = useState<ExtractedImage[] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const toggle = async () => {
+    const next = !open;
+    setOpen(next);
+    if (next && !images) {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/articles/${articleId}?depth=2`);
+        setImages(extractImagesFromArticle(await res.json()));
+      } catch (err) {
+        console.error('Failed to load article images', err);
+        setImages([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  return (
+    <div className="fle-photo-pick">
+      <div className="fle-photo-pick-row">
+        {selected ? (
+          <span className="fle-photo-pick-current">
+            <img src={selected} alt="" /> Chosen photo
+          </span>
+        ) : (
+          <span className="fle-photo-pick-current fle-photo-pick-muted">Lead photo</span>
+        )}
+        <button type="button" className="fle-photo-pick-btn" onClick={toggle}>
+          {open ? 'Done' : 'Choose photo'}
+        </button>
+      </div>
+      {open && (
+        <div className="fle-spotlight-article-images">
+          {loading ? (
+            <div className="fle-spotlight-loading">
+              <div className="fle-spotlight-loading-spinner" />
+              <span>Loading images...</span>
+            </div>
+          ) : images && images.length > 0 ? (
+            <>
+              {images.map((img) => (
+                <button
+                  type="button"
+                  key={img.url}
+                  className={`fle-spotlight-image-pick ${selected === img.url ? 'fle-photo-pick-selected' : ''}`}
+                  onClick={() => onSelect(img.url)}
+                  title={img.alt || 'Use this photo'}
+                >
+                  <img src={img.url} alt={img.alt || ''} />
+                </button>
+              ))}
+              {selected && (
+                <button type="button" className="fle-photo-pick-btn" onClick={() => onSelect(null)}>
+                  Use lead photo
+                </button>
+              )}
+            </>
+          ) : (
+            <div className="fle-spotlight-no-images">No images found in this article</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Editor
 // ---------------------------------------------------------------------------
 
+const cloneEmpty = (): FeaturesLayout => ({
+  ...EMPTY_FEATURES_LAYOUT,
+  cover: [...EMPTY_FEATURES_LAYOUT.cover],
+  second: [...EMPTY_FEATURES_LAYOUT.second],
+  strips: [...EMPTY_FEATURES_LAYOUT.strips],
+  photoStories: [...EMPTY_FEATURES_LAYOUT.photoStories],
+  photoStoryImages: [...EMPTY_FEATURES_LAYOUT.photoStoryImages],
+  lens: [],
+});
+
 export function FeaturesLayoutEditor() {
-  const [layout, setLayout] = useState<FeaturesLayout>({ ...EMPTY_LAYOUT });
+  const [layout, setLayout] = useState<FeaturesLayout>(cloneEmpty);
   const [articles, setArticles] = useState<ArticleData[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -715,29 +778,8 @@ export function FeaturesLayoutEditor() {
         }
         docIdRef.current = id;
 
-        if (layoutData) {
-          const savedLayout = layoutData.layout as FeaturesLayout | undefined;
-          if (savedLayout && typeof savedLayout === 'object') {
-            setLayout({
-              onCampus: padArray(savedLayout.onCampus, 3),
-              onCampusImages: savedLayout.onCampusImages && savedLayout.onCampusImages.length >= 3
-                ? savedLayout.onCampusImages.slice(0, 3)
-                : [false, false, false],
-              featured: padArray(savedLayout.featured, 3),
-              rightArticles: padArray(savedLayout.rightArticles, 3),
-              rightImages: savedLayout.rightImages && savedLayout.rightImages.length >= 3
-                ? savedLayout.rightImages.slice(0, 3)
-                : [false, false, false],
-              theArts: padArray(savedLayout.theArts, 3),
-              theArtsImages: savedLayout.theArtsImages && savedLayout.theArtsImages.length >= 3
-                ? savedLayout.theArtsImages.slice(0, 3)
-                : [false, false, false],
-              photoSpotlight: savedLayout.photoSpotlight || [],
-              spotlightSubs: padArray(savedLayout.spotlightSubs, 2),
-              wideArticle: padArray(savedLayout.wideArticle, 1),
-            });
-          }
-        }
+        // Layouts from the old three-column editor are carried over
+        if (layoutData) setLayout(normalizeFeaturesLayout(layoutData.layout));
       } catch (err) {
         setError('Failed to load data');
         console.error(err);
@@ -750,12 +792,21 @@ export function FeaturesLayoutEditor() {
   // ---- Mutations ----
   const markDirty = useCallback(() => setSaved(false), []);
 
+  // A Photo Story's chosen photo belongs to its story, so it goes when the story does
+  const withSlot = (prev: FeaturesLayout, column: ColumnKey, index: number, articleId: number | null): FeaturesLayout => {
+    const col = [...prev[column]];
+    col[index] = articleId;
+    const next = { ...prev, [column]: col };
+    if (column === 'photoStories') {
+      const images = [...prev.photoStoryImages];
+      images[index] = null;
+      next.photoStoryImages = images;
+    }
+    return next;
+  };
+
   const setSlot = useCallback((column: ColumnKey, index: number, articleId: number | null) => {
-    setLayout((prev) => {
-      const col = [...prev[column]];
-      col[index] = articleId;
-      return { ...prev, [column]: col };
-    });
+    setLayout((prev) => withSlot(prev, column, index, articleId));
     markDirty();
   }, [markDirty]);
 
@@ -765,49 +816,25 @@ export function FeaturesLayoutEditor() {
     setSlot(parsed.column, parsed.index, null);
   }, [setSlot]);
 
-  const toggleOnCampusImage = useCallback((index: number) => {
+  const setPhotoStoryImage = useCallback((index: number, url: string | null) => {
     setLayout((prev) => {
-      const imgs = [...prev.onCampusImages];
-      const currentImageCount = imgs.filter(Boolean).length;
-      if (!imgs[index] && currentImageCount >= 3) return prev;
-      imgs[index] = !imgs[index];
-      return { ...prev, onCampusImages: imgs };
+      const images = [...prev.photoStoryImages];
+      images[index] = url;
+      return { ...prev, photoStoryImages: images };
     });
     markDirty();
   }, [markDirty]);
 
-  const toggleRightImage = useCallback((index: number) => {
-    setLayout((prev) => {
-      const imgs = [...prev.rightImages];
-      const currentImageCount = imgs.filter(Boolean).length;
-      if (!imgs[index] && currentImageCount >= 2) return prev;
-      imgs[index] = !imgs[index];
-      return { ...prev, rightImages: imgs };
-    });
+  const addLensPhoto = useCallback((photo: SpotlightPhoto) => {
+    setLayout((prev) => ({ ...prev, lens: [...prev.lens, photo] }));
     markDirty();
   }, [markDirty]);
 
-  const toggleArtsImage = useCallback((index: number) => {
+  const removeLensPhoto = useCallback((index: number) => {
     setLayout((prev) => {
-      const imgs = [...prev.theArtsImages];
-      const currentImageCount = imgs.filter(Boolean).length;
-      if (!imgs[index] && currentImageCount >= 2) return prev;
-      imgs[index] = !imgs[index];
-      return { ...prev, theArtsImages: imgs };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const addSpotlightPhoto = useCallback((photo: SpotlightPhoto) => {
-    setLayout((prev) => ({ ...prev, photoSpotlight: [...prev.photoSpotlight, photo] }));
-    markDirty();
-  }, [markDirty]);
-
-  const removeSpotlightPhoto = useCallback((index: number) => {
-    setLayout((prev) => {
-      const photos = [...prev.photoSpotlight];
+      const photos = [...prev.lens];
       photos.splice(index, 1);
-      return { ...prev, photoSpotlight: photos };
+      return { ...prev, lens: photos };
     });
     markDirty();
   }, [markDirty]);
@@ -838,37 +865,25 @@ export function FeaturesLayoutEditor() {
     }
 
     if (!overData?.slotId) return;
-    const targetSlotId = overData.slotId as string;
-    const targetParsed = parseSlotId(targetSlotId);
-    if (!targetParsed) return;
+    const target = parseSlotId(overData.slotId as string);
+    if (!target) return;
 
-    // If source was a slot, swap
+    // From a slot: swap the two
     if (activeData.source === 'slot' && typeof activeData.slotId === 'string') {
-      const sourceParsed = parseSlotId(activeData.slotId);
-      if (sourceParsed) {
-        const targetOldId = layout[targetParsed.column][targetParsed.index];
+      const source = parseSlotId(activeData.slotId);
+      if (source) {
         setLayout((prev) => {
-          const sourceCol = [...prev[sourceParsed.column]];
-          const targetCol = sourceParsed.column === targetParsed.column
-            ? sourceCol
-            : [...prev[targetParsed.column]];
-
-          sourceCol[sourceParsed.index] = targetOldId;
-          if (sourceParsed.column === targetParsed.column) {
-            sourceCol[targetParsed.index] = draggedArticle.id;
-            return { ...prev, [sourceParsed.column]: sourceCol };
-          } else {
-            targetCol[targetParsed.index] = draggedArticle.id;
-            return { ...prev, [sourceParsed.column]: sourceCol, [targetParsed.column]: targetCol };
-          }
+          const targetOldId = prev[target.column][target.index];
+          const afterSource = withSlot(prev, source.column, source.index, targetOldId);
+          return withSlot(afterSource, target.column, target.index, draggedArticle.id);
         });
         markDirty();
         return;
       }
     }
 
-    // Drop from pool
-    setSlot(targetParsed.column, targetParsed.index, draggedArticle.id);
+    // From the pool
+    setSlot(target.column, target.index, draggedArticle.id);
   };
 
   // ---- Save ----
@@ -907,9 +922,17 @@ export function FeaturesLayoutEditor() {
     return id ? articleMap.get(id) || null : null;
   };
 
-  const imageCount = layout.onCampusImages.filter(Boolean).length;
-  const rightImageCount = layout.rightImages.filter(Boolean).length;
-  const artsImageCount = layout.theArtsImages.filter(Boolean).length;
+  const slot = (column: ColumnKey, prefix: string, index: number, label: string) => (
+    <DropSlot
+      key={`${prefix}-${index}`}
+      slotId={`${prefix}-${index}`}
+      label={label}
+      article={getArticle(column, index)}
+      showImage
+      onClear={() => clearSlot(`${prefix}-${index}`)}
+      isImageSlot
+    />
+  );
 
   return (
     <DndContext
@@ -937,175 +960,67 @@ export function FeaturesLayoutEditor() {
         </div>
 
         <div className="fle-body">
-          {/* Left: canvas */}
           <div className="fle-canvas-wrap">
-            <div className="fle-canvas">
-              {/* On-Campus column (thin left) */}
-              <div className="fle-column">
-                <div className="fle-column-header">
-                  <span className="fle-column-title">On Campus</span>
-                  <span style={{ fontSize: '0.62rem', opacity: 0.35 }}>{imageCount}/3 imgs</span>
-                </div>
-                {ON_CAMPUS_LABELS.map((label, i) => (
-                  <DropSlot
-                    key={`oc-${i}`}
-                    slotId={`oc-${i}`}
-                    label={label}
-                    article={getArticle('onCampus', i)}
-                    showImage={layout.onCampusImages[i]}
-                    onClear={() => clearSlot(`oc-${i}`)}
-                    isImageSlot={layout.onCampusImages[i]}
-                    imageToggle={
-                      imageCount >= 3 && !layout.onCampusImages[i] ? (
-                        <span style={{ fontSize: '0.62rem', opacity: 0.2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          locked
-                        </span>
-                      ) : (
-                        <label className="fle-image-toggle" title="Toggle image">
-                          <input
-                            type="checkbox"
-                            checked={layout.onCampusImages[i]}
-                            onChange={() => toggleOnCampusImage(i)}
-                          />
-                          img
-                        </label>
-                      )
-                    }
-                  />
-                ))}
+            <p className="fle-note fle-note-top">
+              Every slot is optional. An empty slot shows the newest story that isn&apos;t already on the page.
+              A pinned story stays until you change it, unless it is more than six weeks older than the newest
+              Features story; then the newest story takes its place, so the page never sits on old news.
+            </p>
+
+            {/* Cover across the page */}
+            <div className="fle-column fle-full">
+              <div className="fle-column-header">
+                <span className="fle-column-title">Cover</span>
               </div>
+              {slot('cover', 'cover', 0, 'Cover story (full width)')}
+            </div>
 
-              {/* Featured column (big middle) */}
+            {/* Second story | The Lens */}
+            <div className="fle-canvas fle-canvas-two">
               <div className="fle-column">
                 <div className="fle-column-header">
-                  <span className="fle-column-title">Featured</span>
+                  <span className="fle-column-title">Second story</span>
                 </div>
-                {FEATURED_LABELS.map((label, i) => (
-                  <DropSlot
-                    key={`feat-${i}`}
-                    slotId={`feat-${i}`}
-                    label={label}
-                    article={getArticle('featured', i)}
-                    showImage
-                    onClear={() => clearSlot(`feat-${i}`)}
-                    isImageSlot
-                  />
-                ))}
-                <DropSlot
-                  slotId="wide-0"
-                  label="Wide Article (text + image)"
-                  article={getArticle('wideArticle', 0)}
-                  showImage
-                  onClear={() => clearSlot('wide-0')}
-                  isImageSlot
-                />
+                {slot('second', 'second', 0, 'Second story (portrait photo)')}
+                <div className="fle-column-header" style={{ marginTop: 12 }}>
+                  <span className="fle-column-title">Strips</span>
+                </div>
+                {STRIP_LABELS.map((label, i) => slot('strips', 'strip', i, label))}
               </div>
-
-              {/* Right column */}
               <div className="fle-column">
-                <div className="fle-column-header">
-                  <span className="fle-column-title">Latest</span>
-                  <span style={{ fontSize: '0.62rem', opacity: 0.35 }}>{rightImageCount}/2 imgs</span>
-                </div>
+                <SpotlightBrowser photos={layout.lens} onAdd={addLensPhoto} onRemove={removeLensPhoto} />
+              </div>
+            </div>
 
-                {RIGHT_LABELS.map((label, i) => (
-                  <DropSlot
-                    key={`right-${i}`}
-                    slotId={`right-${i}`}
-                    label={label}
-                    article={getArticle('rightArticles', i)}
-                    showImage={layout.rightImages[i]}
-                    onClear={() => clearSlot(`right-${i}`)}
-                    isImageSlot={layout.rightImages[i]}
-                    imageToggle={
-                      rightImageCount >= 2 && !layout.rightImages[i] ? (
-                        <span style={{ fontSize: '0.62rem', opacity: 0.2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          locked
-                        </span>
-                      ) : (
-                        <label className="fle-image-toggle" title="Toggle image">
-                          <input
-                            type="checkbox"
-                            checked={layout.rightImages[i]}
-                            onChange={() => toggleRightImage(i)}
-                          />
-                          img
-                        </label>
-                      )
-                    }
-                  />
+            {/* Photo Stories */}
+            <div className="fle-column fle-full">
+              <div className="fle-column-header">
+                <span className="fle-column-title">Photo Stories</span>
+              </div>
+              <p className="fle-note">
+                Empty slots fill with the newest photo-led stories: &ldquo;Photo&rdquo; in the kicker, a photo
+                feature, or a gallery. For a pinned story you can choose which of its photos the card shows.
+              </p>
+              <div className="fle-photo-stories">
+                {PHOTO_STORY_LABELS.map((label, i) => (
+                  <div key={label}>
+                    {slot('photoStories', 'photo', i, label)}
+                    {layout.photoStories[i] !== null && (
+                      <PhotoStoryImagePicker
+                        key={layout.photoStories[i]}
+                        articleId={layout.photoStories[i] as number}
+                        selected={layout.photoStoryImages[i]}
+                        onSelect={(url) => setPhotoStoryImage(i, url)}
+                      />
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
 
-            {/* ── Row Divider ── */}
-            <div style={{ borderTop: '2px solid var(--theme-elevation-200, #333)', margin: '20px 0 16px' }} />
-
-            {/* ── Row 2 Canvas ── */}
-            <div className="fle-canvas">
-              {/* The Arts column (thin left) */}
-              <div className="fle-column">
-                <div className="fle-column-header">
-                  <span className="fle-column-title">The Arts</span>
-                  <span style={{ fontSize: '0.62rem', opacity: 0.35 }}>{artsImageCount}/2 imgs</span>
-                </div>
-                {THE_ARTS_LABELS.map((label, i) => (
-                  <DropSlot
-                    key={`arts-${i}`}
-                    slotId={`arts-${i}`}
-                    label={label}
-                    article={getArticle('theArts', i)}
-                    showImage={layout.theArtsImages[i]}
-                    onClear={() => clearSlot(`arts-${i}`)}
-                    isImageSlot={layout.theArtsImages[i]}
-                    imageToggle={
-                      artsImageCount >= 2 && !layout.theArtsImages[i] ? (
-                        <span style={{ fontSize: '0.62rem', opacity: 0.2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          locked
-                        </span>
-                      ) : (
-                        <label className="fle-image-toggle" title="Toggle image">
-                          <input
-                            type="checkbox"
-                            checked={layout.theArtsImages[i]}
-                            onChange={() => toggleArtsImage(i)}
-                          />
-                          img
-                        </label>
-                      )
-                    }
-                  />
-                ))}
-              </div>
-
-              {/* Photo Spotlight (middle + right, as on the page) */}
-              <div className="fle-column" style={{ gridColumn: '2 / span 2' }}>
-                <SpotlightBrowser
-                  photos={layout.photoSpotlight}
-                  onAdd={addSpotlightPhoto}
-                  onRemove={removeSpotlightPhoto}
-                />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 10px', marginTop: 6 }}>
-                  <DropSlot
-                    slotId="spotsub-0"
-                    label="Sub-feature Left (with image)"
-                    article={getArticle('spotlightSubs', 0)}
-                    showImage
-                    onClear={() => clearSlot('spotsub-0')}
-                    isImageSlot
-                  />
-                  <DropSlot
-                    slotId="spotsub-1"
-                    label="Sub-feature Right (with image)"
-                    article={getArticle('spotlightSubs', 1)}
-                    showImage
-                    onClear={() => clearSlot('spotsub-1')}
-                    isImageSlot
-                  />
-                </div>
-              </div>
-
-            </div>
+            <p className="fle-note">
+              From the Archive, the row of photo cards at the foot of the page, shows the next newest stories on its own.
+            </p>
           </div>
 
           {/* Right: Article pool */}
@@ -1123,14 +1038,4 @@ export function FeaturesLayoutEditor() {
       </div>
     </DndContext>
   );
-}
-
-// ---------------------------------------------------------------------------
-// Utility
-// ---------------------------------------------------------------------------
-
-function padArray(arr: (number | null)[] | undefined, len: number): (number | null)[] {
-  const result = [...(arr || [])];
-  while (result.length < len) result.push(null);
-  return result.slice(0, len);
 }
