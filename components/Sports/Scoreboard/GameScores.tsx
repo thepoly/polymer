@@ -68,7 +68,7 @@ export function GameScores({ games, rpiTeam, lead = false, sport, dateOverride, 
     ? <ScoreboardBar game={games[0]} rpiTeam={rpiTeam} lead={lead} sport={sport} dateOverride={dateOverride} published={published} />
     : <SeriesBoards games={games} rpiTeam={rpiTeam} lead={lead} sport={sport} />
   return lead ? scores : (
-    <div className={`mt-1.5 py-3 ${games.length > 1 ? 'border-y border-rule' : ''}`}>
+    <div className={games.length > 1 ? 'mt-1.5 border-y border-rule py-3' : 'py-1.5'}>
       {scores}
     </div>
   )

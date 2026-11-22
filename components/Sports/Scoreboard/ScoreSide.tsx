@@ -4,7 +4,7 @@ import type { ScoreSideData } from './results'
 type Size = 'singleLead' | 'singleArticle' | 'seriesLead' | 'seriesArticle'
 const sizes = {
   singleLead: { gap: 'gap-2.5 sm:gap-5 lg:gap-6', name: 'text-[17px] sm:text-[24px] lg:text-[30px]', logo: 'size-11 sm:size-16 lg:size-[76px]', score: 'text-[46px] sm:text-[64px] lg:text-[84px]' },
-  singleArticle: { gap: 'gap-3 sm:gap-5', name: 'text-[15px]', logo: 'size-7 sm:size-[34px]', score: 'text-[36px] sm:text-[44px]' },
+  singleArticle: { gap: 'gap-2.5 sm:gap-3.5', name: 'text-[14px]', logo: 'size-6 sm:size-7', score: 'text-[30px] sm:text-[34px]' },
   seriesLead: { gap: 'gap-2 sm:gap-4', name: 'text-xs', logo: 'size-7 sm:size-10', score: 'text-[40px] sm:text-[48px] lg:text-[56px]' },
   seriesArticle: { gap: 'gap-2 sm:gap-3.5', name: 'text-[15px]', logo: 'size-7 sm:size-[34px]', score: 'text-[36px] sm:text-[44px]' },
 }
