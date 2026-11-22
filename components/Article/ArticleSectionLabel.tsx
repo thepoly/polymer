@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Article } from '@/payload-types';
+import styles from './ArticleSectionLabel.module.css';
 
 type Props = {
   section: Article['section'];
@@ -17,7 +18,7 @@ export function ArticleSectionLabel({ section, kicker, inverse = false }: Props)
       <div className="flex flex-col items-center gap-1 mb-1">
         <Link
           href={`/${section}`}
-          className="pointer-events-auto font-meta text-accent font-bold uppercase text-[16px] tracking-widest underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent"
+          className={`${styles.sectionUnderline} pointer-events-auto font-meta text-accent font-bold uppercase text-[16px] tracking-widest focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent`}
         >
           {sectionLabel}
         </Link>

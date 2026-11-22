@@ -7,6 +7,7 @@ import { Moon, Search, Sun } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import { openSearchOverlay } from '@/components/SearchOverlayHost';
 import ArticleSectionMenu from '@/components/ArticleSectionMenu';
+import sectionStyles from '@/components/Article/ArticleSectionLabel.module.css';
 import posthog from 'posthog-js';
 
 type Props = {
@@ -311,7 +312,7 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
             <a
               href={sectionHref}
               tabIndex={atTop ? -1 : undefined}
-              className="font-bold uppercase tracking-wide text-text-main shrink-0 transition-colors hover:text-accent"
+              className={`${sectionStyles.sectionUnderline} font-bold uppercase tracking-wide text-text-main shrink-0 transition-colors hover:text-accent`}
             >
               {sectionLabel}
             </a>
