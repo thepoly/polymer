@@ -203,7 +203,7 @@ export default function NewsPage({
   return (
     // Side padding matches the site header's, so the page lines up with the
     // rule under the logo at every width
-    <div className="mx-auto max-w-[1280px] px-4 pt-5 pb-8 md:px-6 xl:px-[30px]">
+    <div className="mx-auto max-w-[1280px] px-4 pt-7 pb-8 md:px-6 lg:pt-5 xl:px-[30px]">
       {/* Keep a page heading for screen readers without a visible title row. */}
       <h1 className="sr-only">{title}</h1>
 

@@ -21,6 +21,10 @@ it needs a code change or a deploy.
 | Student Government column | A Senate box and an Executive Board box, in either order | Each box: the latest 2 or 3 timeline entries, or one pinned article |
 | Topic row | Directly under the opening columns: four headers (Administration, Academia, Campus Infrastructure, Interview); clicking one swipes in its three newest stories on phones, four in a 2×2 grid on tablets (768–1023px), or six in a 3×2 grid on desktops (1024px+) | Stories whose kicker is in that topic's list in [`components/News/newsTopics.ts`](../components/News/newsTopics.ts), any capitalisation, from the whole archive, skipping anything shown above, unless the editor chose that tab's stories (News Layout editor, Topic row → Stories). Opens on the first topic with stories. [`components/News/NewsTopicTabs.tsx`](../components/News/NewsTopicTabs.tsx) |
 
+Below 1024px, the News page uses the header's flush-bottom option and a
+single 28px top gap, matching the date/volume strip's 28px height. Desktop
+retains its 20px opening gap.
+
 On computers the two columns are squared off to end on the same line
 ([`BalanceColumns`](fit-text.md#balancecolumns-two-columns-that-end-together)).
 Whichever column is shorter has its type set larger: the strips and the
