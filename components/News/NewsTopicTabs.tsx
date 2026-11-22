@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import NewsTopicScrollArrow from "./NewsTopicScrollArrow";
 
 /** How long the outgoing set takes to leave (see globals.css), plus a little */
 const OUT_MS = 760 + 40;
@@ -245,18 +246,7 @@ export default function NewsTopicTabs({
           )}
         </div>
         {scrollControl.visible && (
-          <button
-            type="button"
-            aria-label={`Scroll News topics ${scrollControl.back ? "left" : "right"}`}
-            aria-controls="news-topic-tabs"
-            onClick={scrollHeaders}
-            className={`absolute -top-3 flex h-11 w-14 items-center justify-center text-text-muted transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:hidden ${scrollControl.back ? "left-0 pr-3" : "right-0 pl-3"}`}
-            style={{ background: `linear-gradient(to ${scrollControl.back ? "left" : "right"}, transparent, var(--background) 12px)` }}
-          >
-            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={scrollControl.back ? "rotate-180" : undefined}>
-              <path d="M4 12h16m-6-6 6 6-6 6" />
-            </svg>
-          </button>
+          <NewsTopicScrollArrow back={scrollControl.back} onClick={scrollHeaders} />
         )}
       </div>
 

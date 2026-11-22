@@ -223,6 +223,11 @@ finger swipes, mouse dragging and keyboard tab selection work alongside it;
 dragging does not activate a tab, and row swipes do not open the site menu.
 The arrow is omitted when all headers fit and at tablet/desktop widths;
 reduced motion makes its scroll immediate.
+When the arrow changes sides, the old one fades 12px outward over 120ms and
+the new one slides in from its own edge over 200ms, with a short 40ms lead-in.
+Only one arrow is interactive; the outgoing copy is inert and hidden from
+screen readers. Rapid reversals cancel old animations, and reduced motion
+switches sides immediately.
 
 Save with **Activate**. Editor:
 [`components/Dashboard/NewsLayoutEditor/`](../components/Dashboard/NewsLayoutEditor/).
