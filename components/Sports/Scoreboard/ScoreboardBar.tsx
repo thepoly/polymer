@@ -45,11 +45,11 @@ export function ScoreboardBar({ game, rpiTeam, lead, sport, dateOverride, publis
   return (
     <div role="group" aria-label={/^final\b/i.test(game.status) ? 'Final score' : 'Game scoreboard'}>
       <p className="sr-only">{scoreSentence(game, sides, day)}</p>
-      <div ref={board} className={`grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center ${lead ? 'mb-3 gap-3 pb-3 sm:gap-8 sm:pb-4' : 'gap-2.5 sm:gap-5'}`}>
+      <div ref={board} className={`grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center ${lead ? 'mb-3 gap-3 pb-3 sm:gap-8 sm:pb-4' : 'gap-2.5 min-[360px]:gap-3 sm:gap-6'}`}>
         <ScoreSide side={left} left size={size} hideName={hideNames} />
-        <div aria-hidden="true" className="flex flex-col items-center gap-1 text-center font-meta uppercase">
+        <div aria-hidden="true" className={`flex flex-col items-center text-center font-meta uppercase ${lead ? 'gap-1' : 'gap-1.5'}`}>
           {lead && sport && <span className="max-w-24 text-[11px] leading-tight tracking-[0.1em] text-text-muted sm:max-w-none sm:text-xs lg:text-[13px]">{sport}</span>}
-          <div className={`flex items-center ${lead ? 'gap-2 text-xs sm:gap-3 sm:text-base' : 'gap-1.5 text-[10px]'}`}>
+          <div className={`flex items-center ${lead ? 'gap-2 text-xs sm:gap-3 sm:text-base' : 'gap-1.5 text-[10px] sm:gap-2'}`}>
             <span className={left.result > 0 ? '' : 'invisible'}>◀</span>
             <span className={`max-w-32 text-balance break-words font-semibold leading-tight tracking-[0.08em] ${lead ? 'text-sm sm:text-lg lg:text-[22px]' : 'text-xs sm:text-[13px]'}`}>{game.status}</span>
             <span className={right.result > 0 ? '' : 'invisible'}>▶</span>
