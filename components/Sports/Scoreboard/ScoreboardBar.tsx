@@ -54,9 +54,9 @@ export function ScoreboardBar({ game, rpiTeam, lead, sport, dateOverride, publis
         <div className="grid grid-rows-[1fr_auto_1fr] justify-items-center gap-0.5 text-center font-meta uppercase">
           <div className="flex flex-col items-center justify-end gap-0.5">
             {lead && sport && <span aria-hidden="true" className="max-w-24 text-[11px] leading-tight tracking-[0.1em] text-text-muted sm:max-w-none sm:text-xs lg:text-[13px]">{sport}</span>}
-            <GameStatus game={game} className={`max-w-32 text-balance break-words font-semibold leading-tight tracking-[0.08em] ${lead ? 'text-sm sm:text-lg lg:text-[22px]' : 'text-[11px] sm:text-xs'}`} />
+            <GameStatus game={game} className={`max-w-32 text-balance break-words font-semibold leading-tight tracking-[0.08em] ${lead ? 'text-sm sm:text-lg lg:text-[22px]' : 'text-xs sm:text-sm'}`} />
           </div>
-          <span data-score-arrow aria-hidden="true" className={`h-[1em] text-center leading-none ${lead ? 'text-xs sm:text-sm' : 'text-[10px]'}`}>{left.result > 0 ? '◀' : right.result > 0 ? '▶' : null}</span>
+          <span data-score-arrow aria-hidden="true" className={`h-[1em] text-center leading-none ${lead ? 'text-xs sm:text-sm' : 'text-[11px] sm:text-xs'}`}>{left.result > 0 ? '◀' : right.result > 0 ? '▶' : null}</span>
           <span aria-hidden="true" className={`tracking-[0.1em] text-text-muted ${lead ? 'text-[11px] sm:text-xs lg:text-[13px]' : 'text-[10px] sm:text-[11px]'}`}>
             {date}{!lead && <span className="max-sm:hidden">{date && ' · '}{game.homeAway}</span>}
           </span>
