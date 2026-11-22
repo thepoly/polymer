@@ -16,6 +16,7 @@ const RESERVED_PATHS = new Set([
   'archives',
   'contact',
   'copyright',
+  'get-involved',
   'live',
   'preview',
   'privacy',
