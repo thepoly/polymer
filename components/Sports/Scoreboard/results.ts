@@ -14,6 +14,10 @@ export function gameSides(game: GameResult, rpiTeam: GameTeam) {
 }
 export type ScoreSideData = ReturnType<typeof gameSides>[number]
 
+export function scoreDigits(game: GameResult) {
+  return String(Math.max(game.rpiScore ?? 0, game.opponentScore ?? 0)).length
+}
+
 // Game dates are editorial calendar days. Publication timestamps belong to Troy.
 export function gameDay(date?: string | null, published?: string | null) {
   const day = date?.slice(0, 10) || (published && troyDay(new Date(published)))
