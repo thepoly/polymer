@@ -246,7 +246,7 @@ function StoryCard({
         >
           {article.richTitle || article.title}
         </h3>
-        <Byline author={article.author} date={date} variant="features" className="mt-1.5 text-[13px]" />
+        <Byline authors={article.authorLinks} date={date} size={size === "lead" ? "lg" : size === "m" ? "md" : "sm"} margin="mt-1.5" />
         {showDek && article.excerpt && (
           <p
             className={`mt-1.5 font-meta leading-[1.5] line-clamp-3 ${
@@ -366,7 +366,7 @@ function PhotoSpotlight({ photos }: { photos: SpotlightPhoto[] }) {
                       <>
                         Photo by{" "}
                         {photo.photographerUrl ? (
-                          <TransitionLink href={photo.photographerUrl} className="-my-[5px] inline-block py-[5px] text-accent hover:underline">
+                          <TransitionLink href={photo.photographerUrl} className="-my-[5px] inline-block py-[5px] font-semibold text-text-main underline-offset-[3px] hover:underline">
                             {photo.photographerName}
                           </TransitionLink>
                         ) : (

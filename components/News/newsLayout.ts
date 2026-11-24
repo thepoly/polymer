@@ -4,6 +4,7 @@
  * the dashboard editor, the section route and the page components.
  */
 import type { StudentGovLayout } from './studentGov';
+import { longDate } from '@/utils/articleDates';
 import { NEWS_TOPICS, TOPIC_CARDS, type NewsTopicKey } from './newsTopics';
 import {
   normalizeFrame,
@@ -22,18 +23,11 @@ import {
  */
 /**
  * Date for a byline on /news: always the full publish date ("November 13,
- * 2026"), unlike the rest of the site, which shows "2 DAYS AGO" for a week
+ * 2026"), unlike the rest of the site, which shows "2 days ago" for a week
  * and then nothing. Fixed to Troy's time zone so server and browser agree.
  */
 export function newsBylineDate(article: { publishedDate?: string | null; isoDate?: string | null }): string | null {
-  const iso = article.publishedDate || article.isoDate;
-  if (!iso) return null;
-  return new Date(iso).toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'America/New_York',
-  });
+  return longDate(article.publishedDate || article.isoDate);
 }
 
 /** "Contact" link in the /news header: emails the news editor and the EIC */

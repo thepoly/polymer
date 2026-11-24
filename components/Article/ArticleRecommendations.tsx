@@ -8,6 +8,8 @@ import { Byline } from '@/components/FrontPage/Byline';
 import { opinionTypeLabels } from '@/components/Opinion/opinionTypeLabels';
 import { Article, Media, User } from '@/payload-types';
 import { getArticleUrl } from '@/utils/getArticleUrl';
+import { getArticleAuthors } from '@/utils/articleAuthors';
+import { shortDate } from '@/utils/articleDates';
 
 type Props = {
   currentArticle: Article;
@@ -57,6 +59,7 @@ type RecommendationArticle = {
   publishedDate?: string | null;
   createdAt: string;
   authors: RecommendationAuthor[];
+  writeInAuthors?: { name?: string | null }[] | null;
   featuredImage?: RecommendationImage | null;
   opinionType?: string | null;
 };
@@ -69,28 +72,10 @@ const getFeaturedImage = (value: RecommendationArticle['featuredImage'] | Media 
   return value as RecommendationImage;
 };
 
-const getAuthorString = (article: RecommendationArticle) => {
-  const staffNames = (article.authors || []).flatMap((author) => {
-    if (typeof author === 'number') return [];
-    return [`${author.firstName} ${author.lastName}`];
-  });
-  const writeInNames = ((article as unknown as Record<string, unknown>).writeInAuthors as Array<{ name: string }> || [])
-    .map((a) => a.name)
-    .filter(Boolean);
-  const names = [...staffNames, ...writeInNames];
-  return names.length > 0 ? names.join(' AND ') : null;
-};
+/** Authors in byline order; empty renders "By The Polytechnic" */
+const getAuthors = (article: RecommendationArticle) => getArticleAuthors(article);
 
-const formatDate = (article: RecommendationArticle) => {
-  const dateValue = article.publishedDate || article.createdAt;
-  if (!dateValue) return null;
-
-  return new Date(dateValue).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-};
+const formatDate = (article: RecommendationArticle) => shortDate(article.publishedDate || article.createdAt);
 
 const getArticleLabel = (article: RecommendationArticle) => {
   if (article.section === 'opinion') {
@@ -281,9 +266,10 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                   {leadArticle.richTitle || leadArticle.title}
                 </h3>
                 <Byline
-                  author={getAuthorString(leadArticle)}
+                  authors={getAuthors(leadArticle)}
                   date={formatDate(leadArticle)}
-                  className="mt-4 text-[14px] md:text-[14px]"
+                  size="lg"
+                  margin="mt-4"
                 />
                 {leadArticle.subdeck && (
                   <p className="mt-3 max-w-xl font-meta text-[17px] leading-[1.48] text-text-muted line-clamp-3">
@@ -330,7 +316,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                         <h3 className={`mt-1 ${getHeadlineClasses(article, 'list')}`}>
                           {article.richTitle || article.title}
                         </h3>
-                        <Byline author={getAuthorString(article)} date={formatDate(article)} className="text-[15px] md:text-[14px]" />
+                        <Byline authors={getAuthors(article)} date={formatDate(article)} />
                       </div>
                     </TransitionLink>
                   </div>

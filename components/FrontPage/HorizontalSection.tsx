@@ -65,7 +65,7 @@ export const LeadStory = ({
     >
       {article.richTitle || article.title}
     </h3>
-    <Byline author={article.author} date={article.date} />
+    <Byline authors={article.authorLinks} date={article.date} size="sm" />
     {article.excerpt ? (
       <p className="font-meta mt-3 max-w-2xl text-[13px] font-normal leading-[1.4] text-black dark:text-white">
         {article.excerpt}
@@ -90,7 +90,7 @@ export const TextStory = ({
     >
       {article.richTitle || article.title}
     </h3>
-    <Byline author={article.author} date={article.date} />
+    <Byline authors={article.authorLinks} date={article.date} size="sm" />
     {showExcerpt && article.excerpt ? (
       <p className="font-meta mt-2 line-clamp-3 text-[12px] font-normal leading-[1.38] text-black dark:text-white">
         {article.excerpt}
@@ -121,7 +121,7 @@ export const ThumbStory = ({
       >
         {article.richTitle || article.title}
       </h3>
-      <Byline author={article.author} date={article.date} />
+      <Byline authors={article.authorLinks} date={article.date} size="sm" />
       {showExcerpt && article.excerpt ? (
         <p className="font-meta mt-2 line-clamp-3 text-[12px] font-normal leading-[1.38] text-black dark:text-white">
           {article.excerpt}
@@ -163,7 +163,7 @@ const SparseSection = ({
       <h3 className={`font-copy text-[24px] font-bold leading-[1.08] tracking-[-0.018em] text-text-main transition-colors md:text-[28px] ${lead.section === "news" ? "!text-[1.2em]" : ""} ${lead.section === "sports" ? "font-light" : ""} ${lead.section === "features" ? "font-light text-[25px] md:text-[29px]" : ""}`}>
         {lead.richTitle || lead.title}
       </h3>
-      <Byline author={lead.author} date={lead.date} />
+      <Byline authors={lead.authorLinks} date={lead.date} />
       {lead.excerpt ? (
         <p className="font-meta mt-3 max-w-2xl text-[13px] font-normal leading-[1.4] text-black dark:text-white">
           {lead.excerpt}
@@ -338,7 +338,7 @@ const SportsSection = ({ articles }: { articles: Article[] }) => {
               <h3 className={`font-copy text-[20px] font-bold leading-[1.08] tracking-[-0.018em] text-text-main transition-colors md:text-[24px] ${lead.section === "news" ? "!text-[1.2em]" : ""} ${lead.section === "sports" ? "font-light" : ""} ${lead.section === "features" ? "font-light text-[21px] md:text-[25px]" : ""}`}>
                 {lead.richTitle || lead.title}
               </h3>
-              <Byline author={lead.author} date={lead.date} />
+              <Byline authors={lead.authorLinks} date={lead.date} />
               {lead.excerpt ? (
                 <p className="font-copy mt-3 max-w-2xl text-[13px] leading-[1.4] text-black dark:text-white">
                   {lead.excerpt}

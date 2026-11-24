@@ -120,14 +120,15 @@ function OverlayLead({ article, image, frames }: { article: ComponentArticle; im
               {article.richTitle || article.title}
             </h2>
             <Byline
-              author={article.author}
+              authors={article.authorLinks}
               date={newsBylineDate(article)}
-              variant="features"
-              className="mt-3 text-[13px] md:[&_span]:text-white"
+              size="lg"
+              margin="mt-3"
+              className="md:[&_span]:text-white"
             />
           </div>
         </div>
-        {credit && <p className="mt-1.5 font-meta text-[12px] italic text-text-muted">{credit}</p>}
+        {credit && <p className="mt-1.5 font-meta text-[11px] tracking-[0.02em] text-text-muted">{credit}</p>}
       </article>
     </TransitionLink>
   );
@@ -188,10 +189,10 @@ export default function NewsLead({
         {article.richTitle || article.title}
       </h2>
       <Byline
-        author={article.author}
+        authors={article.authorLinks}
         date={newsBylineDate(article)}
-        variant="features"
-        className="mt-3 text-[13px]"
+        size="lg"
+        margin="mt-3"
       />
     </div>
   );
@@ -232,7 +233,7 @@ export default function NewsLead({
         />
       </div>
       {credit && (
-        <figcaption className="mt-1.5 font-meta text-[12px] italic text-text-muted">{credit}</figcaption>
+        <figcaption className="mt-1.5 font-meta text-[11px] tracking-[0.02em] text-text-muted">{credit}</figcaption>
       )}
     </figure>
   ) : null;

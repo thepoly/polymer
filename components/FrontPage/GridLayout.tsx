@@ -55,7 +55,7 @@ function GridArticleCard({
       >
         {article.richTitle || article.title}
       </h3>
-      <Byline author={article.author} date={article.date} split={isLarge} />
+      <Byline authors={article.authorLinks} date={article.date} />
       {article.excerpt && (
         <p
           data-marauders-obstacle="excerpt"
@@ -173,7 +173,7 @@ function MobileArticleCard({ article }: { article: Article }) {
       >
         {article.richTitle || article.title}
       </h3>
-      <Byline author={article.author} date={article.date} />
+      <Byline authors={article.authorLinks} date={article.date} />
       {article.excerpt && (
         <p
           data-marauders-obstacle="excerpt"

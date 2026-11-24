@@ -14,6 +14,14 @@ import { opinionGroups } from "./opinionGroups";
 import RainbowDivider, { AnimatedLine } from "./RainbowDivider";
 import type { Article as ComponentArticle } from "@/components/FrontPage/types";
 import { Byline } from "@/components/FrontPage/Byline";
+import { shortDate } from "@/utils/articleDates";
+
+/**
+ * "Nov 14, 2026" on every card: an opinion piece answers a moment, and the page
+ * keeps pieces for months, so readers need to know when each was written.
+ * Editor's Choice and the author carousel are curated picks and stay undated.
+ */
+const opinionDate = (article: ComponentArticle) => shortDate(article.publishedDate || article.isoDate);
 
 /* ── Article card — optionally shows image ── */
 
@@ -46,8 +54,8 @@ function OpinionCard({ article, withImage = false, priority = false }: { article
       <h3 className="font-copy font-medium leading-[1.12] text-[25px] sm:text-[28px] text-text-main transition-colors">
         {article.richTitle || article.title}
       </h3>
-      {/* Byline — "BY" is muted, author name is accent */}
-      <Byline author={article.author} date={article.date} variant="features" className="mt-2 text-[13px]" />
+      {/* Byline: muted "By", names in ink (red is the type label above) */}
+      <Byline authors={article.authorLinks} date={opinionDate(article)} size="md" margin="mt-2" />
       {/* Subdeck — readable but smaller than title, generous bottom margin for spacing */}
       {article.excerpt && (
         <p className="mt-0.5 font-meta text-[15px] font-medium leading-[1.5] text-text-main line-clamp-4">
@@ -279,7 +287,7 @@ export default function OpinionSectionPage({
                     <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors">
                       {article.richTitle || article.title}
                     </h3>
-                    <Byline author={article.author} variant="features" className="mt-2 text-[13px]" />
+                    <Byline authors={article.authorLinks} date={opinionDate(article)} size="md" margin="mt-2" />
                   </TransitionLink>
                 );
               })}

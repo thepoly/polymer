@@ -1295,7 +1295,7 @@ export default function SearchOverlay({
                       <h3 className={`font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors mb-1 [overflow-wrap:anywhere] break-words font-copy text-[22px] md:text-[24px] ${article.section === "opinion" ? "font-light" : ""} ${article.section === "news" ? "text-[23px] md:text-[25px]" : ""} ${article.section === "sports" ? "font-light" : ""} ${article.section === "features" ? "font-light text-[23px] md:text-[25px]" : ""}`}>
                         {article.title}
                       </h3>
-                      <Byline author={article.author} date={article.date} />
+                      <Byline authors={article.authorLinks} date={article.date} />
                       <p className="font-meta font-normal text-black dark:text-white text-[13px] leading-[1.38] mt-1.5 line-clamp-3 transition-colors [overflow-wrap:anywhere] break-words">
                         {article.excerpt}
                       </p>

@@ -74,7 +74,7 @@ describe('archives and classification', () => {
   });
   it('includes and renders guest attribution in card queries', () => {
     expect(opinionCardSelect.writeInAuthors).toBe(true);
-    expect(formatArticle({ id: 1, slug: 'guest', title: 'Guest article', section: 'opinion', authors: [], writeInAuthors: [{ name: 'Guest Writer' }] })?.author).toBe('GUEST WRITER');
+    expect(formatArticle({ id: 1, slug: 'guest', title: 'Guest article', section: 'opinion', authors: [], writeInAuthors: [{ name: 'Guest Writer' }] })?.author).toBe('Guest Writer');
   });
   it('resets empty kickers and supports typographic apostrophes', () => {
     expect(deriveOpinionType(null)).toBe('opinion');

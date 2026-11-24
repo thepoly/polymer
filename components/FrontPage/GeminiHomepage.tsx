@@ -7,15 +7,7 @@ import { ArticleCard } from "./ArticleCard";
 import type { Article } from "./types";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import { getSlotNumber } from "@/lib/homepageSlots";
-
-const getLeadDate = (article: Article): string | null => {
-  if (article.date) return article.date;
-  if (!article.publishedDate) return null;
-  const diffDays = Math.floor(
-    (Date.now() - new Date(article.publishedDate).getTime()) / (1000 * 60 * 60 * 24),
-  );
-  return `${diffDays} DAY${diffDays !== 1 ? "S" : ""} AGO`;
-};
+import { leadDate } from "@/utils/articleDates";
 
 const sectionFontClasses = (section: string | undefined): string => {
   if (section === "sports") return "font-light";
@@ -75,7 +67,7 @@ function CenterLead({
         </p>
       )}
       <div className="mt-2">
-        <Byline author={article.author} date={getLeadDate(article)} />
+        <Byline authors={article.authorLinks} date={leadDate(article)} />
       </div>
     </div>
   );

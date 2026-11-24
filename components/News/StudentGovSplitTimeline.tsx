@@ -135,7 +135,7 @@ function ArticleCard({ item, layout, priority }: { item: ArticleItem; layout: La
         >
           {article.richTitle || article.title}
         </h3>
-        <Byline author={article.author} variant="features" className="mt-2 text-[12px]" />
+        <Byline authors={article.authorLinks} size="sm" margin="mt-2" />
         {article.excerpt && (
           <p
             className={`mt-2 font-meta leading-[1.5] text-text-main ${

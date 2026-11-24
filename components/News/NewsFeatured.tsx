@@ -44,10 +44,10 @@ export function FeaturedCard({
           {article.richTitle || article.title}
         </h3>
         <Byline
-          author={article.author}
+          authors={article.authorLinks}
           date={newsBylineDate(article)}
-          variant="features"
-          className={`text-[12px] ${large ? "mt-2.5" : "mt-2"}`}
+          size="md"
+          margin={large ? "mt-2.5" : "mt-2"}
         />
         {subdeck && article.excerpt && (
           <p className="mt-2 font-meta text-[15px] font-medium leading-[1.45] text-text-main line-clamp-4">
@@ -93,10 +93,11 @@ export function OverlayCard({ article, sizes }: { article: ComponentArticle; siz
             {article.richTitle || article.title}
           </h3>
           <Byline
-            author={article.author}
+            authors={article.authorLinks}
             date={newsBylineDate(article)}
-            variant="features"
-            className="mt-2 text-[12px] [&_span]:text-white/90"
+            size="md"
+            margin="mt-2"
+            className="[&_span]:text-white/90"
           />
         </div>
       </article>

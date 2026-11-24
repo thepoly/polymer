@@ -12,6 +12,7 @@ import SportsHeading from "./SportsHeading";
 import { LinkedGameScores } from "./Scoreboard/GameScores";
 import { RPI_FALLBACK } from "./Scoreboard/results";
 import SportsByline from "./SportsByline";
+import { BYLINE_META_CLASS } from "@/components/FrontPage/Byline";
 import { shortDate, sportName } from "./sportsFormat";
 import {
   FEATURED_COUNT,
@@ -25,17 +26,15 @@ const COLUMN_GAP = "clamp(16px, 2vw, 28px)";
 
 /* ── Helpers ── */
 
-/** Author names in red */
+/** "By" and names: names in ink at 600, no red (sports cards have no red kicker either) */
 function AuthorNames({ article }: { article: ComponentArticle }) {
   return (
-    <span className="text-accent">
-      <SportsByline article={article} linkClassName="transition-colors hover:text-text-main" />
-    </span>
+    <SportsByline article={article} nameClassName="font-semibold text-text-main" />
   );
 }
 
 /**
- * Sport • author • date. Each dot belongs to the item after it and sits in a
+ * Sport · author · date. Each dot belongs to the item after it and sits in a
  * strip that's clipped off at the start of every line, so a wrapped line
  * never begins or ends with a stray dot. With stackOnDesktop the items stack
  * one per line on desktop, without dots.
@@ -56,17 +55,18 @@ function MetaLine({
   const sport = sportName(article);
   const hasAuthors = showAuthors && Boolean(article.authorLinks?.length || article.author);
   const items: { node: React.ReactNode; wrap?: boolean }[] = [
-    ...(sport ? [{ node: <span className="font-bold text-text-main">{sport}</span> }] : []),
+    // Only the sport is uppercase; the byline and date read in sentence case
+    ...(sport ? [{ node: <span className="font-bold uppercase tracking-[0.04em] text-text-main">{sport}</span> }] : []),
     ...(hasAuthors ? [{ node: <AuthorNames article={article} />, wrap: true }] : []),
     ...(date ? [{ node: date }] : []),
   ];
   return (
-    <div className={`overflow-hidden font-meta uppercase tracking-[0.04em] text-text-muted ${className}`}>
+    <div className={`overflow-hidden font-meta tracking-[0.01em] ${BYLINE_META_CLASS} ${className}`}>
       <div className={`-ml-[1.2em] flex flex-wrap ${stackOnDesktop ? "lg:ml-0 lg:flex-col" : ""}`}>
         {items.map((item, i) => (
           <span
             key={i}
-            className={`relative pl-[1.2em] before:absolute before:left-[0.38em] before:content-['•'] ${item.wrap ? "" : "whitespace-nowrap"} ${stackOnDesktop ? "lg:pl-0 lg:before:hidden" : ""}`}
+            className={`relative pl-[1.2em] before:absolute before:left-[0.47em] before:content-['·'] ${item.wrap ? "" : "whitespace-nowrap"} ${stackOnDesktop ? "lg:pl-0 lg:before:hidden" : ""}`}
           >
             {item.node}
           </span>
@@ -95,7 +95,7 @@ function SportsLeadStory({
 }) {
   const href = getArticleUrl(article);
   const image = article.imageFull || article.image;
-  const date = shortDate(article);
+  const date = shortDate(article, true);
   const sport = sportName(article);
   const series = games.length === 2;
 
@@ -132,15 +132,15 @@ function SportsLeadStory({
             : "order-2 mb-5 lg:order-3 lg:mb-0 lg:mt-4"
         }`}
       >
-        <MetaLine article={article} date={date} showAuthors={false} className={`mb-2 text-[12px] ${series ? "max-lg:hidden" : ""}`} />
+        <MetaLine article={article} date={date} showAuthors={false} className={`mb-2 text-[13px] ${series ? "max-lg:hidden" : ""}`} />
         <TransitionLink href={href} className={series ? "max-lg:order-2 max-lg:mb-4" : undefined}>
           <h2 className="font-copy font-light text-[30px] sm:text-[36px] lg:text-[38px] leading-[1.08] tracking-[-0.01em] text-text-main group-hover:text-accent transition-colors">
             {article.richTitle ?? article.title}
           </h2>
         </TransitionLink>
-        <p className="order-4 mt-3 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
+        <p className={`order-4 mt-3 font-meta text-[15px] font-normal tracking-[0.01em] ${BYLINE_META_CLASS}`}>
           <AuthorNames article={article} />
-          {series && date && <span className="text-text-muted lg:hidden"> · {date}</span>}
+          {series && date && <span className="lg:hidden"> · {date}</span>}
         </p>
       </div>
     </article>
@@ -178,7 +178,7 @@ function SportsWideCard({ article, flip = false }: { article: ComponentArticle; 
         {article.excerpt && (
           <p className="font-copy text-[17px] lg:text-[18px] leading-[1.35] text-text-muted line-clamp-4">{article.excerpt}</p>
         )}
-        <MetaLine article={article} date={shortDate(article, true)} className="text-[12px] lg:text-[13px] lg:leading-[1.5]" stackOnDesktop />
+        <MetaLine article={article} date={shortDate(article, true)} className="text-[13px] lg:text-[14px] lg:leading-[1.5]" stackOnDesktop />
       </div>
     </div>
   );
@@ -225,7 +225,7 @@ function HeadlineRow({ article }: { article: ComponentArticle }) {
         <MetaLine
           article={article}
           date={shortDate(article, true)}
-          className="mt-1.5 [font-size:clamp(11px,calc(0.3vw_+_10px),13px)] lg:leading-[1.5] lg:[font-size:11px]"
+          className="mt-1.5 text-[13px] sm:text-[14px] lg:text-[13px] lg:leading-[1.5]"
           stackOnDesktop
         />
       </div>

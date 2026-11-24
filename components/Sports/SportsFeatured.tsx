@@ -77,12 +77,11 @@ export function StoryCard({
             {article.richTitle ?? article.title}
           </TransitionLink>
         </h3>
-        <div className={`font-meta uppercase leading-[1.5] tracking-[0.06em] text-white/75 ${compact ? "mt-2 text-[10px]" : "mt-3 text-[11px]"}`}>
+        <div className={`font-meta leading-[1.5] tracking-[0.01em] text-white/75 ${compact ? "mt-2 text-[12px]" : "mt-3 text-[13px]"}`}>
           {/* In white for the dark card */}
           <SportsByline
             article={article}
-            linkClassName="whitespace-nowrap text-white transition-colors hover:text-accent"
-            nameClassName="whitespace-nowrap text-white"
+            nameClassName="whitespace-nowrap font-semibold text-white"
           />
           {date && (
             <>

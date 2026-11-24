@@ -20,7 +20,7 @@ describe('opinion category pages', () => {
     }] });
     const html = renderToStaticMarkup(await renderOpinionList('more', Promise.resolve({ page: '21' })));
     expect(find.mock.calls[0][0]).toMatchObject({ page: 21, limit: 10, select: { writeInAuthors: true } });
-    expect(html).toContain('GUEST WRITER');
+    expect(html).toContain('Guest Writer');
     expect(html).toContain('of 250');
     expect(html).toContain('href="/opinion/more-in-opinion?page=20"');
     expect(html).toContain('href="/opinion/more-in-opinion?page=22"');

@@ -5,13 +5,7 @@ import { Article } from './types';
 import { Byline } from './Byline';
 import { ImageCaption } from './ImageCaption';
 import { getArticleUrl } from '@/utils/getArticleUrl';
-
-const getLeadDate = (article: Article): string | null => {
-    if (article.date) return article.date;
-    if (!article.publishedDate) return null;
-    const diffDays = Math.floor((Date.now() - new Date(article.publishedDate).getTime()) / (1000 * 60 * 60 * 24));
-    return `${diffDays} DAY${diffDays !== 1 ? 'S' : ''} AGO`;
-};
+import { leadDate } from '@/utils/articleDates';
 
 export const LeadArticle = ({
     article,
@@ -47,7 +41,7 @@ export const LeadArticle = ({
                 >
                     {article.richTitle || article.title}
                 </h3>
-                <Byline author={article.author} date={getLeadDate(article)} split />
+                <Byline authors={article.authorLinks} date={leadDate(article)} size="lg" />
                 {article.excerpt && (
                     <p
                         data-marauders-obstacle="excerpt"

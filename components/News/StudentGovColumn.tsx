@@ -121,7 +121,7 @@ function PinnedArticle({ article }: { article: ComponentArticle }) {
       >
         {article.richTitle || article.title}
       </h3>
-      <Byline author={article.author} date={newsBylineDate(article)} variant="features" className="mt-2 text-[12px]" />
+      <Byline authors={article.authorLinks} date={newsBylineDate(article)} size="sm" margin="mt-2" />
       {article.excerpt && (
         <p
           data-balance-trim

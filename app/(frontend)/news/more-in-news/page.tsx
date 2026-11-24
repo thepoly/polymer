@@ -49,7 +49,8 @@ export default async function MoreInNewsPage() {
   });
 
   const articles = response.docs
-    .map((a) => formatArticle(a))
+    // An archive: every story gets its publish date, like the Opinion lists
+    .map((a) => formatArticle(a, { absoluteDate: true }))
     .filter((a): a is ComponentArticle => a !== null);
 
   return (

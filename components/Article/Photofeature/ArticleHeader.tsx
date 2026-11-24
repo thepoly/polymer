@@ -10,6 +10,9 @@ import { MobileMenuDrawer } from '@/components/MobileMenuDrawer';
 import { openSearchOverlay } from '@/components/SearchOverlayHost';
 import { useTheme } from '@/components/ThemeProvider';
 import { focalObjectPosition } from '@/utils/focalPoint';
+import { joinNames } from '@/utils/joinNames';
+import { getArticleAuthors, isStaffEditorial } from '@/utils/articleAuthors';
+import { longDate } from '@/utils/articleDates';
 import { resolveCredit } from '@/components/Article/PhotoCaption';
 import { ArticleSectionLabel } from '@/components/Article/ArticleSectionLabel';
 
@@ -125,17 +128,18 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
             {/* Author and Date */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-0 text-white drop-shadow-md">
               <div className="flex items-center gap-2.5">
-                {/* Author Headshots */}
+                {/* Author Headshots: decorative, since the names beside them
+                    say who they are and carry the profile links */}
                 <div className="flex -space-x-2">
                   {article.authors?.map((author) => {
                     const user = author as User;
                     const headshot = user.headshot as Media | null;
                     if (!headshot?.url) return null;
                     return (
-                      <Link href={`/staff/${user.slug || user.id}`} key={user.id} className="relative w-7 h-7 rounded-full overflow-hidden bg-gray-800 border-2 border-white pointer-events-auto hover:border-red-500 transition-colors z-10 hover:z-20">
+                      <Link href={`/staff/${user.slug || user.id}`} key={user.id} aria-hidden="true" tabIndex={-1} className="relative w-7 h-7 rounded-full overflow-hidden bg-gray-800 border-2 border-white pointer-events-auto hover:border-red-500 transition-colors z-10 hover:z-20">
                         <Image
                           src={headshot.url}
-                          alt={`${user.firstName} ${user.lastName}`}
+                          alt=""
                           fill
                           className="object-cover"
                           sizes="28px"
@@ -151,7 +155,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                       <div key={`write-in-${i}`} className="relative w-7 h-7 rounded-full overflow-hidden bg-gray-800 border-2 border-white z-10">
                         <Image
                           src={photo.url}
-                          alt={writeIn.name}
+                          alt=""
                           fill
                           className="object-cover"
                           sizes="28px"
@@ -163,25 +167,23 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                 </div>
 
                 {/* Author Names */}
-                <div className="font-meta text-[13px] font-[440] tracking-[0.08em] pointer-events-auto sm:text-[14px]">
+                <div className="font-meta text-[15px] font-normal tracking-[0.01em] pointer-events-auto sm:text-[16px]">
                   {(() => {
-                    const staffAuthors = (article.authors || []).filter((a): a is User => typeof a !== 'number');
-                    const writeInAuthors = ((article as unknown as Record<string, unknown>).writeInAuthors || []) as Array<{ name: string }>;
-                    const allNames: { name: string; href?: string; key: string }[] = [
-                      ...staffAuthors.map((u) => ({ name: `${u.firstName} ${u.lastName}`, href: `/staff/${u.slug || u.id}`, key: `staff-${u.id}` })),
-                      ...writeInAuthors.map((w, i) => ({ name: w.name, key: `write-in-${i}` })),
-                    ];
-                    if (allNames.length === 0) return <>By <em>The Polytechnic</em> Editorial Board</>;
+                    const allNames = getArticleAuthors<User>(article);
+                    // Only a staff editorial speaks for the Editorial Board
+                    if (allNames.length === 0) {
+                      return <>By <span className="font-semibold"><em>The Polytechnic</em>{isStaffEditorial(article) && ' Editorial Board'}</span></>;
+                    }
                     return (
                       <>
-                        By {allNames.map((author, index) => (
+                        By {joinNames(allNames).map(({ item: author, sep }) => (
                           <React.Fragment key={author.key}>
-                            {index > 0 && index === allNames.length - 1 ? ' and ' : index > 0 ? ', ' : ''}
+                            {sep}
                             {author.href ? (
-                              <Link href={author.href} className="text-white hover:text-white/75 hover:underline decoration-1 underline-offset-2 transition-colors">
+                              <Link href={author.href} className="font-semibold text-white transition-colors hover:text-accent">
                                 {author.name}
                               </Link>
-                            ) : author.name}
+                            ) : <span className="font-semibold">{author.name}</span>}
                           </React.Fragment>
                         ))}
                       </>
@@ -195,7 +197,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
                 <>
                   <span className="hidden sm:inline text-white/80">•</span>
                   <div className="font-serif text-white/90 text-[17px]">
-                    {new Date(article.publishedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                    {longDate(article.publishedDate)}
                   </div>
                 </>
               )}
@@ -217,7 +219,7 @@ export const ArticleHeader: React.FC<Props> = ({ article }) => {
             {/* Matches the gallery credit treatment, but fixed white: the hero
                 always carries a dark bottom gradient, so there is nothing to
                 sample and nothing that would ever call for black. */}
-            <p className="font-meta text-[12px] italic text-white opacity-80 [text-shadow:0_1px_3px_rgb(0_0_0/0.55)]">
+            <p className="font-meta text-[11px] tracking-[0.02em] text-white [text-shadow:0_1px_3px_rgb(0_0_0/0.55)]">
               {creditStaff.map((user, i) => (
                 <Fragment key={user.id}>
                   {i > 0 ? ', ' : ''}

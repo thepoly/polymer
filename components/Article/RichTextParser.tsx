@@ -171,7 +171,7 @@ const serialize = (nodes: LexicalNode[], pCount: number, isRoot: boolean): { chi
               >
                 {caption}
                 {(creditUser || writeInPhotographer) && (
-                  <span className="opacity-60">
+                  <span className="not-italic text-[11px] tracking-[0.02em]">
                     {caption ? ' ' : ''}
                     {creditUser && typeof creditUser === 'object'
                       ? <Link href={`/staff/${creditUser.slug || creditUser.id}`} className="hover:opacity-80 transition-opacity">{creditUser.firstName} {creditUser.lastName}/The Polytechnic</Link>

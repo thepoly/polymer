@@ -59,7 +59,7 @@ export const ArticleHeader: React.FC<Props> = ({ article, scoreBand }) => {
               <p data-ie-field="imageCaption" className="mt-2 font-meta text-[12px] italic text-text-muted transition-colors">
                 {imageCaption}
                 {(photographer || writeInPhotographer) && (
-                  <span className="opacity-60">
+                  <span className="not-italic text-[11px] tracking-[0.02em]">
                     {imageCaption ? ' ' : ''}
                     {photographer
                       ? <Link href={`/staff/${photographer.slug || photographer.id}`} className="hover:opacity-80 transition-opacity">{photographer.firstName} {photographer.lastName}/The Polytechnic</Link>

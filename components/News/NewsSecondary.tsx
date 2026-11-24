@@ -52,10 +52,10 @@ function Strip({ article, optional, photo }: { article: ComponentArticle; option
               {article.richTitle || article.title}
             </h3>
             <Byline
-              author={article.author}
+              authors={article.authorLinks}
               date={newsBylineDate(article)}
-              variant="features"
-              className="mt-2.5 text-[12px]"
+              size="md"
+              margin="mt-2.5"
             />
             {article.excerpt && (
               <p data-news-secondary-subdeck className="mt-2.5 hidden font-meta text-[16px] font-medium leading-[1.5] text-text-main md:block lg:hidden">

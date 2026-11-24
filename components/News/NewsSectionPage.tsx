@@ -67,10 +67,10 @@ function NewsCard({
         {article.richTitle || article.title}
       </h3>
       <Byline
-        author={article.author}
+        authors={article.authorLinks}
         date={hideDate ? null : article.date}
-        variant="features"
-        className="mt-2 text-[13px]"
+        size={large ? "lg" : "md"}
+        margin="mt-2"
       />
       {showExcerpt && article.excerpt && (
         <p className="mt-0.5 font-meta text-[15px] font-medium leading-[1.5] text-text-main line-clamp-4">
@@ -485,10 +485,10 @@ export default function NewsSectionPage({
                       {lead[3].richTitle || lead[3].title}
                     </h2>
                     <Byline
-                      author={lead[3].author}
+                      authors={lead[3].authorLinks}
                       date={lead[3].date}
-                      variant="features"
-                      className="mt-2 text-[13px]"
+                      size="md"
+                      margin="mt-2"
                     />
                     {lead[3].excerpt && (
                       <p className="mt-2 font-meta text-[15px] font-medium leading-[1.5] text-text-muted line-clamp-3">
@@ -663,7 +663,7 @@ export default function NewsSectionPage({
                     <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors group-hover:text-accent">
                       {article.richTitle || article.title}
                     </h3>
-                    <Byline author={article.author} variant="features" className="mt-2 text-[13px]" />
+                    <Byline authors={article.authorLinks} size="md" margin="mt-2" />
                   </TransitionLink>
                 ))}
               </div>

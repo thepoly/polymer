@@ -1,41 +1,29 @@
 import React from "react";
-import TransitionLink from "@/components/TransitionLink";
 import type { Article as ComponentArticle } from "@/components/FrontPage/types";
+import { joinNames } from "@/utils/joinNames";
 
 /**
- * A story's authors joined with "&". Staff names link to their profiles;
- * write-ins stay plain text.
+ * "By A, B and C" on a Sports card. Names are plain text, as on every card:
+ * the card links to the story, and profiles are linked from the article
+ * header. "By" and the separators take the surrounding (muted) colour.
  */
 export default function SportsByline({
   article,
-  linkClassName,
   nameClassName,
 }: {
   article: ComponentArticle;
-  linkClassName: string;
-  /** For names without a profile; left unwrapped when not given */
-  nameClassName?: string;
+  nameClassName: string;
 }) {
   const authors = article.authorLinks?.length
     ? article.authorLinks
-    : article.author
-      ? [{ name: article.author, href: null }]
-      : [];
+    : [{ name: article.author || "The Polytechnic" }];
   return (
     <>
-      {authors.map((a, i) => (
+      {"By "}
+      {joinNames(authors).map(({ item: a, sep }, i) => (
         <React.Fragment key={i}>
-          {i > 0 && " & "}
-          {a.href ? (
-            // z-10 lifts the link above the card's stretched title link
-            <TransitionLink href={a.href} className={`relative z-10 ${linkClassName}`}>
-              {a.name}
-            </TransitionLink>
-          ) : nameClassName ? (
-            <span className={nameClassName}>{a.name}</span>
-          ) : (
-            a.name
-          )}
+          {sep}
+          <span className={nameClassName}>{a.name}</span>
         </React.Fragment>
       ))}
     </>

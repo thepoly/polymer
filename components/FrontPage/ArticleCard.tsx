@@ -71,7 +71,7 @@ export const ArticleCard = ({
         >
           {article.richTitle || article.title}
         </h3>
-        <Byline author={article.author} date={article.date} />
+        <Byline authors={article.authorLinks} date={article.date} />
         {showExcerpt && article.excerpt && (
           <p
             data-marauders-obstacle="excerpt"

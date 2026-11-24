@@ -64,7 +64,7 @@ export default function OpinionListPage({
               <h2 className="font-copy font-medium leading-[1.15] text-[22px] text-text-main transition-colors">
                 {article.richTitle || article.title}
               </h2>
-              <Byline author={article.author} date={article.date} className="text-[13px]" />
+              <Byline authors={article.authorLinks} date={article.date} size="md" />
               {article.excerpt && (
                 <p className="mt-1 font-meta text-[14px] leading-[1.5] text-text-muted line-clamp-2">
                   {article.excerpt}
