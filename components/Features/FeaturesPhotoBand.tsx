@@ -27,7 +27,16 @@ export type FeaturesPhotoBandData = {
  * The band isn't a link. The credit is: the photographer's profile and the
  * story the photo comes from.
  */
-export default function FeaturesPhotoBand({ band }: { band: FeaturesPhotoBandData }) {
+export default function FeaturesPhotoBand({
+  band,
+  thin = false,
+  className = "mt-8",
+}: {
+  band: FeaturesPhotoBandData;
+  /** A slim second window onto the same photo, lower on the page; credit only from tablet up */
+  thin?: boolean;
+  className?: string;
+}) {
   const ref = useRef<HTMLElement>(null);
   const [near, setNear] = useState(false);
 
@@ -51,13 +60,13 @@ export default function FeaturesPhotoBand({ band }: { band: FeaturesPhotoBandDat
 
   return (
     // Full bleed within the page: out to the edges of the page's side padding
-    <figure ref={ref} data-features-photo-band className="relative -mx-4 mt-8 md:-mx-6 xl:-mx-[30px]">
+    <figure ref={ref} data-features-photo-band className={`relative -mx-4 md:-mx-6 xl:-mx-[30px] ${className}`}>
       <PhotoWindow
         src={band.photo}
         alt={band.alt}
         focus={band.focus}
         loadImage={near}
-        className="h-[clamp(220px,42vh,460px)]"
+        className={thin ? "h-[clamp(88px,14vh,150px)]" : "h-[clamp(220px,42vh,460px)]"}
       >
         {/* Keeps the credit legible over a bright photo */}
         <div
@@ -66,7 +75,7 @@ export default function FeaturesPhotoBand({ band }: { band: FeaturesPhotoBandDat
         />
       </PhotoWindow>
       {(photographer || story) && (
-          <figcaption className="absolute bottom-2.5 left-3 right-3 z-10 text-right font-meta text-[12px] leading-snug tracking-[0.02em] text-white [text-shadow:0_1px_3px_rgb(0_0_0/0.6)] md:bottom-3 md:left-5 md:right-5 md:text-[13px]">
+          <figcaption className={`absolute ${thin ? "hidden md:block " : ""}bottom-2.5 left-3 right-3 z-10 text-right font-meta text-[12px] leading-snug tracking-[0.02em] text-white [text-shadow:0_1px_3px_rgb(0_0_0/0.6)] md:bottom-3 md:left-5 md:right-5 md:text-[13px]`}>
             {photographer && (
               <>
                 Photo by{" "}

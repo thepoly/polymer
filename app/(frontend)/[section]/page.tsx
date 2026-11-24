@@ -31,7 +31,8 @@ import { getNewsTopicArticles } from '@/lib/newsTopics';
 import { NEWS_TOPICS, type NewsTopicKey } from '@/components/News/newsTopics';
 import { getStoredTerms } from '@/lib/studentGovTerms';
 import { ordinal, resolveTerms, termYearLabel, troyDayKey, updateTermHref } from '@/components/News/studentGovTerms';
-import FeaturesSectionPage, { type SpotlightPhoto } from '@/components/Features/FeaturesSectionPage';
+import FeaturesSectionPage from '@/components/Features/FeaturesSectionPage';
+import { loadFeaturesIndex, type FeaturesIndexStory } from '@/lib/featuresIndex';
 import type { FeaturesPhotoBandData } from '@/components/Features/FeaturesPhotoBand';
 import { loadFeaturesPhotoBand, type StoredPhotoBand } from '@/lib/featuresPhotoBand';
 import SportsSectionPage from '@/components/Sports/SportsSectionPage';
@@ -520,58 +521,43 @@ export default async function SectionPageRoute({ params }: Args) {
     });
   }
 
-  // Fetch features page layout — 3-column Row 1 + Row 2. Layouts saved before
-  // Upcoming Events and the Collar City Column were removed may still carry
-  // `events` / `collarCity*` keys; they're ignored.
-  let featuresPinnedOnCampus: ComponentArticle[] = [];
+  // Features: the editor's cover pins and photo band, and every story for
+  // the section list and index. Layouts saved by older editors may still
+  // carry On Campus, The Arts, Photo Spotlight and wide-story keys; the page
+  // no longer shows those sections, so they're ignored.
   let featuresPinnedFeatured: ComponentArticle[] = [];
   let featuresPinnedRight: ComponentArticle[] = [];
-  let featuresOnCampusImages: boolean[] = [false, false, false];
-  // Row 2
-  let featuresPinnedTheArts: ComponentArticle[] = [];
-  let featuresTheArtsImages: boolean[] = [false, false, false];
-  let featuresPhotoSpotlight: SpotlightPhoto[] = [];
-  let featuresPinnedSpotlightSubs: ComponentArticle[] = [];
-  let featuresPinnedWide: ComponentArticle[] = [];
   let featuresPhotoBand: FeaturesPhotoBandData | null = null;
+  let featuresIndex: FeaturesIndexStory[] = [];
 
   if (section === 'features') {
     type FeaturesLayoutShape = {
       photoBand?: StoredPhotoBand | null;
-      onCampus?: (number | null)[];
-      onCampusImages?: boolean[];
       featured?: (number | null)[];
       rightArticles?: (number | null)[];
-      theArts?: (number | null)[];
-      theArtsImages?: boolean[];
-      photoSpotlight?: SpotlightPhoto[];
-      spotlightSubs?: (number | null)[];
-      wideArticle?: (number | null)[];
     };
 
-    try {
-      const layoutResponse = await payload.find({
-        collection: 'features-page-layout',
-        limit: 1,
-        depth: 0,
-        select: { layout: true },
-      });
-      const doc = layoutResponse.docs[0] as Record<string, unknown> | undefined;
-      const layoutJson = doc?.layout as FeaturesLayoutShape | undefined;
+    const [, index] = await Promise.all([
+      (async () => {
+        try {
+          const layoutResponse = await payload.find({
+            collection: 'features-page-layout',
+            limit: 1,
+            depth: 0,
+            select: { layout: true },
+          });
+          const doc = layoutResponse.docs[0] as Record<string, unknown> | undefined;
+          const layoutJson = doc?.layout as FeaturesLayoutShape | undefined;
+          if (!layoutJson) return;
 
-      if (layoutJson) {
-        if (layoutJson.onCampusImages) featuresOnCampusImages = layoutJson.onCampusImages;
-        if (layoutJson.theArtsImages) featuresTheArtsImages = layoutJson.theArtsImages;
-        featuresPhotoSpotlight = layoutJson.photoSpotlight || [];
-        featuresPhotoBand = await loadFeaturesPhotoBand(payload, layoutJson.photoBand);
+          featuresPhotoBand = await loadFeaturesPhotoBand(payload, layoutJson.photoBand);
 
-        // Collect all pinned IDs to fetch in one batch (Row 1 + Row 2)
-        const allPinnedIds = new Set<number>();
-        for (const col of [layoutJson.onCampus, layoutJson.featured, layoutJson.rightArticles, layoutJson.theArts, layoutJson.spotlightSubs, layoutJson.wideArticle]) {
-          if (col) for (const id of col) { if (id) allPinnedIds.add(id); }
-        }
+          const allPinnedIds = new Set<number>();
+          for (const col of [layoutJson.featured, layoutJson.rightArticles]) {
+            if (col) for (const id of col) { if (id) allPinnedIds.add(id); }
+          }
+          if (allPinnedIds.size === 0) return;
 
-        if (allPinnedIds.size > 0) {
           const pinnedResponse = await payload.find({
             collection: 'articles',
             where: {
@@ -591,21 +577,18 @@ export default async function SectionPageRoute({ params }: Args) {
           const pinnedMap = new Map(
             pinnedResponse.docs.map((a) => [a.id, formatArticle(a)]),
           );
-
           const resolveColumn = (ids: (number | null)[] | undefined): ComponentArticle[] =>
             (ids || []).map((id) => (id ? pinnedMap.get(id) ?? null : null)).filter((a): a is ComponentArticle => a !== null);
 
-          featuresPinnedOnCampus = resolveColumn(layoutJson.onCampus);
           featuresPinnedFeatured = resolveColumn(layoutJson.featured);
           featuresPinnedRight = resolveColumn(layoutJson.rightArticles);
-          featuresPinnedTheArts = resolveColumn(layoutJson.theArts);
-          featuresPinnedSpotlightSubs = resolveColumn(layoutJson.spotlightSubs);
-          featuresPinnedWide = resolveColumn(layoutJson.wideArticle);
+        } catch {
+          // Table may not exist yet
         }
-      }
-    } catch {
-      // Table may not exist yet
-    }
+      })(),
+      loadFeaturesIndex(payload),
+    ]);
+    featuresIndex = index;
   }
 
   // Sports: editors' layout and pins, standings, schedule and schools
@@ -638,16 +621,10 @@ export default async function SectionPageRoute({ params }: Args) {
         <FeaturesSectionPage
           title={sectionTitle}
           articles={formattedArticles}
-          pinnedOnCampus={featuresPinnedOnCampus}
           pinnedFeatured={featuresPinnedFeatured}
           pinnedRight={featuresPinnedRight}
-          onCampusImages={featuresOnCampusImages}
-          pinnedTheArts={featuresPinnedTheArts}
-          theArtsImages={featuresTheArtsImages}
-          photoSpotlight={featuresPhotoSpotlight}
           photoBand={featuresPhotoBand}
-          pinnedSpotlightSubs={featuresPinnedSpotlightSubs}
-          pinnedWide={featuresPinnedWide}
+          indexStories={featuresIndex}
         />
       ) : sportsPage ? (
         <SportsSectionPage title={sectionTitle} articles={formattedArticles} {...sportsPage} />
