@@ -101,11 +101,6 @@ function OverlayLead({ article, image, frames }: { article: ComponentArticle; im
               aria-hidden="true"
               className="absolute inset-0 hidden bg-[linear-gradient(to_top,rgba(0,0,0,0.88)_0%,rgba(0,0,0,0.62)_32%,rgba(0,0,0,0.18)_58%,rgba(0,0,0,0)_72%)] md:block"
             />
-            {/* Hover: the whole photo darkens a little */}
-            <div
-              aria-hidden="true"
-              className="absolute inset-0 bg-black opacity-0 transition-opacity duration-300 group-hover:opacity-[0.18]"
-            />
           </div>
           <div className="mt-4 md:absolute md:inset-x-0 md:bottom-0 md:mt-0 md:px-8 md:pb-7 md:text-white">
             {article.kicker && (
