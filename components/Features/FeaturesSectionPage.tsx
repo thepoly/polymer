@@ -100,6 +100,7 @@ export default function FeaturesSectionPage({
       <SectionSearchPrompt
         section="features"
         name="Features"
+        question="Looking for an article"
         archiveHref="/features/archive"
         contactHref={FEATURES_CONTACT_MAILTO}
       />

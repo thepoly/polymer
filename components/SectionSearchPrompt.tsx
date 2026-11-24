@@ -6,8 +6,9 @@ import { ArrowRight } from "lucide-react";
 import TransitionLink from "@/components/TransitionLink";
 
 /**
- * The foot of a section page (/news, /features): "Missed something?",
- * centred. A search box limited to the section (it goes to the site search
+ * The foot of a section page (/news, /features): a question, centred
+ * ("Missed something?" on News, which is its own; other sections pass their
+ * own with `question`). A search box limited to the section (it goes to the site search
  * as /search?q=…&section=<section>) on a red underline, a link to the
  * section's archive, and its contact email. The section pages have no
  * header row for these any more.
@@ -21,6 +22,7 @@ export default function SectionSearchPrompt({
   name,
   archiveHref,
   contactHref,
+  question = "Missed something",
 }: {
   /** The section's slug, as the search filter expects it ("news") */
   section: string;
@@ -29,6 +31,8 @@ export default function SectionSearchPrompt({
   /** Every past story in the section */
   archiveHref: string;
   contactHref?: string;
+  /** The heading, without its question mark, which is added in red */
+  question?: string;
 }) {
   const headingId = `${section}-search-prompt`;
   const inputId = `${section}-search-prompt-q`;
@@ -38,7 +42,7 @@ export default function SectionSearchPrompt({
         id={headingId}
         className="font-copy text-[clamp(26px,2.6vw,32px)] font-semibold leading-tight tracking-[-0.01em] text-text-main"
       >
-        Missed something<span className="text-accent">?</span>
+        {question}<span className="text-accent">?</span>
       </h2>
 
       <UnderlinedSearchForm
