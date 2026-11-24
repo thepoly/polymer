@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Peephole, { type PagePhoto } from './Peephole';
 
-export default function CopyButton({ value, targetId, label = 'Copy news desk email address' }: { value: string; targetId: string; label?: string }) {
+export default function CopyButton({ value, targetId, photo, label = 'Copy news desk email address' }: { value: string; targetId: string; photo: PagePhoto; label?: string }) {
   const [status, setStatus] = useState<'idle' | 'copied' | 'selected' | 'error'>('idle');
 
   useEffect(() => {
@@ -32,8 +33,11 @@ export default function CopyButton({ value, targetId, label = 'Copy news desk em
 
   return (
     <>
-      <button type="button" onClick={copy} aria-label={label} className="min-h-11 min-w-[84px] cursor-pointer border border-rule bg-bg-main px-3 font-meta text-[12px] font-bold uppercase tracking-[0.08em] text-text-main hover:border-accent hover:text-accent focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">
-        {status === 'copied' ? 'Copied' : 'Copy'}
+      {/* An opening onto the page photo. The white edge keeps it distinct
+          inside the news tip box, which is an opening onto the same photo. */}
+      <button type="button" onClick={copy} aria-label={label} className="group relative min-h-11 min-w-[84px] cursor-pointer border border-white/70 px-3 font-meta text-[12px] font-bold uppercase tracking-[0.08em] text-white focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2">
+        <Peephole photo={photo} scrim="bg-black/35 group-hover:bg-white" />
+        <span className="relative z-10 transition-colors group-hover:text-black">{status === 'copied' ? 'Copied' : 'Copy'}</span>
       </button>
       <span role="status" className="sr-only">
         {status === 'copied' ? 'Email address copied.' : status === 'selected' ? 'Email address selected. Use your copy command to copy it.' : status === 'error' ? 'Could not copy automatically. Select the email address to copy it.' : ''}

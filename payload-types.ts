@@ -124,10 +124,12 @@ export interface Config {
   globals: {
     theme: Theme;
     seo: Seo;
+    'get-involved-page': GetInvolvedPage;
   };
   globalsSelect: {
     theme: ThemeSelect<false> | ThemeSelect<true>;
     seo: SeoSelect<false> | SeoSelect<true>;
+    'get-involved-page': GetInvolvedPageSelect<false> | GetInvolvedPageSelect<true>;
   };
   locale: null;
   widgets: {
@@ -1857,6 +1859,36 @@ export interface Seo {
   createdAt?: string | null;
 }
 /**
+ * The photo behind the Get involved page. It stays still while the page scrolls, and shows through the heading, the meeting box, the buttons and the news tip box.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "get-involved-page".
+ */
+export interface GetInvolvedPage {
+  id: number;
+  /**
+   * A wide (landscape) photo works best. Its alt text and photographer come from the media record. Leave empty to use the built-in placeholder.
+   */
+  photo?: (number | null) | Media;
+  mobile?: {
+    focusX?: number | null;
+    focusY?: number | null;
+    zoom?: number | null;
+  };
+  tablet?: {
+    focusX?: number | null;
+    focusY?: number | null;
+    zoom?: number | null;
+  };
+  desktop?: {
+    focusX?: number | null;
+    focusY?: number | null;
+    zoom?: number | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "theme_select".
  */
@@ -1972,6 +2004,37 @@ export interface SeoSelect<T extends boolean = true> {
         sectionFallbackDescription?: T;
         articleFallbackDescription?: T;
         staffProfileDescription?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "get-involved-page_select".
+ */
+export interface GetInvolvedPageSelect<T extends boolean = true> {
+  photo?: T;
+  mobile?:
+    | T
+    | {
+        focusX?: T;
+        focusY?: T;
+        zoom?: T;
+      };
+  tablet?:
+    | T
+    | {
+        focusX?: T;
+        focusY?: T;
+        zoom?: T;
+      };
+  desktop?:
+    | T
+    | {
+        focusX?: T;
+        focusY?: T;
+        zoom?: T;
       };
   updatedAt?: T;
   createdAt?: T;

@@ -35,6 +35,7 @@ import { SchoolsListButton as SchoolsListButton_886588c5ceef1efff36c4600c652202c
 import { SportsLayoutEditor as SportsLayoutEditor_6df05bc5fe37004d8e6293671456fb85 } from '@/components/Dashboard/SportsLayoutEditor'
 import { NewsLayoutEditor as NewsLayoutEditor_7346d059463d93735e9b56f2884b6999 } from '@/components/Dashboard/NewsLayoutEditor'
 import { ThemeColorField as ThemeColorField_083666974322f0a8b2244e62c210f3ce } from '@/components/admin/ThemeColorField'
+import { GetInvolvedPhotoField as GetInvolvedPhotoField_69a4a195c3d1af813b5cbb3faf71d4f8 } from '@/components/admin/GetInvolvedPhotoField'
 import { Icon as Icon_6823e23e6721eed83ef38d632cfc3284 } from '@/components/Dashboard/Icon'
 import { Logo as Logo_fb0cfd647438b613656b847e25f14183 } from '@/components/Dashboard/Login/Logo'
 import { NewsLayoutNavDropdown as NewsLayoutNavDropdown_f3b8e750166547bf62c27c359b052a37 } from '@/components/Dashboard/NewsLayoutNavDropdown'
@@ -79,6 +80,7 @@ export const importMap = {
   "@/components/Dashboard/SportsLayoutEditor#SportsLayoutEditor": SportsLayoutEditor_6df05bc5fe37004d8e6293671456fb85,
   "@/components/Dashboard/NewsLayoutEditor#NewsLayoutEditor": NewsLayoutEditor_7346d059463d93735e9b56f2884b6999,
   "@/components/admin/ThemeColorField#ThemeColorField": ThemeColorField_083666974322f0a8b2244e62c210f3ce,
+  "@/components/admin/GetInvolvedPhotoField#GetInvolvedPhotoField": GetInvolvedPhotoField_69a4a195c3d1af813b5cbb3faf71d4f8,
   "@/components/Dashboard/Icon#Icon": Icon_6823e23e6721eed83ef38d632cfc3284,
   "@/components/Dashboard/Login/Logo#Logo": Logo_fb0cfd647438b613656b847e25f14183,
   "@/components/Dashboard/NewsLayoutNavDropdown#NewsLayoutNavDropdown": NewsLayoutNavDropdown_f3b8e750166547bf62c27c359b052a37,

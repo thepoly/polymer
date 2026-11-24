@@ -1,4 +1,5 @@
 import * as articleGames from './20261121_000000_add_article_games';
+import * as getInvolvedPage from './20261123_000000_add_get_involved_page';
 import * as opinionSingleton from './20261117_000000_opinion_layout_singleton';
 import * as migration_20260211_224237_initial_baseline from './20260211_224237_initial_baseline';
 import * as migration_20260213_223303_remove_copy_workflow from './20260213_223303_remove_copy_workflow';
@@ -346,4 +347,5 @@ export const migrations = [
     name: '20261119_000000_add_redirects',
   },
   { up: articleGames.up, down: articleGames.down, name: '20261121_000000_add_article_games' },
+  { up: getInvolvedPage.up, down: getInvolvedPage.down, name: '20261123_000000_add_get_involved_page' },
 ];

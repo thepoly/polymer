@@ -1,6 +1,19 @@
 import posthog from "posthog-js";
 import { POSTHOG_KEY, getPageType, shouldTrackPath } from "@/lib/posthog-config";
 
+/**
+ * True when this page is a live preview framed inside the newsroom (e.g. the
+ * Get Involved Page photo editor), which shouldn't count as a visit.
+ */
+const isNewsroomPreview = () => {
+  if (typeof window === "undefined" || window.self === window.top) return false;
+  try {
+    return window.top?.location.pathname.startsWith("/newsroom") ?? false;
+  } catch {
+    return false;
+  }
+};
+
 if (POSTHOG_KEY) {
   posthog.init(POSTHOG_KEY, {
     api_host: "/ingest",
@@ -16,6 +29,9 @@ if (POSTHOG_KEY) {
     persistence: "sessionStorage",
     before_send: (event) => {
       if (typeof window !== "undefined" && !shouldTrackPath(window.location.pathname)) {
+        return null;
+      }
+      if (isNewsroomPreview()) {
         return null;
       }
 
@@ -45,6 +61,9 @@ if (POSTHOG_KEY) {
       if (typeof window !== "undefined" && !shouldTrackPath(window.location.pathname)) {
         instance.opt_out_capturing();
       }
+      // Newsroom previews are dropped in before_send instead: opting out here
+      // would persist in sessionStorage, which a framed page shares with the
+      // editor's tab, and stop tracking for the rest of that tab's session.
     },
   });
 }

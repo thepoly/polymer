@@ -1829,5 +1829,31 @@ WHERE v.version_section = 'sports' AND v.version_opponent_id IS NOT NULL
 INSERT INTO payload_migrations (name, batch, updated_at, created_at)
 SELECT '20261121_000000_add_article_games', 38, NOW(), NOW()
 WHERE NOT EXISTS (SELECT 1 FROM payload_migrations WHERE name = '20261121_000000_add_article_games');
+
+-- Batch 39: Get Involved Page global (the pinned photo behind /get-involved,
+-- with focus point and zoom per screen size).
+CREATE TABLE IF NOT EXISTS "get_involved_page" (
+  "id" serial PRIMARY KEY NOT NULL,
+  "photo_id" integer,
+  "mobile_focus_x" numeric DEFAULT 70,
+  "mobile_focus_y" numeric DEFAULT 85,
+  "mobile_zoom" numeric DEFAULT 1.6,
+  "tablet_focus_x" numeric DEFAULT 70,
+  "tablet_focus_y" numeric DEFAULT 60,
+  "tablet_zoom" numeric DEFAULT 1,
+  "desktop_focus_x" numeric DEFAULT 70,
+  "desktop_focus_y" numeric DEFAULT 60,
+  "desktop_zoom" numeric DEFAULT 1,
+  "updated_at" timestamp(3) with time zone,
+  "created_at" timestamp(3) with time zone
+);
+DO $$ BEGIN
+  ALTER TABLE "get_involved_page" ADD CONSTRAINT "get_involved_page_photo_id_media_id_fk" FOREIGN KEY ("photo_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+CREATE INDEX IF NOT EXISTS "get_involved_page_photo_idx" ON "get_involved_page" USING btree ("photo_id");
+INSERT INTO payload_migrations (name, batch, updated_at, created_at)
+SELECT '20261123_000000_add_get_involved_page', 39, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM payload_migrations WHERE name = '20261123_000000_add_get_involved_page');
 COMMIT;
 SQL
