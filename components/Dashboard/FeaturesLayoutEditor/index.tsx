@@ -16,6 +16,7 @@ import {
   pointerWithin,
 } from '@dnd-kit/core';
 import './features-layout-editor.css';
+import type { StoredPhotoBand } from '@/lib/featuresPhotoBand';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -57,6 +58,8 @@ type FeaturesLayout = {
   photoSpotlight: SpotlightPhoto[];
   spotlightSubs: (number | null)[];
   wideArticle: (number | null)[];
+  /** The pinned photo between the rows (lib/featuresPhotoBand.ts); null hides it */
+  photoBand: StoredPhotoBand | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -80,6 +83,7 @@ const EMPTY_LAYOUT: FeaturesLayout = {
   photoSpotlight: [],
   spotlightSubs: [null, null],
   wideArticle: [null],
+  photoBand: null,
 };
 
 const ON_CAMPUS_LABELS = [
@@ -153,7 +157,7 @@ const collectUsedIds = (layout: FeaturesLayout): Set<number> => {
   return ids;
 };
 
-type ExtractedImage = { url: string; alt?: string; photographerName?: string; photographerUrl?: string };
+type ExtractedImage = { url: string; alt?: string; photographerName?: string; photographerUrl?: string; mediaId?: number };
 
 // Extract photographer info from a populated media record (depth=2)
 const extractPhotographer = (media: Record<string, unknown>): { name?: string; url?: string } => {
@@ -192,6 +196,7 @@ const extractImagesFromArticle = (articleData: Record<string, unknown>): Extract
       const photog = media ? extractPhotographer(media) : {};
       images.push({
         url,
+        mediaId: typeof media?.id === 'number' ? media.id : undefined,
         alt: alt || '',
         photographerName: photog.name || fallbackName,
         photographerUrl: photog.url || fallbackUrl,
@@ -460,14 +465,27 @@ type SpotlightArticleResult = {
   writeInAuthors?: Array<{ name: string }>;
 };
 
-function SpotlightBrowser({
-  photos, onAdd, onRemove,
+/** A spotlight or band pick: the story an image came from, and its URL */
+const articleUrlOf = (article: SpotlightArticleResult): string | undefined => {
+  if (!article.publishedDate || !article.slug) return undefined;
+  const d = new Date(article.publishedDate);
+  return `/${article.section}/${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${article.slug}`;
+};
+
+/**
+ * Search stories and pick one of their images (featured image, inline
+ * uploads, galleries). Shared by Photo Spotlight and the Photo Band.
+ */
+function ArticleImageBrowser({
+  usedUrls, usedLabel, onPick, canPick = () => true, cannotPickLabel,
 }: {
-  photos: SpotlightPhoto[];
-  onAdd: (photo: SpotlightPhoto) => void;
-  onRemove: (index: number) => void;
+  usedUrls: Set<string>;
+  usedLabel: string;
+  onPick: (img: ExtractedImage, article: SpotlightArticleResult) => void;
+  /** Images this picker can't take are shown dimmed with cannotPickLabel */
+  canPick?: (img: ExtractedImage) => boolean;
+  cannotPickLabel?: string;
 }) {
-  const [browserOpen, setBrowserOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<SpotlightArticleResult[]>([]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [imageCache, setImageCache] = useState<Map<number, ExtractedImage[]>>(new Map());
@@ -475,9 +493,6 @@ function SpotlightBrowser({
   const [spotSearch, setSpotSearch] = useState('');
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Set of URLs already in the spotlight
-  const usedUrls = new Set(photos.map((p) => p.url));
 
   const searchArticles = useCallback(async (query: string) => {
     if (!query.trim()) { setSearchResults([]); setSearching(false); return; }
@@ -490,7 +505,9 @@ function SpotlightBrowser({
         .slice(0, 10)
         .map((a: { id: string | number; title: string; section: string; slug: string; publishedDate?: string; image?: string | null }) => ({
           id: typeof a.id === 'string' ? parseInt(a.id, 10) : a.id,
+          // Search returns the title as plain text; the list shows plainTitle
           title: a.title,
+          plainTitle: a.title,
           section: a.section || '',
           slug: a.slug || '',
           publishedDate: a.publishedDate || null,
@@ -527,17 +544,95 @@ function SpotlightBrowser({
     loadImages(id);
   };
 
-  const handleToggle = () => {
-    setBrowserOpen(!browserOpen);
-  };
-
-  // Filter out articles whose every image is already in the spotlight
+  // Filter out articles whose every image is already used
   const displayArticles = searchResults.filter((article) => {
     const imgs = imageCache.get(article.id);
     if (!imgs) return true; // not loaded yet, keep visible
     if (imgs.length === 0) return true; // no images, keep visible (they'll see "no images")
     return imgs.some((img) => !usedUrls.has(img.url));
   });
+
+  return (
+    <div className="fle-spotlight-browser">
+      <input
+        type="search"
+        placeholder="Search articles"
+        value={spotSearch}
+        onChange={(e) => handleSearchChange(e.target.value)}
+        className="fle-spotlight-search-input"
+      />
+      {searching && <div className="fle-spotlight-search-spinner-wrap"><div className="fle-spotlight-search-spinner" /></div>}
+
+      <div className="fle-spotlight-articles">
+        {spotSearch.trim() && !searching && displayArticles.length === 0 && (
+          <div className="fle-spotlight-empty">No articles found</div>
+        )}
+        {displayArticles.map((article) => {
+          const isExpanded = expandedId === article.id;
+          const imgs = imageCache.get(article.id);
+          const isLoading = loadingImages === article.id;
+          return (
+            <div key={article.id} className={`fle-spotlight-article ${isExpanded ? 'fle-spotlight-article-expanded' : ''}`}>
+              <div className="fle-spotlight-article-header" onClick={() => handleArticleClick(article.id)}>
+                <span className="fle-spotlight-article-title">{article.plainTitle}</span>
+                <button className={`fle-spotlight-expand-btn ${isExpanded ? 'fle-spotlight-expand-btn-open' : ''}`}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="11" height="11">
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </button>
+              </div>
+              {isExpanded && (
+                <div className="fle-spotlight-article-images">
+                  {isLoading ? (
+                    <div className="fle-spotlight-loading">
+                      <div className="fle-spotlight-loading-spinner" />
+                      <span>Loading images...</span>
+                    </div>
+                  ) : imgs && imgs.length > 0 ? (
+                    imgs.map((img, idx) => {
+                      const isUsed = usedUrls.has(img.url);
+                      const pickable = !isUsed && canPick(img);
+                      return (
+                        <div
+                          key={idx}
+                          className={`fle-spotlight-image-pick ${pickable ? '' : 'fle-spotlight-image-used'}`}
+                          onClick={() => { if (pickable) onPick(img, article); }}
+                        >
+                          <img src={img.url} alt={img.alt || ''} />
+                          {isUsed ? (
+                            <div className="fle-spotlight-used-overlay">{usedLabel}</div>
+                          ) : !pickable ? (
+                            <div className="fle-spotlight-used-overlay">{cannotPickLabel}</div>
+                          ) : (
+                            <div className="fle-spotlight-add-badge">+ Add</div>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="fle-spotlight-no-images">No images found in this article</div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SpotlightBrowser({
+  photos, onAdd, onRemove,
+}: {
+  photos: SpotlightPhoto[];
+  onAdd: (photo: SpotlightPhoto) => void;
+  onRemove: (index: number) => void;
+}) {
+  const [browserOpen, setBrowserOpen] = useState(false);
+
+  // Set of URLs already in the spotlight
+  const usedUrls = new Set(photos.map((p) => p.url));
 
   return (
     <div className="fle-spotlight-section">
@@ -569,83 +664,107 @@ function SpotlightBrowser({
         </div>
       )}
 
-      <button className="fle-add-btn" onClick={handleToggle}>
+      <button className="fle-add-btn" onClick={() => setBrowserOpen(!browserOpen)}>
         {browserOpen ? 'Close Browser' : '+ Add Photo'}
       </button>
 
       {browserOpen && (
-        <div className="fle-spotlight-browser">
-          <input
-            type="search"
-            placeholder="Search articles"
-            value={spotSearch}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="fle-spotlight-search-input"
-          />
-          {searching && <div className="fle-spotlight-search-spinner-wrap"><div className="fle-spotlight-search-spinner" /></div>}
+        <ArticleImageBrowser
+          usedUrls={usedUrls}
+          usedLabel="Already in spotlight"
+          onPick={(img, article) =>
+            onAdd({
+              url: img.url,
+              caption: img.alt,
+              articleTitle: article.plainTitle,
+              articleUrl: articleUrlOf(article),
+              photographerName: img.photographerName,
+              photographerUrl: img.photographerUrl,
+            })
+          }
+        />
+      )}
+    </div>
+  );
+}
 
-          <div className="fle-spotlight-articles">
-            {spotSearch.trim() && !searching && displayArticles.length === 0 && (
-              <div className="fle-spotlight-empty">No articles found</div>
-            )}
-            {displayArticles.map((article) => {
-              const isExpanded = expandedId === article.id;
-              const imgs = imageCache.get(article.id);
-              const isLoading = loadingImages === article.id;
-              return (
-                <div key={article.id} className={`fle-spotlight-article ${isExpanded ? 'fle-spotlight-article-expanded' : ''}`}>
-                  <div className="fle-spotlight-article-header" onClick={() => handleArticleClick(article.id)}>
-                    <span className="fle-spotlight-article-title">{article.plainTitle}</span>
-                    <button className={`fle-spotlight-expand-btn ${isExpanded ? 'fle-spotlight-expand-btn-open' : ''}`}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="11" height="11">
-                        <path d="M6 9l6 6 6-6" />
-                      </svg>
-                    </button>
-                  </div>
-                  {isExpanded && (
-                    <div className="fle-spotlight-article-images">
-                      {isLoading ? (
-                        <div className="fle-spotlight-loading">
-                          <div className="fle-spotlight-loading-spinner" />
-                          <span>Loading images...</span>
-                        </div>
-                      ) : imgs && imgs.length > 0 ? (
-                        imgs.map((img, idx) => {
-                          const isUsed = usedUrls.has(img.url);
-                          return (
-                            <div
-                              key={idx}
-                              className={`fle-spotlight-image-pick ${isUsed ? 'fle-spotlight-image-used' : ''}`}
-                              onClick={() => {
-                                if (!isUsed) {
-                                  let articleUrl: string | undefined;
-                                  if (article.publishedDate && article.slug) {
-                                    const d = new Date(article.publishedDate);
-                                    articleUrl = `/${article.section}/${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${article.slug}`;
-                                  }
-                                  onAdd({ url: img.url, caption: img.alt, articleTitle: article.plainTitle, articleUrl, photographerName: img.photographerName, photographerUrl: img.photographerUrl });
-                                }
-                              }}
-                            >
-                              <img src={img.url} alt={img.alt || ''} />
-                              {isUsed ? (
-                                <div className="fle-spotlight-used-overlay">Already in spotlight</div>
-                              ) : (
-                                <div className="fle-spotlight-add-badge">+ Add</div>
-                              )}
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="fle-spotlight-no-images">No images found in this article</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+// ---------------------------------------------------------------------------
+// Photo Band
+// ---------------------------------------------------------------------------
+
+/** What the editor shows for the current band (fetched on load, set on pick) */
+type PhotoBandPreview = { url: string; articleTitle?: string };
+
+/**
+ * The photo band: one photo pinned to the screen between the cover and the
+ * sections below it (components/Features/FeaturesPhotoBand.tsx). Pick a
+ * photo from a story, then click the photo to aim it: the band shows a wide
+ * slice that moves as the page scrolls, centred on that point.
+ */
+function PhotoBandPanel({
+  band, preview, onPick, onFocus, onRemove,
+}: {
+  band: StoredPhotoBand | null;
+  preview: PhotoBandPreview | null;
+  onPick: (band: StoredPhotoBand, preview: PhotoBandPreview) => void;
+  onFocus: (x: number, y: number) => void;
+  onRemove: () => void;
+}) {
+  const [browserOpen, setBrowserOpen] = useState(false);
+  const focusX = band?.focusX ?? 50;
+  const focusY = band?.focusY ?? 50;
+
+  const aim = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+    onFocus(Math.min(100, Math.max(0, x)), Math.min(100, Math.max(0, y)));
+  };
+
+  return (
+    <div className="fle-spotlight-section fle-band">
+      <div className="fle-spotlight-header">Photo Band</div>
+      <p className="fle-band-hint">
+        A wide photo between the top stories and the sections below. It stays still while the page scrolls.
+        Leave it empty to hide the band.
+      </p>
+
+      {band && preview && (
+        <div className="fle-band-current">
+          <div className="fle-band-aim" onClick={aim} title="Click to aim the photo">
+            <img src={preview.url} alt="" draggable={false} />
+            <span className="fle-band-dot" style={{ left: `${focusX}%`, top: `${focusY}%` }} />
+          </div>
+          <div className="fle-band-side">
+            <div className="fle-band-label">Band preview</div>
+            <div className="fle-band-strip">
+              <img src={preview.url} alt="" style={{ objectPosition: `${focusX}% ${focusY}%` }} />
+            </div>
+            {preview.articleTitle && <div className="fle-spotlight-item-title">From: {preview.articleTitle}</div>}
+            <div className="fle-band-meta">Aimed at {focusX}% across, {focusY}% down. Click the photo to change it.</div>
+            <button className="fle-band-remove" onClick={onRemove}>Remove band</button>
           </div>
         </div>
+      )}
+
+      <button className="fle-add-btn" onClick={() => setBrowserOpen(!browserOpen)}>
+        {browserOpen ? 'Close Browser' : band ? 'Change Photo' : '+ Choose Photo'}
+      </button>
+
+      {browserOpen && (
+        <ArticleImageBrowser
+          usedUrls={new Set(preview ? [preview.url] : [])}
+          usedLabel="In the band"
+          canPick={(img) => typeof img.mediaId === 'number'}
+          cannotPickLabel="Not in the media library"
+          onPick={(img, article) => {
+            onPick(
+              { mediaId: img.mediaId!, articleId: article.id, focusX: 50, focusY: 50 },
+              { url: img.url, articleTitle: article.plainTitle },
+            );
+            setBrowserOpen(false);
+          }}
+        />
       )}
     </div>
   );
@@ -664,6 +783,7 @@ export function FeaturesLayoutEditor() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [activeArticle, setActiveArticle] = useState<ArticleData | null>(null);
+  const [bandPreview, setBandPreview] = useState<PhotoBandPreview | null>(null);
   const docIdRef = useRef<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
@@ -735,7 +855,19 @@ export function FeaturesLayoutEditor() {
               photoSpotlight: savedLayout.photoSpotlight || [],
               spotlightSubs: padArray(savedLayout.spotlightSubs, 2),
               wideArticle: padArray(savedLayout.wideArticle, 1),
+              photoBand: savedLayout.photoBand?.mediaId ? savedLayout.photoBand : null,
             });
+            // The band stores ids; fetch its photo and story title to show it
+            const band = savedLayout.photoBand;
+            if (band?.mediaId) {
+              const [mediaRes, articleRes] = await Promise.all([
+                fetch(`/api/media/${band.mediaId}?depth=0`),
+                band.articleId ? fetch(`/api/articles/${band.articleId}?depth=0`) : Promise.resolve(null),
+              ]);
+              const media = mediaRes.ok ? await mediaRes.json() : null;
+              const article = articleRes && articleRes.ok ? await articleRes.json() : null;
+              if (media?.url) setBandPreview({ url: media.url, articleTitle: article?.plainTitle || undefined });
+            }
           }
         }
       } catch (err) {
@@ -809,6 +941,23 @@ export function FeaturesLayoutEditor() {
       photos.splice(index, 1);
       return { ...prev, photoSpotlight: photos };
     });
+    markDirty();
+  }, [markDirty]);
+
+  const pickBand = useCallback((band: StoredPhotoBand, preview: PhotoBandPreview) => {
+    setLayout((prev) => ({ ...prev, photoBand: band }));
+    setBandPreview(preview);
+    markDirty();
+  }, [markDirty]);
+
+  const aimBand = useCallback((focusX: number, focusY: number) => {
+    setLayout((prev) => (prev.photoBand ? { ...prev, photoBand: { ...prev.photoBand, focusX, focusY } } : prev));
+    markDirty();
+  }, [markDirty]);
+
+  const removeBand = useCallback(() => {
+    setLayout((prev) => ({ ...prev, photoBand: null }));
+    setBandPreview(null);
     markDirty();
   }, [markDirty]);
 
@@ -1038,8 +1187,16 @@ export function FeaturesLayoutEditor() {
               </div>
             </div>
 
-            {/* ── Row Divider ── */}
+            {/* ── Photo Band: between the rows, as on the page ── */}
             <div style={{ borderTop: '2px solid var(--theme-elevation-200, #333)', margin: '20px 0 16px' }} />
+            <PhotoBandPanel
+              band={layout.photoBand}
+              preview={bandPreview}
+              onPick={pickBand}
+              onFocus={aimBand}
+              onRemove={removeBand}
+            />
+            <div style={{ borderTop: '2px solid var(--theme-elevation-200, #333)', margin: '16px 0 16px' }} />
 
             {/* ── Row 2 Canvas ── */}
             <div className="fle-canvas">

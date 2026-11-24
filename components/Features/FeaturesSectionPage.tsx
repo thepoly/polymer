@@ -9,6 +9,7 @@ import { Byline } from "@/components/FrontPage/Byline";
 import { AnimatedLine } from "@/components/Opinion/RainbowDivider";
 import SectionSearchPrompt from "@/components/SectionSearchPrompt";
 import FeaturesCover from "@/components/Features/FeaturesCover";
+import FeaturesPhotoBand, { type FeaturesPhotoBandData } from "@/components/Features/FeaturesPhotoBand";
 
 const FEATURES_CONTACT_MAILTO =
   "mailto:features@poly.rpi.edu,eic@poly.rpi.edu?subject=Features%20Request%2FComment%20or%20Story%20Tip";
@@ -457,9 +458,12 @@ export default function FeaturesSectionPage({
   pinnedTheArts,
   theArtsImages,
   photoSpotlight,
+  photoBand = null,
   pinnedSpotlightSubs,
   pinnedWide = [],
 }: {
+  /** The pinned photo between the cover and the sections; none when not set */
+  photoBand?: FeaturesPhotoBandData | null;
   title: string;
   articles: ComponentArticle[];
   pinnedOnCampus: ComponentArticle[];
@@ -607,6 +611,8 @@ export default function FeaturesSectionPage({
       </h1>
 
       <FeaturesCover lead={lead} under={coverUnder} left={coverLeft} right={right} requestHref={FEATURES_CONTACT_MAILTO} />
+
+      {photoBand && <FeaturesPhotoBand band={photoBand} />}
 
       <div className="features-grid mt-8">
         {/* ── Photo Spotlight and its two stories ── */}

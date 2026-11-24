@@ -45,7 +45,7 @@ metadata.
 ### Per-section page layouts
 
 - `opinion-page-layout` — [`collections/OpinionPageLayout.ts`](../collections/OpinionPageLayout.ts)
-- `features-page-layout` — [`collections/FeaturesPageLayout.ts`](../collections/FeaturesPageLayout.ts)
+- `features-page-layout` — [`collections/FeaturesPageLayout.ts`](../collections/FeaturesPageLayout.ts) (one `layout` json: pinned slots, Photo Spotlight photos, and `photoBand`, the pinned photo between the cover and the sections: `{ mediaId, articleId, focusX, focusY }`, read by [`lib/featuresPhotoBand.ts`](../lib/featuresPhotoBand.ts) and drawn by [`FeaturesPhotoBand`](../components/Features/FeaturesPhotoBand.tsx). No band is shown until an editor picks a photo; it needs no migration, being a key in the json)
 - `sports-page-layout` — [`collections/SportsPageLayout.ts`](../collections/SportsPageLayout.ts)
 - `news-page-layout` — [`collections/NewsPageLayout.ts`](../collections/NewsPageLayout.ts) (one `layout` jsonb: lead, Student Government boxes, and the timeline pages' photos, hidden entries, layouts and archive additions; see [`news-section.md`](news-section.md))
 - `staff-page-layout` — [`collections/StaffPageLayout.ts`](../collections/StaffPageLayout.ts)

@@ -41,9 +41,16 @@ type Props = {
    * content at `relative z-10` so it sits above the photo.
    */
   fill?: boolean;
+  /**
+   * False leaves the box empty (its black background) and skips the photo.
+   * The photo is pinned to the screen, so the browser counts it as visible
+   * and downloads it at once however far down the page the window is; a
+   * window well below the fold can pass false until the reader nears it.
+   */
+  loadImage?: boolean;
 };
 
-export default function PhotoWindow({ src, alt, focus, imageClassName = '', maxZoom = 1, className = '', children, fill = false }: Props) {
+export default function PhotoWindow({ src, alt, focus, imageClassName = '', maxZoom = 1, className = '', children, fill = false, loadImage = true }: Props) {
   // The photo covers the whole viewport, so on a tall phone screen it's as wide
   // as the screen's height times the photo's aspect ratio, not 100vw; zooming
   // in needs more again. Without this, phones download a screen-width file and
@@ -59,7 +66,7 @@ export default function PhotoWindow({ src, alt, focus, imageClassName = '', maxZ
   const sizes = `(max-aspect-ratio: ${Math.round(src.width)}/${Math.round(src.height)}) ${coverWidth}vh, ${vw}vw`;
   return (
     <div className={`${fill ? 'absolute inset-0' : 'relative'} overflow-hidden bg-black [clip-path:inset(0)] ${className}`}>
-      <Image
+      {loadImage && <Image
         src={src.src}
         width={src.width}
         height={src.height}
@@ -69,7 +76,7 @@ export default function PhotoWindow({ src, alt, focus, imageClassName = '', maxZ
         blurDataURL={src.blurDataURL}
         className={`pointer-events-none fixed inset-x-0 top-0 h-lvh w-full object-cover motion-reduce:absolute motion-reduce:inset-0 motion-reduce:h-full ${imageClassName}`}
         style={focus ? { objectPosition: focus } : undefined}
-      />
+      />}
       {children}
     </div>
   );

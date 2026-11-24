@@ -32,6 +32,8 @@ import { NEWS_TOPICS, type NewsTopicKey } from '@/components/News/newsTopics';
 import { getStoredTerms } from '@/lib/studentGovTerms';
 import { ordinal, resolveTerms, termYearLabel, troyDayKey, updateTermHref } from '@/components/News/studentGovTerms';
 import FeaturesSectionPage, { type SpotlightPhoto } from '@/components/Features/FeaturesSectionPage';
+import type { FeaturesPhotoBandData } from '@/components/Features/FeaturesPhotoBand';
+import { loadFeaturesPhotoBand, type StoredPhotoBand } from '@/lib/featuresPhotoBand';
 import SportsSectionPage from '@/components/Sports/SportsSectionPage';
 import { SPORTS_GAME_SELECT, loadSportsPage } from '@/lib/sportsPage';
 import { Article as PayloadArticle, Media } from '@/payload-types';
@@ -531,9 +533,11 @@ export default async function SectionPageRoute({ params }: Args) {
   let featuresPhotoSpotlight: SpotlightPhoto[] = [];
   let featuresPinnedSpotlightSubs: ComponentArticle[] = [];
   let featuresPinnedWide: ComponentArticle[] = [];
+  let featuresPhotoBand: FeaturesPhotoBandData | null = null;
 
   if (section === 'features') {
     type FeaturesLayoutShape = {
+      photoBand?: StoredPhotoBand | null;
       onCampus?: (number | null)[];
       onCampusImages?: boolean[];
       featured?: (number | null)[];
@@ -559,6 +563,7 @@ export default async function SectionPageRoute({ params }: Args) {
         if (layoutJson.onCampusImages) featuresOnCampusImages = layoutJson.onCampusImages;
         if (layoutJson.theArtsImages) featuresTheArtsImages = layoutJson.theArtsImages;
         featuresPhotoSpotlight = layoutJson.photoSpotlight || [];
+        featuresPhotoBand = await loadFeaturesPhotoBand(payload, layoutJson.photoBand);
 
         // Collect all pinned IDs to fetch in one batch (Row 1 + Row 2)
         const allPinnedIds = new Set<number>();
@@ -640,6 +645,7 @@ export default async function SectionPageRoute({ params }: Args) {
           pinnedTheArts={featuresPinnedTheArts}
           theArtsImages={featuresTheArtsImages}
           photoSpotlight={featuresPhotoSpotlight}
+          photoBand={featuresPhotoBand}
           pinnedSpotlightSubs={featuresPinnedSpotlightSubs}
           pinnedWide={featuresPinnedWide}
         />
