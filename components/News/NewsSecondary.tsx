@@ -58,7 +58,7 @@ function Strip({ article, optional, photo }: { article: ComponentArticle; option
               margin="mt-2.5"
             />
             {article.excerpt && (
-              <p data-news-secondary-subdeck className="mt-2.5 hidden font-meta text-[16px] font-medium leading-[1.5] text-text-main md:block lg:hidden">
+              <p data-news-secondary-subdeck className="mt-2.5 font-meta text-[16px] font-medium leading-[1.5] text-text-main">
                 {article.excerpt}
               </p>
             )}
