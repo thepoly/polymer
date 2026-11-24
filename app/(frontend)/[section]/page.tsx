@@ -129,7 +129,8 @@ export default async function SectionPageRoute({ params }: Args) {
     },
     sort: '-publishedDate',
     limit: isNews ? 200 : isOpinion ? 63 : 30,
-    depth: isOpinion ? 2 : 1,
+    // Opinion needs authors' headshots; Features needs photographers for photo credits
+    depth: isOpinion || section === 'features' ? 2 : 1,
     select: {
       title: true,
       slug: true,
@@ -524,7 +525,6 @@ export default async function SectionPageRoute({ params }: Args) {
   let featuresPinnedFeatured: ComponentArticle[] = [];
   let featuresPinnedRight: ComponentArticle[] = [];
   let featuresOnCampusImages: boolean[] = [false, false, false];
-  let featuresRightImages: boolean[] = [false, false, false];
   // Row 2
   let featuresPinnedTheArts: ComponentArticle[] = [];
   let featuresTheArtsImages: boolean[] = [false, false, false];
@@ -538,7 +538,6 @@ export default async function SectionPageRoute({ params }: Args) {
       onCampusImages?: boolean[];
       featured?: (number | null)[];
       rightArticles?: (number | null)[];
-      rightImages?: boolean[];
       theArts?: (number | null)[];
       theArtsImages?: boolean[];
       photoSpotlight?: SpotlightPhoto[];
@@ -558,7 +557,6 @@ export default async function SectionPageRoute({ params }: Args) {
 
       if (layoutJson) {
         if (layoutJson.onCampusImages) featuresOnCampusImages = layoutJson.onCampusImages;
-        if (layoutJson.rightImages) featuresRightImages = layoutJson.rightImages;
         if (layoutJson.theArtsImages) featuresTheArtsImages = layoutJson.theArtsImages;
         featuresPhotoSpotlight = layoutJson.photoSpotlight || [];
 
@@ -578,7 +576,7 @@ export default async function SectionPageRoute({ params }: Args) {
               ],
             },
             limit: allPinnedIds.size,
-            depth: 1,
+            depth: 2,
             select: {
               title: true, slug: true, subdeck: true, featuredImage: true,
               section: true, kicker: true, publishedDate: true, createdAt: true,
@@ -639,7 +637,6 @@ export default async function SectionPageRoute({ params }: Args) {
           pinnedFeatured={featuresPinnedFeatured}
           pinnedRight={featuresPinnedRight}
           onCampusImages={featuresOnCampusImages}
-          rightImages={featuresRightImages}
           pinnedTheArts={featuresPinnedTheArts}
           theArtsImages={featuresTheArtsImages}
           photoSpotlight={featuresPhotoSpotlight}

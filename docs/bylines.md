@@ -25,7 +25,7 @@ are absolute and include the year.
 | Section | Dated | Undated |
 |---|---|---|
 | News | Every story: lead, strips, tablet row, topic row, Student Government boxes (`newsBylineDate`, "November 13, 2026") | — |
-| Features | The Latest column ("Nov 14") | Everything else: the lead and the stories under it, On Campus, The Arts, More Stories, Photo Spotlight |
+| Features | Every story in the cover (`FeaturesCover`): the lead, the two under it, and the left and right columns ("Nov 14, 2026") | The sections below the cover |
 | Opinion | The three main columns and the Editorials / Opinions / Other groups ("Nov 14, 2026"): an opinion answers a moment | Editor's Choice and the author carousel (curated picks) |
 | Sports | Every story, including the lead ("Oct 17, 2026"), plus game dates in the score strip | — |
 | Archives | More in News, More in Features, the Opinion lists ("November 13, 2026"), Sports all stories (month headings plus dates) | — |

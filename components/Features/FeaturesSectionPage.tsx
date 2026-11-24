@@ -8,6 +8,7 @@ import type { Article as ComponentArticle } from "@/components/FrontPage/types";
 import { Byline } from "@/components/FrontPage/Byline";
 import { AnimatedLine } from "@/components/Opinion/RainbowDivider";
 import SectionSearchPrompt from "@/components/SectionSearchPrompt";
+import FeaturesCover from "@/components/Features/FeaturesCover";
 
 const FEATURES_CONTACT_MAILTO =
   "mailto:features@poly.rpi.edu,eic@poly.rpi.edu?subject=Features%20Request%2FComment%20or%20Story%20Tip";
@@ -24,14 +25,13 @@ export type SpotlightPhoto = {
 };
 
 /*
- * One layout for every screen size. The DOM is in phone reading order; CSS
- * grid areas place the same sections on tablet and desktop:
+ * The cover (FeaturesCover: lead and six stories) opens the page. Below it,
+ * one layout for every screen size: the DOM is in phone reading order and
+ * CSS grid areas place the same sections on tablet and desktop:
  *
  *   phone       tablet (≥768)        desktop (≥1024)
- *   lead        lead     lead        oncampus lead latest
- *   latest      oncampus latest      arts     spot spot
- *   spot        spot     spot
- *   oncampus    arts     arts
+ *   spot        spot     spot        oncampus spot spot
+ *   oncampus    oncampus arts        oncampus arts arts
  *   arts
  *
  * Cards change shape per breakpoint with classes, not duplicate markup: on
@@ -45,21 +45,23 @@ const GRID_CSS = `
 .features-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "lead" "latest" "spot" "oncampus" "arts";
+  grid-template-areas: "spot" "oncampus" "arts";
   row-gap: 48px;
 }
 @media (min-width: 768px) {
   .features-grid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: "lead lead" "oncampus latest" "spot spot" "arts arts";
+    grid-template-areas: "spot spot" "oncampus arts";
     column-gap: ${COLUMN_GAP};
+    row-gap: 40px;
   }
 }
 @media (min-width: 1024px) {
   .features-grid {
-    grid-template-columns: 240px minmax(0, 1fr) 300px;
-    grid-template-areas: "oncampus lead latest" "arts spot spot";
-    row-gap: 0;
+    /* The cover's columns, so the rules below line up with it */
+    grid-template-columns: minmax(0, 24fr) minmax(0, 48fr) minmax(0, 28fr);
+    grid-template-areas: "oncampus spot spot" "oncampus arts arts";
+    grid-template-rows: auto 1fr;
   }
 }
 @keyframes dividerWaveTravel {
@@ -452,7 +454,6 @@ export default function FeaturesSectionPage({
   pinnedFeatured,
   pinnedRight,
   onCampusImages,
-  rightImages,
   pinnedTheArts,
   theArtsImages,
   photoSpotlight,
@@ -465,7 +466,6 @@ export default function FeaturesSectionPage({
   pinnedFeatured: ComponentArticle[];
   pinnedRight: ComponentArticle[];
   onCampusImages: boolean[];
-  rightImages: boolean[];
   pinnedTheArts: ComponentArticle[];
   theArtsImages: boolean[];
   photoSpotlight: SpotlightPhoto[];
@@ -525,26 +525,30 @@ export default function FeaturesSectionPage({
   const onCampusLabel = onCampus.length > 0 ? "On Campus" : "More Stories";
   let theArts = fill(pinnedTheArts, 3, isArts);
   const artsLabel = theArts.length > 0 ? "The Arts" : "More Stories";
+  // The cover: the lead and the two stories under it (the editor's Featured
+  // slots), three on the right (its right-hand slots, then the newest) and
+  // the two newest stories on the left, above the "featured" request box
   const featured = fill(pinnedFeatured, 3);
   const right = fill(pinnedRight, 3);
+  const coverLeft = fill([], 2);
   if (onCampus.length === 0) onCampus = fill([], 3);
   if (theArts.length === 0) theArts = fill([], 3);
   const spotlightSubs = fill(pinnedSpotlightSubs, 2);
   const wideArticle = fill(pinnedWide, 1);
-  // Headline-only extras so the desktop side columns run about as long as
-  // the lead column. Taken after every editor slot, so they never displace a pick.
+  // Headline-only extras so the desktop left column runs about as long as the
+  // spotlight and The Arts beside it. Taken after every editor slot, so they
+  // never displace a pick.
   const onCampusExtra = fill([], 3, onCampusLabel === "On Campus" ? isOnCampus : undefined);
-  const rightExtra = fill([], 3);
   // When On Campus runs short of its six, the left column carries on with a
   // separately labelled run of general stories instead of a blank stretch
   const leftMore = fill([], Math.max(0, 6 - onCampus.length - onCampusExtra.length));
   const moreInFeatures = fill([], 5);
 
   const lead = featured[0];
-  const leadFollowers = [featured[1], featured[2]].filter((a): a is ComponentArticle => Boolean(a));
+  const coverUnder = featured.slice(1, 3);
   const wide = wideArticle[0];
 
-  /** A column of an editor's three slots plus extras (On Campus, Latest, The Arts) */
+  /** A column of an editor's three slots plus extras (On Campus, The Arts) */
   const columnCards = (
     items: ComponentArticle[],
     imageFlags: boolean[],
@@ -580,10 +584,9 @@ export default function FeaturesSectionPage({
     )),
   ];
 
-  // A column rule and gutter, only at the widths where the column has a
-  // neighbour to its right (literal classes so Tailwind can see them)
+  // A column rule and gutter from tablet up, where On Campus has a neighbour
+  // to its right (a literal class string so Tailwind can see it)
   const RULE_FROM_MD = "md:border-r md:border-rule md:pr-[clamp(16px,2vw,24px)]";
-  const RULE_FROM_LG = "lg:border-r lg:border-rule lg:pr-[clamp(16px,2vw,24px)]";
 
   return (
     // Side padding matches the site header's, so the page lines up with the
@@ -603,28 +606,20 @@ export default function FeaturesSectionPage({
         {title}
       </h1>
 
-      <div className="features-grid">
-        {/* ── Lead: hero, two followers, the wide story ── */}
-        {lead && (
-          <section aria-label="Top stories" style={{ gridArea: "lead" }} className={RULE_FROM_LG}>
-            <StoryCard
-              article={lead}
-              phone="stack"
-              wide="stack"
-              size="lead"
-              large
-              showDek
-              priority
-              wideSizes="(max-width: 1023px) 100vw, 640px"
-            />
-            {(leadFollowers.length > 0 || wide) && (
-              <StoryList className="mt-5 md:mt-6 md:grid md:grid-cols-2 md:gap-x-5">
-                {leadFollowers.map((article) => (
-                  <StoryCard
-                    key={article.id}
-                    article={article}
-                    wideSizes="(max-width: 1023px) 50vw, 320px"
-                  />
+      <FeaturesCover lead={lead} under={coverUnder} left={coverLeft} right={right} requestHref={FEATURES_CONTACT_MAILTO} />
+
+      <div className="features-grid mt-8">
+        {/* ── Photo Spotlight and its two stories ── */}
+        {(photoSpotlight.length > 0 || spotlightSubs.length > 0) && (
+          <section aria-labelledby="features-spotlight" style={{ gridArea: "spot" }}>
+            <SectionLabel id="features-spotlight">
+              {photoSpotlight.length > 0 ? "Photo Spotlight" : "Spotlight"}
+            </SectionLabel>
+            <PhotoSpotlight photos={photoSpotlight} />
+            {(spotlightSubs.length > 0 || wide) && (
+              <StoryList className="mt-4 md:grid md:grid-cols-2 md:gap-x-6">
+                {spotlightSubs.map((article) => (
+                  <StoryCard key={article.id} article={article} wide="row" wideSizes="200px" />
                 ))}
                 {wide && (
                   <StoryCard
@@ -633,39 +628,9 @@ export default function FeaturesSectionPage({
                     size="m"
                     showDek
                     className="md:col-span-2"
-                    wideSizes="(max-width: 1023px) 50vw, 320px"
+                    wideSizes="(max-width: 1023px) 50vw, 400px"
                   />
                 )}
-              </StoryList>
-            )}
-          </section>
-        )}
-
-        {/* ── Latest ── */}
-        {right.length > 0 && (
-          <section aria-labelledby="features-latest" style={{ gridArea: "latest" }}>
-            <SectionLabel id="features-latest">Latest</SectionLabel>
-            <StoryList>
-              {columnCards(right, rightImages, "Latest", "(max-width: 1023px) 50vw, 300px", {
-                dates: true,
-                extras: rightExtra,
-              })}
-            </StoryList>
-          </section>
-        )}
-
-        {/* ── Photo Spotlight and its two stories ── */}
-        {(photoSpotlight.length > 0 || spotlightSubs.length > 0) && (
-          <section aria-labelledby="features-spotlight" style={{ gridArea: "spot" }} className="lg:pt-10">
-            <SectionLabel id="features-spotlight">
-              {photoSpotlight.length > 0 ? "Photo Spotlight" : "Spotlight"}
-            </SectionLabel>
-            <PhotoSpotlight photos={photoSpotlight} />
-            {spotlightSubs.length > 0 && (
-              <StoryList className="mt-4 md:grid md:grid-cols-2 md:gap-x-6">
-                {spotlightSubs.map((article) => (
-                  <StoryCard key={article.id} article={article} wide="row" wideSizes="200px" />
-                ))}
               </StoryList>
             )}
           </section>
@@ -699,15 +664,11 @@ export default function FeaturesSectionPage({
 
         {/* ── The Arts ── */}
         {theArts.length > 0 && (
-          <section
-            aria-labelledby="features-arts"
-            style={{ gridArea: "arts" }}
-            className={`lg:pt-10 ${RULE_FROM_LG}`}
-          >
+          <section aria-labelledby="features-arts" style={{ gridArea: "arts" }}>
             <SectionLabel id="features-arts">{artsLabel}</SectionLabel>
-            {/* Three across on tablets, where the section spans the page */}
-            <StoryList className="md:grid md:grid-cols-3 md:gap-x-6 lg:flex lg:flex-col lg:gap-x-0">
-              {columnCards(theArts, theArtsImages, artsLabel, "(max-width: 1023px) 33vw, 240px")}
+            {/* Three across on desktop, where the section spans two columns */}
+            <StoryList className="lg:grid lg:grid-cols-3 lg:gap-x-6">
+              {columnCards(theArts, theArtsImages, artsLabel, "(max-width: 1023px) 50vw, 300px")}
             </StoryList>
           </section>
         )}
