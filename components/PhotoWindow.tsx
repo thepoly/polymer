@@ -48,9 +48,20 @@ type Props = {
    * window well below the fold can pass false until the reader nears it.
    */
   loadImage?: boolean;
+  /**
+   * The page's main photo (its LCP image): load it at once, preloaded and at
+   * high fetch priority, instead of lazily.
+   */
+  priority?: boolean;
+  /**
+   * Caps the screen-height term of `sizes`. On a tall phone the photo covers
+   * the screen's height times its aspect ratio (151vh for a 3:2 photo on an
+   * iPhone 13), which asks for a far bigger file than the box needs.
+   */
+  maxSizesVh?: number;
 };
 
-export default function PhotoWindow({ src, alt, focus, imageClassName = '', maxZoom = 1, className = '', children, fill = false, loadImage = true }: Props) {
+export default function PhotoWindow({ src, alt, focus, imageClassName = '', maxZoom = 1, className = '', children, fill = false, loadImage = true, priority = false, maxSizesVh }: Props) {
   // The photo covers the whole viewport, so on a tall phone screen it's as wide
   // as the screen's height times the photo's aspect ratio, not 100vw; zooming
   // in needs more again. Without this, phones download a screen-width file and
@@ -61,7 +72,8 @@ export default function PhotoWindow({ src, alt, focus, imageClassName = '', maxZ
   // which would hand iPhones (and the iOS app) a file a fraction of the size
   // shown. The cover is height-bound when the screen is narrower than the photo.
   const zoom = Math.max(1, maxZoom);
-  const coverWidth = Math.ceil((src.width / src.height) * 100 * zoom);
+  const fullCoverWidth = Math.ceil((src.width / src.height) * 100 * zoom);
+  const coverWidth = maxSizesVh ? Math.min(fullCoverWidth, maxSizesVh) : fullCoverWidth;
   const vw = Math.ceil(100 * zoom);
   const sizes = `(max-aspect-ratio: ${Math.round(src.width)}/${Math.round(src.height)}) ${coverWidth}vh, ${vw}vw`;
   return (
@@ -72,6 +84,8 @@ export default function PhotoWindow({ src, alt, focus, imageClassName = '', maxZ
         height={src.height}
         alt={alt}
         sizes={sizes}
+        preload={priority}
+        fetchPriority={priority ? 'high' : undefined}
         placeholder={src.blurDataURL ? 'blur' : 'empty'}
         blurDataURL={src.blurDataURL}
         className={`pointer-events-none fixed inset-x-0 top-0 h-lvh w-full object-cover motion-reduce:absolute motion-reduce:inset-0 motion-reduce:h-full ${imageClassName}`}

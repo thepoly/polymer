@@ -32,6 +32,7 @@ import { NEWS_TOPICS, type NewsTopicKey } from '@/components/News/newsTopics';
 import { getStoredTerms } from '@/lib/studentGovTerms';
 import { ordinal, resolveTerms, termYearLabel, troyDayKey, updateTermHref } from '@/components/News/studentGovTerms';
 import FeaturesFront from '@/components/Features/FeaturesFront';
+import { normalizeFeaturesLayout, pinsOf } from '@/lib/featuresFront';
 import SportsSectionPage from '@/components/Sports/SportsSectionPage';
 import { SPORTS_GAME_SELECT, loadSportsPage } from '@/lib/sportsPage';
 import { Article as PayloadArticle, Media } from '@/payload-types';
@@ -111,6 +112,54 @@ export default async function SectionPageRoute({ params }: Args) {
   }
 
   const payload = await getPayload({ config });
+  const sectionTitle = section.charAt(0).toUpperCase() + section.slice(1);
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: '/',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: sectionTitle,
+      },
+    ],
+  };
+
+  // Features loads its own stories (components/Features/FeaturesFront, which
+  // also handles an empty section); it needs only the editor's pins.
+  if (section === 'features') {
+    let layout = normalizeFeaturesLayout(null);
+    try {
+      const layoutResponse = await payload.find({
+        collection: 'features-page-layout',
+        limit: 1,
+        depth: 0,
+        select: { layout: true },
+      });
+      layout = normalizeFeaturesLayout(layoutResponse.docs[0]?.layout);
+    } catch {
+      // Table may not exist yet
+    }
+    return (
+      <main className="min-h-screen bg-bg-main section-features transition-colors duration-300">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c') }}
+        />
+        <Header />
+        <FeaturesFront pins={pinsOf(layout)} />
+        <Footer />
+      </main>
+    );
+  }
+
   const isOpinion = section === 'opinion';
   const isNews = section === 'news';
 
@@ -129,8 +178,8 @@ export default async function SectionPageRoute({ params }: Args) {
     },
     sort: '-publishedDate',
     limit: isNews ? 200 : isOpinion ? 63 : 30,
-    // Opinion needs authors' headshots; Features needs photographers for photo credits
-    depth: isOpinion || section === 'features' ? 2 : 1,
+    // Opinion needs authors' headshots
+    depth: isOpinion ? 2 : 1,
     select: {
       title: true,
       slug: true,
@@ -172,26 +221,6 @@ export default async function SectionPageRoute({ params }: Args) {
         : allFormattedArticles.slice(0, Math.max(NEWS_LAYOUT_CAPACITY, recent.length));
     hasOlderNewsArticles = allFormattedArticles.length > formattedArticles.length;
   }
-
-  const sectionTitle = section.charAt(0).toUpperCase() + section.slice(1);
-
-  const breadcrumbJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Home',
-        item: '/',
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: sectionTitle,
-      },
-    ],
-  };
 
   // Fetch opinion page layout — pinned articles per column + editors choice
   let pinnedCol1: (ComponentArticle | null)[] = [];
@@ -518,27 +547,6 @@ export default async function SectionPageRoute({ params }: Args) {
     });
   }
 
-  // Features: the editor's pinned lead (the layout's first featured slot)
-  // becomes the cover; FeaturesFront loads its own stories. The layout's other
-  // keys (right-hand pins, photo band, and older On Campus, The Arts and Photo
-  // Spotlight keys) are no longer shown, so they're ignored.
-  let featuresLeadId: number | null = null;
-  if (section === 'features') {
-    try {
-      const layoutResponse = await payload.find({
-        collection: 'features-page-layout',
-        limit: 1,
-        depth: 0,
-        select: { layout: true },
-      });
-      const doc = layoutResponse.docs[0] as Record<string, unknown> | undefined;
-      const layoutJson = doc?.layout as { featured?: (number | null)[] } | undefined;
-      featuresLeadId = layoutJson?.featured?.[0] ?? null;
-    } catch {
-      // Table may not exist yet
-    }
-  }
-
   // Sports: editors' layout and pins, standings, schedule and schools
   const sportsPage = section === 'sports' ? await loadSportsPage(payload) : null;
 
@@ -565,8 +573,6 @@ export default async function SectionPageRoute({ params }: Args) {
           groupedArticles={groupedArticles}
           pinnedSpotlightAuthors={pinnedSpotlightAuthors}
         />
-      ) : section === 'features' ? (
-        <FeaturesFront leadId={featuresLeadId} />
       ) : sportsPage ? (
         <SportsSectionPage title={sectionTitle} articles={formattedArticles} {...sportsPage} />
       ) : isNews ? (

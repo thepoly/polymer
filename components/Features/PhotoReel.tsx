@@ -7,16 +7,27 @@ import TransitionLink from '@/components/TransitionLink';
 
 /*
  * The Photo Short Stories film reel on /features (FeaturesFront). A rail of
- * one story's gallery photos, all the same height, that scrolls sideways: swipe on
- * phones, arrow buttons (or trackpad) on desktop. `card` is the story's title
- * card, first in the rail.
+ * one story's gallery photos, all the same height, that scrolls sideways:
+ * swipe on phones; arrow buttons, a trackpad or (once the rail has focus) the
+ * arrow keys elsewhere. `card` is the story's title card, first in the rail.
+ * Each photo carries its photographer's credit and links to the story.
  */
 
-export type ReelFrame = { src: string; width: number; height: number; alt: string };
+export type ReelFrame = {
+  src: string;
+  width: number;
+  height: number;
+  alt: string;
+  /** "Name/The Polytechnic", or null when the photo has no photographer */
+  credit: string | null;
+};
+
+/** Frame heights: phones, then md and up. Widths follow each photo's shape. */
+const FRAME_H = { phone: 300, wide: 440 } as const;
 
 /** The rail starts where the page's content starts, and runs off the right edge */
 const RAIL =
-  'scrollbar-hide relative flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 scroll-pl-4 md:gap-4 md:px-6 md:scroll-pl-6 xl:px-[max(30px,calc((100vw_-_1280px)/2_+_30px))] xl:scroll-pl-[max(30px,calc((100vw_-_1280px)/2_+_30px))]';
+  'scrollbar-hide relative flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 scroll-pl-4 md:gap-4 md:px-6 md:scroll-pl-6 xl:px-[max(30px,calc((100vw_-_1280px)/2_+_30px))] xl:scroll-pl-[max(30px,calc((100vw_-_1280px)/2_+_30px))] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-4';
 
 const button =
   'inline-flex h-11 w-11 items-center justify-center rounded-full border border-rule-strong text-text-main transition-colors hover:border-text-main hover:bg-text-main hover:text-bg-main disabled:pointer-events-none disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2';
@@ -36,6 +47,10 @@ export default function PhotoReel({
   const [index, setIndex] = useState(0);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
+  // Announced only after an arrow button moves the rail, never on a swipe
+  const [announcement, setAnnouncement] = useState('');
+  const announceNext = useRef(false);
+  const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const el = rail.current;
@@ -50,51 +65,73 @@ export default function PhotoReel({
       setIndex(current);
       setAtStart(el.scrollLeft < 8);
       setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 8);
+      if (announceNext.current) {
+        if (settle.current) clearTimeout(settle.current);
+        settle.current = setTimeout(() => {
+          announceNext.current = false;
+          setAnnouncement(`Photo ${current + 1} of ${frames.length}`);
+        }, 200);
+      }
     };
     el.addEventListener('scroll', update, { passive: true });
     window.addEventListener('resize', update);
     return () => {
       el.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
+      if (settle.current) clearTimeout(settle.current);
     };
-  }, []);
+  }, [frames.length]);
 
   const move = (direction: 1 | -1) => {
     const el = rail.current;
     if (!el) return;
+    announceNext.current = true;
     const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     el.scrollBy({ left: direction * el.clientWidth * 0.75, behavior: smooth ? 'smooth' : 'auto' });
   };
 
+  const pad = (n: number) => String(n).padStart(2, '0');
+
   return (
     <div>
-      <ul ref={rail} className={RAIL} aria-label={`Photos from ${title}`}>
+      {/* Focusable so keyboard users can scroll it with the arrow keys */}
+      <ul ref={rail} className={RAIL} aria-label={`Photos from ${title}`} tabIndex={0}>
         <li className="flex h-[300px] w-[70vw] max-w-[320px] shrink-0 snap-start md:h-[440px] md:max-w-[340px]">{card}</li>
-        {frames.map((f, i) => {
-          return (
-            <li key={`${f.src}-${i}`} data-frame className="shrink-0 snap-start">
-              <TransitionLink href={href} tabIndex={-1} aria-hidden="true" className="group block">
-                <div className="relative h-[300px] overflow-hidden bg-rule md:h-[440px]" style={{ aspectRatio: `${f.width} / ${f.height}` }}>
-                  <Image
-                    src={f.src}
-                    alt={f.alt}
-                    fill
-                    sizes="(max-width: 767px) 460px, 700px"
-                    className="object-cover transition-[filter] duration-300 group-hover:brightness-110"
-                  />
-                </div>
-              </TransitionLink>
-            </li>
-          );
-        })}
+        {frames.map((f, i) => (
+          <li key={`${f.src}-${i}`} data-frame className="shrink-0 snap-start">
+            {/* Out of the tab order (the card's headline is the link), but read in browse mode */}
+            <TransitionLink href={href} tabIndex={-1} className="group block">
+              <div className="relative h-[300px] overflow-hidden bg-rule md:h-[440px]" style={{ aspectRatio: `${f.width} / ${f.height}` }}>
+                <Image
+                  src={f.src}
+                  alt={f.alt || `${title}, photo ${i + 1}`}
+                  fill
+                  sizes={`(max-width: 767px) ${Math.round((FRAME_H.phone * f.width) / f.height)}px, ${Math.round((FRAME_H.wide * f.width) / f.height)}px`}
+                  className="object-cover transition-[filter] duration-300 group-hover:brightness-110"
+                />
+              </div>
+            </TransitionLink>
+            {/* A fixed line, so frames with and without a credit line up; as wide as the photo */}
+            <p className="mt-2 h-5 w-0 min-w-full truncate font-meta text-[12px] text-text-muted">{f.credit}</p>
+          </li>
+        ))}
         <li aria-hidden="true" className="w-px shrink-0" />
       </ul>
 
-      <div className="mx-auto mt-4 flex max-w-[1280px] items-center justify-between px-4 md:px-6 xl:px-[30px]">
+      <div className="mx-auto mt-3 flex max-w-[1280px] items-center justify-between px-4 md:px-6 xl:px-[30px]">
         <p className="font-mono text-[13px] tracking-[0.08em] text-text-main" aria-hidden="true">
-          {String(index + 1).padStart(2, '0')} <span className="text-text-muted">/ {String(frames.length).padStart(2, '0')}</span>
+          {atStart ? (
+            `${frames.length} photo${frames.length === 1 ? '' : 's'}`
+          ) : (
+            <>
+              {pad(index + 1)} <span className="text-text-muted">/ {pad(frames.length)}</span>
+            </>
+          )}
         </p>
-        <div className="hidden gap-2 md:flex">
+        <p className="sr-only" aria-live="polite">
+          {announcement}
+        </p>
+        <div className="hidden gap-2 sm:flex">
           <button type="button" className={button} onClick={() => move(-1)} disabled={atStart} aria-label="Earlier photos">
             <ChevronLeft size={20} aria-hidden="true" />
           </button>

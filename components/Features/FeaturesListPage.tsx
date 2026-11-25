@@ -22,11 +22,14 @@ export default function FeaturesListPage({
   title,
   articles,
   filters = [],
+  capped = null,
 }: {
   title: string;
   articles: Article[];
   /** Section filters, shown as a row of pills under the title */
   filters?: ArchiveFilter[];
+  /** When the list stops short of the whole archive: how many it holds, and where to search the rest */
+  capped?: { shown: number; searchHref: string } | null;
 }) {
   const [page, setPage] = useState(1);
   // On phones the filters scroll sideways: bring the one that's on into view
@@ -76,6 +79,16 @@ export default function FeaturesListPage({
         </nav>
       )}
 
+      {capped && (
+        <p className="-mt-2 mb-4 font-meta text-[13px] text-text-muted">
+          Showing the {capped.shown} most recent.{" "}
+          <TransitionLink href={capped.searchHref} className="text-accent underline-offset-4 hover:underline">
+            Search for older stories
+          </TransitionLink>
+          .
+        </p>
+      )}
+
       {/* Article list */}
       <div className="flex flex-col">
         {visible.map((article) => (
@@ -120,7 +133,7 @@ export default function FeaturesListPage({
             <button
               onClick={() => { setPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               disabled={page === 1}
-              className="font-meta text-[13px] uppercase tracking-[0.04em] px-3 py-1.5 rounded transition-colors disabled:opacity-30 text-text-main hover:text-accent"
+              className="inline-flex min-h-11 items-center rounded px-4 font-meta text-[13px] uppercase tracking-[0.04em] text-text-main transition-colors hover:text-accent disabled:opacity-30"
             >
               &larr; Prev
             </button>
@@ -130,7 +143,7 @@ export default function FeaturesListPage({
             <button
               onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               disabled={page === totalPages}
-              className="font-meta text-[13px] uppercase tracking-[0.04em] px-3 py-1.5 rounded transition-colors disabled:opacity-30 text-text-main hover:text-accent"
+              className="inline-flex min-h-11 items-center rounded px-4 font-meta text-[13px] uppercase tracking-[0.04em] text-text-main transition-colors hover:text-accent disabled:opacity-30"
             >
               Next &rarr;
             </button>

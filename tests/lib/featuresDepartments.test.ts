@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { departmentOf, semesterOf } from '@/lib/featuresDepartments'
+import { departmentOf } from '@/lib/featuresDepartments'
 
 describe('departmentOf', () => {
   it('sorts the kickers Features actually uses', () => {
@@ -28,7 +28,8 @@ describe('departmentOf', () => {
     expect(departmentOf('Empac Event')).toBe('arts')
     expect(departmentOf('OFF-CAMPUS EVENT')).toBe('arts')
     expect(departmentOf('Club Spotlight')).toBe('people')
-    expect(departmentOf('CLUB HIGHLIGHT')).toBe('people')
+    // "Highlight" isn't a People word, so a club highlight is campus life
+    expect(departmentOf('CLUB HIGHLIGHT')).toBe('campus')
     expect(departmentOf('Student Spotlight')).toBe('people')
     expect(departmentOf('RCOS')).toBe('people')
     expect(departmentOf('Entrepeneurship')).toBe('people')
@@ -45,30 +46,13 @@ describe('departmentOf', () => {
   })
 
   it('leaves unknown or empty kickers out of every section', () => {
-    expect(departmentOf('Features')).toBeNull()
+    // The kickers still unsorted since 2020 in production (November 2026)
+    for (const k of ['Features', 'COVID-19', 'Administration', 'Health', 'Technology', 'Sports', 'ROTC', 'RPI HISTORY', 'Academics']) {
+      expect(departmentOf(k)).toBeNull()
+    }
+    expect(departmentOf('Sports Highlight')).toBeNull()
     expect(departmentOf('Research')).toBeNull()
     expect(departmentOf('')).toBeNull()
     expect(departmentOf(null)).toBeNull()
-  })
-})
-
-describe('semesterOf', () => {
-  it('splits the year at August, in Troy time', () => {
-    expect(semesterOf('2026-11-18T15:00:00Z')).toEqual({ key: '2026-2', label: 'Fall 2026' })
-    expect(semesterOf('2026-04-10T15:00:00Z')).toEqual({ key: '2026-1', label: 'Spring 2026' })
-    // Summer folds into the spring before it
-    expect(semesterOf('2026-07-20T15:00:00Z')?.label).toBe('Spring 2026')
-    // 1 a.m. UTC on Aug 1 is still July 31 in Troy
-    expect(semesterOf('2026-08-01T01:00:00Z')?.label).toBe('Spring 2026')
-  })
-
-  it('sorts newest first as a string', () => {
-    const keys = ['2025-2', '2026-1', '2026-2'].sort((a, b) => b.localeCompare(a))
-    expect(keys).toEqual(['2026-2', '2026-1', '2025-2'])
-  })
-
-  it('returns null for a missing or bad date', () => {
-    expect(semesterOf(null)).toBeNull()
-    expect(semesterOf('not a date')).toBeNull()
   })
 })

@@ -38,11 +38,13 @@ const FeaturesPageLayout: CollectionConfig = {
       required: true,
       defaultValue: 'Features Layout',
     },
-    // JSON blob storing the full layout (see FeaturesLayoutEditor for the
-    // exact type). Row 1: onCampus, featured, wideArticle, rightArticles (+
-    // per-slot image flags). Row 2: theArts, photoSpotlight, spotlightSubs.
-    // Older saves may still carry `events` and `collarCity*`; both sections
-    // were removed and those keys are ignored.
+    // JSON blob storing the editor's pins: { version: 3, cover, leads:
+    // { campus, arts, people }, reel } (FeaturesLayoutV3 in
+    // lib/featuresFront.ts). Older saves (onCampus, featured, rightArticles,
+    // photoBand, theArts, photoSpotlight, events, collarCity…) are read
+    // through normalizeFeaturesLayout, which keeps only featured[0] as the
+    // cover; the editor's next save rewrites them. No schema change: the
+    // field is JSON either way.
     {
       name: 'layout',
       type: 'json',

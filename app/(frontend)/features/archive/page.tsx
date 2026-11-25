@@ -21,6 +21,9 @@ import { FEATURES_DEPARTMENTS, departmentOf } from '@/lib/featuresDepartments';
 
 export const revalidate = 60;
 
+/** The archive lists this many of the newest stories; older ones are found by search */
+const ARCHIVE_LIMIT = 200;
+
 type Props = { searchParams?: Promise<{ section?: string }> };
 
 const departmentFor = async (searchParams: Props['searchParams']) => {
@@ -59,7 +62,7 @@ export default async function FeaturesArchivePage({ searchParams }: Props) {
       ],
     },
     sort: '-publishedDate',
-    limit: 200,
+    limit: ARCHIVE_LIMIT,
     depth: 1,
     select: {
       title: true,
@@ -103,7 +106,13 @@ export default async function FeaturesArchivePage({ searchParams }: Props) {
     <main className="min-h-screen bg-bg-main transition-colors duration-300">
       <Header />
       {/* Keyed by filter, so switching filters starts again at the first page */}
-      <FeaturesListPage key={department?.key ?? 'all'} title="Features Archive" filters={filters} articles={articles} />
+      <FeaturesListPage
+        key={department?.key ?? 'all'}
+        title="Features Archive"
+        filters={filters}
+        articles={articles}
+        capped={response.totalDocs > ARCHIVE_LIMIT ? { shown: ARCHIVE_LIMIT, searchHref: '/search?section=features' } : null}
+      />
       <Footer />
     </main>
   );

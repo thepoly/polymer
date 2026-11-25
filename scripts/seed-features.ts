@@ -48,7 +48,8 @@ type SeedFeaturesArticle = {
   /**
    * A photo story, built as staff build them: each paragraph followed by a
    * captioned photo gallery. Photos are media filenames; the first one found
-   * is the featured image. Skipped when fewer than three are in the library.
+   * is the featured image. When fewer than three are in the library, the
+   * galleries use the fixture photos instead.
    */
   galleries?: { caption: string; photos: string[] }[]
 }
@@ -511,8 +512,13 @@ async function main() {
         galleries.push(ids)
       }
       if (galleries.flat().length < 3) {
-        console.log(`article skipped (fewer than three of its photos are in the library): ${a.slug}`)
-        continue
+        // A fresh dev library doesn't have these photos: fill each gallery
+        // from the fixture photos, in turn, so the reel still has a story
+        let next = 0
+        for (const [g, gallery] of a.galleries.entries()) {
+          galleries[g] = gallery.photos.map(() => photos[next++ % photos.length].id)
+        }
+        console.log(`article uses fixture photos (its own aren't in the library): ${a.slug}`)
       }
       featuredImage = galleries.flat()[0]
       const children = a.paragraphs.flatMap((text, p) => {

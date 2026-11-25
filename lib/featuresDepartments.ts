@@ -1,26 +1,23 @@
-// Features sections and semesters: pure helpers for the Features page
-// (components/Features/FeaturesFront) and the archive filter.
+// Features sections: which section a story's kicker puts it in, for the
+// Features page (lib/featuresFront, components/Features/FeaturesFront), the
+// archive filter and the layout editor.
 //
 // Features kickers are free text and messy ("On-Campus Event", "EMPAC",
 // "GM Week 2026", "Photo Short Story"), so a story's section comes from its
 // kicker. A story whose kicker matches no section is never shown under a
 // section's name; it still appears in the cover and under "All" in the index.
-import { TROY_TIME_ZONE } from './troyTime'
-
 export type FeaturesDepartmentKey = 'campus' | 'arts' | 'people' | 'photo'
 
 export type FeaturesDepartment = {
   key: FeaturesDepartmentKey
   name: string
-  /** One line beside the name in the section list */
-  summary: string
 }
 
 export const FEATURES_DEPARTMENTS: readonly FeaturesDepartment[] = [
-  { key: 'campus', name: 'Campus Life', summary: 'Events, clubs and student life' },
-  { key: 'arts', name: 'Arts & Culture', summary: 'EMPAC, reviews, food and downtown Troy' },
-  { key: 'people', name: 'People', summary: 'Profiles, interviews and spotlights' },
-  { key: 'photo', name: 'Photo Short Stories', summary: 'Stories told in photos' },
+  { key: 'campus', name: 'Campus Life' },
+  { key: 'arts', name: 'Arts & Culture' },
+  { key: 'people', name: 'People' },
+  { key: 'photo', name: 'Photo Short Stories' },
 ]
 
 /** Lowercase letters only: "On-Campus Event" → "oncampusevent" */
@@ -63,7 +60,7 @@ const ARTS: Rules = {
 
 const PEOPLE: Rules = {
   whole: new Set(['profile', 'profiles', 'interview', 'interviews', 'alumni', 'alumnus', 'qa', 'qanda', 'rcos']),
-  parts: ['spotlight', 'highlight', 'interview', 'profile', 'entrepren', 'entrepen', 'enterpren', 'guestspeaker'],
+  parts: ['spotlight', 'interview', 'profile', 'entrepren', 'entrepen', 'enterpren', 'guestspeaker'],
 }
 
 const CAMPUS: Rules = {
@@ -85,23 +82,4 @@ export function departmentOf(kicker: string | null | undefined): FeaturesDepartm
   if (matches(n, PEOPLE)) return 'people'
   if (matches(n, CAMPUS) || CAMPUS_PREFIXES.some((p) => n.startsWith(p))) return 'campus'
   return null
-}
-
-const monthYear = new Intl.DateTimeFormat('en-US', { timeZone: TROY_TIME_ZONE, year: 'numeric', month: 'numeric' })
-
-/**
- * The semester a date falls in, in Troy: August to December is Fall,
- * January to July is Spring (the summer folds into the spring before it,
- * since Features runs almost nothing then). Keys sort newest first as strings.
- */
-export function semesterOf(iso: string | null | undefined): { key: string; label: string } | null {
-  if (!iso) return null
-  const date = new Date(iso)
-  if (Number.isNaN(date.getTime())) return null
-  const parts = monthYear.formatToParts(date)
-  const year = Number(parts.find((p) => p.type === 'year')?.value)
-  const month = Number(parts.find((p) => p.type === 'month')?.value)
-  if (!year || !month) return null
-  const fall = month >= 8
-  return { key: `${year}-${fall ? 2 : 1}`, label: `${fall ? 'Fall' : 'Spring'} ${year}` }
 }
