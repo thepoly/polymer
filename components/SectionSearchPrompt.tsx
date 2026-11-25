@@ -21,8 +21,10 @@ export default function SectionSearchPrompt({
   section,
   name,
   archiveHref,
+  archiveLabel = "Browse back issues",
   contactHref,
   question = "Missed something",
+  spacing = "mt-12 lg:mt-16",
 }: {
   /** The section's slug, as the search filter expects it ("news") */
   section: string;
@@ -30,14 +32,18 @@ export default function SectionSearchPrompt({
   name: string;
   /** Every past story in the section */
   archiveHref: string;
+  /** The archive link's words ("Browse all Features"); News keeps "Browse back issues" */
+  archiveLabel?: string;
   contactHref?: string;
   /** The heading, without its question mark, which is added in red */
   question?: string;
+  /** The space above it, to match the page's own gaps between sections */
+  spacing?: string;
 }) {
   const headingId = `${section}-search-prompt`;
   const inputId = `${section}-search-prompt-q`;
   return (
-    <section aria-labelledby={headingId} className="mx-auto mt-12 max-w-[460px] text-center lg:mt-16">
+    <section aria-labelledby={headingId} className={`mx-auto max-w-[460px] text-center ${spacing}`}>
       <h2
         id={headingId}
         className="font-copy text-[clamp(26px,2.6vw,32px)] font-semibold leading-tight tracking-[-0.01em] text-text-main"
@@ -57,7 +63,7 @@ export default function SectionSearchPrompt({
           href={archiveHref}
           className="group inline-flex min-h-11 items-center gap-1.5 font-meta text-[15px] font-medium text-accent underline-offset-4 hover:underline"
         >
-          Browse back issues
+          {archiveLabel}
           <ArrowRight aria-hidden="true" className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={2} />
         </TransitionLink>
         {contactHref && (

@@ -15,6 +15,35 @@ describe('departmentOf', () => {
     expect(departmentOf('Alumni')).toBe('people')
   })
 
+  it('sorts the variants staff type, in any case or spelling', () => {
+    // Every kind of review is Arts & Culture
+    for (const k of ['ALBUM REVIEW', 'Movie Review', 'Restaurant Review', 'TV SERIES REVIEW', 'Game Review', 'Event Review']) {
+      expect(departmentOf(k)).toBe('arts')
+    }
+    expect(departmentOf('Recommendations')).toBe('arts')
+    expect(departmentOf("The Poly's Recommendations")).toBe('arts')
+    expect(departmentOf('Lesser-Known Locales')).toBe('arts')
+    expect(departmentOf('Words to Eat By')).toBe('arts')
+    // "event" or "club" inside an Arts or People kicker doesn't make it Campus Life
+    expect(departmentOf('Empac Event')).toBe('arts')
+    expect(departmentOf('OFF-CAMPUS EVENT')).toBe('arts')
+    expect(departmentOf('Club Spotlight')).toBe('people')
+    expect(departmentOf('CLUB HIGHLIGHT')).toBe('people')
+    expect(departmentOf('Student Spotlight')).toBe('people')
+    expect(departmentOf('RCOS')).toBe('people')
+    expect(departmentOf('Entrepeneurship')).toBe('people')
+    expect(departmentOf('Club Event')).toBe('campus')
+    expect(departmentOf('NRB EVENT')).toBe('campus')
+    expect(departmentOf('on-campus event')).toBe('campus')
+    expect(departmentOf('Student Life')).toBe('campus')
+    expect(departmentOf('GM Week 2024')).toBe('campus')
+  })
+
+  it("doesn't match a short word inside a longer one", () => {
+    expect(departmentOf('Party')).toBeNull()
+    expect(departmentOf('Startup')).toBeNull()
+  })
+
   it('leaves unknown or empty kickers out of every section', () => {
     expect(departmentOf('Features')).toBeNull()
     expect(departmentOf('Research')).toBeNull()

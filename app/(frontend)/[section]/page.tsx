@@ -31,10 +31,7 @@ import { getNewsTopicArticles } from '@/lib/newsTopics';
 import { NEWS_TOPICS, type NewsTopicKey } from '@/components/News/newsTopics';
 import { getStoredTerms } from '@/lib/studentGovTerms';
 import { ordinal, resolveTerms, termYearLabel, troyDayKey, updateTermHref } from '@/components/News/studentGovTerms';
-import FeaturesSectionPage from '@/components/Features/FeaturesSectionPage';
-import { loadFeaturesIndex, type FeaturesIndexStory } from '@/lib/featuresIndex';
-import type { FeaturesPhotoBandData } from '@/components/Features/FeaturesPhotoBand';
-import { loadFeaturesPhotoBand, type StoredPhotoBand } from '@/lib/featuresPhotoBand';
+import FeaturesFront from '@/components/Features/FeaturesFront';
 import SportsSectionPage from '@/components/Sports/SportsSectionPage';
 import { SPORTS_GAME_SELECT, loadSportsPage } from '@/lib/sportsPage';
 import { Article as PayloadArticle, Media } from '@/payload-types';
@@ -521,74 +518,25 @@ export default async function SectionPageRoute({ params }: Args) {
     });
   }
 
-  // Features: the editor's cover pins and photo band, and every story for
-  // the section list and index. Layouts saved by older editors may still
-  // carry On Campus, The Arts, Photo Spotlight and wide-story keys; the page
-  // no longer shows those sections, so they're ignored.
-  let featuresPinnedFeatured: ComponentArticle[] = [];
-  let featuresPinnedRight: ComponentArticle[] = [];
-  let featuresPhotoBand: FeaturesPhotoBandData | null = null;
-  let featuresIndex: FeaturesIndexStory[] = [];
-
+  // Features: the editor's pinned lead (the layout's first featured slot)
+  // becomes the cover; FeaturesFront loads its own stories. The layout's other
+  // keys (right-hand pins, photo band, and older On Campus, The Arts and Photo
+  // Spotlight keys) are no longer shown, so they're ignored.
+  let featuresLeadId: number | null = null;
   if (section === 'features') {
-    type FeaturesLayoutShape = {
-      photoBand?: StoredPhotoBand | null;
-      featured?: (number | null)[];
-      rightArticles?: (number | null)[];
-    };
-
-    const [, index] = await Promise.all([
-      (async () => {
-        try {
-          const layoutResponse = await payload.find({
-            collection: 'features-page-layout',
-            limit: 1,
-            depth: 0,
-            select: { layout: true },
-          });
-          const doc = layoutResponse.docs[0] as Record<string, unknown> | undefined;
-          const layoutJson = doc?.layout as FeaturesLayoutShape | undefined;
-          if (!layoutJson) return;
-
-          featuresPhotoBand = await loadFeaturesPhotoBand(payload, layoutJson.photoBand);
-
-          const allPinnedIds = new Set<number>();
-          for (const col of [layoutJson.featured, layoutJson.rightArticles]) {
-            if (col) for (const id of col) { if (id) allPinnedIds.add(id); }
-          }
-          if (allPinnedIds.size === 0) return;
-
-          const pinnedResponse = await payload.find({
-            collection: 'articles',
-            where: {
-              and: [
-                { id: { in: Array.from(allPinnedIds) } },
-                { _status: { equals: 'published' } },
-              ],
-            },
-            limit: allPinnedIds.size,
-            depth: 2,
-            select: {
-              title: true, slug: true, subdeck: true, featuredImage: true,
-              section: true, kicker: true, publishedDate: true, createdAt: true,
-              authors: true, writeInAuthors: true, isFollytechnic: true,
-            },
-          });
-          const pinnedMap = new Map(
-            pinnedResponse.docs.map((a) => [a.id, formatArticle(a)]),
-          );
-          const resolveColumn = (ids: (number | null)[] | undefined): ComponentArticle[] =>
-            (ids || []).map((id) => (id ? pinnedMap.get(id) ?? null : null)).filter((a): a is ComponentArticle => a !== null);
-
-          featuresPinnedFeatured = resolveColumn(layoutJson.featured);
-          featuresPinnedRight = resolveColumn(layoutJson.rightArticles);
-        } catch {
-          // Table may not exist yet
-        }
-      })(),
-      loadFeaturesIndex(payload),
-    ]);
-    featuresIndex = index;
+    try {
+      const layoutResponse = await payload.find({
+        collection: 'features-page-layout',
+        limit: 1,
+        depth: 0,
+        select: { layout: true },
+      });
+      const doc = layoutResponse.docs[0] as Record<string, unknown> | undefined;
+      const layoutJson = doc?.layout as { featured?: (number | null)[] } | undefined;
+      featuresLeadId = layoutJson?.featured?.[0] ?? null;
+    } catch {
+      // Table may not exist yet
+    }
   }
 
   // Sports: editors' layout and pins, standings, schedule and schools
@@ -618,14 +566,7 @@ export default async function SectionPageRoute({ params }: Args) {
           pinnedSpotlightAuthors={pinnedSpotlightAuthors}
         />
       ) : section === 'features' ? (
-        <FeaturesSectionPage
-          title={sectionTitle}
-          articles={formattedArticles}
-          pinnedFeatured={featuresPinnedFeatured}
-          pinnedRight={featuresPinnedRight}
-          photoBand={featuresPhotoBand}
-          indexStories={featuresIndex}
-        />
+        <FeaturesFront leadId={featuresLeadId} />
       ) : sportsPage ? (
         <SportsSectionPage title={sectionTitle} articles={formattedArticles} {...sportsPage} />
       ) : isNews ? (

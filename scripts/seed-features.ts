@@ -11,6 +11,7 @@
  *
  * Usage: pnpm db:seed:features
  */
+import { randomBytes } from 'node:crypto'
 import { getPayload } from 'payload'
 import config from '../payload.config'
 import { getArticleUrl } from '../utils/getArticleUrl'
@@ -44,7 +45,27 @@ type SeedFeaturesArticle = {
   paragraphs: string[]
   /** Pinned into a lower-row column of the seeded layout */
   column?: 'theArts'
+  /**
+   * A photo story, built as staff build them: each paragraph followed by a
+   * captioned photo gallery. Photos are media filenames; the first one found
+   * is the featured image. Skipped when fewer than three are in the library.
+   */
+  galleries?: { caption: string; photos: string[] }[]
 }
+
+/** A Lexical photo_gallery block, the shape the editor saves */
+const galleryBlock = (caption: string, mediaIds: number[]): RichTextNode => ({
+  type: 'block',
+  version: 2,
+  format: '',
+  fields: {
+    id: randomBytes(12).toString('hex'),
+    blockName: '',
+    blockType: 'photo_gallery',
+    caption,
+    images: mediaIds.map((image) => ({ id: randomBytes(12).toString('hex'), image })),
+  },
+})
 
 const ARTS = 'The Arts'
 const TROY = 'Troy'
@@ -355,6 +376,75 @@ const ARTICLES: SeedFeaturesArticle[] = [
       'The gym is adding beginner nights to keep up with demand.',
     ],
   },
+  {
+    slug: 'student-emts-on-call',
+    title: 'The student EMTs on call for every home game and concert',
+    kicker: 'Club Spotlight',
+    subdeck: 'The volunteer squad trains through the summer so it can answer calls all year.',
+    paragraphs: [
+      'The squad has about forty members, most of whom joined with no medical training.',
+      'New members spend their first semester shadowing crews before they take a shift of their own.',
+      'Its captain says the hardest part of the job is the waiting, not the calls.',
+    ],
+  },
+  {
+    slug: 'dining-hall-chef-comment-cards',
+    title: 'The dining hall chef who answers every comment card',
+    kicker: 'Interview',
+    subdeck: 'He has read thousands of them, and he says the complaints have barely changed in a decade.',
+    paragraphs: [
+      'The cards go into a box by the exit. He reads each one at the end of the night.',
+      'A few have changed the menu, including the late-night breakfast on Thursdays.',
+      'His favorite card, he said, asked only for more of the soup from the week before.',
+    ],
+  },
+  // Photo Short Stories, built from photos already in the local library
+  {
+    slug: 'pss-hockey-night-field-house',
+    title: 'A sold-out Saturday at the Field House',
+    kicker: 'Photo Short Story',
+    subdeck: 'From warmups to the final horn, the student section never sat down.',
+    paragraphs: [
+      'The doors opened an hour early, and the student section was full twenty minutes later.',
+      'The Engineers scored twice in the second period.',
+      'Fans stayed in their seats well after the final horn.',
+    ],
+    galleries: [
+      { caption: 'The student section fills in before warmups', photos: ['freakout-fans.webp', 'DSC_2934.jpg'] },
+      { caption: 'RPI pushes into the offensive zone in the second period', photos: ['as(1).jpg', 'as.jpg'] },
+      { caption: 'The team celebrates at center ice', photos: ['as(4).jpg'] },
+    ],
+  },
+  {
+    slug: 'pss-peak-foliage-campus',
+    title: 'Peak foliage on the hill',
+    kicker: 'Photo Short Story',
+    subdeck: 'A week of red and orange across campus, before the first frost.',
+    paragraphs: [
+      'The leaves on the Approach turned in the first week of the month.',
+      'By midweek the color had reached the academic quad.',
+      'The first frost came the following Monday.',
+    ],
+    galleries: [
+      { caption: 'The red maples along the quad', photos: ['news-photo-27.jpg', 'news-photo-25.jpg'] },
+      { caption: 'Looking out over Troy from the top of the hill', photos: ['AAD_5327.jpg', 'news-photo-26.jpg', 'news-photo-15.jpg'] },
+      { caption: 'Afternoon light on the older buildings', photos: ['news-photo-17.jpg', 'news-photo-22.jpg'] },
+    ],
+  },
+  {
+    slug: 'pss-game-day-sidelines',
+    title: 'Game day, from the sidelines',
+    kicker: 'Photo Short Story',
+    subdeck: 'Football and lacrosse shared a weekend on the turf.',
+    paragraphs: [
+      'Football opened the weekend with a goal-line stand.',
+      'Lacrosse played the next afternoon in front of a smaller, louder crowd.',
+    ],
+    galleries: [
+      { caption: 'The quarterback sneak that put RPI ahead', photos: ['QB_sneak_td.webp', 'DSC_9909.webp'] },
+      { caption: 'Lacrosse on the same turf a day later', photos: ['DSC_6217.webp', 'sports-action.webp'] },
+    ],
+  },
 ]
 
 // Fixture photos uploaded by `pnpm db:seed`, the same ones the news seed
@@ -407,6 +497,31 @@ async function main() {
       console.log(`article exists: ${a.slug}`)
       continue
     }
+    // A photo story's galleries, each photo looked up by filename
+    let featuredImage = photos[i % photos.length].id
+    let content = richTextDoc(a.paragraphs)
+    if (a.galleries) {
+      const galleries: number[][] = []
+      for (const g of a.galleries) {
+        const ids: number[] = []
+        for (const filename of g.photos) {
+          const found = await payload.find({ collection: 'media', where: { filename: { equals: filename } }, limit: 1, depth: 0 })
+          if (found.docs[0]) ids.push(found.docs[0].id)
+        }
+        galleries.push(ids)
+      }
+      if (galleries.flat().length < 3) {
+        console.log(`article skipped (fewer than three of its photos are in the library): ${a.slug}`)
+        continue
+      }
+      featuredImage = galleries.flat()[0]
+      const children = a.paragraphs.flatMap((text, p) => {
+        const para = (richTextDoc([text]).root as { children: RichTextNode[] }).children
+        const ids = galleries[p] ?? []
+        return ids.length ? [...para, galleryBlock(a.galleries![p].caption, ids)] : para
+      })
+      content = { root: { ...(content.root as RichTextNode), children } }
+    }
     const doc = await payload.create({
       collection: 'articles',
       // legacyImport keeps the backdated publishedDate (the publish hook would
@@ -421,9 +536,9 @@ async function main() {
         subdeck: a.subdeck,
         authors: [editor.id],
         ...(a.writeIn ? { writeInAuthors: [{ name: a.writeIn }] } : {}),
-        featuredImage: photos[i % photos.length].id,
+        featuredImage,
         // @ts-expect-error richText jsonb accepted directly by local API
-        content: richTextDoc(a.paragraphs),
+        content,
         publishedDate: new Date(Date.now() - (i * 1.5 + 0.5) * DAY_MS).toISOString(),
         _status: 'published',
       },
