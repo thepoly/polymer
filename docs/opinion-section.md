@@ -58,6 +58,20 @@ pnpm test:opinion-ui
 The isolated browser suite uses mocked HTTP responses and actual editor/carousel
 components. It requires Playwright Chromium, or `PLAYWRIGHT_CHANNEL=msedge` to use
 an installed Edge browser. It does not require a database or a running Next app.
+
+## Local seed data
+
+`pnpm db:seed:opinion` ([`scripts/seed-opinion.ts`](../scripts/seed-opinion.ts))
+adds six placeholder columnists (`columnist1@dev.local` to `columnist6@dev.local`,
+password `devpassword`, no headshots) and 34 opinion articles over the last seven
+weeks, covering every opinion type. Each category archive gets more than ten
+stories, so `?page=2` has content. When no `Opinion Layout` exists, it creates one
+with the first slot of each column pinned, three Opinion’s Choice picks and the
+columnists in the spotlight. An existing layout is left alone. Re-running is
+idempotent (columnists by email, articles by slug). Run `pnpm db:seed` first.
+
+> **Never** run this against production: it creates placeholder users and
+> articles.
 It covers old pins, remote search, keyboard placement, automatic image settings,
 edits during save, carousel focus behavior, and pause/resume controls. Unit tests
 cover permissions, public projections, layout validation, filling, attribution,

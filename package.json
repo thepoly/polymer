@@ -25,6 +25,7 @@
     "db:seed:student-gov-archive": "pnpm exec tsx --env-file=.env scripts/seed-student-gov-archive.ts",
     "db:seed:news-topics": "pnpm exec tsx --env-file=.env scripts/seed-news-topics.ts",
     "db:seed:features": "pnpm exec tsx --env-file=.env scripts/seed-features.ts",
+    "db:seed:opinion": "pnpm exec tsx --env-file=.env scripts/seed-opinion.ts",
     "db:migrate-test": "bash scripts/db-migrate-test.sh",
     "db:migrate-test:seed": "bash scripts/db-migrate-test.sh --seed",
     "db:migrate-test:boot": "bash scripts/db-migrate-test.sh --seed --boot",
