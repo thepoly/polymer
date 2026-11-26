@@ -35,19 +35,48 @@ summer:
   or it's left out; the others keep their layouts.
 - Stories are claimed in order: cover, reel, the top's left and right
   columns, Campus Life, Arts & Culture, People. The top takes the newest
-  stories left from any section (seven with the cover, about half a year's
-  Features), so the sections below show the next ones in their department.
+  stories left from any section (seven with the cover on computers, about
+  half a year's Features; five on tablets, three on phones), so the sections
+  below show the next ones in their department.
   A section lead an editor pinned (and that's still fresh) is kept out of
   the top for its section.
 - Arts & Culture needs a lead with a photo; without one, it falls back to a
   row of cards.
 - The reel leads with the pinned photo story if it has at least three
   photos, otherwise the newest that does.
+- No cover (no story in the window has a photo) means no top on the page,
+  so the top claims nothing and those stories stay in their sections.
 
 The page makes three article queries: the newest story (the anchor), the
 year's window together with any pinned stories (up to 80, with authors and
 photos trimmed by `populate`), and the bodies of up to four candidate photo
 stories for the reel.
+
+## One page, three widths
+
+The top's right column lists four stories on computers, two on tablets and
+none on phones, and the stories a width leaves out go to their sections. So
+the sections can hold different stories at each width (on the local data
+Campus Life starts with a different story on a phone than on a computer),
+and even a different Arts & Culture lead. The page is rendered on the
+server, which doesn't know the screen's width, so FeaturesFront plans each
+width (`planFeaturesFront` with `topRight` 4, `TOP_RIGHT_TABLET` and 0)
+and renders one copy of the sections per distinct plan, hidden by CSS at
+the other widths (`md:hidden`, `max-md:hidden lg:hidden`, `max-lg:hidden`).
+Widths whose plans match share a copy, and heading ids get a `-phone` or
+`-tablet` suffix so they stay unique.
+
+Decided 2026-11-25 to keep this. Measured on the local page: each copy is
+about 28 KB of HTML, so up to about 56 KB extra before compression; photos
+in hidden copies aren't downloaded (0 of 20 at 390px and 1280px); screen
+readers skip the hidden copies. The cost is the extra HTML and crawlers
+seeing each section's links up to three times. Rejected: one copy with
+per-story visibility (the moved stories go to the front of a section and
+can change the Arts lead and the row's column count, so the CSS gets
+fragile); guessing the device on the server (unreliable, and breaks
+caching); laying out in the browser after measuring (content jumps, weaker
+for search); dropping the per-width split (undoes the phone and tablet
+tops).
 
 ## The editor's pins
 
@@ -75,7 +104,11 @@ fallback photo (no Pitch photo picked) always uses its focal point.
 
 A story dropped in the wrong slot is refused with the reason. A slot whose
 pin has gone stale says so ("Stale, the page is using the newest story
-instead"). The pool can be filtered by section.
+instead"). A saved pin the slot no longer takes (an Arts & Culture lead
+without a featured image, pinned before leads needed one) says why, and
+that the page is using the newest story. A Pitch photo since deleted from
+Media shows as deleted, with × to clear it; the page falls back to the
+newest photo story's photo. The pool can be filtered by section.
 
 The pins are stored in `features-page-layout.layout`, a JSON field, as the
 v3 layout (`pitch` is a media id, the pitch's photo, and `pitchPositions` its focus point and zoom per screen, `null` for the focal point; the rest are story ids):
@@ -109,6 +142,14 @@ are deliberately unsorted).
 
 Each section's title (with a chevron) is a link to the archive with that
 section's filter on; there are no separate "All N stories" links.
+
+On a Features story in the admin, a read-only note under the kicker says
+which section the kicker puts it in, warns when there's no featured image
+(or, for a photo story, that it needs one to appear in the reel), and says
+whether a photo story has enough photos in its body to lead the reel,
+counting each photo once as the page does
+(`components/admin/FeaturesPlacementHint.tsx`, a `ui` field on Articles, so
+no column and no migration).
 
 The three topic sections come from 2,799 Features stories published from
 2001 to November 2026. Since 2022 about 55% are Campus Life, 16% Arts &
