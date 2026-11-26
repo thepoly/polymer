@@ -8,8 +8,9 @@ import TransitionLink from '@/components/TransitionLink';
 /*
  * The Photo Short Stories film reel on /features (FeaturesFront). A rail of
  * one story's gallery photos, all the same height, that scrolls sideways:
- * swipe on phones; arrow buttons, a trackpad or (once the rail has focus) the
- * arrow keys elsewhere. `card` is the story's title card, first in the rail.
+ * swipe on phones (with arrow buttons on wide ones, 640px and up) and on
+ * tablets; a trackpad, Shift+wheel or (once the rail has focus) the arrow
+ * keys on desktop. There's no photo counter. `card` is the story's title card, first in the rail.
  * Each photo carries its photographer's credit and links to the story.
  */
 
@@ -44,7 +45,6 @@ export default function PhotoReel({
   title: string;
 }) {
   const rail = useRef<HTMLUListElement>(null);
-  const [index, setIndex] = useState(0);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
   // Announced only after an arrow button moves the rail, never on a swipe
@@ -55,14 +55,13 @@ export default function PhotoReel({
   useEffect(() => {
     const el = rail.current;
     if (!el) return;
-    // The photo counter follows the frame nearest the rail's left third
+    // The current photo is the frame nearest the rail's left third (announced after an arrow press)
     const update = () => {
       const marker = el.scrollLeft + el.clientWidth * 0.35;
       let current = 0;
       el.querySelectorAll<HTMLElement>('[data-frame]').forEach((item, n) => {
         if (item.offsetLeft <= marker) current = n;
       });
-      setIndex(current);
       setAtStart(el.scrollLeft < 8);
       setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 8);
       if (announceNext.current) {
@@ -90,8 +89,6 @@ export default function PhotoReel({
     el.scrollBy({ left: direction * el.clientWidth * 0.75, behavior: smooth ? 'smooth' : 'auto' });
   };
 
-  const pad = (n: number) => String(n).padStart(2, '0');
-
   return (
     <div>
       {/* Focusable so keyboard users can scroll it with the arrow keys */}
@@ -118,20 +115,12 @@ export default function PhotoReel({
         <li aria-hidden="true" className="w-px shrink-0" />
       </ul>
 
-      <div className="mx-auto mt-3 flex max-w-[1280px] items-center justify-between px-4 md:px-6 xl:px-[30px]">
-        <p className="font-mono text-[13px] tracking-[0.08em] text-text-main" aria-hidden="true">
-          {atStart ? (
-            `${frames.length} photo${frames.length === 1 ? '' : 's'}`
-          ) : (
-            <>
-              {pad(index + 1)} <span className="text-text-muted">/ {pad(frames.length)}</span>
-            </>
-          )}
-        </p>
+      {/* The arrows, for wide phones (640–767px) only; smaller phones and tablets swipe, and desktop scrolls the rail by trackpad, Shift+wheel or the arrow keys */}
+      <div className="mx-auto mt-3 hidden max-w-[1280px] items-center justify-end px-4 sm:flex md:hidden">
         <p className="sr-only" aria-live="polite">
           {announcement}
         </p>
-        <div className="hidden gap-2 sm:flex">
+        <div className="flex gap-2">
           <button type="button" className={button} onClick={() => move(-1)} disabled={atStart} aria-label="Earlier photos">
             <ChevronLeft size={20} aria-hidden="true" />
           </button>

@@ -344,6 +344,19 @@ const Articles: CollectionConfig = {
         },
       },
     },
+    // Read-only, Features stories only: which Features section the kicker puts
+    // the story in, and whether it can lead the photo reel. A "ui" field, so
+    // nothing is stored and there's no database column (no migration).
+    {
+      name: 'featuresPlacement',
+      type: 'ui',
+      admin: {
+        condition: (data) => data?.section === 'features',
+        components: {
+          Field: '@/components/admin/FeaturesPlacementHint#FeaturesPlacementHint',
+        },
+      },
+    },
     {
       name: 'subdeck',
       type: 'textarea',

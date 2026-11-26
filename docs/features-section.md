@@ -8,16 +8,14 @@ reads the editor's pins). Which story goes where is decided by
 
 | Part | What it shows |
 | --- | --- |
-| Cover | The pinned cover while it's fresh and has a photo; otherwise the newest story with one. Its photo is pinned behind the headline (`components/PhotoWindow.tsx`), loaded first at high priority. |
-| Latest | The four newest stories after the cover, from any section, so the page opens with the five newest. The lead's photo (3:2, on the right) beside its headline; the next three in a row underneath, each with its photo above its title. No visible heading (only one for screen readers). |
+| The top | Three columns with thin rules between them. Middle: the cover (the pinned cover while it's fresh and has a photo, otherwise the newest story with one): its photo, loaded first at high priority, then its section, headline, summary and byline, centred. Left: the two newest stories after it with photos, each photo above its headline. Right: the next four newest, listed with small square photos and bylines without dates, with the pitch between the third and fourth: "Have a suggestion?" and "Tell Features about it →" (it asks for tips about events and places, not finished stories), centred, the box growing so the right column ends level with the left, opening an email to features@ with the subject "Suggestion for Features". The pitch sits on a pinned photo in the Get involved page's style (the photo stays put as the page scrolls past): the editor's Pitch photo, else the newest photo story's photo; with no photo at all it's the two lines on their own. Tablets: the cover across the page, the left two side by side with their photos, the pitch as a 150px bar across the whole screen (edge to edge, past the page margins), then the right column's first two side by side with their photos. Phones: the cover, then the left two as a list, then the pitch. The right-column stories a width leaves out (two on tablets, all four on phones) go to their sections there: the page plans each width with its own `topRight` (4, `TOP_RIGHT_TABLET` = 2, 0) and renders a copy of the sections per distinct plan, shown only at its widths. |
 | Campus Life | A row of up to three cards (a list with thumbnails on phones) |
-| Arts & Culture | A row of up to three cards |
-| People | Like Campus Life with the photo on the left, and up to two more stories |
+| Arts & Culture | The lead's photo (3:2, on the right) beside its headline, then up to three more stories underneath as photo cards |
+| People | A row of up to three cards |
 | Photo Short Stories | A film reel of a photo story's photos (`components/Features/PhotoReel.tsx`), the next two listed under it |
-| Looking for an article? | `components/SectionSearchPrompt.tsx`: search, "Browse all Features" (the unfiltered archive), contact, and a line inviting pitches |
+| Looking for an article? | `components/SectionSearchPrompt.tsx`: search, "Browse all Features" (the unfiltered archive) and contact |
 
-Every story appears once on the page. Only the cover's photo is pinned to
-the screen; every other photo scrolls with the page. The page follows the
+Every story appears once on the page. The page follows the
 site theme (white in light mode, dark in dark mode). On phones each section
 shows three stories in all; its title links to the rest.
 
@@ -35,13 +33,14 @@ summer:
   story (`PIN_STALE_DAYS`). The reel's pin holds for the whole year.
 - A section needs at least two stories in its window (`MIN_SECTION_STORIES`)
   or it's left out; the others keep their layouts.
-- Stories are claimed in order: cover, reel, Latest, Campus Life, Arts &
-  Culture, People. Latest takes the newest stories left from any section,
-  so the sections below it show the next ones in their department. A
-  section lead an editor pinned (and that's still fresh) is kept out of
-  Latest for its section.
-- Latest and People need a lead with a photo; without one, they fall back
-  to a row of cards.
+- Stories are claimed in order: cover, reel, the top's left and right
+  columns, Campus Life, Arts & Culture, People. The top takes the newest
+  stories left from any section (seven with the cover, about half a year's
+  Features), so the sections below show the next ones in their department.
+  A section lead an editor pinned (and that's still fresh) is kept out of
+  the top for its section.
+- Arts & Culture needs a lead with a photo; without one, it falls back to a
+  row of cards.
 - The reel leads with the pinned photo story if it has at least three
   photos, otherwise the newest that does.
 
@@ -53,24 +52,39 @@ stories for the reel.
 ## The editor's pins
 
 The Features Layout editor (`components/Dashboard/FeaturesLayoutEditor`)
-has five slots, each with its fallback written under it:
+has five story slots and a Pitch photo slot, each with its fallback written under it:
 
 | Slot | Takes |
 | --- | --- |
 | Cover story | Any Features story with a featured image |
-| People lead | A People story with a featured image |
-| Campus Life lead, Arts & Culture lead | A story in that section (it goes first in the row) |
+| Arts & Culture lead | An Arts & Culture story with a featured image |
+| Campus Life lead, People lead | A story in that section (it goes first in the row) |
 | Photo Short Story | A photo story; it needs at least three photos in its body |
+| Pitch photo | Not a pin: drop any story with a featured image to put its photo behind the pitch. Without one, the page uses the newest photo story's photo. |
+
+With a Pitch photo picked, **Pitch photo position** appears under it: the
+real Features page framed at phone, tablet and computer size, each scrolled
+to the pitch box, with the same drag, zoom and reset as the Get Involved
+photo and the Senate / E-Board panel photo (`components/admin/PinnedPhotoPreview.tsx`,
+shared with the Get Involved field). Each screen is set separately; one
+that hasn't been moved uses the photo's focal point, not zoomed, and Reset
+goes back to that. Picking a different photo clears the positions. The
+page reads them as CSS variables (`pitchPositionVars`, `--pitch-pos-m/t/d`
+and `--pitch-zoom-m/t/d`), so the previews update without reloading. The
+fallback photo (no Pitch photo picked) always uses its focal point.
 
 A story dropped in the wrong slot is refused with the reason. A slot whose
 pin has gone stale says so ("Stale, the page is using the newest story
 instead"). The pool can be filtered by section.
 
 The pins are stored in `features-page-layout.layout`, a JSON field, as the
-v3 layout:
+v3 layout (`pitch` is a media id, the pitch's photo, and `pitchPositions` its focus point and zoom per screen, `null` for the focal point; the rest are story ids):
 
 ```json
-{ "version": 3, "cover": 12, "leads": { "campus": 3, "arts": null, "people": 7 }, "reel": 40 }
+{
+  "version": 3, "cover": 12, "leads": { "campus": 3, "arts": null, "people": 7 }, "reel": 40, "pitch": 25,
+  "pitchPositions": { "mobile": { "x": 60, "y": 50, "zoom": 1.2 }, "tablet": null, "desktop": null }
+}
 ```
 
 `normalizeFeaturesLayout` reads any saved shape. Older layouts (On Campus,
@@ -120,9 +134,11 @@ runs ten to fifteen. Each photo carries its photographer's credit
 ("Name/The Polytechnic", from the media item's photographer or write-in
 photographer) on a fixed line under it; section lead photos get the same
 credit. The rail starts at the page's left edge and runs off the right edge
-of the screen. Swipe on phones; from tablet width up there are arrow
-buttons, and the rail itself takes focus so the arrow keys scroll it. The
-counter shows the photo count until the rail moves, then the photo number.
+of the screen. Swipe on phones and tablets; on desktop the rail scrolls
+with a trackpad, Shift+wheel, or the arrow keys (the rail takes focus).
+There's no photo counter; wide phones (640–767px) get arrow buttons, and
+the title card's label gives the photo count. On tablets the two
+stories under the reel put their photos on top, so the two cards match.
 Its title card is centred top to bottom on the photos, and the headline is
 the link to the story. The section title opens the archive filtered to
 Photo Short Stories.

@@ -7,9 +7,17 @@
  *
  *   Cover                 any story with a featured image
  *   Campus Life lead      a Campus Life story (it goes first in the row)
- *   Arts & Culture lead   an Arts & Culture story (it goes first in the row)
- *   People lead           a People story with a featured image
+ *   Arts & Culture lead   an Arts & Culture story with a featured image
+ *   People lead           a People story (it goes first in the row)
  *   Photo Short Story     a photo story, shown in the reel (it needs 3+ photos)
+ *
+ * And one photo, not a story: the Pitch photo, behind "Have a suggestion? Tell
+ * Features about it" in the top's right column. Drop any story with a
+ * featured image on it to use that photo; without one, the page uses the
+ * newest photo story's photo. A picked photo is placed per screen size (phone,
+ * tablet, computer) in previews of the real page, with the same drag, zoom
+ * and reset as the Get Involved and Senate / E-Board photo editors
+ * (components/admin/PinnedPhotoPreview).
  *
  * Saved as the v3 layout (FeaturesLayoutV3) in the same JSON field; an older
  * layout is read through normalizeFeaturesLayout, and the first save rewrites it.
@@ -37,9 +45,14 @@ import {
   SECTION_WINDOW_DAYS,
   isWithin,
   normalizeFeaturesLayout,
+  pitchPositionVars,
+  NO_PITCH_POSITIONS,
   type FeaturesLayoutV3,
+  type PitchPositions,
   type SectionKey,
 } from '@/lib/featuresFront';
+import { PREVIEW_SCREENS, PinnedPhotoPreview, swapPhotos } from '@/components/admin/PinnedPhotoPreview';
+import type { PhotoPosition } from '@/components/GetInvolved/photoPositions';
 
 // ---------------------------------------------------------------------------
 // Types and slots
@@ -53,7 +66,10 @@ type ArticleData = {
   section: string;
   publishedDate: string | null;
   createdAt: string;
-  featuredImage?: { url?: string | null; alt?: string | null } | number | null;
+  featuredImage?:
+    | { id?: number; url?: string | null; alt?: string | null; width?: number | null; height?: number | null; focalX?: number | null; focalY?: number | null }
+    | number
+    | null;
   subdeck?: string | null;
   kicker?: string | null;
   authors?: Array<number | { firstName: string; lastName: string }>;
@@ -96,16 +112,16 @@ const SLOTS: Record<SlotKey, SlotSpec> = {
     key: 'arts',
     label: `${deptName('arts')} lead`,
     dept: 'arts',
-    fallback: `Goes first in the row. Falls back to the newest ${deptName('arts')} stories after 6 weeks.`,
-    needsImage: false,
+    fallback: `Falls back to the newest ${deptName('arts')} story with a photo after 6 weeks.`,
+    needsImage: true,
     holdsDays: PIN_STALE_DAYS,
   },
   people: {
     key: 'people',
     label: `${deptName('people')} lead`,
     dept: 'people',
-    fallback: `Falls back to the newest ${deptName('people')} story with a photo after 6 weeks.`,
-    needsImage: true,
+    fallback: `Goes first in the row. Falls back to the newest ${deptName('people')} stories after 6 weeks.`,
+    needsImage: false,
     holdsDays: PIN_STALE_DAYS,
   },
   reel: {
@@ -241,11 +257,145 @@ const staleStyle: React.CSSProperties = {
   margin: '6px 0 0',
 };
 
+/** The picked pitch photo: its file, size and focal point (where it sits until placed) */
+type PitchPhotoInfo = { url: string; title?: string; width: number; height: number; focalX: number; focalY: number };
+
+type MediaInfo = { url?: string | null; alt?: string | null; width?: number | null; height?: number | null; focalX?: number | null; focalY?: number | null };
+
+const pitchInfoOf = (m: MediaInfo, title?: string): PitchPhotoInfo | null =>
+  m.url && m.width && m.height
+    ? { url: m.url, title: title ?? (m.alt || undefined), width: m.width, height: m.height, focalX: m.focalX ?? 50, focalY: m.focalY ?? 50 }
+    : null;
+
+/** Brings the pitch box showing at this screen size into the middle of the framed page */
+function scrollToPitch(win: Window) {
+  const box = [...win.document.querySelectorAll<HTMLElement>('[data-features-pitch]')].find((el) => el.getClientRects().length > 0);
+  if (!box) return;
+  const rect = box.getBoundingClientRect();
+  win.scrollTo({ top: Math.max(0, rect.top + win.scrollY - (win.innerHeight - rect.height) / 2) });
+}
+
+/**
+ * Where the pitch photo sits on phones, tablets and computers: the real
+ * Features page framed at each size, scrolled to the pitch box. Drag a preview
+ * to move the photo, zoom to crop tighter; Reset goes back to the photo's
+ * focal point. Unsaved changes are pushed into the frames (CSS variables and
+ * the photo itself), and Activate saves them with the layout.
+ */
+function PitchPositionsEditor({
+  photo,
+  positions,
+  onChange,
+}: {
+  photo: PitchPhotoInfo;
+  positions: PitchPositions;
+  onChange: (next: PitchPositions) => void;
+}) {
+  const aim = `${photo.focalX}% ${photo.focalY}%`;
+  const vars = JSON.stringify(pitchPositionVars(positions, aim));
+  const apply = useCallback(
+    (doc: Document) => {
+      doc.querySelectorAll<HTMLElement>('[data-features-pitch]').forEach((box) => {
+        for (const [name, value] of Object.entries(JSON.parse(vars) as Record<string, string>)) box.style.setProperty(name, value);
+        swapPhotos(box, photo.url);
+      });
+    },
+    [vars, photo.url],
+  );
+  const focal: PhotoPosition = { x: photo.focalX, y: photo.focalY, zoom: 1 };
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div className="fle-slot-label">Pitch photo position</div>
+      <p style={{ fontSize: '0.78rem', lineHeight: 1.5, opacity: 0.75, margin: '4px 0 12px', maxWidth: 720 }}>
+        Drag a preview to move the photo, and zoom in to crop tighter. Phone, tablet and computer are set separately; one
+        you haven&rsquo;t moved uses the photo&rsquo;s focal point. The previews are the real page: the photo stays put
+        while the page scrolls, so scroll inside one to see how it moves. Press Activate to save.
+      </p>
+      <div className="gip-screens">
+        {PREVIEW_SCREENS.map((screen) => (
+          <PinnedPhotoPreview
+            key={screen.key}
+            screen={screen}
+            position={positions[screen.key] ?? focal}
+            photo={photo}
+            src="/features"
+            title={`${screen.label} preview of the Features page`}
+            apply={apply}
+            home={scrollToPitch}
+            homeLabel="Show the box"
+            onChange={(next) => onChange({ ...positions, [screen.key]: next })}
+            onReset={() => onChange({ ...positions, [screen.key]: null })}
+            resetDisabled={positions[screen.key] === null}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** The pitch's photo: drop a story to use its featured photo */
+function PitchPhotoSlot({
+  preview,
+  missing,
+  onClear,
+}: {
+  preview: { url: string; title?: string } | null;
+  /** The saved photo couldn't be loaded (deleted from Media); the page falls back */
+  missing: boolean;
+  onClear: () => void;
+}) {
+  const { isOver, setNodeRef } = useDroppable({ id: 'drop-pitch', data: { slotId: 'pitch' } });
+  return (
+    <div>
+      <div ref={setNodeRef} className={`fle-slot ${isOver ? 'fle-slot-over' : ''} ${preview ? 'fle-slot-filled' : ''}`}>
+        <div className="fle-slot-header">
+          <span className="fle-slot-label">Pitch photo</span>
+          {(preview || missing) && (
+            <button className="fle-slot-clear" onClick={onClear} title="Remove photo">
+              &times;
+            </button>
+          )}
+        </div>
+        {preview ? (
+          <div className="fle-slot-body">
+            <div className="fle-slot-preview">
+              <div className="fle-slot-image">
+                <img src={preview.url} alt="" />
+              </div>
+              {preview.title && (
+                <div className="fle-slot-text">
+                  <div className="fle-slot-author">From: {preview.title}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="fle-slot-empty">
+            <div className="fle-slot-empty-inner">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" width="18" height="18">
+                <rect x="3" y="5" width="18" height="14" rx="2" />
+                <circle cx="8.5" cy="10" r="1.5" />
+                <path d="M6 17l4.5-4.5L14 16l2.5-2.5L19 16" />
+              </svg>
+              <span>{missing ? 'The picked photo was deleted: the page uses the newest photo story’s photo' : 'Drop a story to use its photo'}</span>
+            </div>
+          </div>
+        )}
+      </div>
+      <p style={noteStyle}>
+        Behind &ldquo;Have a suggestion? Tell Features about it&rdquo; in the top&rsquo;s right column. Without one, the
+        page uses the newest photo story&rsquo;s photo.
+      </p>
+    </div>
+  );
+}
+
 function DropSlot({
   slot,
   article,
   missing,
   stale,
+  invalid,
   onClear,
 }: {
   slot: SlotSpec;
@@ -253,6 +403,8 @@ function DropSlot({
   /** A pinned story that couldn't be loaded (unpublished or deleted) */
   missing: boolean;
   stale: boolean;
+  /** Why the slot no longer takes its saved pin (say, an Arts lead without a photo); the page ignores it */
+  invalid: string | null;
   onClear: () => void;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: `drop-${slot.key}`, data: { slotId: slot.key } });
@@ -281,7 +433,11 @@ function DropSlot({
           </div>
         )}
       </div>
-      {stale && <p style={staleStyle}>Stale, the page is using the newest story instead.</p>}
+      {invalid ? (
+        <p style={staleStyle}>{invalid} The page is using the newest story instead.</p>
+      ) : (
+        stale && <p style={staleStyle}>Stale, the page is using the newest story instead.</p>
+      )}
       <p style={noteStyle}>{slot.fallback}</p>
     </div>
   );
@@ -438,6 +594,7 @@ export function FeaturesLayoutEditor() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<PoolFilter>('all');
   const [activeArticle, setActiveArticle] = useState<ArticleData | null>(null);
+  const [pitchPreview, setPitchPreview] = useState<PitchPhotoInfo | null>(null);
   const docIdRef = useRef<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
@@ -495,6 +652,11 @@ export function FeaturesLayoutEditor() {
 
         const loaded = normalizeFeaturesLayout(layoutData?.layout);
         setLayout(loaded);
+        if (loaded.pitch != null) {
+          const mediaRes = await fetch(`/api/media/${loaded.pitch}?depth=0`);
+          const media = mediaRes.ok ? await mediaRes.json() : null;
+          if (media) setPitchPreview(pitchInfoOf(media));
+        }
 
         // A pin older than the pool still needs its card (and its stale note)
         const inPool = new Set(pool.map((a) => a.id));
@@ -538,6 +700,21 @@ export function FeaturesLayoutEditor() {
     // Dropped on the pool: unpin
     if (overData?.pool === true) {
       if (source) setPin(source, null);
+      return;
+    }
+    // The pitch photo takes the story's featured photo; the story stays where it is
+    if (overData?.slotId === 'pitch') {
+      const image = dragged.featuredImage;
+      const info = image && typeof image === 'object' && image.id ? pitchInfoOf(image, dragged.plainTitle) : null;
+      if (!image || typeof image === 'number' || !image.id || !info) {
+        setNotice(`"${dragged.plainTitle}" has no featured image, so it can't give the pitch its photo.`);
+        return;
+      }
+      setNotice(null);
+      // A new photo starts from its own focal point on every screen
+      setLayout((prev) => ({ ...prev, pitch: image.id!, pitchPositions: prev.pitch === image.id ? prev.pitchPositions : { ...NO_PITCH_POSITIONS } }));
+      setPitchPreview(info);
+      setSaved(false);
       return;
     }
     const target = overData?.slotId as SlotKey | undefined;
@@ -602,6 +779,7 @@ export function FeaturesLayoutEditor() {
       article,
       missing: id != null && !article,
       stale: Boolean(article && anchor && !isWithin(article.publishedDate, anchor, SLOTS[key].holdsDays)),
+      invalid: article ? rejection(article, SLOTS[key]) : null,
       onClear: () => setPin(key, null),
     };
   };
@@ -624,8 +802,8 @@ export function FeaturesLayoutEditor() {
         <div className="fle-body">
           <div className="fle-canvas-wrap">
             <div style={{ fontSize: '0.78rem', lineHeight: 1.5, opacity: 0.75, margin: '0 0 16px', maxWidth: 720 }}>
-              <strong>How this page fills itself.</strong> Under the cover, Latest shows the next four newest stories from
-              any section. Each section below shows its newest stories from the past year (counted back from the newest
+              <strong>How this page fills itself.</strong> Beside the cover, the top shows the next six newest stories
+              from any section. Each section below shows its newest stories from the past year (counted back from the newest
               Features story), sorted into sections by kicker. A pin puts a story in its place and holds
               for 6 weeks; after that the page goes back to the newest story. Every story appears once on the page.
             </div>
@@ -648,6 +826,28 @@ export function FeaturesLayoutEditor() {
             <div style={{ maxWidth: 520, marginTop: 20 }}>
               <DropSlot {...slotProps('reel')} />
             </div>
+
+            <div style={{ maxWidth: 520, marginTop: 20 }}>
+              <PitchPhotoSlot
+                preview={pitchPreview}
+                missing={layout.pitch != null && !pitchPreview}
+                onClear={() => {
+                  setLayout((prev) => ({ ...prev, pitch: null, pitchPositions: { ...NO_PITCH_POSITIONS } }));
+                  setPitchPreview(null);
+                  setSaved(false);
+                }}
+              />
+            </div>
+            {layout.pitch != null && pitchPreview && (
+              <PitchPositionsEditor
+                photo={pitchPreview}
+                positions={layout.pitchPositions}
+                onChange={(next) => {
+                  setLayout((prev) => ({ ...prev, pitchPositions: next }));
+                  setSaved(false);
+                }}
+              />
+            )}
           </div>
 
           <ArticlePool articles={articles} usedIds={usedIds} search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} />

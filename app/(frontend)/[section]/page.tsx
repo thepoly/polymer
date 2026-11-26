@@ -154,7 +154,7 @@ export default async function SectionPageRoute({ params }: Args) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c') }}
         />
         <Header />
-        <FeaturesFront pins={pinsOf(layout)} />
+        <FeaturesFront pins={pinsOf(layout)} pitchPhotoId={layout.pitch} pitchPositions={layout.pitchPositions} />
         <Footer />
       </main>
     );

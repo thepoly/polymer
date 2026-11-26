@@ -9,6 +9,7 @@
 // from today: the page doesn't empty itself over the summer, and it never
 // leads with a story from years ago. See docs/features-section.md.
 import type { FeaturesDepartmentKey } from './featuresDepartments'
+import { MAX_PHOTO_ZOOM, MIN_PHOTO_ZOOM, type PhotoPosition, type PhotoScreen } from '@/components/GetInvolved/photoPositions'
 
 /** A section shows stories from this many days before the newest Features story */
 export const SECTION_WINDOW_DAYS = 365
@@ -18,11 +19,14 @@ export const PIN_STALE_DAYS = 42
 export const SECTION_ORDER = ['campus', 'arts', 'people'] as const
 export type SectionKey = (typeof SECTION_ORDER)[number]
 export type SectionLayout = 'photo-right' | 'photo-left' | 'cards'
-export const SECTION_LAYOUT: Record<SectionKey, SectionLayout> = { campus: 'cards', arts: 'cards', people: 'photo-left' }
+export const SECTION_LAYOUT: Record<SectionKey, SectionLayout> = { campus: 'cards', arts: 'photo-right', people: 'cards' }
 /** The most stories each section shows, its lead included */
-export const SECTION_LIMITS: Record<SectionKey, number> = { campus: 3, arts: 3, people: 3 }
-/** Latest, under the cover: the newest stories from every section, its lead included */
-export const LATEST_LIMIT = 4
+export const SECTION_LIMITS: Record<SectionKey, number> = { campus: 3, arts: 4, people: 3 }
+/** The top of the page, around the cover: the newest stories from every section */
+export const TOP_LEFT = 2
+export const TOP_RIGHT = 4
+/** Tablets show the right column's first two; phones none. The rest go to their sections. */
+export const TOP_RIGHT_TABLET = 2
 /** A section with fewer stories than this in its window is left out */
 export const MIN_SECTION_STORIES = 2
 /** The reel leads with a photo story that has at least this many photos */
@@ -58,8 +62,11 @@ export type FrontSection = {
 export type FrontPlan = {
   cover: number | null
   reel: { hero: number | null; rest: number[] }
-  /** The newest stories after the cover, from any section; null when there are too few */
-  latest: { lead: number | null; ids: number[] } | null
+  /**
+   * The top, around the cover: the newest stories after it from any section.
+   * Left: the newest with photos; right: the next newest, photo or not.
+   */
+  top: { left: number[]; right: number[] }
   sections: FrontSection[]
 }
 
@@ -89,11 +96,16 @@ export function pickCover(stories: FrontStory[], pins: Pick<FrontPins, 'cover'>)
 
 /**
  * The page's plan, in the order stories are claimed (each appears once):
- * cover, then the photo reel, then Latest (the newest stories from any
- * section, so the cover and Latest open the page with the five newest), then
- * Campus Life, Arts & Culture and People.
+ * cover, then the photo reel, then the top's two columns beside the cover
+ * (the newest stories from any section), then Campus Life, Arts & Culture
+ * and People.
+ *
+ * `topRight` is how many stories the top's right column takes. Phones list
+ * none there and tablets two (`TOP_RIGHT_TABLET`), so the page also plans
+ * with those for phones and tablets, and the stories they leave out go to
+ * their sections instead.
  */
-export function planFeaturesFront(stories: FrontStory[], pins: FrontPins): FrontPlan {
+export function planFeaturesFront(stories: FrontStory[], pins: FrontPins, { topRight = TOP_RIGHT }: { topRight?: number } = {}): FrontPlan {
   const anchor = anchorOf(stories)
   const sorted = [...stories].sort(newestFirst)
   const byId = new Map(stories.map((s) => [s.id, s]))
@@ -116,23 +128,20 @@ export function planFeaturesFront(stories: FrontStory[], pins: FrontPins): Front
   const rest = hero ? photoPool.filter((s) => !used.has(s.id)).slice(0, REEL_REST) : []
   rest.forEach((s) => used.add(s.id))
 
-  // 3. Latest: the newest stories left, from any section. Its lead is the
-  // newest of them with a photo; without one, it's a row of cards. A section
-  // lead an editor pinned (and that's still fresh) is kept for its section.
+  // 3. The top, beside the cover: the newest stories left, from any section.
+  // A section lead an editor pinned (and that's still fresh) is kept for its section.
   const heldForSections = new Set(
     SECTION_ORDER.map((key) => (pins.leads[key] != null ? byId.get(pins.leads[key]!) : undefined))
       .filter((s): s is FrontStory => Boolean(s && s.dept && fresh(s) && inWindow(s)))
       .map((s) => s.id),
   )
-  const latestPool = sorted.filter((s) => !used.has(s.id) && !heldForSections.has(s.id) && inWindow(s))
-  let latest: FrontPlan['latest'] = null
-  if (latestPool.length >= MIN_SECTION_STORIES) {
-    const newest = latestPool.slice(0, LATEST_LIMIT)
-    const lead = newest.find((s) => s.hasPhoto) ?? null
-    const ids = lead ? [lead, ...newest.filter((s) => s !== lead)] : newest
-    ids.forEach((s) => used.add(s.id))
-    latest = { lead: lead?.id ?? null, ids: ids.map((s) => s.id) }
-  }
+  // No cover means no top on the page, so it claims nothing and the stories stay in their sections
+  const topPool = cover == null ? [] : sorted.filter((s) => !used.has(s.id) && !heldForSections.has(s.id) && inWindow(s))
+  const left = topPool.filter((s) => s.hasPhoto).slice(0, TOP_LEFT)
+  left.forEach((s) => used.add(s.id))
+  const right = topPool.filter((s) => !used.has(s.id)).slice(0, topRight)
+  right.forEach((s) => used.add(s.id))
+  const top = { left: left.map((s) => s.id), right: right.map((s) => s.id) }
 
   // 4. Sections, each from its own department within the window
   const sections: FrontSection[] = []
@@ -166,7 +175,7 @@ export function planFeaturesFront(stories: FrontStory[], pins: FrontPins): Front
     sections.push({ key, layout, lead: lead?.id ?? null, ids: picked.map((s) => s.id) })
   }
 
-  return { cover, reel: { hero: hero?.id ?? null, rest: rest.map((s) => s.id) }, latest, sections }
+  return { cover, reel: { hero: hero?.id ?? null, rest: rest.map((s) => s.id) }, top, sections }
 }
 
 /* ───────────────────────────── The editor's layout ─────────────────────────────
@@ -181,13 +190,47 @@ export type FeaturesLayoutV3 = {
   cover: number | null
   leads: Record<SectionKey, number | null>
   reel: number | null
+  /** A media id: the photo behind the "Have a story?" pitch at the top. Not a story pin. */
+  pitch: number | null
+  /**
+   * Where the pitch photo sits on each screen size (as on the Get Involved
+   * page: a focus point and a zoom). null follows the photo's focal point,
+   * not zoomed. Only applies to the photo picked in `pitch`.
+   */
+  pitchPositions: PitchPositions
+}
+
+export type PitchPositions = Record<PhotoScreen, PhotoPosition | null>
+export const NO_PITCH_POSITIONS: PitchPositions = { mobile: null, tablet: null, desktop: null }
+
+const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n))
+const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+
+function positionOf(raw: unknown): PhotoPosition | null {
+  if (!raw || typeof raw !== 'object') return null
+  const p = raw as Record<string, unknown>
+  if (!finite(p.x) || !finite(p.y)) return null
+  return { x: clamp(p.x, 0, 100), y: clamp(p.y, 0, 100), zoom: finite(p.zoom) ? clamp(p.zoom, MIN_PHOTO_ZOOM, MAX_PHOTO_ZOOM) : 1 }
+}
+
+function pitchPositionsOf(raw: unknown): PitchPositions {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ...NO_PITCH_POSITIONS }
+  const o = raw as Record<string, unknown>
+  return { mobile: positionOf(o.mobile), tablet: positionOf(o.tablet), desktop: positionOf(o.desktop) }
 }
 
 const idOf = (v: unknown): number | null => (typeof v === 'number' && Number.isInteger(v) && v > 0 ? v : null)
 
 /** Any saved layout (v3, an older shape, or garbage) as a v3 layout */
 export function normalizeFeaturesLayout(raw: unknown): FeaturesLayoutV3 {
-  const empty: FeaturesLayoutV3 = { version: 3, cover: null, leads: { campus: null, arts: null, people: null }, reel: null }
+  const empty: FeaturesLayoutV3 = {
+    version: 3,
+    cover: null,
+    leads: { campus: null, arts: null, people: null },
+    reel: null,
+    pitch: null,
+    pitchPositions: { ...NO_PITCH_POSITIONS },
+  }
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return empty
   const o = raw as Record<string, unknown>
   if (o.version === 3) {
@@ -197,6 +240,8 @@ export function normalizeFeaturesLayout(raw: unknown): FeaturesLayoutV3 {
       cover: idOf(o.cover),
       leads: { campus: idOf(leads.campus), arts: idOf(leads.arts), people: idOf(leads.people) },
       reel: idOf(o.reel),
+      pitch: idOf(o.pitch),
+      pitchPositions: pitchPositionsOf(o.pitchPositions),
     }
   }
   return { ...empty, cover: Array.isArray(o.featured) ? idOf(o.featured[0]) : null }
@@ -204,3 +249,21 @@ export function normalizeFeaturesLayout(raw: unknown): FeaturesLayoutV3 {
 
 /** The pins the page plan takes, from a v3 layout */
 export const pinsOf = (layout: FeaturesLayoutV3): FrontPins => ({ cover: layout.cover, leads: layout.leads, reel: layout.reel })
+
+const PITCH_SUFFIX: Record<PhotoScreen, string> = { mobile: 'm', tablet: 't', desktop: 'd' }
+
+/**
+ * The CSS variables the pitch photo reads (PITCH_POSITION_CLASSES in
+ * FeaturesFront): each screen's position, or `aim` (the photo's focal point,
+ * as an object-position) not zoomed where none is set. Shared with the
+ * Features Layout editor's previews.
+ */
+export function pitchPositionVars(positions: PitchPositions, aim = '50% 50%'): Record<string, string> {
+  const vars: Record<string, string> = {}
+  for (const screen of Object.keys(PITCH_SUFFIX) as PhotoScreen[]) {
+    const p = positions[screen]
+    vars[`--pitch-pos-${PITCH_SUFFIX[screen]}`] = p ? `${p.x}% ${p.y}%` : aim
+    vars[`--pitch-zoom-${PITCH_SUFFIX[screen]}`] = String(p?.zoom ?? 1)
+  }
+  return vars
+}

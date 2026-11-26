@@ -16,11 +16,16 @@ import { FEATURES_DEPARTMENTS, departmentOf, normalizeKicker, type FeaturesDepar
 import {
   REEL_MIN_PHOTOS,
   REEL_REST,
+  TOP_RIGHT_TABLET,
   SECTION_WINDOW_DAYS,
   isWithin,
   pickCover,
   planFeaturesFront,
+  pitchPositionVars,
+  NO_PITCH_POSITIONS,
+  type PitchPositions,
   type FrontPins,
+  type FrontPlan,
   type FrontStory,
   type SectionKey,
   type SectionLayout,
@@ -30,29 +35,31 @@ import {
  * /features, top to bottom (rendered by app/(frontend)/[section]/page.tsx,
  * which supplies the header and footer):
  *
- *   1. Cover story: its photo pinned behind a large white headline.
- *   2. Latest (no visible heading): the newest stories after the cover, from
- *      any section (so the page opens with the five newest). The lead's
- *      photo on the right beside its headline; the next three in a row
- *      underneath, each with its photo above its title.
- *   3. Three sections, one under another, each under its name, a link to the
+ *   1. The top, in three columns with thin rules between them: the cover in
+ *      the middle (its photo, section, headline, summary and byline, centred);
+ *      the two newest stories with photos on the left; the next three listed
+ *      on the right with thumbnails, with the pitch among them: "Have a
+ *      suggestion? Tell Features about it" on a pinned photo the editor picks
+ *      (the Get involved page's style). Phones: the cover first,
+ *      then the rest.
+ *   2. Three sections, one under another, each under its name, a link to the
  *      archive filtered to it:
- *      - Campus Life and Arts & Culture: a row of story cards (a list with
- *        thumbnails on phones);
- *      - People: the lead's photo on the left beside its headline, its other
- *        stories in a row underneath.
- *   4. Photo Short Stories: a film reel of a photo story's photos, the next
+ *      - Campus Life: a row of story cards (a list with thumbnails on phones);
+ *      - Arts & Culture: the lead's photo on the right beside its headline,
+ *        its other three stories underneath as photo cards;
+ *      - People: a row of story cards.
+ *   3. Photo Short Stories: a film reel of a photo story's photos, the next
  *      two listed under it; its title links to every photo story.
- *   5. "Looking for an article?": search, the archive and contact, as on News.
+ *   4. "Looking for an article?": search, the archive and contact, as on News.
  *
  * Which stories go where (and when the editor's pins give way) is decided by
  * planFeaturesFront in lib/featuresFront.ts; this file loads the stories and
- * renders the plan. Only the cover's photo is pinned to the screen; every
- * other photo scrolls with the page. See docs/features-section.md.
+ * renders the plan. See docs/features-section.md.
  */
 
 const FEATURES_MAILTO =
   'mailto:features@poly.rpi.edu,eic@poly.rpi.edu?subject=Features%20Request%2FComment%20or%20Story%20Tip';
+const PITCH_MAILTO = 'mailto:features@poly.rpi.edu?subject=Suggestion%20for%20Features';
 const focus = 'focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2';
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** Stories loaded for the page: the year's window, which runs to about 16 */
@@ -77,10 +84,11 @@ function Kicker({ children, light = false }: { children: React.ReactNode; light?
   );
 }
 
-type Section = { key: SectionKey | 'latest'; name: string; layout: SectionLayout; stories: Story[] };
+/** `headingId`: unique even when the phone and wider versions of a section are both on the page */
+type Section = { key: SectionKey; name: string; layout: SectionLayout; stories: Story[]; headingId: string };
 
-/** Where a section's title goes: the archive, filtered to the section (Latest: all of it) */
-const archiveHref = (key: Section['key']) => (key === 'latest' ? '/features/archive' : `/features/archive?section=${key}`);
+/** Where a section's title goes: the archive, filtered to the section */
+const archiveHref = (key: SectionKey) => `/features/archive?section=${key}`;
 
 /**
  * A story's label inside its section, left out when it adds nothing: when it
@@ -111,21 +119,11 @@ function SectionTitle({ id, name, href }: { id: string; name: string; href: stri
 /** Space above each section, the same everywhere */
 const sectionGap = 'mt-[18px] md:mt-[22px]';
 
-/**
- * A section's heading: its title (a link to all its stories) over a rule.
- * Latest has no visible heading, only one for screen readers.
- */
+/** A section's heading: its title (a link to all its stories) over a rule */
 function SectionHead({ sec }: { sec: Section }) {
-  if (sec.key === 'latest') {
-    return (
-      <h2 id="fp-latest" className="sr-only">
-        {sec.name}
-      </h2>
-    );
-  }
   return (
     <div className="border-b-2 border-rule-strong pb-1.5">
-      <SectionTitle id={`fp-${sec.key}`} name={sec.name} href={archiveHref(sec.key)} />
+      <SectionTitle id={sec.headingId} name={sec.name} href={archiveHref(sec.key)} />
     </div>
   );
 }
@@ -138,24 +136,19 @@ function Credit({ children }: { children: React.ReactNode }) {
 /**
  * Row 1: the lead's photo, at 3:2, beside the lead's headline (centred on the
  * photo). `flip` puts the photo on the right; on phones it comes first either
- * way. Row 2: the section's other stories in a row, headline and byline only,
- * or (`rowImages`) each with its photo above its title (a thumbnail on the
- * right on phones). On phones the section shows three stories in all; the
- * title links to the rest.
+ * way. Row 2: the section's other stories in a row, each with its photo above
+ * its headline, like the cards in the other sections (a thumbnail on the right
+ * on phones). On phones the section shows three stories in all; the title
+ * links to the rest.
  */
-const ROW_ITEM = {
-  text: 'border-b border-rule py-3.5 last:border-b-0 md:border-b-0 md:border-t md:border-rule-strong md:pb-0 md:pt-3',
-  images: 'border-b border-rule py-3.5 last:border-b-0 md:border-b-0 md:py-0',
-} as const;
-
-function LeadSection({ sec, flip, rowImages = false }: { sec: Section; flip: boolean; rowImages?: boolean }) {
+function LeadSection({ sec, flip }: { sec: Section; flip: boolean }) {
   const [lead, ...rest] = sec.stories;
   const kicker = sectionKicker(lead, sec);
   const cols = rest.length >= 3 ? 'md:grid-cols-3' : rest.length === 2 ? 'md:grid-cols-2' : '';
   return (
-    <section aria-labelledby={`fp-${sec.key}`} className={sectionGap}>
+    <section aria-labelledby={sec.headingId} className={sectionGap}>
       <SectionHead sec={sec} />
-      <div className={`grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-8 lg:gap-10 ${sec.key === 'latest' ? '' : 'mt-4 md:mt-5'}`}>
+      <div className="mt-4 grid grid-cols-1 gap-4 md:mt-5 md:grid-cols-2 md:gap-8 lg:gap-10">
         <div className={`self-start ${flip ? 'md:order-2' : ''}`}>
           <TransitionLink href={getArticleUrl(lead)} tabIndex={-1} aria-hidden="true" className="block">
             <div className="relative aspect-[3/2] overflow-hidden bg-rule">
@@ -183,21 +176,21 @@ function LeadSection({ sec, flip, rowImages = false }: { sec: Section; flip: boo
       </div>
 
       {rest.length > 0 && (
-        <ul className={`mt-5 grid grid-cols-1 border-t border-rule-strong md:gap-x-8 ${rowImages ? 'md:mt-7 md:gap-y-8' : ''} md:border-t-0 ${cols} max-md:[&>li:nth-child(n+3)]:hidden`}>
+        <ul className={`mt-5 grid grid-cols-1 gap-x-6 sm:grid-cols-2 sm:gap-y-8 md:mt-7 ${cols} max-md:[&>li:nth-child(n+3)]:hidden max-sm:[&>li:last-child]:border-b-0 max-sm:[&>li:nth-child(2)]:border-b-0`}>
           {rest.map((s) => (
-            <li key={s.id} className={rowImages ? ROW_ITEM.images : ROW_ITEM.text}>
-              <TransitionLink href={getArticleUrl(s)} className={`group ${rowImages ? 'flex flex-row-reverse items-start gap-4 md:block' : 'block'} ${focus}`}>
-                {rowImages && s.photo && (
-                  <div className="relative aspect-[3/2] w-[112px] shrink-0 overflow-hidden bg-rule md:mb-3 md:w-auto">
-                    <Image src={s.photo.src} alt={s.imageTitle || ''} fill sizes="(max-width: 767px) 112px, 400px" className="object-cover" style={s.imageFocus ? { objectPosition: s.imageFocus } : undefined} />
+            <li key={s.id} className="border-b border-rule py-4 first:pt-0 sm:border-0 sm:py-0">
+              <TransitionLink href={getArticleUrl(s)} className={`group flex flex-row-reverse items-start gap-4 sm:block ${focus}`}>
+                {s.photo && (
+                  <div className="relative aspect-[3/2] w-[112px] shrink-0 overflow-hidden bg-rule sm:mb-3 sm:w-auto">
+                    <Image src={s.photo.src} alt={s.imageTitle || ''} fill sizes="(max-width: 639px) 112px, (max-width: 1023px) 50vw, 400px" className="object-cover" style={s.imageFocus ? { objectPosition: s.imageFocus } : undefined} />
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
                   {sectionKicker(s, sec) && <Kicker>{sectionKicker(s, sec)}</Kicker>}
-                  <h3 className="font-copy text-[20px] font-normal leading-[1.15] transition-colors group-hover:text-accent lg:text-[22px]">
+                  <h3 className="line-clamp-3 font-copy text-[20px] font-normal leading-[1.15] transition-colors group-hover:text-accent sm:mt-1.5 sm:text-[22px] sm:leading-[1.14] lg:text-[24px]">
                     {s.richTitle || s.title}
                   </h3>
-                  <Byline authors={s.authorLinks} date={dateOf(s)} size="sm" margin="mt-1.5" />
+                  <Byline authors={s.authorLinks} date={dateOf(s)} size="sm" margin="mt-1.5 sm:mt-2" />
                 </div>
               </TransitionLink>
             </li>
@@ -208,13 +201,213 @@ function LeadSection({ sec, flip, rowImages = false }: { sec: Section; flip: boo
   );
 }
 
+/** The photo behind the pitch: the editor's pick, else the newest photo story's */
+type PitchPhoto = {
+  src: string;
+  width: number;
+  height: number;
+  credit: string | null;
+  /** Each screen's position as CSS variables (pitchPositionVars) */
+  vars: Record<string, string>;
+  /** The most it's zoomed on any screen, so it downloads a big enough file */
+  maxZoom: number;
+};
+
+/** The pitch photo's position on each screen, from the variables pitchPositionVars sets (as on Get Involved) */
+const PITCH_POSITION_CLASSES =
+  '[object-position:var(--pitch-pos-m)] [transform-origin:var(--pitch-pos-m)] [scale:var(--pitch-zoom-m)] ' +
+  'md:[object-position:var(--pitch-pos-t)] md:[transform-origin:var(--pitch-pos-t)] md:[scale:var(--pitch-zoom-t)] ' +
+  'lg:[object-position:var(--pitch-pos-d)] lg:[transform-origin:var(--pitch-pos-d)] lg:[scale:var(--pitch-zoom-d)]';
+
+/**
+ * The pitch, two lines in the top's right column: "Have a suggestion?" and
+ * "Tell Features about it →", opening an email to the Features desk. It asks
+ * for tips (an event, a place, something worth checking out), not finished
+ * stories, so it doesn't say "story" or "pitch".
+ *
+ * With a photo, it's a window onto that photo, pinned to the screen in the
+ * Get involved page's style: the photo stays put while the page scrolls past,
+ * so a different part of it shows as you read down. The two lines are centred
+ * on an even tint. The label is white, not red: red small type doesn't read
+ * on a dark photo. Without any photo, the two lines sit on their own. Either
+ * way it grows to fill its column (at least 124px tall with a photo). Where
+ * the photo sits on phones, tablets and computers is set in the Features
+ * Layout editor (`data-features-pitch` is how its previews find the box).
+ */
+function Pitch({ photo }: { photo: PitchPhoto | null }) {
+  const arrow = (
+    <span aria-hidden="true" className="inline-block transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0">
+      →
+    </span>
+  );
+  if (!photo) {
+    return (
+      <a href={PITCH_MAILTO} className={`group flex flex-1 flex-col items-center justify-center gap-1.5 py-2 text-center ${focus}`}>
+        <Kicker>Have a suggestion?</Kicker>
+        <span className="font-copy text-[19px] leading-[1.2] text-text-main">
+          Tell Features about it <span className="text-accent">{arrow}</span>
+        </span>
+      </a>
+    );
+  }
+  return (
+    <a
+      href={PITCH_MAILTO}
+      data-features-pitch
+      style={photo.vars as React.CSSProperties}
+      className={`group relative flex min-h-[124px] flex-1 flex-col items-center justify-center overflow-hidden text-center text-white ${focus}`}
+    >
+      <PhotoWindow fill src={photo} alt="" maxZoom={photo.maxZoom} imageClassName={PITCH_POSITION_CLASSES} />
+      <div aria-hidden="true" className="absolute inset-0 bg-black/50 transition-colors duration-300 group-hover:bg-black/60" />
+      {photo.credit && (
+        <span className="absolute right-1.5 top-1.5 z-10 bg-black/55 px-1.5 py-0.5 font-meta text-[10px] leading-none tracking-[0.02em] text-white/90">{photo.credit}</span>
+      )}
+      <div className="relative z-10 px-4 py-5 [text-shadow:0_1px_2px_rgb(0_0_0/0.45)]">
+        <Kicker light>Have a suggestion?</Kicker>
+        <span className="mt-1.5 block font-copy text-[22px] leading-[1.15]">Tell Features about it {arrow}</span>
+      </div>
+    </a>
+  );
+}
+
+/**
+ * The top of the page, in three columns with thin rules between them: the
+ * cover in the middle, at its largest; on the left, the two newest stories
+ * with photos; on the right, the next four, listed with thumbnails, with
+ * the pitch between the third and fourth, grown so the column ends level
+ * with the others. Tablets: the cover across the page, the left two side by
+ * side with their photos, the pitch as a bar across the page, then the
+ * right column's first two side by side with their photos (its others go
+ * to their sections on tablets). Phones: the cover, the left two as a list
+ * with thumbnails, then the pitch; the right column's stories go to their
+ * sections (see the per-width plans in FeaturesFront).
+ */
+function TopStories({ cover, left, right, pitch }: { cover: Story; left: Story[]; right: Story[]; pitch: PitchPhoto | null }) {
+  const label = labelOf(cover);
+  return (
+    <section aria-labelledby="fp-top" className="grid grid-cols-1 gap-y-6 md:grid-cols-2 md:gap-x-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)] lg:gap-x-0">
+      <h2 id="fp-top" className="sr-only">
+        Top stories
+      </h2>
+
+      {/* The cover, in the middle */}
+      <article className="md:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:border-x lg:border-rule lg:px-6">
+        <TransitionLink href={getArticleUrl(cover)} tabIndex={-1} aria-hidden="true" className="block">
+          <div className="relative aspect-[3/2] overflow-hidden bg-rule">
+            <Image
+              src={cover.photo!.src}
+              alt=""
+              fill
+              preload
+              fetchPriority="high"
+              sizes="(max-width: 1023px) 100vw, 640px"
+              className="object-cover"
+              style={cover.imageFocus ? { objectPosition: cover.imageFocus } : undefined}
+            />
+          </div>
+        </TransitionLink>
+        {cover.imagePhotographer && <Credit>{credit(cover.imagePhotographer)}</Credit>}
+        <TransitionLink href={getArticleUrl(cover)} className={`group mt-2 block text-center ${focus}`}>
+          {label && <Kicker>{label}</Kicker>}
+          <h3 className="mx-auto mt-2 max-w-[24ch] text-balance font-copy text-[30px] font-normal leading-[1.1] tracking-[-0.015em] transition-colors group-hover:text-accent md:text-[36px] lg:text-[38px]">
+            {cover.richTitle || cover.title}
+          </h3>
+          {cover.excerpt && <p className="mx-auto mt-3 max-w-[56ch] font-copy text-[17px] leading-[1.45] text-text-muted md:text-[18px]">{cover.excerpt}</p>}
+          <Byline authors={cover.authorLinks} date={dateOf(cover)} size="md" margin="mt-3" className="text-center" />
+        </TransitionLink>
+      </article>
+
+      {/* Left: the two newest with photos, each photo above its headline */}
+      {left.length > 0 && (
+        <ul className="md:col-span-2 md:grid md:grid-cols-2 md:gap-x-8 lg:col-span-1 lg:col-start-1 lg:row-start-1 lg:block lg:pr-6">
+          {left.map((s) => (
+            <li key={s.id} className="border-b border-rule py-4 first:pt-0 md:border-b-0 md:py-0 lg:[&+li]:mt-6">
+              <TransitionLink href={getArticleUrl(s)} className={`group flex flex-row-reverse items-start gap-4 md:block ${focus}`}>
+                <div className="relative aspect-[3/2] w-[112px] shrink-0 overflow-hidden bg-rule md:w-auto">
+                  <Image src={s.photo!.src} alt={s.imageTitle || ''} fill sizes="(max-width: 767px) 112px, (max-width: 1023px) 50vw, 320px" className="object-cover" style={s.imageFocus ? { objectPosition: s.imageFocus } : undefined} />
+                </div>
+                <div className="min-w-0 flex-1 md:mt-3">
+                  <h3 className="font-copy text-[20px] font-normal leading-[1.15] transition-colors group-hover:text-accent md:text-[22px]">{s.richTitle || s.title}</h3>
+                  <Byline authors={s.authorLinks} date={dateOf(s)} size="sm" margin="mt-1.5" />
+                </div>
+              </TransitionLink>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Right: the next four, listed, each with a small square photo, the pitch
+          between the third and fourth. The list is as tall as the row and the
+          pitch takes up the slack, so the column ends level with the others.
+          No dates, so bylines stay on one line. Phones show only the pitch;
+          tablets show the block after this one instead. */}
+      <ul className="flex flex-col md:max-lg:hidden lg:col-start-3 lg:row-start-1 lg:pl-6">
+          {right.map((s, i) => (
+            <React.Fragment key={s.id}>
+            {i === 3 && (
+              <li className="flex flex-1 flex-col border-b border-rule py-4 md:py-3">
+                <Pitch photo={pitch} />
+              </li>
+            )}
+            <li className={`border-b border-rule py-4 first:pt-0 last:border-b-0 md:py-3 md:last:pb-0 max-md:hidden`}>
+              <TransitionLink href={getArticleUrl(s)} className={`group flex items-start gap-3 ${focus}`}>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-copy text-[19px] font-normal leading-[1.2] transition-colors group-hover:text-accent md:text-[18px]">{s.richTitle || s.title}</h3>
+                  <Byline authors={s.authorLinks} size="sm" margin="mt-1" />
+                </div>
+                {s.photo && (
+                  <div className="relative aspect-square w-[60px] shrink-0 overflow-hidden bg-rule">
+                    <Image src={s.photo.src} alt="" fill sizes="60px" className="object-cover" style={s.imageFocus ? { objectPosition: s.imageFocus } : undefined} />
+                  </div>
+                )}
+              </TransitionLink>
+            </li>
+            </React.Fragment>
+          ))}
+          {/* Fewer than four stories: the pitch goes at the end */}
+          {right.length < 4 && (
+            <li className="flex flex-1 flex-col py-4 md:py-3">
+              <Pitch photo={pitch} />
+            </li>
+          )}
+      </ul>
+
+      {/* Tablets only: the pitch as a bar across the whole screen, edge to
+          edge past the page's margins, then the right column's first two side
+          by side, each photo above its headline */}
+      <div className="hidden md:col-span-2 md:max-lg:block">
+        <div className="mx-[calc(50%_-_50vw)] flex h-[150px] flex-col">
+          <Pitch photo={pitch} />
+        </div>
+        {right.length > 0 && (
+          <ul className="mt-6 grid grid-cols-2 gap-x-8">
+            {right.slice(0, TOP_RIGHT_TABLET).map((s) => (
+              <li key={s.id}>
+                <TransitionLink href={getArticleUrl(s)} className={`group block ${focus}`}>
+                  {s.photo && (
+                    <div className="relative mb-3 aspect-[3/2] overflow-hidden bg-rule">
+                      <Image src={s.photo.src} alt={s.imageTitle || ''} fill sizes="50vw" className="object-cover" style={s.imageFocus ? { objectPosition: s.imageFocus } : undefined} />
+                    </div>
+                  )}
+                  <h3 className="font-copy text-[22px] font-normal leading-[1.15] transition-colors group-hover:text-accent">{s.richTitle || s.title}</h3>
+                  <Byline authors={s.authorLinks} date={dateOf(s)} size="sm" margin="mt-1.5" />
+                </TransitionLink>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
+
 /** A row of story cards: phones get a list with thumbnails on the right */
 function CardsSection({ sec }: { sec: Section }) {
   const cols = sec.stories.length >= 4 ? 'lg:grid-cols-4' : sec.stories.length === 3 ? 'md:grid-cols-3' : '';
   return (
-    <section aria-labelledby={`fp-${sec.key}`} className={sectionGap}>
+    <section aria-labelledby={sec.headingId} className={sectionGap}>
       <SectionHead sec={sec} />
-      <ul className={`grid grid-cols-1 gap-x-6 sm:grid-cols-2 sm:gap-y-8 ${sec.key === 'latest' ? '' : 'mt-4 sm:mt-5'} ${cols} max-md:[&>li:nth-child(n+4)]:hidden`}>
+      <ul className={`mt-4 grid grid-cols-1 gap-x-6 sm:mt-5 sm:grid-cols-2 sm:gap-y-8 ${cols} max-md:[&>li:nth-child(n+4)]:hidden max-sm:[&>li:last-child]:border-b-0 max-sm:[&>li:nth-child(3)]:border-b-0`}>
         {sec.stories.map((s) => (
           <li key={s.id} className="border-b border-rule py-4 first:pt-0 sm:border-0 sm:py-0">
             <TransitionLink href={getArticleUrl(s)} className={`group flex flex-row-reverse items-start gap-4 sm:block ${focus}`}>
@@ -322,24 +515,33 @@ function PhotoStoriesHead() {
   );
 }
 
-/** The next photo stories as short rows: a thumbnail, the headline, the date and photo count */
+/**
+ * The next photo stories, as cards in proportion to the reel above: the
+ * photo on the left (300px wide on desktop), then the photo count and date,
+ * the headline and the byline. Side by side from tablet width; stacked on phones.
+ * On tablets each card puts its photo on top at the column's full width, so
+ * the two cards match whatever their headlines' lengths.
+ */
 function EarlierPhotoStories({ stories }: { stories: PhotoStory[] }) {
   if (!stories.length) return null;
   return (
-    <ul className="grid grid-cols-1 gap-x-8 md:grid-cols-2">
+    <ul className="grid grid-cols-1 gap-x-8 gap-y-5 border-t border-rule pt-5 md:grid-cols-2 md:pt-6">
       {stories.map((s) => (
-        <li key={s.id} className="border-t border-rule py-3">
-          <TransitionLink href={getArticleUrl(s)} className={`group flex items-center gap-4 ${focus}`}>
+        <li key={s.id}>
+          <TransitionLink href={getArticleUrl(s)} className={`group flex items-center gap-4 md:flex-col md:items-stretch md:gap-3 lg:flex-row lg:items-center lg:gap-5 ${focus}`}>
             {s.photo && (
-              <div className="relative aspect-[3/2] w-[96px] shrink-0 overflow-hidden bg-rule">
-                <Image src={s.photo.src} alt="" fill sizes="96px" className="object-cover" />
+              <div className="relative aspect-[3/2] w-[140px] shrink-0 overflow-hidden bg-rule md:w-full lg:w-[300px]">
+                <Image src={s.photo.src} alt="" fill sizes="(max-width: 767px) 140px, (max-width: 1023px) 50vw, 300px" className="object-cover" style={s.imageFocus ? { objectPosition: s.imageFocus } : undefined} />
               </div>
             )}
             <div className="min-w-0">
-              <h3 className="font-copy text-[19px] leading-[1.15] transition-colors group-hover:text-accent md:text-[20px]">{s.richTitle || s.title}</h3>
-              <p className="mt-1 font-meta text-[12px] text-text-muted">
-                {dateOf(s)} · {photoCount(s)}
-              </p>
+              <Kicker>
+                {photoCount(s)} · {dateOf(s)}
+              </Kicker>
+              <h3 className="mt-1.5 text-balance font-copy text-[20px] font-normal leading-[1.12] transition-colors group-hover:text-accent md:text-[24px] lg:text-[28px]">
+                {s.richTitle || s.title}
+              </h3>
+              <Byline authors={s.authorLinks} size="sm" margin="mt-2" />
             </div>
           </TransitionLink>
         </li>
@@ -400,19 +602,32 @@ const toFront = (s: Story, photoCount?: number): FrontStory => ({
   photoCount,
 });
 
-export default async function FeaturesFront({ pins }: { pins: FrontPins }) {
+export default async function FeaturesFront({
+  pins,
+  pitchPhotoId = null,
+  pitchPositions = NO_PITCH_POSITIONS,
+}: {
+  pins: FrontPins;
+  pitchPhotoId?: number | null;
+  /** Where the picked pitch photo sits on each screen; not used for the fallback photo */
+  pitchPositions?: PitchPositions;
+}) {
   const payload = await getPayload({ config });
   const published: Where[] = [{ section: { equals: 'features' } }, { _status: { equals: 'published' } }];
 
-  // 1. The newest Features story: every window is measured from it
-  const newest = await payload.find({
-    collection: 'articles',
-    where: { and: published },
-    sort: '-publishedDate',
-    limit: 1,
-    depth: 0,
-    select: { publishedDate: true },
-  });
+  // 1. The newest Features story (every window is measured from it), and the
+  // photo the editor picked for the pitch, if any (it may since have been deleted)
+  const [newest, pickedPhoto] = await Promise.all([
+    payload.find({
+      collection: 'articles',
+      where: { and: published },
+      sort: '-publishedDate',
+      limit: 1,
+      depth: 0,
+      select: { publishedDate: true },
+    }),
+    pitchPhotoId != null ? payload.findByID({ collection: 'media', id: pitchPhotoId, depth: 1 }).catch(() => null) : Promise.resolve(null),
+  ]);
   const anchorIso = newest.docs[0]?.publishedDate;
   if (!anchorIso) {
     return (
@@ -480,29 +695,77 @@ export default async function FeaturesFront({ pins }: { pins: FrontPins }) {
     return s ? { ...s, frames: framesById.get(id) ?? [] } : null;
   };
 
-  // 4. The plan: cover, reel, then the three sections, each story once
-  const plan = planFeaturesFront(
-    stories.map((s) => {
-      const id = Number(s.id);
-      return toFront(s, framesById.has(id) ? photosOf(photoStoryOf(id)!).length : undefined);
-    }),
-    pins,
-  );
+  // 4. The plan: cover, reel, then the three sections, each story once. The
+  // top's right column lists four on desktop, two on tablets and none on
+  // phones, so each width gets its own plan, in which the stories it leaves
+  // out go to their sections.
+  const planned = stories.map((s) => {
+    const id = Number(s.id);
+    return toFront(s, framesById.has(id) ? photosOf(photoStoryOf(id)!).length : undefined);
+  });
+  const plan = planFeaturesFront(planned, pins);
+  const tabletPlan = planFeaturesFront(planned, pins, { topRight: TOP_RIGHT_TABLET });
+  const phonePlan = planFeaturesFront(planned, pins, { topRight: 0 });
   const cover = plan.cover != null ? byId.get(plan.cover) ?? null : null;
-  const latest: Section | null = plan.latest
-    ? {
-        key: 'latest',
-        name: 'Latest',
-        layout: plan.latest.lead != null ? 'photo-right' : 'cards',
-        stories: plan.latest.ids.map((id) => byId.get(id)!).filter(Boolean),
-      }
-    : null;
-  const sections: Section[] = plan.sections.map((sec) => ({
-    key: sec.key,
-    name: deptName(sec.key)!,
-    layout: sec.layout,
-    stories: sec.ids.map((id) => byId.get(id)!).filter(Boolean),
-  }));
+  const top = {
+    left: plan.top.left.map((id) => byId.get(id)!).filter(Boolean),
+    right: plan.top.right.map((id) => byId.get(id)!).filter(Boolean),
+  };
+  const sectionsOf = (from: FrontPlan['sections'], idSuffix = ''): Section[] =>
+    from.map((sec) => ({
+      key: sec.key,
+      name: deptName(sec.key)!,
+      layout: sec.layout,
+      stories: sec.ids.map((id) => byId.get(id)!).filter(Boolean),
+      headingId: `fp-${sec.key}${idSuffix}`,
+    }));
+  const renderSections = (list: Section[]) =>
+    list.map((sec) =>
+      sec.layout === 'cards' ? <CardsSection key={sec.key} sec={sec} /> : <LeadSection key={sec.key} sec={sec} flip={sec.layout === 'photo-right'} />,
+    );
+  // The sections once per distinct plan: widths whose sections match share one
+  // copy, and CSS shows each copy only at its widths
+  const same = (a: FrontPlan, b: FrontPlan) => JSON.stringify(a.sections) === JSON.stringify(b.sections);
+  const phoneIsTablet = same(phonePlan, tabletPlan);
+  const tabletIsDesktop = same(tabletPlan, plan);
+  const sectionCopies: { key: string; className: string; sections: Section[] }[] = [];
+  if (!phoneIsTablet) sectionCopies.push({ key: 'phone', className: 'md:hidden', sections: sectionsOf(phonePlan.sections, '-phone') });
+  if (!tabletIsDesktop)
+    sectionCopies.push({
+      key: 'tablet',
+      className: phoneIsTablet ? 'lg:hidden' : 'max-md:hidden lg:hidden',
+      sections: sectionsOf(tabletPlan.sections, '-tablet'),
+    });
+  sectionCopies.push({
+    key: 'desktop',
+    className: tabletIsDesktop ? (phoneIsTablet ? '' : 'max-md:hidden') : 'max-lg:hidden',
+    sections: sectionsOf(plan.sections),
+  });
+  // The pitch's photo: the editor's pick, placed per screen in the editor, else
+  // the newest photo story's at its focal point
+  const newestPhotoStory = stories.find((s) => s.dept === 'photo' && s.photo);
+  const pitch: PitchPhoto | null =
+    pickedPhoto?.url && pickedPhoto.width && pickedPhoto.height
+      ? {
+          src: pickedPhoto.url,
+          width: pickedPhoto.width,
+          height: pickedPhoto.height,
+          credit: credit(photographerOf(pickedPhoto as MediaLike)),
+          vars: pitchPositionVars(
+            pitchPositions,
+            pickedPhoto.focalX != null && pickedPhoto.focalY != null ? `${pickedPhoto.focalX}% ${pickedPhoto.focalY}%` : undefined,
+          ),
+          maxZoom: Math.max(1, ...Object.values(pitchPositions).map((p) => p?.zoom ?? 1)),
+        }
+      : newestPhotoStory?.photo
+        ? {
+            ...newestPhotoStory.photo,
+            credit: credit(newestPhotoStory.imagePhotographer),
+            vars: pitchPositionVars(NO_PITCH_POSITIONS, newestPhotoStory.imageFocus || undefined),
+            maxZoom: 1,
+          }
+        : null;
+
   const hero = plan.reel.hero != null ? photoStoryOf(plan.reel.hero) : null;
   const pss: PhotoStories | null =
     hero && photosOf(hero).length >= REEL_MIN_PHOTOS
@@ -516,72 +779,30 @@ export default async function FeaturesFront({ pins }: { pins: FrontPins }) {
       <div className="mx-auto w-full max-w-[1280px] px-4 pb-6 pt-4 md:px-6 md:pt-6 xl:px-[30px]">
         <h1 className="sr-only">Features</h1>
 
-        {/* ── 1. Cover story: the photo stays still while the headline scrolls over it ── */}
-        {cover && cover.photo && (
-          <TransitionLink href={getArticleUrl(cover)} className={`group block ${focus}`}>
-            <PhotoWindow
-              src={cover.photo}
-              alt={cover.imageTitle || ''}
-              focus={cover.imageFocus || undefined}
-              priority
-              // 80vh asks a 3x phone for a 2048px file (110vh would be 3840)
-              maxSizesVh={80}
-              // A minimum, not a fixed height: on a short window (or zoomed in) the
-              // box grows to fit its text instead of the text running off the top.
-              // The text is centred, the same space above it as below. On desktop
-              // the cover runs to the bottom of the window on load (it starts
-              // 166px down, under the header; 180px leaves the 22px section gap
-              // just off screen), so the next story doesn't peek in under it.
-              className="flex min-h-[clamp(380px,64vh,660px)] flex-col justify-center lg:min-h-[calc(100svh_-_180px)]"
-            >
-              <div aria-hidden="true" className="absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-black/40 to-transparent transition-colors group-hover:from-black/90" />
-              {cover.imagePhotographer && (
-                <span className="absolute right-2 top-2 z-10 bg-black/55 px-2 py-1 font-meta text-[11px] leading-none tracking-[0.02em] text-white md:right-3 md:top-3">
-                  {credit(cover.imagePhotographer)}
-                </span>
-              )}
-              <div className="relative z-10 px-5 py-8 text-white [text-shadow:0_1px_2px_rgb(0_0_0/0.45)] md:px-8 md:py-10 lg:px-10 lg:py-12">
-                <Kicker light>Cover story{labelOf(cover) ? ` · ${labelOf(cover)}` : ''}</Kicker>
-                <h2 className="mt-3 max-w-[18ch] text-balance font-copy text-[clamp(34px,8vw,44px)] font-normal leading-[0.98] tracking-[-0.02em] md:text-[clamp(44px,7vh,60px)] lg:text-[clamp(52px,8.5vh,76px)]">
-                  {cover.richTitle || cover.title}
-                </h2>
-                {cover.excerpt && (
-                  <p className="mt-4 max-w-[56ch] font-copy text-[17px] leading-[1.4] text-white/90 md:text-[20px]">{cover.excerpt}</p>
-                )}
-                <Byline authors={cover.authorLinks} date={dateOf(cover)} size="lg" margin="mt-4" className="[&_span]:text-white/90" />
-              </div>
-            </PhotoWindow>
-          </TransitionLink>
-        )}
+        {/* ── 1. The top: the cover in the middle, the newest stories either side ── */}
+        {cover && cover.photo && <TopStories cover={cover} left={top.left} right={top.right} pitch={pitch} />}
 
-        {/* ── 2. Latest: the newest stories from every section ── */}
-        {latest &&
-          (latest.layout === 'cards' ? <CardsSection sec={latest} /> : <LeadSection sec={latest} flip rowImages />)}
-
-        {/* ── 3. The sections: Campus Life and Arts & Culture (cards), People (photo left) ── */}
-        {sections.map((sec) =>
-          sec.layout === 'cards' ? (
-            <CardsSection key={sec.key} sec={sec} />
+        {/* ── 2. The sections: Campus Life (cards), Arts & Culture (photo right), People (cards).
+            Phones and tablets get their own copies when they differ, holding the stories the top's right column leaves out ── */}
+        {sectionCopies.map((copy) =>
+          copy.className ? (
+            <div key={copy.key} className={copy.className}>
+              {renderSections(copy.sections)}
+            </div>
           ) : (
-            <LeadSection key={sec.key} sec={sec} flip={sec.layout === 'photo-right'} />
+            <React.Fragment key={copy.key}>{renderSections(copy.sections)}</React.Fragment>
           ),
         )}
 
-        {/* ── 4. Photo Short Stories: the film reel ── */}
+        {/* ── 3. Photo Short Stories: the film reel ── */}
         {pss && (
           <div className={sectionGap}>
             <ReelPhotoStories pss={pss} />
           </div>
         )}
 
-        {/* ── 5. Search, the archive and contact, as on News, and a pitch ── */}
-        <SectionSearchPrompt section="features" name="Features" question="Looking for an article" archiveHref="/features/archive" contactHref={FEATURES_MAILTO} archiveLabel="Browse all Features" spacing="mt-5 md:mt-6" />
-        <p className="mt-1 text-center font-meta text-[15px] text-text-muted">
-          Have a story Features should tell?{' '}
-          <a href={FEATURES_MAILTO} className="inline-flex min-h-11 items-center font-medium text-accent underline-offset-4 hover:underline">
-            Pitch it to us →
-          </a>
-        </p>
+        {/* ── 4. Search, the archive and contact, as on News ── */}
+        <SectionSearchPrompt section="features" name="Features" question="Looking for an article" archiveHref="/features/archive" contactHref={FEATURES_MAILTO} archiveLabel="Browse all Features" spacing="mt-12 md:mt-14 lg:mt-16" headingSize="text-[26px] md:text-[34px] lg:text-[clamp(26px,2.6vw,32px)]" />
       </div>
     </div>
   );

@@ -25,6 +25,7 @@ export default function SectionSearchPrompt({
   contactHref,
   question = "Missed something",
   spacing = "mt-12 lg:mt-16",
+  headingSize = "text-[clamp(26px,2.6vw,32px)]",
 }: {
   /** The section's slug, as the search filter expects it ("news") */
   section: string;
@@ -39,6 +40,8 @@ export default function SectionSearchPrompt({
   question?: string;
   /** The space above it, to match the page's own gaps between sections */
   spacing?: string;
+  /** The heading's font size classes (Features sets a larger one for tablets) */
+  headingSize?: string;
 }) {
   const headingId = `${section}-search-prompt`;
   const inputId = `${section}-search-prompt-q`;
@@ -46,7 +49,7 @@ export default function SectionSearchPrompt({
     <section aria-labelledby={headingId} className={`mx-auto max-w-[460px] text-center ${spacing}`}>
       <h2
         id={headingId}
-        className="font-copy text-[clamp(26px,2.6vw,32px)] font-semibold leading-tight tracking-[-0.01em] text-text-main"
+        className={`font-copy ${headingSize} font-semibold leading-tight tracking-[-0.01em] text-text-main`}
       >
         {question}<span className="text-accent">?</span>
       </h2>

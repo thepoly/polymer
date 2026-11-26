@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
-  LATEST_LIMIT,
   PIN_STALE_DAYS,
   SECTION_LIMITS,
+  TOP_LEFT,
+  TOP_RIGHT,
+  TOP_RIGHT_TABLET,
+  NO_PITCH_POSITIONS,
   normalizeFeaturesLayout,
   planFeaturesFront,
   type FrontPins,
@@ -22,176 +25,239 @@ const story = (dept: FrontStory['dept'], age: number, extra: Partial<FrontStory>
   ...extra,
 })
 
-/** A full term's worth: a few stories in every section, and three photo stories */
-function term(offset = 0): FrontStory[] {
-  return [
-    story('campus', offset + 0),
-    story('campus', offset + 3),
-    story('campus', offset + 6),
-    story('campus', offset + 9),
-    story('campus', offset + 12),
-    story('arts', offset + 2),
-    story('arts', offset + 5),
-    story('arts', offset + 8),
-    story('arts', offset + 11),
-    story('people', offset + 4),
-    story('people', offset + 7),
-    story('people', offset + 10),
-    story('photo', offset + 1, { photoCount: 12 }),
-    story('photo', offset + 14, { photoCount: 8 }),
-    story('photo', offset + 20, { photoCount: 2 }),
-  ]
+/**
+ * A full term, newest first by age in days: enough that the top takes its
+ * seven and every section below still fills. Keyed by section and age.
+ */
+function term(offset = 0) {
+  const s = {
+    campus0: story('campus', offset + 0),
+    photo1: story('photo', offset + 1, { photoCount: 12 }),
+    arts2: story('arts', offset + 2),
+    campus3: story('campus', offset + 3),
+    people4: story('people', offset + 4),
+    arts5: story('arts', offset + 5),
+    campus6: story('campus', offset + 6),
+    people7: story('people', offset + 7),
+    arts8: story('arts', offset + 8),
+    campus9: story('campus', offset + 9),
+    people10: story('people', offset + 10),
+    arts11: story('arts', offset + 11),
+    campus12: story('campus', offset + 12),
+    people13: story('people', offset + 13),
+    arts14: story('arts', offset + 14),
+    campus15: story('campus', offset + 15),
+    people16: story('people', offset + 16),
+    arts17: story('arts', offset + 17),
+    people19: story('people', offset + 19),
+    photo21: story('photo', offset + 21, { photoCount: 8 }),
+    photo23: story('photo', offset + 23, { photoCount: 2 }),
+  }
+  return { s, all: Object.values(s) }
 }
 
-const allIds = (plan: ReturnType<typeof planFeaturesFront>) => [
-  plan.cover,
-  plan.reel.hero,
-  ...plan.reel.rest,
-  ...(plan.latest?.ids ?? []),
-  ...plan.sections.flatMap((s) => s.ids),
-].filter((id): id is number => id != null)
+const allIds = (plan: ReturnType<typeof planFeaturesFront>) =>
+  [plan.cover, plan.reel.hero, ...plan.reel.rest, ...plan.top.left, ...plan.top.right, ...plan.sections.flatMap((x) => x.ids)].filter(
+    (id): id is number => id != null,
+  )
 
 describe('planFeaturesFront', () => {
   it('fills every part of the page from the newest stories', () => {
-    const stories = term()
-    const plan = planFeaturesFront(stories, NO_PINS)
-    expect(plan.cover).toBe(stories[0].id)
-    expect(plan.reel.hero).toBe(stories[12].id)
-    expect(plan.sections.map((s) => [s.key, s.layout])).toEqual([
+    const { s, all } = term()
+    const plan = planFeaturesFront(all, NO_PINS)
+    expect(plan.cover).toBe(s.campus0.id)
+    expect(plan.reel.hero).toBe(s.photo1.id)
+    expect(plan.sections.map((x) => [x.key, x.layout])).toEqual([
       ['campus', 'cards'],
-      ['arts', 'cards'],
-      ['people', 'photo-left'],
+      ['arts', 'photo-right'],
+      ['people', 'cards'],
     ])
-    for (const s of plan.sections) expect(s.ids.length).toBeLessThanOrEqual(SECTION_LIMITS[s.key])
+    for (const x of plan.sections) expect(x.ids.length).toBeLessThanOrEqual(SECTION_LIMITS[x.key])
   })
 
-  it('fills Latest with the newest stories after the cover, from any section', () => {
-    const stories = term()
-    const plan = planFeaturesFront(stories, NO_PINS)
-    // Ages 2 (arts), 3 (campus), 4 (people), 5 (arts): the cover is 0 and the reel took 1
-    expect(plan.latest?.ids).toEqual([stories[5].id, stories[1].id, stories[9].id, stories[6].id])
-    expect(plan.latest?.ids).toHaveLength(LATEST_LIMIT)
-    expect(plan.latest?.lead).toBe(stories[5].id)
+  it('fills the top beside the cover with the newest stories from any section', () => {
+    const { s, all } = term()
+    const plan = planFeaturesFront(all, NO_PINS)
+    expect(plan.top.left).toEqual([s.arts2.id, s.campus3.id])
+    expect(plan.top.right).toEqual([s.people4.id, s.arts5.id, s.campus6.id, s.people7.id])
+    expect(plan.top.left).toHaveLength(TOP_LEFT)
+    expect(plan.top.right).toHaveLength(TOP_RIGHT)
   })
 
-  it("leads Latest with its newest story that has a photo", () => {
-    const stories = term()
+  it('puts only stories with photos in the top-left, and the others on the right', () => {
+    const { s, all } = term()
     const plain = story('campus', 0.5, { hasPhoto: false })
-    const plan = planFeaturesFront([...stories, plain], NO_PINS)
-    expect(plan.latest?.ids[0]).not.toBe(plain.id)
-    expect(plan.latest?.ids).toContain(plain.id)
+    const plan = planFeaturesFront([...all, plain], NO_PINS)
+    expect(plan.top.left).toEqual([s.arts2.id, s.campus3.id])
+    expect(plan.top.right[0]).toBe(plain.id)
   })
 
-  it("keeps a section's pinned lead out of Latest", () => {
-    const stories = term()
-    const peoplePin = stories[9] // People, age 4: Latest would take it otherwise
-    const plan = planFeaturesFront(stories, { ...NO_PINS, leads: { people: peoplePin.id } })
-    expect(plan.latest?.ids).not.toContain(peoplePin.id)
-    expect(plan.sections.find((s) => s.key === 'people')!.lead).toBe(peoplePin.id)
+  it('keeps only the first two right-column stories on tablets, giving the others to their sections', () => {
+    const { s, all } = term()
+    const tablet = planFeaturesFront(all, NO_PINS, { topRight: TOP_RIGHT_TABLET })
+    expect(tablet.top.right).toEqual([s.people4.id, s.arts5.id])
+    expect(tablet.sections.find((x) => x.key === 'campus')!.ids[0]).toBe(s.campus6.id)
+    expect(tablet.sections.find((x) => x.key === 'people')!.ids[0]).toBe(s.people7.id)
   })
 
-  it('never shows a story twice across the cover, reel and sections', () => {
-    const plan = planFeaturesFront(term(), NO_PINS)
-    const ids = allIds(plan)
+  it("gives the right column's stories to their sections on phones (topRight: 0)", () => {
+    const { s, all } = term()
+    const phone = planFeaturesFront(all, NO_PINS, { topRight: 0 })
+    const ids = (key: string) => phone.sections.find((x) => x.key === key)!.ids
+    expect(phone.top).toEqual({ left: [s.arts2.id, s.campus3.id], right: [] })
+    expect(phone.cover).toBe(s.campus0.id)
+    expect(phone.reel.hero).toBe(s.photo1.id)
+    expect(ids('campus')[0]).toBe(s.campus6.id)
+    expect(ids('people').slice(0, 2)).toEqual([s.people4.id, s.people7.id])
+    expect(ids('arts')).toContain(s.arts5.id)
+    const all2 = allIds(phone)
+    expect(new Set(all2).size).toBe(all2.length)
+  })
+
+  it('never shows a story twice across the cover, reel, top and sections', () => {
+    const ids = allIds(planFeaturesFront(term().all, NO_PINS))
     expect(new Set(ids).size).toBe(ids.length)
   })
 
   it('drops a stale cover pin for the newest story with a photo', () => {
-    const stories = term()
+    const { s, all } = term()
     const old = story('campus', PIN_STALE_DAYS + 1)
-    const plan = planFeaturesFront([...stories, old], { ...NO_PINS, cover: old.id })
-    expect(plan.cover).toBe(stories[0].id)
+    expect(planFeaturesFront([...all, old], { ...NO_PINS, cover: old.id }).cover).toBe(s.campus0.id)
   })
 
   it('keeps a fresh cover pin', () => {
-    const stories = term()
-    const plan = planFeaturesFront(stories, { ...NO_PINS, cover: stories[3].id })
-    expect(plan.cover).toBe(stories[3].id)
+    const { s, all } = term()
+    expect(planFeaturesFront(all, { ...NO_PINS, cover: s.campus9.id }).cover).toBe(s.campus9.id)
   })
 
   it('ignores a pin to a missing story or a story without a photo', () => {
-    const stories = term()
+    const { s, all } = term()
     const noPhoto = story('campus', 1, { hasPhoto: false })
-    expect(planFeaturesFront([...stories, noPhoto], { ...NO_PINS, cover: 999999 }).cover).toBe(stories[0].id)
-    expect(planFeaturesFront([...stories, noPhoto], { ...NO_PINS, cover: noPhoto.id }).cover).toBe(stories[0].id)
+    expect(planFeaturesFront([...all, noPhoto], { ...NO_PINS, cover: 999999 }).cover).toBe(s.campus0.id)
+    expect(planFeaturesFront([...all, noPhoto], { ...NO_PINS, cover: noPhoto.id }).cover).toBe(s.campus0.id)
   })
 
   it('never shows a story from more than a year before the newest one', () => {
-    const stories = term()
+    const { all } = term()
     const ancient = story('people', 400)
-    const plan = planFeaturesFront([...stories, ancient], { ...NO_PINS, leads: { people: ancient.id } })
+    const plan = planFeaturesFront([...all, ancient], { ...NO_PINS, leads: { people: ancient.id } })
     expect(allIds(plan)).not.toContain(ancient.id)
   })
 
   it('leaves out a section with one story, without moving the others', () => {
-    const stories = term().filter((s) => s.dept !== 'arts')
-    const lonely = story('arts', 2)
-    const plan = planFeaturesFront([...stories, lonely], NO_PINS)
-    expect(plan.sections.map((s) => s.key)).not.toContain('arts')
-    expect(plan.sections.map((s) => [s.key, s.layout])).toEqual([
+    const { all } = term()
+    const noArts = all.filter((x) => x.dept !== 'arts')
+    const lonely = story('arts', 30)
+    // Without Arts the top takes more Campus Life, so give Campus Life enough to stay
+    const moreCampus = [story('campus', 24), story('campus', 26)]
+    const plan = planFeaturesFront([...noArts, ...moreCampus, lonely], NO_PINS)
+    expect(plan.sections.map((x) => [x.key, x.layout])).toEqual([
       ['campus', 'cards'],
-      ['people', 'photo-left'],
+      ['people', 'cards'],
     ])
   })
 
   it('still fills the page over the summer, measuring from the newest story', () => {
     // Nothing published for 90 days: the windows don't care what day it is
-    const stories = term(90)
-    const plan = planFeaturesFront(stories, NO_PINS)
+    const plan = planFeaturesFront(term(90).all, NO_PINS)
     expect(plan.cover).not.toBeNull()
     expect(plan.reel.hero).not.toBeNull()
+    expect(plan.top.left).toHaveLength(TOP_LEFT)
     expect(plan.sections).toHaveLength(3)
   })
 
   it("puts a section's fresh pin ahead of its newest story", () => {
-    const stories = term()
-    const peoplePin = stories[11] // the oldest People story
-    const plan = planFeaturesFront(stories, { ...NO_PINS, leads: { people: peoplePin.id } })
-    const people = plan.sections.find((s) => s.key === 'people')!
-    expect(people.lead).toBe(peoplePin.id)
-    expect(people.ids[0]).toBe(peoplePin.id)
+    const { s, all } = term()
+    const plan = planFeaturesFront(all, { ...NO_PINS, leads: { people: s.people19.id } })
+    const people = plan.sections.find((x) => x.key === 'people')!
+    expect(people.ids[0]).toBe(s.people19.id)
+  })
+
+  it("makes a photo section's fresh pin its lead", () => {
+    const { s, all } = term()
+    const arts = planFeaturesFront(all, { ...NO_PINS, leads: { arts: s.arts17.id } }).sections.find((x) => x.key === 'arts')!
+    expect(arts.layout).toBe('photo-right')
+    expect(arts.lead).toBe(s.arts17.id)
+    expect(arts.ids[0]).toBe(s.arts17.id)
+  })
+
+  it("keeps a section's pinned lead out of the top", () => {
+    const { s, all } = term()
+    // People 4 is the newest People story: the top would take it otherwise
+    const plan = planFeaturesFront(all, { ...NO_PINS, leads: { people: s.people4.id } })
+    expect([...plan.top.left, ...plan.top.right]).not.toContain(s.people4.id)
+    expect(plan.sections.find((x) => x.key === 'people')!.ids[0]).toBe(s.people4.id)
   })
 
   it("drops a section's pin once it's stale", () => {
-    const stories = term()
+    const { s, all } = term()
     const stale = story('people', PIN_STALE_DAYS + 5)
-    const plan = planFeaturesFront([...stories, stale], { ...NO_PINS, leads: { people: stale.id } })
-    // Latest took the newest People story (age 4); the section leads with the next
-    expect(plan.sections.find((s) => s.key === 'people')!.lead).toBe(stories[10].id)
+    const plan = planFeaturesFront([...all, stale], { ...NO_PINS, leads: { people: stale.id } })
+    // The top took People 4 and 7; the row starts with the next
+    expect(plan.sections.find((x) => x.key === 'people')!.ids[0]).toBe(s.people10.id)
   })
 
   it('falls back to cards when a photo section has no story with a photo', () => {
-    const stories = term().filter((s) => s.dept !== 'people')
-    // Older than Latest reaches, so they stay with People
-    const plain = [story('people', 20, { hasPhoto: false }), story('people', 22, { hasPhoto: false })]
-    const people = planFeaturesFront([...stories, ...plain], NO_PINS).sections.find((s) => s.key === 'people')!
-    expect(people.layout).toBe('cards')
-    expect(people.lead).toBeNull()
+    const { all } = term()
+    const noArts = all.filter((x) => x.dept !== 'arts')
+    const plain = [story('arts', 30, { hasPhoto: false }), story('arts', 32, { hasPhoto: false })]
+    const arts = planFeaturesFront([...noArts, ...plain], NO_PINS).sections.find((x) => x.key === 'arts')!
+    expect(arts.layout).toBe('cards')
+    expect(arts.lead).toBeNull()
   })
 
   it('leads the reel with a photo story that has enough photos, and lists the next ones', () => {
-    const stories = term()
+    const { s, all } = term()
     const fewPhotos = story('photo', 0, { photoCount: 1 })
-    const plan = planFeaturesFront([...stories, fewPhotos], NO_PINS)
-    expect(plan.reel.hero).toBe(stories[12].id)
+    const plan = planFeaturesFront([...all, fewPhotos], NO_PINS)
+    expect(plan.reel.hero).toBe(s.photo1.id)
     expect(plan.reel.rest).toContain(fewPhotos.id)
   })
 
   it('honours a reel pin with enough photos, and ignores one with too few', () => {
-    const stories = term()
-    expect(planFeaturesFront(stories, { ...NO_PINS, reel: stories[13].id }).reel.hero).toBe(stories[13].id)
-    expect(planFeaturesFront(stories, { ...NO_PINS, reel: stories[14].id }).reel.hero).toBe(stories[12].id)
+    const { s, all } = term()
+    expect(planFeaturesFront(all, { ...NO_PINS, reel: s.photo21.id }).reel.hero).toBe(s.photo21.id)
+    expect(planFeaturesFront(all, { ...NO_PINS, reel: s.photo23.id }).reel.hero).toBe(s.photo1.id)
+  })
+
+  it('leaves the top empty when there is no cover, so no story is claimed and hidden', () => {
+    const plain = [story('campus', 0, { hasPhoto: false }), story('campus', 1, { hasPhoto: false }), story('people', 2, { hasPhoto: false }), story('people', 3, { hasPhoto: false })]
+    const plan = planFeaturesFront(plain, NO_PINS)
+    expect(plan.cover).toBeNull()
+    expect(plan.top).toEqual({ left: [], right: [] })
+    expect(plan.sections.flatMap((x) => x.ids).sort()).toEqual(plain.map((s) => s.id).sort())
   })
 
   it('handles an empty archive', () => {
-    expect(planFeaturesFront([], NO_PINS)).toEqual({ cover: null, reel: { hero: null, rest: [] }, latest: null, sections: [] })
+    expect(planFeaturesFront([], NO_PINS)).toEqual({ cover: null, reel: { hero: null, rest: [] }, top: { left: [], right: [] }, sections: [] })
   })
 })
 
 describe('normalizeFeaturesLayout', () => {
   it('reads a v3 layout as it is', () => {
-    const v3 = { version: 3, cover: 12, leads: { campus: 3, arts: null, people: 7 }, reel: 40 }
+    const v3 = {
+      version: 3,
+      cover: 12,
+      leads: { campus: 3, arts: null, people: 7 },
+      reel: 40,
+      pitch: 25,
+      pitchPositions: { mobile: { x: 30, y: 80, zoom: 1.5 }, tablet: null, desktop: { x: 50, y: 40, zoom: 1 } },
+    }
     expect(normalizeFeaturesLayout(v3)).toEqual(v3)
+  })
+
+  it('reads a layout saved before pitch positions as following the focal point', () => {
+    const before = { version: 3, cover: 12, leads: {}, reel: null, pitch: 25 }
+    expect(normalizeFeaturesLayout(before).pitchPositions).toEqual({ mobile: null, tablet: null, desktop: null })
+  })
+
+  it('clamps pitch positions and drops broken ones', () => {
+    const raw = { version: 3, pitchPositions: { mobile: { x: 140, y: -5, zoom: 9 }, tablet: { x: 'a', y: 2 }, desktop: { x: 10, y: 20 } } }
+    expect(normalizeFeaturesLayout(raw).pitchPositions).toEqual({
+      mobile: { x: 100, y: 0, zoom: 2.5 },
+      tablet: null,
+      desktop: { x: 10, y: 20, zoom: 1 },
+    })
   })
 
   it('keeps only the cover from an older layout', () => {
@@ -202,11 +268,11 @@ describe('normalizeFeaturesLayout', () => {
       photoSpotlight: [{ url: '/x.jpg' }],
       onCampus: [1, 2, 3],
     }
-    expect(normalizeFeaturesLayout(old)).toEqual({ version: 3, cover: 12, leads: { campus: null, arts: null, people: null }, reel: null })
+    expect(normalizeFeaturesLayout(old)).toEqual({ version: 3, cover: 12, leads: { campus: null, arts: null, people: null }, reel: null, pitch: null, pitchPositions: NO_PITCH_POSITIONS })
   })
 
   it('reads garbage as no pins', () => {
-    const empty = { version: 3, cover: null, leads: { campus: null, arts: null, people: null }, reel: null }
+    const empty = { version: 3, cover: null, leads: { campus: null, arts: null, people: null }, reel: null, pitch: null, pitchPositions: NO_PITCH_POSITIONS }
     for (const raw of [null, undefined, 'layout', 42, [1, 2], { featured: 'x' }, { version: 3, leads: 'x', cover: '12' }]) {
       expect(normalizeFeaturesLayout(raw)).toEqual(empty)
     }
