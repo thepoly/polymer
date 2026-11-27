@@ -1,5 +1,6 @@
 "use client";
 
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -1296,7 +1297,7 @@ export default function SearchOverlay({
                         {article.title}
                       </h3>
                       <Byline authors={article.authorLinks} date={article.date} />
-                      <p className="font-meta font-normal text-black dark:text-white text-[13px] leading-[1.38] mt-1.5 line-clamp-3 transition-colors [overflow-wrap:anywhere] break-words">
+                      <p className={`${SUMMARY_CLASS} text-[13px] leading-[1.38] mt-1.5 line-clamp-3 transition-colors [overflow-wrap:anywhere] break-words`}>
                         {article.excerpt}
                       </p>
                       {index < displayArticles.length - 1 && (

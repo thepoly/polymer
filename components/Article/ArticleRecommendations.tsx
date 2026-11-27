@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import { extractTextFromLexical, renderLexicalHeadline } from '@/utils/formatArticle';
 import React from 'react';
 import Image from 'next/image';
@@ -272,7 +273,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                   margin="mt-4"
                 />
                 {leadArticle.subdeck && (
-                  <p className="mt-3 max-w-xl font-meta text-[17px] leading-[1.48] text-text-muted line-clamp-3">
+                  <p className={`mt-3 max-w-xl ${SUMMARY_CLASS} text-[17px] leading-[1.48] line-clamp-3`}>
                     {leadArticle.subdeck}
                   </p>
                 )}

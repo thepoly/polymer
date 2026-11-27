@@ -1,5 +1,6 @@
 "use client";
 
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -114,7 +115,7 @@ export default function FeaturesListPage({
               </h2>
               <Byline authors={article.authorLinks} date={article.date} size="md" />
               {article.excerpt && (
-                <p className="mt-1 font-meta text-[14px] leading-[1.5] text-text-muted line-clamp-2">
+                <p className={`mt-1 ${SUMMARY_CLASS} text-[14px] leading-[1.5] line-clamp-2`}>
                   {article.excerpt}
                 </p>
               )}

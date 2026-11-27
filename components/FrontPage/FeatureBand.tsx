@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -19,7 +20,7 @@ export const FeatureBand = ({ article }: { article: Article }) => (
       </h3>
       <Byline authors={article.authorLinks} date={article.date} />
       {article.excerpt && (
-        <p className="font-meta mt-3 max-w-3xl text-[13px] font-normal leading-[1.4] text-text-main">
+        <p className={`${SUMMARY_CLASS} mt-3 max-w-3xl text-[13px] leading-[1.4]`}>
           {article.excerpt}
         </p>
       )}

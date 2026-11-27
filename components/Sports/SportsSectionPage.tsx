@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
@@ -176,7 +177,7 @@ function SportsWideCard({ article, flip = false }: { article: ComponentArticle; 
           </TransitionLink>
         </h3>
         {article.excerpt && (
-          <p className="font-copy text-[17px] lg:text-[18px] leading-[1.35] text-text-muted line-clamp-4">{article.excerpt}</p>
+          <p className={`${SUMMARY_CLASS} text-[15px] lg:text-[16px] leading-[1.5] line-clamp-4`}>{article.excerpt}</p>
         )}
         <MetaLine article={article} date={shortDate(article, true)} className="text-[13px] lg:text-[14px] lg:leading-[1.5]" stackOnDesktop />
       </div>
@@ -218,7 +219,7 @@ function HeadlineRow({ article }: { article: ComponentArticle }) {
           </TransitionLink>
         </h3>
         {article.excerpt && (
-          <p className="mt-1 font-copy leading-[1.3] text-text-muted line-clamp-2 [font-size:clamp(14px,calc(0.8vw_+_11px),17px)] lg:[font-size:14px]">
+          <p className={`mt-1 ${SUMMARY_CLASS} leading-[1.45] line-clamp-2 [font-size:clamp(13px,calc(0.6vw_+_10.5px),15px)] lg:[font-size:13px]`}>
             {article.excerpt}
           </p>
         )}

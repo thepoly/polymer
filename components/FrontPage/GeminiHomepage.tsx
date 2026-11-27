@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
@@ -61,7 +62,7 @@ function CenterLead({
       {showSubdeck && article.excerpt && (
         <p
           data-marauders-obstacle="excerpt"
-          className="font-meta font-normal text-text-main mt-3 text-[14px] leading-[1.5] md:text-[15px] [overflow-wrap:anywhere] break-words"
+          className={`${SUMMARY_CLASS} mt-3 text-[14px] leading-[1.5] md:text-[15px] [overflow-wrap:anywhere] break-words`}
         >
           {article.excerpt}
         </p>
@@ -101,7 +102,7 @@ function TextOnlyItem({ article, showSubdeck = true }: { article: Article; showS
         {article.richTitle || article.title}
       </h3>
       {showSubdeck && article.excerpt && (
-        <p className="font-meta font-normal text-text-muted mt-1.5 text-[12.5px] leading-[1.4] line-clamp-2">
+        <p className={`${SUMMARY_CLASS} mt-1.5 text-[12.5px] leading-[1.4] line-clamp-2`}>
           {article.excerpt}
         </p>
       )}
@@ -133,7 +134,7 @@ function SideFeature({ article, showSubdeck = true }: { article: Article; showSu
           {article.richTitle || article.title}
         </h3>
         {showSubdeck && article.excerpt && (
-          <p className="font-meta font-normal text-text-muted mt-1.5 text-[12.5px] leading-[1.4] line-clamp-3">
+          <p className={`${SUMMARY_CLASS} mt-1.5 text-[12.5px] leading-[1.4] line-clamp-3`}>
             {article.excerpt}
           </p>
         )}

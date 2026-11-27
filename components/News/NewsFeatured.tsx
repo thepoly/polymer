@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
@@ -50,7 +51,7 @@ export function FeaturedCard({
           margin={large ? "mt-2.5" : "mt-2"}
         />
         {subdeck && article.excerpt && (
-          <p className="mt-2 font-meta text-[15px] font-medium leading-[1.45] text-text-main line-clamp-4">
+          <p className={`mt-2 ${SUMMARY_CLASS} text-[15px] leading-[1.45] line-clamp-4`}>
             {article.excerpt}
           </p>
         )}

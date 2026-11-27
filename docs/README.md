@@ -17,6 +17,7 @@ root has lighter-weight onboarding (`/README.md`) and agent-oriented guides
 | [`push-notifications.md`](push-notifications.md) | Touching breaking-news, FCM, or the `device-tokens` collection |
 | [`sports-section.md`](sports-section.md) | `/sports`, its layout editor, schools, standings and score feeds, and their upkeep |
 | [`news-section.md`](news-section.md) | `/news`, the Student Senate and Executive Board timelines, terms, the archive finder, launch steps and upkeep |
+| [`summaries.md`](summaries.md) | Styling a story summary (subdeck) anywhere on the public site: one shared class, sizes per context |
 | [`fit-text.md`](fit-text.md) | Closing blank space on any page: headlines that grow to fill the space beside a photo (`FitGroup`) and columns that end on the same line (`BalanceColumns`) |
 | [`analytics.md`](analytics.md) | Adding/removing PostHog events, privacy guardrails |
 | [`deployment.md`](deployment.md) | Production runbook: deploy steps, host setup, rollback, ownership rules |

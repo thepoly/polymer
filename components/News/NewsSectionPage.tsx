@@ -1,5 +1,6 @@
 "use client";
 
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React, { useMemo } from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
@@ -73,7 +74,7 @@ function NewsCard({
         margin="mt-2"
       />
       {showExcerpt && article.excerpt && (
-        <p className="mt-0.5 font-meta text-[15px] font-medium leading-[1.5] text-text-main line-clamp-4">
+        <p className={`mt-0.5 ${SUMMARY_CLASS} text-[15px] leading-[1.5] line-clamp-4`}>
           {article.excerpt}
         </p>
       )}
@@ -491,7 +492,7 @@ export default function NewsSectionPage({
                       margin="mt-2"
                     />
                     {lead[3].excerpt && (
-                      <p className="mt-2 font-meta text-[15px] font-medium leading-[1.5] text-text-muted line-clamp-3">
+                      <p className={`mt-2 ${SUMMARY_CLASS} text-[15px] leading-[1.5] line-clamp-3`}>
                         {lead[3].excerpt}
                       </p>
                     )}

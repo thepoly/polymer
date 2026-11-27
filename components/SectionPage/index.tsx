@@ -1,5 +1,6 @@
 "use client";
 
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
@@ -66,7 +67,7 @@ function ColumnCard({
       <h3 className={tc(article, size)}>{article.richTitle || article.title}</h3>
       <Byline authors={article.authorLinks} date={article.date} size="sm" />
       {article.excerpt && (
-        <p className="font-meta mt-1.5 text-[13px] leading-[1.42] text-text-muted line-clamp-3">
+        <p className={`${SUMMARY_CLASS} mt-1.5 text-[13px] leading-[1.42] line-clamp-3`}>
           {article.excerpt}
         </p>
       )}

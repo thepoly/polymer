@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
@@ -138,7 +139,7 @@ function ArticleCard({ item, layout, priority }: { item: ArticleItem; layout: La
         <Byline authors={article.authorLinks} size="sm" margin="mt-2" />
         {article.excerpt && (
           <p
-            className={`mt-2 font-meta leading-[1.5] text-text-main ${
+            className={`mt-2 ${SUMMARY_CLASS} leading-[1.5] ${
               size === "small" ? "text-[14px]" : big ? "text-[17px]" : "text-[15px]"
             }`}
           >

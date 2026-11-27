@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
@@ -75,7 +76,7 @@ export const ArticleCard = ({
         {showExcerpt && article.excerpt && (
           <p
             data-marauders-obstacle="excerpt"
-            className={`font-meta font-normal text-black dark:text-white [overflow-wrap:anywhere] break-words ${excerptClassName}`}
+            className={`${SUMMARY_CLASS} [overflow-wrap:anywhere] break-words ${excerptClassName}`}
           >
             {article.excerpt}
           </p>

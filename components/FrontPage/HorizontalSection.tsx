@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -67,7 +68,7 @@ export const LeadStory = ({
     </h3>
     <Byline authors={article.authorLinks} date={article.date} size="sm" />
     {article.excerpt ? (
-      <p className="font-meta mt-3 max-w-2xl text-[13px] font-normal leading-[1.4] text-black dark:text-white">
+      <p className={`${SUMMARY_CLASS} mt-3 max-w-2xl text-[13px] leading-[1.4]`}>
         {article.excerpt}
       </p>
     ) : null}
@@ -92,7 +93,7 @@ export const TextStory = ({
     </h3>
     <Byline authors={article.authorLinks} date={article.date} size="sm" />
     {showExcerpt && article.excerpt ? (
-      <p className="font-meta mt-2 line-clamp-3 text-[12px] font-normal leading-[1.38] text-black dark:text-white">
+      <p className={`${SUMMARY_CLASS} mt-2 line-clamp-3 text-[12px] leading-[1.38]`}>
         {article.excerpt}
       </p>
     ) : null}
@@ -123,7 +124,7 @@ export const ThumbStory = ({
       </h3>
       <Byline authors={article.authorLinks} date={article.date} size="sm" />
       {showExcerpt && article.excerpt ? (
-        <p className="font-meta mt-2 line-clamp-3 text-[12px] font-normal leading-[1.38] text-black dark:text-white">
+        <p className={`${SUMMARY_CLASS} mt-2 line-clamp-3 text-[12px] leading-[1.38]`}>
           {article.excerpt}
         </p>
       ) : null}
@@ -165,7 +166,7 @@ const SparseSection = ({
       </h3>
       <Byline authors={lead.authorLinks} date={lead.date} />
       {lead.excerpt ? (
-        <p className="font-meta mt-3 max-w-2xl text-[13px] font-normal leading-[1.4] text-black dark:text-white">
+        <p className={`${SUMMARY_CLASS} mt-3 max-w-2xl text-[13px] leading-[1.4]`}>
           {lead.excerpt}
         </p>
       ) : null}
@@ -340,7 +341,7 @@ const SportsSection = ({ articles }: { articles: Article[] }) => {
               </h3>
               <Byline authors={lead.authorLinks} date={lead.date} />
               {lead.excerpt ? (
-                <p className="font-copy mt-3 max-w-2xl text-[13px] leading-[1.4] text-black dark:text-white">
+                <p className={`${SUMMARY_CLASS} mt-3 max-w-2xl text-[13px] leading-[1.4]`}>
                   {lead.excerpt}
                 </p>
               ) : null}

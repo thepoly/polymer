@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from 'react';
 import Link from 'next/link';
 import { Article } from './types';
@@ -10,7 +11,7 @@ export const CompactArticle = ({ article }: { article: Article }) => (
             {article.richTitle || article.title}
         </h3>
         <Byline authors={article.authorLinks} date={article.date} size="sm" />
-        <p className="font-meta text-text-main text-[13px] md:text-[14px] font-normal leading-[1.4] mb-2 transition-colors">
+        <p className={`${SUMMARY_CLASS} text-[13px] md:text-[14px] leading-[1.4] mb-2 transition-colors`}>
             {article.excerpt}
         </p>
     </Link>

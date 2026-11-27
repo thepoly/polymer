@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -26,7 +27,7 @@ export const OpinionCard = ({ article, hasImage }: { article: Article, hasImage?
         </h3>
         <Byline authors={article.authorLinks} date={article.date} />
         {hasImage && article.excerpt && (
-            <p className="font-meta mb-1 text-[12px] font-normal leading-[1.38] text-text-main transition-colors">
+            <p className={`${SUMMARY_CLASS} mb-1 text-[12px] leading-[1.38] transition-colors`}>
                 {article.excerpt}
             </p>
         )}

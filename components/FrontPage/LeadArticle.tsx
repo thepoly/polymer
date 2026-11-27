@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from 'react';
 import Image from 'next/image';
 import TransitionLink from '@/components/TransitionLink';
@@ -45,7 +46,7 @@ export const LeadArticle = ({
                 {article.excerpt && (
                     <p
                         data-marauders-obstacle="excerpt"
-                        className={`font-meta font-normal text-black dark:text-white transition-colors mt-1.5 ${
+                        className={`${SUMMARY_CLASS} transition-colors mt-1.5 ${
                             compact ? "max-w-[36rem] text-[13px] leading-[1.42] md:text-[14px]" : "max-w-[40rem] text-[14px] leading-[1.45] md:text-[15px]"
                         } [overflow-wrap:anywhere] break-words`}
                     >

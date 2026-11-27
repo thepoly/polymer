@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -31,7 +32,7 @@ export const ArticleHeader: React.FC<Props> = ({ article, scoreBand }) => {
           {renderLexicalHeadline(article.title)}
         </h1>
         {article.subdeck && (
-            <h2 data-ie-field="subdeck" className="font-meta text-xl md:text-2xl font-normal text-text-muted leading-snug transition-colors">
+            <h2 data-ie-field="subdeck" className={`${SUMMARY_CLASS} text-xl md:text-2xl leading-snug transition-colors`}>
                 {article.subdeck}
             </h2>
         )}

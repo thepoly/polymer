@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
@@ -58,7 +59,7 @@ function Strip({ article, optional, photo }: { article: ComponentArticle; option
               margin="mt-2.5"
             />
             {article.excerpt && (
-              <p data-news-secondary-subdeck className="mt-2.5 font-meta text-[16px] font-medium leading-[1.5] text-text-main">
+              <p data-news-secondary-subdeck className={`mt-2.5 ${SUMMARY_CLASS} text-[16px] leading-[1.5]`}>
                 {article.excerpt}
               </p>
             )}

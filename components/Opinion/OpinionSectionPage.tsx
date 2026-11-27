@@ -1,4 +1,5 @@
 "use client";
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import { inSnakeOrder, OPINION_COLUMN_SLOTS, planOpinionColumns } from '@/lib/opinionLayout';
 
 import React, { useMemo } from "react";
@@ -74,9 +75,9 @@ function OpinionCard({ article, withImage = false, priority = false, balance = f
       </h3>
       {/* Byline: muted "By", names in ink (red is the type label above) */}
       <Byline authors={article.authorLinks} date={opinionDate(article)} size="md" margin="mt-2" />
-      {/* Summary in muted serif, as on News and Features */}
+      {/* Summary: the site-wide summary style (components/summaryClass) */}
       {article.excerpt && (
-        <p className="mt-1 font-copy text-[17px] leading-[1.45] text-text-muted line-clamp-4" {...(balance ? { "data-balance-trim": "" } : {})}>
+        <p className={`mt-1 ${SUMMARY_CLASS} text-[15px] leading-[1.5] line-clamp-4`} {...(balance ? { "data-balance-trim": "" } : {})}>
           {article.excerpt}
         </p>
       )}

@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from 'react';
 import Image from 'next/image';
 import { getPayload, type Where } from 'payload';
@@ -171,7 +172,7 @@ function LeadSection({ sec, flip }: { sec: Section; flip: boolean }) {
           <h3 className={`text-balance font-copy text-[28px] font-normal leading-[1.08] tracking-[-0.015em] transition-colors group-hover:text-accent md:text-[32px] lg:text-[36px] ${kicker ? 'mt-1.5' : ''}`}>
             {lead.richTitle || lead.title}
           </h3>
-          {lead.excerpt && <p className="mt-2 max-w-[52ch] font-copy text-[17px] leading-[1.45] text-text-muted md:text-[18px]">{lead.excerpt}</p>}
+          {lead.excerpt && <p className={`mt-2 max-w-[52ch] ${SUMMARY_CLASS} text-[15px] leading-[1.5] md:text-[16px]`}>{lead.excerpt}</p>}
           <Byline authors={lead.authorLinks} date={dateOf(lead)} size="md" margin="mt-3" />
         </TransitionLink>
       </div>
@@ -256,7 +257,7 @@ function TopStories({ cover, left, right, pitch }: { cover: Story; left: Story[]
           <h3 className="mx-auto mt-2 max-w-[24ch] text-balance font-copy text-[30px] font-normal leading-[1.1] tracking-[-0.015em] transition-colors group-hover:text-accent md:text-[36px] lg:text-[38px]">
             {cover.richTitle || cover.title}
           </h3>
-          {cover.excerpt && <p className="mx-auto mt-3 max-w-[56ch] font-copy text-[17px] leading-[1.45] text-text-muted md:text-[18px]">{cover.excerpt}</p>}
+          {cover.excerpt && <p className={`mx-auto mt-3 max-w-[56ch] ${SUMMARY_CLASS} text-[15px] leading-[1.5] md:text-[16px]`}>{cover.excerpt}</p>}
           <Byline authors={cover.authorLinks} date={dateOf(cover)} size="md" margin="mt-3" className="text-center" />
         </TransitionLink>
       </article>
@@ -493,7 +494,7 @@ function ReelPhotoStories({ pss }: { pss: PhotoStories }) {
         {photoCount(hero)} · {dateOf(hero)}
       </Kicker>
       <h3 className="mt-2 text-balance font-copy text-[30px] font-normal leading-[1.04] tracking-[-0.015em] transition-colors group-hover:text-accent md:text-[38px]">{hero.richTitle || hero.title}</h3>
-      {hero.excerpt && <p className="mt-3 font-copy text-[16px] leading-[1.4] text-text-muted md:text-[17px]">{hero.excerpt}</p>}
+      {hero.excerpt && <p className={`mt-3 ${SUMMARY_CLASS} text-[15px] leading-[1.5] md:text-[16px]`}>{hero.excerpt}</p>}
       <Byline authors={hero.authorLinks} size="sm" margin="mt-3" />
     </TransitionLink>
   );

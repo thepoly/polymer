@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
@@ -125,7 +126,7 @@ function PinnedArticle({ article }: { article: ComponentArticle }) {
       {article.excerpt && (
         <p
           data-balance-trim
-          className="mt-1.5 font-meta font-medium leading-[1.45] text-text-main line-clamp-3"
+          className={`mt-1.5 ${SUMMARY_CLASS} leading-[1.45] line-clamp-3`}
           style={{ fontSize: scaled(15) }}
         >
           {article.excerpt}

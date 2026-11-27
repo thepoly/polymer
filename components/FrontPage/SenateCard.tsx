@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -15,7 +16,7 @@ export const SenateCard = ({ article }: { article: Article }) => (
                 {article.richTitle || article.title}
             </h3>
              <Byline authors={article.authorLinks} date={article.date} />
-            <p className="font-meta text-text-main text-[13px] font-normal leading-[1.4] mb-3 transition-colors">
+            <p className={`${SUMMARY_CLASS} text-[13px] leading-[1.4] mb-3 transition-colors`}>
                 {article.excerpt}
             </p>
         </div>
