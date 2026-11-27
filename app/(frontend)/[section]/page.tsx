@@ -39,7 +39,7 @@ import { Article as PayloadArticle, Media } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
 import type { SpotlightAuthor } from '@/components/Opinion/AuthorSpotlightCarousel';
 import { formatArticle } from '@/utils/formatArticle';
-import { normalizeOpinionLayout, readOpinionLayoutDocument, OPINION_LAYOUT_NAME } from '@/lib/opinionLayout';
+import { normalizeOpinionLayout, readOpinionLayoutDocument, OPINION_LAYOUT_NAME, isOpinionPinStale } from '@/lib/opinionLayout';
 import { buildOpinionSpotlights, opinionCardSelect } from '@/lib/opinionArticles';
 import { pitchPhotoOf, type PitchPhoto } from '@/lib/pitchPhoto';
 import { opinionGroups } from '@/components/Opinion/opinionGroups';
@@ -227,9 +227,9 @@ export default async function SectionPageRoute({ params }: Args) {
   let pinnedCol1: (ComponentArticle | null)[] = [];
   let pinnedCol2: (ComponentArticle | null)[] = [];
   let pinnedCol3: (ComponentArticle | null)[] = [];
-  let col1Images: boolean[] = [true, false, false, false, false];
-  let col2Images: boolean[] = [false, false, true, false];
-  let col3Images: boolean[] = [false, false, false, true];
+  let col1Images: boolean[] = [true, false, false];
+  let col2Images: boolean[] = [false, false, true];
+  let col3Images: boolean[] = [false, false, true];
   let editorsChoiceArticles: ComponentArticle[] = [];
   let editorsChoiceLabel = "Opinion\u2019s Choice";
   let pinnedSpotlightAuthors: SpotlightAuthor[] = [];
@@ -302,10 +302,16 @@ export default async function SectionPageRoute({ params }: Args) {
 
         const resolveColumn = (ids: (number | null)[]): (ComponentArticle | null)[] =>
           ids.map((id) => (id ? pinnedMap.get(id) ?? null : null));
+        // A column pin two weeks older than the newest opinion story has
+        // lapsed: its slot goes back to the default (Opinion's Choice doesn't)
+        const pinDates = new Map(pinnedResponse.docs.map((a) => [a.id, a.publishedDate || a.createdAt]));
+        const newestIso = articles[0]?.publishedDate || articles[0]?.createdAt;
+        const resolveFreshColumn = (ids: (number | null)[]) =>
+          resolveColumn(ids.map((id) => (id && isOpinionPinStale(pinDates.get(id), newestIso) ? null : id)));
 
-        pinnedCol1 = resolveColumn(layoutJson.column1);
-        pinnedCol2 = resolveColumn(layoutJson.column2);
-        pinnedCol3 = resolveColumn(layoutJson.column3);
+        pinnedCol1 = resolveFreshColumn(layoutJson.column1);
+        pinnedCol2 = resolveFreshColumn(layoutJson.column2);
+        pinnedCol3 = resolveFreshColumn(layoutJson.column3);
         editorsChoiceArticles = resolveColumn(layoutJson.editorsChoice).filter((a): a is ComponentArticle => a !== null);
       }
 

@@ -4,8 +4,8 @@ Two tools, for two sizes of the same problem:
 
 - [`FitGroup`](../components/FitGroup.tsx) grows type inside one story, so its
   text ends where its photo does.
-- [`BalanceColumns`](../components/BalanceColumns.tsx) makes two columns of a
-  page end on the same line.
+- [`BalanceColumns`](../components/BalanceColumns.tsx) makes two (or three)
+  columns of a page end on the same line.
 
 ## FitGroup: type that fills the space beside a photo
 
@@ -147,6 +147,34 @@ First use: the top of `/news`
 | Type | 1 to 1.5: strips in full, lead text at half. Art first (`data-balance-art-first`): the lead photo grows before the type does, so the type only grows when the photo can't (held to the first screen, on a short window). With the text above or below the photo, 1 to 1.25, and the lead's headline and subdeck stop at 48px and 18px | 0.9 to 1.45: docket entries and pinned stories; nameplates stay one size |
 | Flexible box | The lead photo: 16:9 to 5:4, or up to square beside its text. Above, under or behind its text it's also held to the first screen (`data-balance-fold="2"`), as wide as 2:1 | Pinned stories' photos: 3:2 down to 2:1, sharing the change so both boxes keep one shape |
 | Trims | None | Entries' and pinned stories' summaries |
+
+### Three or more columns (`/opinion`)
+
+With three or more `data-balance-col` columns the routine takes a shorter
+path: no options and no type scaling (Opinion's headlines stay one size across
+the columns, where different sizes would read as a mistake), only:
+
+1. **Art.** Each column can end anywhere between its flexible boxes at their
+   shortest and at their tallest. The columns meet on the line nearest the
+   middle column's natural end (the median, so the photos change least) that
+   every column can reach. If no line suits them all, they meet on the lowest
+   line the tallest column can shrink to, and the others grow toward it.
+2. **Trim.** A column still more than `feather` px longer than the shortest
+   drops its `data-balance-trim` content, and they meet again.
+3. **Spacing.** A leftover of `feather` px or less is spread through each
+   shorter column, as with two.
+
+On `/opinion` ([`components/Opinion/OpinionSectionPage.tsx`](../components/Opinion/OpinionSectionPage.tsx))
+each of the three columns has one photo slot (the left lead and the middle and
+right columns' last story), so each has a flexible box: the story photos, 16:9
+to 4:5 at their focal point (`data-balance-flex="1.7778,0.8"`). Summaries are
+the trims. It runs on computers only (`when="(min-width: 1024px)"`); tablets
+flow the stories in two CSS columns and phones in one.
+
+Anything in a balanced column that changes height after the first paint
+throws the result off, since the routine doesn't watch for height changes. The
+author carousel's control row, for one, keeps a fixed minimum height because
+its Pause button only appears once the browser has checked reduced motion.
 
 ## Other ways to close a gap
 

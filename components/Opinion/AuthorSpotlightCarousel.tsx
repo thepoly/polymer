@@ -112,7 +112,10 @@ export default function AuthorSpotlightCarousel({
 
       {/* Navigation: arrows + dots */}
       {count > 1 && (
-        <div className="flex flex-wrap gap-3 items-center justify-center mt-2">
+        // min-h-5: the same height with or without the Pause button, which only
+        // appears once the browser has checked reduced motion (after the
+        // columns around it were squared off by BalanceColumns)
+        <div className="flex min-h-5 flex-wrap gap-3 items-center justify-center mt-2">
           {!reducedMotion && <button type="button" onClick={() => setManualPause((value) => !value)} aria-pressed={manualPause} className="font-meta text-sm">
             {manualPause ? 'Resume rotation' : 'Pause rotation'}
           </button>}

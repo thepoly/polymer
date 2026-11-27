@@ -43,7 +43,7 @@ test('older pins, remote search, keyboard assignment, image persistence, and edi
       return json({ doc: { id: 1 } });
     }
     if (url.pathname === '/api/opinion-page-layout') return json({ docs: [{ id: 1, layout: {
-      column1: [null, 42, null, null, null], column1Images: [true, false, false, false, false],
+      version: 2, column1: [null, 42, null], column1Images: [true, false, false],
     } }] });
     if (url.pathname === '/api/opinion/articles') return json({ docs: url.searchParams.has('ids') ? [story(42, 'Old pinned story')]
       : url.searchParams.get('q') ? [story(9, 'Archived search result')] : [story(101, 'Recent story')], hasNextPage: false });
@@ -64,8 +64,8 @@ test('older pins, remote search, keyboard assignment, image persistence, and edi
   await lead.selectOption(''); // Return lead to automatic; its image setting must survive.
   await page.getByRole('button', { name: 'Activate', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Saved', exact: true })).toBeVisible();
-  expect(savedLayout?.column1).toEqual([null, 42, null, null, null]);
-  expect(savedLayout?.column1Images).toEqual([true, false, false, false, false]);
+  expect(savedLayout?.column1).toEqual([null, 42, null]);
+  expect(savedLayout?.column1Images).toEqual([true, false, false]);
   delaySave = true;
   await lead.selectOption('9');
   await page.getByRole('button', { name: 'Activate', exact: true }).click();

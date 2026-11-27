@@ -16,7 +16,7 @@ import {
   pointerWithin,
 } from '@dnd-kit/core';
 import './opinion-layout-editor.css';
-import { normalizeOpinionLayout, readOpinionLayoutDocument, validateOpinionLayout, OPINION_LAYOUT_NAME, MAX_OPINION_SLOTS, MAX_SPOTLIGHT_AUTHORS, type OpinionLayout, type SpotlightEntry } from '@/lib/opinionLayout';
+import { normalizeOpinionLayout, readOpinionLayoutDocument, validateOpinionLayout, isOpinionPinStale, planOpinionColumns, OPINION_LAYOUT_NAME, OPINION_PIN_STALE_DAYS, MAX_OPINION_SLOTS, MAX_SPOTLIGHT_AUTHORS, type OpinionLayout, type SpotlightEntry } from '@/lib/opinionLayout';
 import { NO_PITCH_POSITIONS } from '@/lib/pitchPhoto';
 import { PitchPositionsEditor, pitchInfoOf, type PitchPhotoInfo } from '@/components/admin/PitchPositionsEditor';
 
@@ -59,9 +59,12 @@ const pointerThenCenter: CollisionDetection = (args) => {
 const EMPTY_LAYOUT = normalizeOpinionLayout(null);
 
 // Column labels
-const COL1_LABELS = ['Lead (with image)', 'Article', 'Article', 'Article', 'Article'];
-const COL2_LABELS = ['Article', 'Article', 'Article (with image)', 'Article'];
-const COL3_LABELS = ['Article', 'Article', 'Article', 'Article (with image)'];
+const COL1_LABELS = ['Lead (with image)', 'Article', 'Article'];
+const COL2_LABELS = ['Article', 'Article', 'Article (with image)'];
+const COL3_LABELS = ['Article', 'Article', 'Article (with image)'];
+/** The guest-writer box follows column 1's first slot, and the author spotlight column 2's second, as on the page */
+const PITCH_AFTER = 1;
+const SPOTLIGHT_AFTER = 2;
 const EC_LABELS = ['Pick 1', 'Pick 2', 'Pick 3'];
 
 // ---------------------------------------------------------------------------
@@ -157,6 +160,12 @@ const SlotPickerContext = React.createContext<{
   articles: ArticleData[];
   layout: OpinionLayout;
   assign: (slot: string, id: number | null) => void;
+  /**
+   * For a column slot that's automatic or whose pin has lapsed: the story the
+   * page's default puts there (planOpinionColumns, as on the page), and
+   * whether the pin has lapsed. Null for a slot whose pin holds.
+   */
+  auto: (slot: string) => { title: string | null; expired: boolean } | null;
 } | null>(null);
 
 function DropSlot({
@@ -173,6 +182,7 @@ function DropSlot({
   const picker = React.useContext(SlotPickerContext);
   const parsed = parseSlotId(slotId);
   const pinnedId = picker && parsed ? (picker.layout[parsed.column] as (number | null)[])[parsed.index] : null;
+  const auto = picker?.auto(slotId) ?? null;
   const { isOver, setNodeRef } = useDroppable({
     id: `drop-${slotId}`,
     data: { slotId },
@@ -201,7 +211,15 @@ function DropSlot({
           <option key={a.id} value={a.id}>{a.plainTitle || a.slug}</option>)}
       </select>}
       {article ? (
-        <DraggableSlotArticle article={article} slotId={slotId} showImage={showImage} />
+        <>
+          <DraggableSlotArticle article={article} slotId={slotId} showImage={showImage} />
+          {auto?.expired && (
+            <p className="ole-slot-expired" role="note">
+              Expired: more than {OPINION_PIN_STALE_DAYS} days older than the newest story, so the page uses
+              {auto.title ? <> &ldquo;{auto.title}&rdquo;</> : ' the default'} here. Clear it or pin a newer story.
+            </p>
+          )}
+        </>
       ) : (
         <div className="ole-slot-empty">
           <div className="ole-slot-empty-inner">
@@ -223,6 +241,7 @@ function DropSlot({
               </>
             )}
           </div>
+          {auto?.title && <p className="ole-slot-auto">Auto: {auto.title}</p>}
         </div>
       )}
     </div>
@@ -413,12 +432,21 @@ export function OpinionLayoutEditor() {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [activeArticle, setActiveArticle] = useState<ArticleData | null>(null);
   const [pitchPreview, setPitchPreview] = useState<PitchPhotoInfo | null>(null);
+  /** The newest opinion stories, which the page's default fills the columns from */
+  const [newest, setNewest] = useState<ArticleData[]>([]);
   const docIdRef = useRef<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const articleMap = new Map(articles.map((a) => [a.id, a]));
   const usedIds = collectUsedIds(layout);
+
+  // Pins lapse two weeks after the newest story (as on the page)
+  const newestIso = newest[0]?.publishedDate || newest[0]?.createdAt;
+  const isStale = (id: number) => {
+    const pinned = articleMap.get(id);
+    return Boolean(pinned) && isOpinionPinStale(pinned!.publishedDate || pinned!.createdAt, newestIso);
+  };
 
   const mergeArticles = useCallback((incoming: ArticleData[]) => {
     setArticles((previous) => [...new Map([...previous, ...incoming].map((a) => [a.id, a])).values()]);
@@ -455,6 +483,15 @@ export function OpinionLayoutEditor() {
     }, 250);
     return () => { clearTimeout(timer); controller.abort(); };
   }, [userSearch]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/opinion/articles?page=1', { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : { docs: [] }))
+      .then((data) => setNewest(data.docs ?? []))
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -674,6 +711,17 @@ export function OpinionLayoutEditor() {
     try {
       const validation = validateOpinionLayout(layout);
       if (validation !== true) throw new Error(validation);
+      // Column 3 must show a photo: one of its IMG slots is automatic (it takes
+      // the newest story with a photo) or holds a story with a featured image
+      const column3ShowsPhoto = layout.column3.some((id, i) => {
+        if (!layout.column3Images[i]) return false;
+        if (id === null || isStale(id)) return true;
+        const pinned = articleMap.get(id);
+        return !pinned || Boolean(getImageUrl(pinned));
+      });
+      if (!column3ShowsPhoto) {
+        throw new Error('Column 3 needs one story with a photo: pin a story with a featured image in an IMG slot, or leave that slot automatic.');
+      }
       const submittedRevision = revision.current;
       const res = await fetch(`/api/opinion-page-layout/${docIdRef.current}`, {
         method: 'PATCH',
@@ -706,6 +754,31 @@ export function OpinionLayoutEditor() {
     return id ? articleMap.get(id) || null : null;
   };
 
+  // Column 3's only IMG slot can't be switched off: the right column always shows a photo
+  const column3LastPhoto = (i: number) =>
+    !!layout.column3Images[i] && layout.column3Images.filter(Boolean).length === 1;
+
+  // What the page's default puts in each automatic or lapsed slot
+  const columnKeysInOrder = ['column1', 'column2', 'column3'] as const;
+  const plan = planOpinionColumns(
+    columnKeysInOrder.map((key) => layout[key].map((id) => (id === null || isStale(id) ? null : articleMap.get(id) ?? ({ id } as ArticleData)))),
+    newest,
+    {
+      excluded: layout.editorsChoice.flatMap((id) => (id ? [articleMap.get(id) ?? ({ id } as ArticleData)] : [])),
+      photos: [layout.column1Images, layout.column2Images, layout.column3Images],
+      hasPhoto: (a) => Boolean(getImageUrl(a)),
+    },
+  );
+  const autoFor = (slotId: string) => {
+    const parsed = parseSlotId(slotId);
+    if (!parsed || parsed.column === 'editorsChoice') return null;
+    const c = columnKeysInOrder.indexOf(parsed.column as (typeof columnKeysInOrder)[number]);
+    const id = layout[columnKeysInOrder[c]][parsed.index];
+    const expired = id !== null && isStale(id);
+    if (id !== null && !expired) return null;
+    return { title: plan[c]?.[parsed.index]?.plainTitle ?? null, expired };
+  };
+
   const userMap = new Map(users.map((u) => [u.id, u]));
   const spotlightUserIds = new Set((layout.spotlight || []).map((e) => e.userId));
   const filteredUsers = users.filter((u) => {
@@ -715,7 +788,7 @@ export function OpinionLayoutEditor() {
   });
 
   return (
-    <SlotPickerContext.Provider value={{ articles: poolArticles, layout, assign: (slot, id) => {
+    <SlotPickerContext.Provider value={{ articles: poolArticles, layout, auto: autoFor, assign: (slot, id) => {
       const parsed = parseSlotId(slot); if (parsed) setSlot(parsed.column, parsed.index, id);
     } }}>
     <DndContext
@@ -751,7 +824,7 @@ export function OpinionLayoutEditor() {
                 <div className="ole-column-header">
                   <span className="ole-column-title">Column 1</span>
                 </div>
-                {layout.column1.slice(0, 3).map((_, i) => (
+                {layout.column1.slice(0, PITCH_AFTER).map((_, i) => (
                   <DropSlot
                     key={`col1-${i}`}
                     slotId={`col1-${i}`}
@@ -780,8 +853,8 @@ export function OpinionLayoutEditor() {
                   }}
                 />
 
-                {layout.column1.slice(3).map((_, ii) => {
-                  const i = ii + 3;
+                {layout.column1.slice(PITCH_AFTER).map((_, ii) => {
+                  const i = ii + PITCH_AFTER;
                   return (
                     <DropSlot
                       key={`col1-${i}`}
@@ -808,20 +881,23 @@ export function OpinionLayoutEditor() {
                 <div className="ole-column-header">
                   <span className="ole-column-title">Column 2</span>
                 </div>
-                <DropSlot
-                  slotId="col2-0"
-                  label={COL2_LABELS[0]}
-                  article={getArticle('column2', 0)}
-                  showImage={layout.column2Images[0]}
-                  isImageSlot={layout.column2Images[0]}
-                  onClear={() => clearSlot('col2-0')}
-                  imageToggle={
-                    <label className="ole-image-toggle" title="Toggle image">
-                      <input type="checkbox" checked={!!layout.column2Images[0]} onChange={() => toggleColumnImage('column2', 0)} style={{ position: 'relative', top: '1px' }} />
-                      <span style={{ textTransform: 'uppercase', color: '#999', fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.06em', position: 'relative', top: '-1px' }}>IMG</span>
-                    </label>
-                  }
-                />
+                {layout.column2.slice(0, SPOTLIGHT_AFTER).map((_, i) => (
+                  <DropSlot
+                    key={`col2-${i}`}
+                    slotId={`col2-${i}`}
+                    label={COL2_LABELS[i] ?? 'Article'}
+                    article={getArticle('column2', i)}
+                    showImage={layout.column2Images[i]}
+                    isImageSlot={layout.column2Images[i]}
+                    onClear={() => clearSlot(`col2-${i}`)}
+                    imageToggle={
+                      <label className="ole-image-toggle" title="Toggle image">
+                        <input type="checkbox" checked={!!layout.column2Images[i]} onChange={() => toggleColumnImage('column2', i)} style={{ position: 'relative', top: '1px' }} />
+                        <span style={{ textTransform: 'uppercase', color: '#999', fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.06em', position: 'relative', top: '-1px' }}>IMG</span>
+                      </label>
+                    }
+                  />
+                ))}
 
                 {/* Author Spotlight Carousel — inline editor */}
                 <div className="ole-spotlight-section">
@@ -888,8 +964,8 @@ export function OpinionLayoutEditor() {
                   </div>
                 </div>
 
-                {layout.column2.slice(1).map((_, ii) => {
-                  const i = ii + 1;
+                {layout.column2.slice(SPOTLIGHT_AFTER).map((_, ii) => {
+                  const i = ii + SPOTLIGHT_AFTER;
                   return (
                     <DropSlot
                       key={`col2-${i}`}
@@ -941,8 +1017,17 @@ export function OpinionLayoutEditor() {
                     isImageSlot={layout.column3Images[i]}
                     onClear={() => clearSlot(`col3-${i}`)}
                     imageToggle={
-                      <label className="ole-image-toggle" title="Toggle image">
-                        <input type="checkbox" checked={!!layout.column3Images[i]} onChange={() => toggleColumnImage('column3', i)} style={{ position: 'relative', top: '1px' }} />
+                      <label
+                        className="ole-image-toggle"
+                        title={column3LastPhoto(i) ? 'Column 3 needs one story with a photo: switch on IMG for another slot first' : 'Toggle image'}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!!layout.column3Images[i]}
+                          disabled={column3LastPhoto(i)}
+                          onChange={() => toggleColumnImage('column3', i)}
+                          style={{ position: 'relative', top: '1px' }}
+                        />
                         <span style={{ textTransform: 'uppercase', color: '#999', fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.06em', position: 'relative', top: '-1px' }}>IMG</span>
                       </label>
                     }

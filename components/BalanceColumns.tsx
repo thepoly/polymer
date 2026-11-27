@@ -9,8 +9,10 @@ import React, { useLayoutEffect, useRef, useSyncExternalStore } from "react";
  * docs/fit-text.md.
  *
  * Markers, anywhere inside the root:
- * - `data-balance-col`: a column (exactly two). A flex column; a grid item
- *   of the root so it stretches to the row's height.
+ * - `data-balance-col`: a column. Two get every step below; three or more
+ *   (Opinion's columns) get only the flexible boxes, trims and spacing (see
+ *   the branch in `balance`). A flex column; a grid item of the root so it
+ *   stretches to the row's height.
  * - `data-balance-opt`: optional content, hidden until there's room. Shown
  *   in document order, each only if it fits whole. An option inside another
  *   option is only tried once the outer one is showing.
@@ -101,8 +103,8 @@ function balance(root: HTMLElement | null) {
     cols[i].removeAttribute("data-feather");
   }
   const when = root.getAttribute("data-balance-when");
-  // Not laid out yet, stacked in one column, or not two columns: leave as is
-  if (cols.length !== 2 || root.getBoundingClientRect().width === 0 || (when && !window.matchMedia(when).matches)) {
+  // Not laid out yet, stacked in one column, or fewer than two columns: leave as is
+  if (cols.length < 2 || root.getBoundingClientRect().width === 0 || (when && !window.matchMedia(when).matches)) {
     return;
   }
 
@@ -245,6 +247,68 @@ function balance(root: HTMLElement | null) {
     }
     return now;
   };
+  // Three or more columns (/opinion): no options or type scaling, only the
+  // flexible boxes, trims and spacing. Each column can end anywhere between
+  // its boxes at their shortest and at their tallest; the line they all meet
+  // on is the one nearest the middle column's natural end that every column
+  // can reach (the median, so the photos change least). When no line suits
+  // them all, they meet on the lowest line the tallest column can shrink to,
+  // and the others grow as far as they can toward it.
+  if (cols.length > 2) {
+    const settle = () => {
+      clampBoxes();
+      let floor = -Infinity;
+      let ceiling = Infinity;
+      const naturals: number[] = [];
+      for (let i = 0; i < cols.length; i++) {
+        const natural = height(cols[i]);
+        const boxes = all(cols[i], "[data-balance-flex]");
+        let down = 0;
+        let up = 0;
+        for (let j = 0; j < boxes.length; j++) {
+          const lim = limitsOf(boxes[j]);
+          if (!lim) continue;
+          down += lim[2] - lim[0];
+          up += lim[1] - lim[2];
+        }
+        if (natural - down > floor) floor = natural - down;
+        if (natural + up < ceiling) ceiling = natural + up;
+        naturals.push(natural);
+      }
+      naturals.sort((a, b) => a - b);
+      const median = naturals[Math.floor(naturals.length / 2)];
+      const line = floor <= ceiling ? Math.max(floor, Math.min(ceiling, median)) : floor;
+      for (let i = 0; i < cols.length; i++) flexBy(cols[i], line - height(cols[i]));
+    };
+    const ends = () => {
+      let tallest = cols[0];
+      let shortest = cols[0];
+      for (let i = 1; i < cols.length; i++) {
+        if (height(cols[i]) > height(tallest)) tallest = cols[i];
+        if (height(cols[i]) < height(shortest)) shortest = cols[i];
+      }
+      return { tallest: tallest, gap: height(tallest) - height(shortest) };
+    };
+    settle();
+    let now = ends();
+    // A column still far too long drops its summaries, and they all meet again
+    for (let k = 0; k < cols.length && now.gap > feather; k++) {
+      if (now.tallest.hasAttribute("data-trimmed") || !now.tallest.querySelector("[data-balance-trim]")) break;
+      now.tallest.setAttribute("data-trimmed", "");
+      resetFill();
+      settle();
+      now = ends();
+    }
+    // Small leftovers are spread through the shorter columns' spacing
+    const top = height(now.tallest);
+    for (let i = 0; i < cols.length; i++) {
+      const left = top - height(cols[i]);
+      if (left > TOLERANCE && left <= feather) cols[i].setAttribute("data-feather", "");
+    }
+    root.removeAttribute("data-balancing");
+    return;
+  }
+
   const run = (reach: boolean) => {
     clampBoxes();
     let now = measure();

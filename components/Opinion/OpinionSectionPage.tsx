@@ -1,5 +1,5 @@
 "use client";
-import { fillOpinionSlots } from '@/lib/opinionLayout';
+import { inSnakeOrder, OPINION_COLUMN_SLOTS, planOpinionColumns } from '@/lib/opinionLayout';
 
 import React, { useMemo } from "react";
 import Image from "next/image";
@@ -12,6 +12,7 @@ import AuthorSpotlightCarousel, {
 import EditorsChoice from "./EditorsChoice";
 import { opinionGroups } from "./opinionGroups";
 import RainbowDivider from "./RainbowDivider";
+import BalanceColumns from "@/components/BalanceColumns";
 import SectionSearchPrompt from "@/components/SectionSearchPrompt";
 import { ChevronRight } from "lucide-react";
 import type { Article as ComponentArticle } from "@/components/FrontPage/types";
@@ -29,7 +30,14 @@ const opinionDate = (article: ComponentArticle) => shortDate(article.publishedDa
 
 /* ── Article card — optionally shows image ── */
 
-function OpinionCard({ article, withImage = false, priority = false }: { article: ComponentArticle; withImage?: boolean; priority?: boolean }) {
+/**
+ * On computers (`balance`) the columns are squared off by BalanceColumns: the
+ * card's photo may change shape between 16:9 and 4:5, at its focal point, and
+ * its summary may be dropped from a column that's still far too long.
+ */
+const BALANCE_PHOTO = "1.7778,0.8";
+
+function OpinionCard({ article, withImage = false, priority = false, balance = false }: { article: ComponentArticle; withImage?: boolean; priority?: boolean; balance?: boolean }) {
   const typeLabel =
     opinionTypeLabels[article.opinionType || "opinion"] || "Opinion";
 
@@ -39,12 +47,18 @@ function OpinionCard({ article, withImage = false, priority = false }: { article
       className="group block mb-8 break-inside-avoid"
     >
       {withImage && article.image && (
-        <div className="relative overflow-hidden mb-3 -mx-4 w-auto sm:mx-0 sm:w-full" style={{ aspectRatio: "3/2" }}>
+        <div
+          className="relative overflow-hidden mb-3 -mx-4 w-auto sm:mx-0 sm:w-full"
+          style={{ aspectRatio: "3/2", ...(balance ? { height: "var(--balance-h, auto)" } : {}) }}
+          {...(balance ? { "data-balance-flex": BALANCE_PHOTO } : {})}
+          suppressHydrationWarning
+        >
           <Image
             src={article.image}
             alt={article.imageTitle || ""}
             fill
             className="object-cover"
+            style={article.imageFocus ? { objectPosition: article.imageFocus } : undefined}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             priority={priority}
           />
@@ -62,7 +76,7 @@ function OpinionCard({ article, withImage = false, priority = false }: { article
       <Byline authors={article.authorLinks} date={opinionDate(article)} size="md" margin="mt-2" />
       {/* Summary in muted serif, as on News and Features */}
       {article.excerpt && (
-        <p className="mt-1 font-copy text-[17px] leading-[1.45] text-text-muted line-clamp-4">
+        <p className="mt-1 font-copy text-[17px] leading-[1.45] text-text-muted line-clamp-4" {...(balance ? { "data-balance-trim": "" } : {})}>
           {article.excerpt}
         </p>
       )}
@@ -74,8 +88,8 @@ function OpinionCard({ article, withImage = false, priority = false }: { article
  * "Have an opinion? Submit an op-ed →", linking to the
  * submission form: the Features pitch box (components/PhotoPitch) on a pinned
  * photo the editor picks and places per screen in the Opinion Layout editor.
- * Column 1 after its third slot on computers; after the fifth story on
- * phones and tablets.
+ * Column 1 after its lead on computers. Phones: after the sixth
+ * story; tablets: beside Opinion's Choice.
  */
 function GuestWriterPitch({ photo }: { photo: PitchPhoto | null }) {
   return (
@@ -171,6 +185,10 @@ function OpinionGroup({
   );
 }
 
+/** On computers the op-ed box follows column 1's lead, and the author spotlight column 2's second story */
+const PITCH_AFTER = 1;
+const SPOTLIGHT_AFTER = 2;
+
 /**
  * Tablets set a run of stories in two columns that fill top to bottom, so a
  * story with a photo beside one without leaves no hole; phones and computers
@@ -187,9 +205,9 @@ export default function OpinionSectionPage({
   pinnedCol1,
   pinnedCol2,
   pinnedCol3,
-  col1Images = [true, false, false, false, false],
-  col2Images = [false, false, true, false],
-  col3Images = [false, false, false, true],
+  col1Images = [true, false, false],
+  col2Images = [false, false, true],
+  col3Images = [false, false, true],
   editorsChoiceArticles,
   editorsChoiceLabel,
   groupedArticles,
@@ -215,20 +233,29 @@ export default function OpinionSectionPage({
   const [col1, col2, col3] = useMemo(() => {
     const pad = (pins: (ComponentArticle | null)[], count: number) =>
       Array.from({ length: Math.max(count, pins.length) }, (_, i) => pins[i] || null);
-    return fillOpinionSlots([
-      pad(pinnedCol1, Math.max(5, col1Images.length)),
-      pad(pinnedCol2, Math.max(4, col2Images.length)),
-      pad(pinnedCol3, Math.max(4, col3Images.length)),
-    ], articles, editorsChoiceArticles);
-  }, [pinnedCol1, pinnedCol2, pinnedCol3, col1Images.length, col2Images.length, col3Images.length, articles, editorsChoiceArticles]);
+    // The default: newest first along the snake (row by row, alternating),
+    // photo slots taking stories with photos; pins stay where editors put them
+    return planOpinionColumns([
+      pad(pinnedCol1, Math.max(OPINION_COLUMN_SLOTS, col1Images.length)),
+      pad(pinnedCol2, Math.max(OPINION_COLUMN_SLOTS, col2Images.length)),
+      pad(pinnedCol3, Math.max(OPINION_COLUMN_SLOTS, col3Images.length)),
+    ], articles, {
+      excluded: editorsChoiceArticles,
+      photos: [col1Images, col2Images, col3Images],
+      hasPhoto: (a) => Boolean(a.image),
+    });
+  }, [pinnedCol1, pinnedCol2, pinnedCol3, col1Images, col2Images, col3Images, articles, editorsChoiceArticles]);
 
   const hasSpotlightAuthors =
     spotlightAuthors.length > 0 ||
     Boolean(pinnedSpotlightAuthors && pinnedSpotlightAuthors.length > 0);
 
-  const mobileOrderedArticles = [col1, col2, col3].flatMap((column, columnIndex) =>
-    column.flatMap((article, slot) => article ? [{ article, withImage: [col1Images, col2Images, col3Images][columnIndex][slot] ?? false }] : []),
-  );
+  // Phones and tablets read the columns in snake order, so newest comes first
+  const columnImages = [col1Images, col2Images, col3Images];
+  const mobileOrderedArticles = inSnakeOrder([col1, col2, col3]).map(({ story, column, slot }) => ({
+    article: story,
+    withImage: columnImages[column][slot] ?? false,
+  }));
 
   // Each story once on the page: the groups skip what the columns and
   // Opinion's Choice already show, and keep the newest four left
@@ -297,30 +324,30 @@ export default function OpinionSectionPage({
       </div>
 
       {/* 3-column grid — inline styles to guarantee layout */}
-      <div
-        className="hidden lg:grid lg:grid-cols-3"
-        style={{
-          columnGap: 24,
-        }}
-      >
-        {/* ── Col 1: first 3 slots, CTA, remaining slots ── */}
-        <div className="lg:border-r lg:border-rule lg:pr-6">
-          {col1.slice(0, 3).map((article, i) => (
-            article && <OpinionCard key={`col1-${article.id}`} article={article} withImage={col1Images[i] ?? false} priority={i === 0 && (col1Images[0] ?? true)} />
+      {/* The three columns end on one line: BalanceColumns stretches or
+          shrinks each column's photo (16:9 to 4:5), drops summaries from a
+          column still far too long, and spreads small leftovers */}
+      <BalanceColumns when="(min-width: 1024px)" className="hidden lg:grid lg:grid-cols-3 lg:gap-x-6">
+        {/* ── Col 1: the lead, the op-ed box, remaining slots ── */}
+        <div data-balance-col className="flex flex-col lg:border-r lg:border-rule lg:pr-6" suppressHydrationWarning>
+          {col1.slice(0, PITCH_AFTER).map((article, i) => (
+            article && <OpinionCard key={`col1-${article.id}`} article={article} withImage={col1Images[i] ?? false} priority={i === 0 && (col1Images[0] ?? true)} balance />
           ))}
 
           <div style={{ marginBottom: 30 }}>
             <GuestWriterPitch photo={guestPitch} />
           </div>
 
-          {col1.slice(3).map((article, i) => (
-            article && <OpinionCard key={`col1-after-${article.id}`} article={article} withImage={col1Images[i + 3] ?? false} />
+          {col1.slice(PITCH_AFTER).map((article, i) => (
+            article && <OpinionCard key={`col1-after-${article.id}`} article={article} withImage={col1Images[i + PITCH_AFTER] ?? false} balance />
           ))}
         </div>
 
-        {/* ── Col 2: first slot, carousel, remaining slots ── */}
-        <div className="lg:border-r lg:border-rule lg:pr-6">
-          {col2[0] && <OpinionCard article={col2[0]} withImage={col2Images[0] ?? false} />}
+        {/* ── Col 2: first 2 slots, the author spotlight, remaining slots ── */}
+        <div data-balance-col className="flex flex-col lg:border-r lg:border-rule lg:pr-6" suppressHydrationWarning>
+          {col2.slice(0, SPOTLIGHT_AFTER).map((article, i) => (
+            article && <OpinionCard key={`col2-${article.id}`} article={article} withImage={col2Images[i] ?? false} balance />
+          ))}
 
           {hasSpotlightAuthors && (
             <div className="hidden lg:block">
@@ -328,13 +355,13 @@ export default function OpinionSectionPage({
             </div>
           )}
 
-          {col2.slice(1).map((article, i) => (
-            article && <OpinionCard key={`col2-${article.id}`} article={article} withImage={col2Images[i + 1] ?? false} />
+          {col2.slice(SPOTLIGHT_AFTER).map((article, i) => (
+            article && <OpinionCard key={`col2-after-${article.id}`} article={article} withImage={col2Images[i + SPOTLIGHT_AFTER] ?? false} balance />
           ))}
         </div>
 
         {/* ── Col 3: editors choice, then all slots ── */}
-        <div>
+        <div data-balance-col className="flex flex-col" suppressHydrationWarning>
           {editorsChoiceArticles.length > 0 && (
             <div className="mb-3">
               <EditorsChoice
@@ -345,10 +372,10 @@ export default function OpinionSectionPage({
           )}
 
           {col3.map((article, i) => (
-            article && <OpinionCard key={`col3-${article.id}`} article={article} withImage={col3Images[i] ?? false} />
+            article && <OpinionCard key={`col3-${article.id}`} article={article} withImage={col3Images[i] ?? false} balance />
           ))}
         </div>
-      </div>
+      </BalanceColumns>
 
       {groups.length > 0 && (
         <>

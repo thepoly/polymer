@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Article } from '@/payload-types';
-import { canManageOpinion, fillOpinionSlots, MAX_OPINION_SLOTS, normalizeOpinionLayout, safeSpotlightUrl, validateOpinionLayout } from '@/lib/opinionLayout';
+import { canManageOpinion, inSnakeOrder, isOpinionPinStale, MAX_OPINION_SLOTS, normalizeOpinionLayout, planOpinionColumns, safeSpotlightUrl, snakeOrder, validateOpinionLayout } from '@/lib/opinionLayout';
 import { buildOpinionSpotlights, opinionCardSelect } from '@/lib/opinionArticles';
 import { opinionPageNumber } from '@/lib/opinionPagination';
 import { deriveOpinionType } from '@/lib/opinionType';
@@ -53,16 +53,58 @@ describe('layout persistence and rendering', () => {
     expect(validateOpinionLayout({ pitchPositions: { watch: null } })).not.toBe(true);
     expect(validateOpinionLayout({ pitchPositions: { tablet: { x: 50, y: 50 } } })).not.toBe(true);
   });
-  it('fills holes without shifting a pin or duplicating editor choices', () => {
+  it('reads the columns row by row, alternating direction', () => {
+    expect(snakeOrder([3, 3, 3])).toEqual([[0, 0], [1, 0], [2, 0], [2, 1], [1, 1], [0, 1], [0, 2], [1, 2], [2, 2]]);
+    // A column an editor lengthened carries on alone in the rows the others don't reach
+    expect(snakeOrder([4, 3, 3]).slice(-1)).toEqual([[0, 3]]);
+  });
+  it('fills along the snake without shifting a pin or duplicating editor choices', () => {
     const pinned = { id: 42 }; const pick = { id: 90 };
-    expect(fillOpinionSlots([[null, pinned, null], [null]], [{ id: 1 }, pinned, pick, { id: 2 }, { id: 3 }], [pick]))
-      .toEqual([[{ id: 1 }, pinned, { id: 2 }], [{ id: 3 }]]);
+    expect(planOpinionColumns([[null, pinned], [null, null]], [{ id: 1 }, pinned, pick, { id: 2 }, { id: 3 }], { excluded: [pick] }))
+      .toEqual([[{ id: 1 }, pinned], [{ id: 2 }, { id: 3 }]]);
+  });
+  it('puts a newest story without a photo at the top of the middle column, and keeps the snake going', () => {
+    const s = (id: number, image: string | null) => ({ id, image });
+    const pool = [s(1, null), s(2, '/2.jpg'), s(3, null), s(4, null), s(5, null), s(6, null), s(7, null), s(8, '/8.jpg'), s(9, '/9.jpg'), s(10, null)];
+    const photos = [[true, false, false], [false, false, true], [false, false, true]];
+    const columns = planOpinionColumns([[null, null, null], [null, null, null], [null, null, null]], pool, { photos, hasPhoto: (a) => Boolean(a.image) });
+    // 1 has no photo: the lead waits for 2, and 1 goes top middle
+    expect(columns.map((c) => c.map((a) => a?.id))).toEqual([[2, 6, 7], [1, 5, 8], [3, 4, 9]]);
+    expect(inSnakeOrder(columns).map(({ story }) => story.id)).toEqual([2, 1, 3, 4, 5, 6, 7, 8, 9]);
+  });
+  it('gives a photo slot any story when none with a photo is left', () => {
+    const plain = { id: 1, image: null };
+    expect(planOpinionColumns([[null]], [plain], { photos: [[true]], hasPhoto: (a) => Boolean(a.image) })).toEqual([[plain]]);
+  });
+  it('lets a column pin lapse two weeks after the newest story', () => {
+    expect(isOpinionPinStale('2026-11-01T12:00:00Z', '2026-11-14T12:00:00Z')).toBe(false);
+    expect(isOpinionPinStale('2026-11-01T12:00:00Z', '2026-11-16T12:00:00Z')).toBe(true);
+    expect(isOpinionPinStale(null, '2026-11-16T12:00:00Z')).toBe(false);
+  });
+  it('requires a photo in column 3', () => {
+    expect(validateOpinionLayout({ column3: [null, null, null], column3Images: [false, false, false] })).not.toBe(true);
+    expect(validateOpinionLayout({ column3: [null, null, null], column3Images: [true, false, false] })).toBe(true);
+    expect(normalizeOpinionLayout({ version: 2, column3: [null, null, null], column3Images: [false, false, false] }).column3Images).toEqual([false, false, true]);
   });
   it('keeps empty slot positions if the auto-fill pool runs out', () => {
-    expect(fillOpinionSlots([[null, { id: 42 }, null]], [])).toEqual([[null, { id: 42 }, null]]);
+    expect(planOpinionColumns([[null, { id: 42 }, null]], [])).toEqual([[null, { id: 42 }, null]]);
+  });
+  it('trims an older layout to three slots per column, keeping pins and image settings', () => {
+    const layout = normalizeOpinionLayout({
+      column1: [null, null, null, null, null], column1Images: [true, false, false, false, false],
+      column2: [null, null, null, 7], column2Images: [false, false, true, false],
+      column3: [null, null, null, null], column3Images: [false, false, false, true],
+    });
+    expect(layout.version).toBe(2);
+    expect(layout.column1).toEqual([null, null, null]);
+    expect(layout.column1Images).toEqual([true, false, false]);
+    expect(layout.column2).toEqual([null, null, null, 7]);
+    // Its photo slot was the trimmed fourth, so the last remaining one takes over
+    expect(layout.column3Images).toEqual([false, false, true]);
+    expect(normalizeOpinionLayout(null)).toMatchObject({ column1: [null, null, null], column1Images: [true, false, false], column2Images: [false, false, true], column3Images: [false, false, true] });
   });
   it('round-trips automatic slots and image settings, including added slots', () => {
-    const layout = normalizeOpinionLayout({ column1: Array(7).fill(null), column1Images: [true, false, false, false, false, false, true] });
+    const layout = normalizeOpinionLayout({ version: 2, column1: Array(7).fill(null), column1Images: [true, false, false, false, false, false, true] });
     const stored = JSON.parse(JSON.stringify(layout));
     expect(validateOpinionLayout(stored)).toBe(true);
     expect(normalizeOpinionLayout(stored)).toEqual(layout);
@@ -75,7 +117,7 @@ describe('layout persistence and rendering', () => {
     expect(validateOpinionLayout(normalized)).toBe(true);
   });
   it('bounds old oversized layouts and repairs duplicate pins', () => {
-    const result = normalizeOpinionLayout({ column1: Array(10000).fill(1), column2: [1, 2] });
+    const result = normalizeOpinionLayout({ version: 2, column1: Array(10000).fill(1), column2: [1, 2] });
     expect(result.column1).toHaveLength(MAX_OPINION_SLOTS);
     expect(result.column1.filter(Boolean)).toEqual([1]);
     expect(result.column2.slice(0, 2)).toEqual([null, 2]);

@@ -9,10 +9,43 @@ Opinion Layout and adds the header and footer). Top to bottom:
 | Part | What it shows |
 | --- | --- |
 | Heading | Screen-reader-only "Opinion" `<h1>`; the header's section nav marks the page, as on News and Features |
-| The columns | Computers: three columns with thin rules between them. Column 1: the lead (with its photo), two more, the guest-writer box, the rest. Column 2: a story, the author spotlight carousel, the rest. Column 3: Opinion’s Choice (three numbered picks), then its stories. Every slot is pinned in the Opinion Layout editor or fills with the newest story not already shown; each slot's photo is switched on or off there. Tablets (768–1023px): the same stories in phone order, in two columns that fill top to bottom (so photos leave no gaps), with the guest-writer box beside Opinion’s Choice. Phones: one column, photos edge to edge |
+| The columns | Computers: three columns with thin rules between them. Three story slots per column (`OPINION_COLUMN_SLOTS`; editors can add more). Column 1: the lead (with its photo), the guest-writer box, two more. Column 2: two stories, the author spotlight carousel, the third (with its photo). Column 3: Opinion’s Choice (three numbered picks), then its three stories (the last with its photo). Column 3 must always show a photo: at least one of its slots has IMG on (the editor won't switch off the last one, `validateOpinionLayout` rejects a layout without one, and a layout read without one gets its last slot's switched on), and Activate is refused if its only IMG slots are pinned to stories without a featured image. Automatic slots follow the default order below. Every slot is pinned in the Opinion Layout editor or filled by the default order below; each slot's photo is switched on or off there. Tablets (768–1023px): the same stories in phone order, in two columns that fill top to bottom (so photos leave no gaps), with the guest-writer box beside Opinion’s Choice. Phones: one column, photos edge to edge |
+| Squared off | On computers the three columns end on one line: `BalanceColumns` stretches or shrinks each column's photo between 16:9 and 4:5 (at its focal point), drops the summaries from a column that's still far too long, and spreads a small leftover through the shorter columns. See [`fit-text.md`](fit-text.md#three-or-more-columns-opinion) |
 | Cards | The opinion type in red ("Staff Editorial", "Column", from the kicker), the headline, byline and date ("Nov 14, 2026"), and the summary in muted serif, as on News and Features |
 | Editorials, Opinions, Other | Under the rainbow divider: three groups side by side on computers (one under another below that), each titled as on Features (the title links to its full list, with a chevron, over a rule). Each shows the four newest stories of its types that aren't already on the page: the first with its photo, the next three listed with small photos. Tablets put the first beside the list. A group with nothing left is left out |
 | Looking for an article? | `components/SectionSearchPrompt.tsx`: search limited to Opinion and "Contact Opinion" (edop@). No archive link: Opinion has no single archive, and each group title links to its own list |
+
+### Default order and pins
+
+The columns fill newest first along a snake, row by row with the direction
+alternating (`snakeOrder` and `planOpinionColumns` in `lib/opinionLayout.ts`):
+
+```
+   Left    Middle   Right
+   1 ▣  |  2     |  3        row 1, left to right
+   6    |  5     |  4        row 2, right to left
+   7    |  8 ▣   |  9 ▣      row 3, left to right
+   ▣ = photo slot (IMG on; the defaults shown)
+```
+
+Each story goes into the next free slot along the snake that takes it: a photo
+slot takes only a story with a photo. So when the newest story has no photo it
+skips the lead and goes to the top of the middle column, the newest story with
+a photo takes the lead, and the rest carry on along the snake. A story without
+a photo that only photo slots are left for goes to the groups below instead.
+Photo slots nothing with a photo could fill take any stories left. Phones and
+tablets show the column stories in the same snake order, so they read newest
+first.
+
+Editors override the default by pinning: a pinned slot keeps its story and the
+default flows around it. In the Opinion Layout editor each automatic slot says
+what the default will put there ("Auto: …"), so editors only pin where they
+disagree. A column pin lapses once its story is more than two weeks
+(`OPINION_PIN_STALE_DAYS` = 14) older than the newest opinion story, measured
+from the newest story rather than today so pins don't all lapse over a break
+(Features does the same with 42 days). The page then uses the default for that
+slot, and the editor marks the pin "Expired" and names the story the page uses.
+Opinion's Choice picks don't lapse.
 
 Every story appears once on the page: the groups skip anything in the
 columns or Opinion’s Choice (the page fetches 20 per group so four are left).
@@ -27,6 +60,10 @@ The same module defines the card selection, including guest bylines.
 
 `lib/opinionLayout.ts` validates new writes and normalizes legacy or malformed
 reads. Columns retain empty slots, image settings, and their configured length.
+The columns start with three slots each (5/4/4 before 2026-11-27). A layout
+saved before then has no `version: 2`; reading it drops its trailing empty
+(automatic) slots down to three, keeping any slot with a pin, and the next save
+stores `version: 2`, after which slots an editor adds are kept.
 Each column has at most 20 slots; editors can choose at most three editor picks
 and 16 spotlight authors. Missing or unpublished pins fall back to automatic
 articles without moving other pins. Image settings apply on mobile and desktop.
@@ -49,7 +86,7 @@ pitch box (`components/PhotoPitch.tsx`): a window onto a photo pinned to the
 screen, the two lines centred on a dark tint, the photographer's credit in the
 corner. The wording is short so it can use the box's `large` type (14px label,
 28px link line; Features keeps 12px and 22px for its longer invitation). On
-computers it sits in column 1 after the third slot; on phones, after the sixth
+computers it sits in column 1 right after the lead; on phones, after the sixth
 story, before Opinion’s Choice; on tablets, beside Opinion’s Choice, as tall
 as it.
 

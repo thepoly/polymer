@@ -17,7 +17,7 @@
 import { getPayload } from 'payload'
 import config from '../payload.config'
 import { getArticleUrl } from '../utils/getArticleUrl'
-import { OPINION_LAYOUT_NAME } from '../lib/opinionLayout'
+import { OPINION_COLUMN_SLOTS, OPINION_LAYOUT_NAME, OPINION_LAYOUT_VERSION } from '../lib/opinionLayout'
 
 type RichTextNode = Record<string, unknown>
 
@@ -609,12 +609,13 @@ async function main() {
     data: {
       name: OPINION_LAYOUT_NAME,
       layout: {
-        column1: column('column1', 5),
-        column1Images: [true, false, false, false, false],
-        column2: column('column2', 4),
-        column2Images: [false, false, true, false],
-        column3: column('column3', 4),
-        column3Images: [false, false, false, true],
+        version: OPINION_LAYOUT_VERSION,
+        column1: column('column1', OPINION_COLUMN_SLOTS),
+        column1Images: [true, false, false],
+        column2: column('column2', OPINION_COLUMN_SLOTS),
+        column2Images: [false, false, true],
+        column3: column('column3', OPINION_COLUMN_SLOTS),
+        column3Images: [false, false, true],
         editorsChoice: pinFor('choice').slice(0, 3),
         editorsChoiceLabel: 'Opinion’s Choice',
         spotlight,
