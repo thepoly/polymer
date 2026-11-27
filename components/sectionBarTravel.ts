@@ -16,9 +16,11 @@ function travelSectionBar(nav: HTMLElement, spot: BarSpot, entering: boolean, on
   const clip = document.createElement("span");
   clip.dataset[entering ? "sectionBarEntry" : "sectionBarExit"] = "";
   clip.setAttribute("aria-hidden", "true");
+  // The same box as the header's bar (HeaderClient): 5px tall from 1px above
+  // the nav's foot, centred on the 1px rule
   Object.assign(clip.style, {
-    position: "absolute", left: "0", right: "0", top: `${navBox.bottom - ruleBox.top}px`,
-    height: "4px", overflow: "hidden", pointerEvents: "none", zIndex: "20",
+    position: "absolute", left: "0", right: "0", top: `${navBox.bottom - ruleBox.top - 1}px`,
+    height: "5px", overflow: "hidden", pointerEvents: "none", zIndex: "20",
   });
   const bar = document.createElement("span");
   bar.dataset[entering ? "enteringSectionBar" : "exitingSectionBar"] = "";

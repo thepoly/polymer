@@ -701,11 +701,14 @@ export default function Header({ compact = false, mobileTight = false, flushMobi
                       {active && (
                         // z-20: the bar hangs below the header into whatever
                         // comes next (the sports score strip starts on the
-                        // rule), which would otherwise paint over its lower half
+                        // rule), which would otherwise paint over its lower half.
+                        // 5px, from 1px above the link's foot: centred on the
+                        // 1px rule (2px either side). An even height can't be.
+                        // sectionBarTravel's copy matches it.
                         <span
                           aria-hidden="true"
                           data-slide-bar
-                          className="pointer-events-none absolute -bottom-[4px] left-0 right-0 z-20 h-[4px] bg-accent"
+                          className="pointer-events-none absolute -bottom-[4px] left-0 right-0 z-20 h-[5px] bg-accent"
                         />
                       )}
                     </Link>
