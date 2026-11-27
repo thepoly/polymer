@@ -37,6 +37,22 @@ describe('opinion security boundaries', () => {
 });
 
 describe('layout persistence and rendering', () => {
+  it('keeps the guest-writer photo and its per-screen positions, clamped', () => {
+    const layout = normalizeOpinionLayout({ pitch: 25, pitchPositions: { mobile: { x: 60, y: 140, zoom: 9 }, tablet: null, desktop: 'junk' } });
+    expect(layout.pitch).toBe(25);
+    expect(layout.pitchPositions).toEqual({ mobile: { x: 60, y: 100, zoom: 2.5 }, tablet: null, desktop: null });
+    expect(normalizeOpinionLayout({ pitchPositions: { mobile: { x: 1, y: 1, zoom: 1 } } }).pitchPositions.mobile).toBeNull();
+    expect(normalizeOpinionLayout(null)).toMatchObject({ pitch: null, pitchPositions: { mobile: null, tablet: null, desktop: null } });
+  });
+  it('rejects a bad guest-writer photo or position on save', () => {
+    expect(validateOpinionLayout({ pitch: 25, pitchPositions: { mobile: { x: 60, y: 50, zoom: 1.2 }, tablet: null, desktop: null } })).toBe(true);
+    expect(validateOpinionLayout({ pitch: null, pitchPositions: null })).toBe(true);
+    expect(validateOpinionLayout({ pitch: -1 })).not.toBe(true);
+    expect(validateOpinionLayout({ pitch: 'x' })).not.toBe(true);
+    expect(validateOpinionLayout({ pitchPositions: { mobile: { x: 120, y: 50, zoom: 1 } } })).not.toBe(true);
+    expect(validateOpinionLayout({ pitchPositions: { watch: null } })).not.toBe(true);
+    expect(validateOpinionLayout({ pitchPositions: { tablet: { x: 50, y: 50 } } })).not.toBe(true);
+  });
   it('fills holes without shifting a pin or duplicating editor choices', () => {
     const pinned = { id: 42 }; const pick = { id: 90 };
     expect(fillOpinionSlots([[null, pinned, null], [null]], [{ id: 1 }, pinned, pick, { id: 2 }, { id: 3 }], [pick]))

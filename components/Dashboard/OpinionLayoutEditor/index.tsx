@@ -17,6 +17,8 @@ import {
 } from '@dnd-kit/core';
 import './opinion-layout-editor.css';
 import { normalizeOpinionLayout, readOpinionLayoutDocument, validateOpinionLayout, OPINION_LAYOUT_NAME, MAX_OPINION_SLOTS, MAX_SPOTLIGHT_AUTHORS, type OpinionLayout, type SpotlightEntry } from '@/lib/opinionLayout';
+import { NO_PITCH_POSITIONS } from '@/lib/pitchPhoto';
+import { PitchPositionsEditor, pitchInfoOf, type PitchPhotoInfo } from '@/components/admin/PitchPositionsEditor';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,7 +32,7 @@ type ArticleData = {
   section: string;
   publishedDate: string | null;
   createdAt: string;
-  featuredImage?: { url?: string | null; alt?: string | null } | number | null;
+  featuredImage?: { id?: number; url?: string | null; alt?: string | null; width?: number | null; height?: number | null; focalX?: number | null; focalY?: number | null } | number | null;
   subdeck?: string | null;
   kicker?: string | null;
   opinionType?: string | null;
@@ -228,6 +230,62 @@ function DropSlot({
 }
 
 // ---------------------------------------------------------------------------
+// Guest-writer photo slot (drop a story to use its featured photo)
+// ---------------------------------------------------------------------------
+
+function PitchPhotoSlot({
+  preview,
+  missing,
+  onClear,
+}: {
+  preview: { url: string; title?: string } | null;
+  /** The saved photo couldn't be loaded (deleted from Media); the page falls back */
+  missing: boolean;
+  onClear: () => void;
+}) {
+  const { isOver, setNodeRef } = useDroppable({ id: 'drop-pitch', data: { slotId: 'pitch' } });
+  return (
+    <div>
+      <div ref={setNodeRef} className={`ole-slot ${isOver ? 'ole-slot-over' : ''} ${preview ? 'ole-slot-filled' : ''}`}>
+        <div className="ole-slot-header">
+          <span className="ole-slot-label">Guest writer photo</span>
+          {(preview || missing) && (
+            <button className="ole-slot-clear" onClick={onClear} title="Remove photo">&times;</button>
+          )}
+        </div>
+        {preview ? (
+          <div className="ole-slot-body">
+            <div className="ole-slot-preview">
+              <div className="ole-slot-image"><img src={preview.url} alt="" /></div>
+              {preview.title && (
+                <div className="ole-slot-text">
+                  <div className="ole-slot-author">From: {preview.title}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="ole-slot-empty">
+            <div className="ole-slot-empty-inner">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" width="18" height="18">
+                <rect x="3" y="5" width="18" height="14" rx="2" />
+                <circle cx="8.5" cy="10" r="1.5" />
+                <path d="M6 17l4.5-4.5L14 16l2.5-2.5L19 16" />
+              </svg>
+              <span>{missing ? 'The picked photo was deleted: the page uses the newest opinion photo' : 'Drop a story to use its photo'}</span>
+            </div>
+          </div>
+        )}
+      </div>
+      <p className="ole-pitch-note">
+        Behind &ldquo;Have an opinion? Submit an op-ed&rdquo;, which links to the submission form. Without
+        one, the page uses the newest opinion story&rsquo;s photo.
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Pool Card (draggable from article library)
 // ---------------------------------------------------------------------------
 
@@ -354,6 +412,7 @@ export function OpinionLayoutEditor() {
   const [userSearch, setUserSearch] = useState('');
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [activeArticle, setActiveArticle] = useState<ArticleData | null>(null);
+  const [pitchPreview, setPitchPreview] = useState<PitchPhotoInfo | null>(null);
   const docIdRef = useRef<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
@@ -421,6 +480,11 @@ export function OpinionLayoutEditor() {
         const next = readOpinionLayoutDocument(doc);
         docIdRef.current = String(doc.id);
         setLayout(next);
+        if (next.pitch != null) {
+          const mediaRes = await fetch(`/api/media/${next.pitch}?depth=0`);
+          const media = mediaRes.ok ? await mediaRes.json() : null;
+          if (media && !cancelled) setPitchPreview(pitchInfoOf(media));
+        }
         const ids = [...collectUsedIds(next)];
         if (ids.length) {
           const res = await fetch('/api/opinion/articles?ids=' + ids.join(','));
@@ -551,6 +615,24 @@ export function OpinionLayoutEditor() {
     }
 
     if (!overData?.slotId) return;
+
+    // The guest-writer photo takes the story's featured photo; the story stays where it is
+    if (overData.slotId === 'pitch') {
+      const image = draggedArticle.featuredImage;
+      const info = image && typeof image === 'object' && image.id ? pitchInfoOf(image, draggedArticle.plainTitle) : null;
+      if (!image || typeof image === 'number' || !image.id || !info) {
+        setError(`"${draggedArticle.plainTitle}" has no featured image, so it can't give the guest-writer box its photo.`);
+        return;
+      }
+      const mediaId = image.id;
+      setError(null);
+      // A new photo starts from its own focal point on every screen
+      setLayout((prev) => ({ ...prev, pitch: mediaId, pitchPositions: prev.pitch === mediaId ? prev.pitchPositions : { ...NO_PITCH_POSITIONS } }));
+      setPitchPreview(info);
+      markDirty();
+      return;
+    }
+
     const targetSlotId = overData.slotId as string;
     const targetParsed = parseSlotId(targetSlotId);
     if (!targetParsed) return;
@@ -687,12 +769,16 @@ export function OpinionLayoutEditor() {
                   />
                 ))}
 
-                {/* Fixed CTA */}
-                <div className="ole-cta-block">
-                  <p className="ole-cta-text">
-                    Interested in being a guest writer? <span className="ole-cta-link">Learn more.</span>
-                  </p>
-                </div>
+                {/* The guest-writer box's photo */}
+                <PitchPhotoSlot
+                  preview={pitchPreview}
+                  missing={layout.pitch != null && !pitchPreview}
+                  onClear={() => {
+                    setLayout((prev) => ({ ...prev, pitch: null, pitchPositions: { ...NO_PITCH_POSITIONS } }));
+                    setPitchPreview(null);
+                    markDirty();
+                  }}
+                />
 
                 {layout.column1.slice(3).map((_, ii) => {
                   const i = ii + 3;
@@ -865,6 +951,21 @@ export function OpinionLayoutEditor() {
                 <button className="ole-add-slot-btn" onClick={() => addSlot('column3')} disabled={layout.column3.length >= MAX_OPINION_SLOTS}>+ Add slot</button>
               </div>
             </div>
+
+            {layout.pitch != null && pitchPreview && (
+              <PitchPositionsEditor
+                photo={pitchPreview}
+                positions={layout.pitchPositions}
+                onChange={(next) => {
+                  setLayout((prev) => ({ ...prev, pitchPositions: next }));
+                  markDirty();
+                }}
+                page="/opinion"
+                pageName="Opinion"
+                heading="Guest writer photo position"
+                labelClassName="ole-slot-label"
+              />
+            )}
           </div>
 
           {/* Right: Article pool */}

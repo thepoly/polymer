@@ -9,7 +9,10 @@
 // from today: the page doesn't empty itself over the summer, and it never
 // leads with a story from years ago. See docs/features-section.md.
 import type { FeaturesDepartmentKey } from './featuresDepartments'
-import { MAX_PHOTO_ZOOM, MIN_PHOTO_ZOOM, type PhotoPosition, type PhotoScreen } from '@/components/GetInvolved/photoPositions'
+import { NO_PITCH_POSITIONS, pitchPositionsOf, type PitchPositions } from './pitchPhoto'
+
+// The pitch photo helpers moved to lib/pitchPhoto.ts (shared with Opinion); re-exported for the Features page and editor
+export { NO_PITCH_POSITIONS, pitchPositionVars, type PitchPositions } from './pitchPhoto'
 
 /** A section shows stories from this many days before the newest Features story */
 export const SECTION_WINDOW_DAYS = 365
@@ -200,25 +203,6 @@ export type FeaturesLayoutV3 = {
   pitchPositions: PitchPositions
 }
 
-export type PitchPositions = Record<PhotoScreen, PhotoPosition | null>
-export const NO_PITCH_POSITIONS: PitchPositions = { mobile: null, tablet: null, desktop: null }
-
-const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n))
-const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
-
-function positionOf(raw: unknown): PhotoPosition | null {
-  if (!raw || typeof raw !== 'object') return null
-  const p = raw as Record<string, unknown>
-  if (!finite(p.x) || !finite(p.y)) return null
-  return { x: clamp(p.x, 0, 100), y: clamp(p.y, 0, 100), zoom: finite(p.zoom) ? clamp(p.zoom, MIN_PHOTO_ZOOM, MAX_PHOTO_ZOOM) : 1 }
-}
-
-function pitchPositionsOf(raw: unknown): PitchPositions {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { ...NO_PITCH_POSITIONS }
-  const o = raw as Record<string, unknown>
-  return { mobile: positionOf(o.mobile), tablet: positionOf(o.tablet), desktop: positionOf(o.desktop) }
-}
-
 const idOf = (v: unknown): number | null => (typeof v === 'number' && Number.isInteger(v) && v > 0 ? v : null)
 
 /** Any saved layout (v3, an older shape, or garbage) as a v3 layout */
@@ -249,21 +233,3 @@ export function normalizeFeaturesLayout(raw: unknown): FeaturesLayoutV3 {
 
 /** The pins the page plan takes, from a v3 layout */
 export const pinsOf = (layout: FeaturesLayoutV3): FrontPins => ({ cover: layout.cover, leads: layout.leads, reel: layout.reel })
-
-const PITCH_SUFFIX: Record<PhotoScreen, string> = { mobile: 'm', tablet: 't', desktop: 'd' }
-
-/**
- * The CSS variables the pitch photo reads (PITCH_POSITION_CLASSES in
- * FeaturesFront): each screen's position, or `aim` (the photo's focal point,
- * as an object-position) not zoomed where none is set. Shared with the
- * Features Layout editor's previews.
- */
-export function pitchPositionVars(positions: PitchPositions, aim = '50% 50%'): Record<string, string> {
-  const vars: Record<string, string> = {}
-  for (const screen of Object.keys(PITCH_SUFFIX) as PhotoScreen[]) {
-    const p = positions[screen]
-    vars[`--pitch-pos-${PITCH_SUFFIX[screen]}`] = p ? `${p.x}% ${p.y}%` : aim
-    vars[`--pitch-zoom-${PITCH_SUFFIX[screen]}`] = String(p?.zoom ?? 1)
-  }
-  return vars
-}

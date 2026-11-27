@@ -255,24 +255,12 @@
   font-weight: 500;
 }
 
-/* ---- CTA Block (fixed, non-draggable) ---- */
-.ole-cta-block {
-  background: var(--theme-elevation-100, #1a1a1a);
-  border: 1px solid var(--theme-elevation-200, #2a2a2a);
-  border-radius: 8px;
-  padding: 14px;
-  position: relative;
-}
-.ole-cta-text {
+/* ---- Guest writer photo slot ---- */
+.ole-pitch-note {
   font-size: 0.72rem;
-  opacity: 0.35;
-  margin: 0;
-  text-align: center;
-  line-height: 1.4;
-}
-.ole-cta-link {
-  text-decoration: underline;
-  cursor: default;
+  line-height: 1.45;
+  opacity: 0.65;
+  margin: 6px 0 0;
 }
 
 /* ---- Editor's Choice section ---- */

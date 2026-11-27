@@ -4,7 +4,7 @@ import { getPayload, type Where } from 'payload';
 import config from '@/payload.config';
 import { ChevronRight } from 'lucide-react';
 import TransitionLink from '@/components/TransitionLink';
-import PhotoWindow from '@/components/PhotoWindow';
+import PhotoPitch from '@/components/PhotoPitch';
 import SectionSearchPrompt from '@/components/SectionSearchPrompt';
 import PhotoReel, { type ReelFrame } from '@/components/Features/PhotoReel';
 import { Byline } from '@/components/FrontPage/Byline';
@@ -30,6 +30,7 @@ import {
   type SectionKey,
   type SectionLayout,
 } from '@/lib/featuresFront';
+import { photographerOf, pitchPhotoOf, type PitchPhoto } from '@/lib/pitchPhoto';
 
 /*
  * /features, top to bottom (rendered by app/(frontend)/[section]/page.tsx,
@@ -201,73 +202,16 @@ function LeadSection({ sec, flip }: { sec: Section; flip: boolean }) {
   );
 }
 
-/** The photo behind the pitch: the editor's pick, else the newest photo story's */
-type PitchPhoto = {
-  src: string;
-  width: number;
-  height: number;
-  credit: string | null;
-  /** Each screen's position as CSS variables (pitchPositionVars) */
-  vars: Record<string, string>;
-  /** The most it's zoomed on any screen, so it downloads a big enough file */
-  maxZoom: number;
-};
-
-/** The pitch photo's position on each screen, from the variables pitchPositionVars sets (as on Get Involved) */
-const PITCH_POSITION_CLASSES =
-  '[object-position:var(--pitch-pos-m)] [transform-origin:var(--pitch-pos-m)] [scale:var(--pitch-zoom-m)] ' +
-  'md:[object-position:var(--pitch-pos-t)] md:[transform-origin:var(--pitch-pos-t)] md:[scale:var(--pitch-zoom-t)] ' +
-  'lg:[object-position:var(--pitch-pos-d)] lg:[transform-origin:var(--pitch-pos-d)] lg:[scale:var(--pitch-zoom-d)]';
-
 /**
  * The pitch, two lines in the top's right column: "Have a suggestion?" and
  * "Tell Features about it →", opening an email to the Features desk. It asks
  * for tips (an event, a place, something worth checking out), not finished
- * stories, so it doesn't say "story" or "pitch".
- *
- * With a photo, it's a window onto that photo, pinned to the screen in the
- * Get involved page's style: the photo stays put while the page scrolls past,
- * so a different part of it shows as you read down. The two lines are centred
- * on an even tint. The label is white, not red: red small type doesn't read
- * on a dark photo. Without any photo, the two lines sit on their own. Either
- * way it grows to fill its column (at least 124px tall with a photo). Where
- * the photo sits on phones, tablets and computers is set in the Features
- * Layout editor (`data-features-pitch` is how its previews find the box).
+ * stories, so it doesn't say "story" or "pitch". On a pinned photo (the
+ * editor's pick, else the newest photo story's): see components/PhotoPitch.
+ * It grows to fill its column (at least 124px tall with a photo).
  */
 function Pitch({ photo }: { photo: PitchPhoto | null }) {
-  const arrow = (
-    <span aria-hidden="true" className="inline-block transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0">
-      →
-    </span>
-  );
-  if (!photo) {
-    return (
-      <a href={PITCH_MAILTO} className={`group flex flex-1 flex-col items-center justify-center gap-1.5 py-2 text-center ${focus}`}>
-        <Kicker>Have a suggestion?</Kicker>
-        <span className="font-copy text-[19px] leading-[1.2] text-text-main">
-          Tell Features about it <span className="text-accent">{arrow}</span>
-        </span>
-      </a>
-    );
-  }
-  return (
-    <a
-      href={PITCH_MAILTO}
-      data-features-pitch
-      style={photo.vars as React.CSSProperties}
-      className={`group relative flex min-h-[124px] flex-1 flex-col items-center justify-center overflow-hidden text-center text-white ${focus}`}
-    >
-      <PhotoWindow fill src={photo} alt="" maxZoom={photo.maxZoom} imageClassName={PITCH_POSITION_CLASSES} />
-      <div aria-hidden="true" className="absolute inset-0 bg-black/50 transition-colors duration-300 group-hover:bg-black/60" />
-      {photo.credit && (
-        <span className="absolute right-1.5 top-1.5 z-10 bg-black/55 px-1.5 py-0.5 font-meta text-[10px] leading-none tracking-[0.02em] text-white/90">{photo.credit}</span>
-      )}
-      <div className="relative z-10 px-4 py-5 [text-shadow:0_1px_2px_rgb(0_0_0/0.45)]">
-        <Kicker light>Have a suggestion?</Kicker>
-        <span className="mt-1.5 block font-copy text-[22px] leading-[1.15]">Tell Features about it {arrow}</span>
-      </div>
-    </a>
-  );
+  return <PhotoPitch href={PITCH_MAILTO} question="Have a suggestion?" action="Tell Features about it" photo={photo} />;
 }
 
 /**
@@ -459,17 +403,6 @@ type MediaLike = {
   alt?: string | null;
   photographer?: unknown;
   writeInPhotographer?: string | null;
-};
-
-/** A media item's photographer, as a staff member or a write-in */
-const photographerOf = (m: MediaLike): string | null => {
-  const p = m.photographer;
-  if (p && typeof p === 'object' && 'firstName' in p) {
-    const { firstName, lastName } = p as { firstName?: string; lastName?: string };
-    const name = [firstName, lastName].filter(Boolean).join(' ');
-    if (name) return name;
-  }
-  return m.writeInPhotographer?.trim() || null;
 };
 
 /** Every photo in a story's body, in order, each once */
@@ -745,26 +678,15 @@ export default async function FeaturesFront({
   // the newest photo story's at its focal point
   const newestPhotoStory = stories.find((s) => s.dept === 'photo' && s.photo);
   const pitch: PitchPhoto | null =
-    pickedPhoto?.url && pickedPhoto.width && pickedPhoto.height
-      ? {
-          src: pickedPhoto.url,
-          width: pickedPhoto.width,
-          height: pickedPhoto.height,
-          credit: credit(photographerOf(pickedPhoto as MediaLike)),
-          vars: pitchPositionVars(
-            pitchPositions,
-            pickedPhoto.focalX != null && pickedPhoto.focalY != null ? `${pickedPhoto.focalX}% ${pickedPhoto.focalY}%` : undefined,
-          ),
-          maxZoom: Math.max(1, ...Object.values(pitchPositions).map((p) => p?.zoom ?? 1)),
-        }
-      : newestPhotoStory?.photo
+    pitchPhotoOf(pickedPhoto, pitchPositions) ??
+    (newestPhotoStory?.photo
         ? {
             ...newestPhotoStory.photo,
             credit: credit(newestPhotoStory.imagePhotographer),
             vars: pitchPositionVars(NO_PITCH_POSITIONS, newestPhotoStory.imageFocus || undefined),
             maxZoom: 1,
           }
-        : null;
+        : null);
 
   const hero = plan.reel.hero != null ? photoStoryOf(plan.reel.hero) : null;
   const pss: PhotoStories | null =

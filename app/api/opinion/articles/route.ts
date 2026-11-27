@@ -20,12 +20,15 @@ export async function GET(req: NextRequest) {
       ...(ids.length ? [{ id: { in: ids } }] : query ? [{ plainTitle: { contains: query } }] : []),
     ] },
     select: { ...opinionCardSelect, plainTitle: true },
-    populate: { users: { firstName: true, lastName: true }, media: { url: true, filename: true, sourceUrl: true } },
+    populate: { users: { firstName: true, lastName: true }, media: { url: true, filename: true, sourceUrl: true, width: true, height: true, focalX: true, focalY: true } },
   });
   const docs = result.docs.map((a) => ({
     id: a.id, title: a.title, plainTitle: a.plainTitle, slug: a.slug, section: a.section,
     publishedDate: a.publishedDate, createdAt: a.createdAt,
-    featuredImage: a.featuredImage && typeof a.featuredImage === 'object' ? { url: a.featuredImage.url } : null,
+    // id, size and focal point: dropping a story on the guest-writer photo slot uses its photo
+    featuredImage: a.featuredImage && typeof a.featuredImage === 'object'
+      ? { id: a.featuredImage.id, url: a.featuredImage.url, width: a.featuredImage.width, height: a.featuredImage.height, focalX: a.featuredImage.focalX, focalY: a.featuredImage.focalY }
+      : null,
     authors: (a.authors || []).flatMap((u) => typeof u === 'object' && u ? [{ firstName: u.firstName, lastName: u.lastName }] : []),
     writeInAuthors: (a.writeInAuthors || []).map((u) => ({ name: u.name })),
   }));

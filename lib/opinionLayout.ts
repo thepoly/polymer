@@ -1,3 +1,5 @@
+import { NO_PITCH_POSITIONS, pitchPositionsOf, validatePitchPositions, type PitchPositions } from './pitchPhoto';
+
 export const OPINION_LAYOUT_NAME = 'Opinion Layout';
 export const MAX_OPINION_SLOTS = 20;
 export const MAX_SPOTLIGHT_AUTHORS = 16;
@@ -10,6 +12,10 @@ export type OpinionLayout = Record<OpinionColumn, (number | null)[]> & {
   editorsChoice: (number | null)[];
   editorsChoiceLabel: string;
   spotlight: SpotlightEntry[];
+  /** A media id: the photo behind the guest-writer box. Not a story pin; without one the page uses the newest opinion photo. */
+  pitch: number | null;
+  /** Where that photo sits on each screen (lib/pitchPhoto); null follows its focal point */
+  pitchPositions: PitchPositions;
 };
 const record = (value: unknown): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -45,6 +51,8 @@ export function normalizeOpinionLayout(value: unknown): OpinionLayout {
     users.add(entry.userId);
     return [{ userId: entry.userId, articleTitle: typeof entry.articleTitle === 'string' ? entry.articleTitle.slice(0, 300) : null, articleUrl: safeSpotlightUrl(entry.articleUrl) }];
   });
+  result.pitch = validId(raw.pitch) ? raw.pitch : null;
+  result.pitchPositions = result.pitch ? pitchPositionsOf(raw.pitchPositions) : { ...NO_PITCH_POSITIONS };
   return result;
 }
 
@@ -89,6 +97,9 @@ export function validateOpinionLayout(value: unknown): true | string {
       if (entry.articleUrl != null && entry.articleUrl !== '' && !safeSpotlightUrl(entry.articleUrl)) return 'Spotlight links must be site paths or HTTPS URLs.';
     }
   }
+  if (raw.pitch != null && !validId(raw.pitch)) return 'The guest-writer photo must be a media ID or null.';
+  const positions = validatePitchPositions(raw.pitchPositions);
+  if (positions !== true) return positions;
   return true;
 }
 

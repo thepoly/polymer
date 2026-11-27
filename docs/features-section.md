@@ -94,13 +94,16 @@ has five story slots and a Pitch photo slot, each with its fallback written unde
 With a Pitch photo picked, **Pitch photo position** appears under it: the
 real Features page framed at phone, tablet and computer size, each scrolled
 to the pitch box, with the same drag, zoom and reset as the Get Involved
-photo and the Senate / E-Board panel photo (`components/admin/PinnedPhotoPreview.tsx`,
-shared with the Get Involved field). Each screen is set separately; one
+photo and the Senate / E-Board panel photo (`components/admin/PitchPositionsEditor.tsx`
+on `components/admin/PinnedPhotoPreview.tsx`, shared with the Get Involved field
+and the Opinion guest-writer box). Each screen is set separately; one
 that hasn't been moved uses the photo's focal point, not zoomed, and Reset
 goes back to that. Picking a different photo clears the positions. The
-page reads them as CSS variables (`pitchPositionVars`, `--pitch-pos-m/t/d`
-and `--pitch-zoom-m/t/d`), so the previews update without reloading. The
-fallback photo (no Pitch photo picked) always uses its focal point.
+page reads them as CSS variables (`pitchPositionVars` in `lib/pitchPhoto.ts`,
+`--pitch-pos-m/t/d` and `--pitch-zoom-m/t/d`), so the previews update without
+reloading; the previews find the box by `data-pitch`. The box itself is
+`components/PhotoPitch.tsx`, shared with Opinion. The fallback photo (no Pitch
+photo picked) always uses its focal point.
 
 A story dropped in the wrong slot is refused with the reason. A slot whose
 pin has gone stale says so ("Stale, the page is using the newest story

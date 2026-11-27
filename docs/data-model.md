@@ -44,7 +44,7 @@ metadata.
 
 ### Per-section page layouts
 
-- `opinion-page-layout` — [`collections/OpinionPageLayout.ts`](../collections/OpinionPageLayout.ts)
+- `opinion-page-layout` — [`collections/OpinionPageLayout.ts`](../collections/OpinionPageLayout.ts) (one `layout` json read by `normalizeOpinionLayout` in [`lib/opinionLayout.ts`](../lib/opinionLayout.ts): column pins and image flags, Opinion’s Choice, spotlight authors, plus `pitch`, the photo behind the guest-writer box, and `pitchPositions`, where it sits on phones, tablets and computers. Keys in the json, so no migration; see [`opinion-section.md`](opinion-section.md))
 - `features-page-layout` — [`collections/FeaturesPageLayout.ts`](../collections/FeaturesPageLayout.ts) (one `layout` json, the v3 layout read by `normalizeFeaturesLayout` in [`lib/featuresFront.ts`](../lib/featuresFront.ts): pinned cover, section leads and photo reel story, plus `pitch`, the photo behind "Have a suggestion?", and `pitchPositions`, where it sits on phones, tablets and computers. Older shapes keep only their first Featured slot. Keys in the json, so no migration; see [`features-section.md`](features-section.md))
 - `sports-page-layout` — [`collections/SportsPageLayout.ts`](../collections/SportsPageLayout.ts)
 - `news-page-layout` — [`collections/NewsPageLayout.ts`](../collections/NewsPageLayout.ts) (one `layout` jsonb: lead, Student Government boxes, and the timeline pages' photos, hidden entries, layouts and archive additions; see [`news-section.md`](news-section.md))

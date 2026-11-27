@@ -45,14 +45,11 @@ import {
   SECTION_WINDOW_DAYS,
   isWithin,
   normalizeFeaturesLayout,
-  pitchPositionVars,
   NO_PITCH_POSITIONS,
   type FeaturesLayoutV3,
-  type PitchPositions,
   type SectionKey,
 } from '@/lib/featuresFront';
-import { PREVIEW_SCREENS, PinnedPhotoPreview, swapPhotos } from '@/components/admin/PinnedPhotoPreview';
-import type { PhotoPosition } from '@/components/GetInvolved/photoPositions';
+import { PitchPositionsEditor, pitchInfoOf, type PitchPhotoInfo } from '@/components/admin/PitchPositionsEditor';
 
 // ---------------------------------------------------------------------------
 // Types and slots
@@ -256,82 +253,6 @@ const staleStyle: React.CSSProperties = {
   padding: '4px 8px',
   margin: '6px 0 0',
 };
-
-/** The picked pitch photo: its file, size and focal point (where it sits until placed) */
-type PitchPhotoInfo = { url: string; title?: string; width: number; height: number; focalX: number; focalY: number };
-
-type MediaInfo = { url?: string | null; alt?: string | null; width?: number | null; height?: number | null; focalX?: number | null; focalY?: number | null };
-
-const pitchInfoOf = (m: MediaInfo, title?: string): PitchPhotoInfo | null =>
-  m.url && m.width && m.height
-    ? { url: m.url, title: title ?? (m.alt || undefined), width: m.width, height: m.height, focalX: m.focalX ?? 50, focalY: m.focalY ?? 50 }
-    : null;
-
-/** Brings the pitch box showing at this screen size into the middle of the framed page */
-function scrollToPitch(win: Window) {
-  const box = [...win.document.querySelectorAll<HTMLElement>('[data-features-pitch]')].find((el) => el.getClientRects().length > 0);
-  if (!box) return;
-  const rect = box.getBoundingClientRect();
-  win.scrollTo({ top: Math.max(0, rect.top + win.scrollY - (win.innerHeight - rect.height) / 2) });
-}
-
-/**
- * Where the pitch photo sits on phones, tablets and computers: the real
- * Features page framed at each size, scrolled to the pitch box. Drag a preview
- * to move the photo, zoom to crop tighter; Reset goes back to the photo's
- * focal point. Unsaved changes are pushed into the frames (CSS variables and
- * the photo itself), and Activate saves them with the layout.
- */
-function PitchPositionsEditor({
-  photo,
-  positions,
-  onChange,
-}: {
-  photo: PitchPhotoInfo;
-  positions: PitchPositions;
-  onChange: (next: PitchPositions) => void;
-}) {
-  const aim = `${photo.focalX}% ${photo.focalY}%`;
-  const vars = JSON.stringify(pitchPositionVars(positions, aim));
-  const apply = useCallback(
-    (doc: Document) => {
-      doc.querySelectorAll<HTMLElement>('[data-features-pitch]').forEach((box) => {
-        for (const [name, value] of Object.entries(JSON.parse(vars) as Record<string, string>)) box.style.setProperty(name, value);
-        swapPhotos(box, photo.url);
-      });
-    },
-    [vars, photo.url],
-  );
-  const focal: PhotoPosition = { x: photo.focalX, y: photo.focalY, zoom: 1 };
-  return (
-    <div style={{ marginTop: 16 }}>
-      <div className="fle-slot-label">Pitch photo position</div>
-      <p style={{ fontSize: '0.78rem', lineHeight: 1.5, opacity: 0.75, margin: '4px 0 12px', maxWidth: 720 }}>
-        Drag a preview to move the photo, and zoom in to crop tighter. Phone, tablet and computer are set separately; one
-        you haven&rsquo;t moved uses the photo&rsquo;s focal point. The previews are the real page: the photo stays put
-        while the page scrolls, so scroll inside one to see how it moves. Press Activate to save.
-      </p>
-      <div className="gip-screens">
-        {PREVIEW_SCREENS.map((screen) => (
-          <PinnedPhotoPreview
-            key={screen.key}
-            screen={screen}
-            position={positions[screen.key] ?? focal}
-            photo={photo}
-            src="/features"
-            title={`${screen.label} preview of the Features page`}
-            apply={apply}
-            home={scrollToPitch}
-            homeLabel="Show the box"
-            onChange={(next) => onChange({ ...positions, [screen.key]: next })}
-            onReset={() => onChange({ ...positions, [screen.key]: null })}
-            resetDisabled={positions[screen.key] === null}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /** The pitch's photo: drop a story to use its featured photo */
 function PitchPhotoSlot({
@@ -842,6 +763,9 @@ export function FeaturesLayoutEditor() {
               <PitchPositionsEditor
                 photo={pitchPreview}
                 positions={layout.pitchPositions}
+                page="/features"
+                pageName="Features"
+                labelClassName="fle-slot-label"
                 onChange={(next) => {
                   setLayout((prev) => ({ ...prev, pitchPositions: next }));
                   setSaved(false);
