@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import TransitionLink from "@/components/TransitionLink";
 
 /**
- * The foot of a section page (/news, /features): a question, centred
+ * The foot of a section page (/news, /features, /opinion): a question, centred
  * ("Missed something?" on News, which is its own; other sections pass their
  * own with `question`). A search box limited to the section (it goes to the site search
  * as /search?q=…&section=<section>) on a red underline, a link to the
@@ -31,8 +31,8 @@ export default function SectionSearchPrompt({
   section: string;
   /** How the section is named in the copy ("News") */
   name: string;
-  /** Every past story in the section */
-  archiveHref: string;
+  /** Every past story in the section. Opinion has none (its group titles link to their own lists), so it leaves this out */
+  archiveHref?: string;
   /** The archive link's words ("Browse all Features"); News keeps "Browse back issues" */
   archiveLabel?: string;
   contactHref?: string;
@@ -62,6 +62,7 @@ export default function SectionSearchPrompt({
       />
 
       <div className="mt-5 flex flex-wrap items-center justify-center gap-x-6">
+        {archiveHref && (
         <TransitionLink
           href={archiveHref}
           className="group inline-flex min-h-11 items-center gap-1.5 font-meta text-[15px] font-medium text-accent underline-offset-4 hover:underline"
@@ -69,6 +70,7 @@ export default function SectionSearchPrompt({
           {archiveLabel}
           <ArrowRight aria-hidden="true" className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" strokeWidth={2} />
         </TransitionLink>
+        )}
         {contactHref && (
           <a
             href={contactHref}

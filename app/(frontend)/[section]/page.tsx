@@ -41,6 +41,7 @@ import type { SpotlightAuthor } from '@/components/Opinion/AuthorSpotlightCarous
 import { formatArticle } from '@/utils/formatArticle';
 import { normalizeOpinionLayout, readOpinionLayoutDocument, OPINION_LAYOUT_NAME } from '@/lib/opinionLayout';
 import { buildOpinionSpotlights, opinionCardSelect } from '@/lib/opinionArticles';
+import { pitchPhotoOf, type PitchPhoto } from '@/lib/pitchPhoto';
 import { opinionGroups } from '@/components/Opinion/opinionGroups';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -232,6 +233,7 @@ export default async function SectionPageRoute({ params }: Args) {
   let editorsChoiceArticles: ComponentArticle[] = [];
   let editorsChoiceLabel = "Opinion\u2019s Choice";
   let pinnedSpotlightAuthors: SpotlightAuthor[] = [];
+  let opinionPitch: PitchPhoto | null = null;
 
   if (isOpinion) {
     let layoutJson = normalizeOpinionLayout(null);
@@ -247,6 +249,17 @@ export default async function SectionPageRoute({ params }: Args) {
       layoutJson = readOpinionLayoutDocument(doc);
     } catch {
       // Table may not exist yet
+    }
+
+    // The guest-writer box's photo: the editor's pick, placed per screen in the
+    // Opinion Layout editor, else the newest opinion story's at its focal point
+    if (layoutJson.pitch != null) {
+      const picked = await payload.findByID({ collection: 'media', id: layoutJson.pitch, depth: 1 }).catch(() => null);
+      opinionPitch = pitchPhotoOf(picked, layoutJson.pitchPositions);
+    }
+    for (const a of articles) {
+      if (opinionPitch) break;
+      opinionPitch = pitchPhotoOf(a.featuredImage && typeof a.featuredImage === 'object' ? a.featuredImage : null);
     }
 
     if (layoutJson) {
@@ -534,7 +547,9 @@ export default async function SectionPageRoute({ params }: Args) {
             ],
           },
           sort: '-publishedDate',
-          limit: 5,
+          // Enough that four are left after the columns and Opinion's Choice
+          // take theirs (the page shows each story once)
+          limit: 20,
           depth: 1,
           select: opinionCardSelect,
         })
@@ -572,6 +587,7 @@ export default async function SectionPageRoute({ params }: Args) {
           editorsChoiceLabel={editorsChoiceLabel}
           groupedArticles={groupedArticles}
           pinnedSpotlightAuthors={pinnedSpotlightAuthors}
+          guestPitch={opinionPitch}
         />
       ) : sportsPage ? (
         <SportsSectionPage title={sectionTitle} articles={formattedArticles} {...sportsPage} />
