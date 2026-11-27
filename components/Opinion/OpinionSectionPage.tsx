@@ -29,40 +29,70 @@ const opinionDate = (article: ComponentArticle) => shortDate(article.publishedDa
 
 /* ── Article card — optionally shows image ── */
 
-function OpinionCard({ article, withImage = false, priority = false }: { article: ComponentArticle; withImage?: boolean; priority?: boolean }) {
+/**
+ * The opinion type above every headline ("Staff Editorial", "Column"): the
+ * Features kicker (12px, semibold, wide tracking), so the red labels mark the
+ * page without shouting over the headlines
+ */
+const kickerClass = "block font-meta text-[12px] font-semibold uppercase tracking-[0.12em] text-accent dark:text-[#d96b76]";
+
+/**
+ * A hairline between consecutive stories in a run, so a page of text-only
+ * cards still reads as separate pieces (as in the Features rail). Tablets set
+ * stories in two flowing columns, where a rule could land at a column's top,
+ * so they keep plain space instead.
+ */
+const STACK_RULE =
+  "[[data-opinion-card]+&]:border-t [[data-opinion-card]+&]:border-rule [[data-opinion-card]+&]:pt-6 md:max-lg:[[data-opinion-card]+&]:border-t-0 md:max-lg:[[data-opinion-card]+&]:pt-0";
+
+function OpinionCard({
+  article,
+  withImage = false,
+  priority = false,
+  lead = false,
+}: {
+  article: ComponentArticle;
+  withImage?: boolean;
+  priority?: boolean;
+  /** The page's first story: a larger headline and full summary, so the page has an entry point with or without a photo */
+  lead?: boolean;
+}) {
   const typeLabel =
     opinionTypeLabels[article.opinionType || "opinion"] || "Opinion";
 
   return (
     <TransitionLink
       href={getArticleUrl(article)}
-      className="group block mb-8 break-inside-avoid"
+      data-opinion-card=""
+      className={`group block mb-6 break-inside-avoid md:max-lg:mb-8 ${lead ? "md:max-lg:mb-10" : ""} ${STACK_RULE}`}
     >
       {withImage && article.image && (
-        <div className="relative overflow-hidden mb-3 -mx-4 w-auto sm:mx-0 sm:w-full" style={{ aspectRatio: "3/2" }}>
+        <div className="relative overflow-hidden mb-3 -mx-4 w-auto bg-rule sm:mx-0 sm:w-full" style={{ aspectRatio: "3/2" }}>
           <Image
             src={article.image}
             alt={article.imageTitle || ""}
             fill
             className="object-cover"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes={lead ? "(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 33vw" : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"}
             priority={priority}
           />
         </div>
       )}
-      {/* Opinion type — lighter weight, accent color, slightly bigger than byline */}
-      <span className="font-meta text-[15px] font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76] block mb-1.5">
-        {typeLabel}
-      </span>
-      {/* Title — largest, dominant */}
-      <h3 className="font-copy font-medium leading-[1.12] text-[25px] sm:text-[28px] text-text-main transition-colors">
-        {article.richTitle || article.title}
-      </h3>
+      <span className={`${kickerClass} mb-1.5`}>{typeLabel}</span>
+      {lead ? (
+        <h3 className="text-balance font-copy text-[30px] font-normal leading-[1.08] tracking-[-0.015em] text-text-main transition-colors group-hover:text-accent md:text-[36px] lg:text-[38px]">
+          {article.richTitle || article.title}
+        </h3>
+      ) : (
+        <h3 className="font-copy text-[23px] font-normal leading-[1.14] text-text-main transition-colors group-hover:text-accent lg:text-[24px]">
+          {article.richTitle || article.title}
+        </h3>
+      )}
       {/* Byline: muted "By", names in ink (red is the type label above) */}
       <Byline authors={article.authorLinks} date={opinionDate(article)} size="md" margin="mt-2" />
       {/* Summary in muted serif, as on News and Features */}
       {article.excerpt && (
-        <p className="mt-1 font-copy text-[17px] leading-[1.45] text-text-muted line-clamp-4">
+        <p className={`mt-1.5 font-copy leading-[1.45] text-text-muted ${lead ? "text-[17px] md:text-[18px]" : "text-[16px] line-clamp-3 lg:text-[17px]"}`}>
           {article.excerpt}
         </p>
       )}
@@ -94,8 +124,6 @@ function GuestWriterPitch({ photo }: { photo: PitchPhoto | null }) {
 const OPINION_CONTACT_MAILTO = "mailto:edop@poly.rpi.edu";
 /** Stories in each category group under the columns: one with its photo, three listed */
 const GROUP_STORIES = 4;
-
-const kickerClass = "block font-meta font-medium uppercase tracking-[0.08em] text-accent dark:text-[#d96b76]";
 
 /**
  * A category group under the columns (Editorials, Opinions, Other): its
@@ -138,8 +166,8 @@ function OpinionGroup({
               <Image src={lead.image} alt={lead.imageTitle || ""} fill sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 400px" className="object-cover" />
             </div>
           )}
-          <span className={`${kickerClass} mb-1.5 text-[15px]`}>{typeOf(lead)}</span>
-          <h3 className="font-copy text-[24px] font-medium leading-[1.12] text-text-main transition-colors group-hover:text-accent md:text-[26px]">
+          <span className={`${kickerClass} mb-1.5`}>{typeOf(lead)}</span>
+          <h3 className="font-copy text-[23px] font-normal leading-[1.12] text-text-main transition-colors group-hover:text-accent md:text-[24px]">
             {lead.richTitle || lead.title}
           </h3>
           <Byline authors={lead.authorLinks} date={opinionDate(lead)} size="md" margin="mt-2" />
@@ -155,8 +183,8 @@ function OpinionGroup({
                     </div>
                   )}
                   <div className="min-w-0 flex-1">
-                    <span className={`${kickerClass} mb-1 text-[13px]`}>{typeOf(a)}</span>
-                    <h3 className="line-clamp-3 font-copy text-[20px] font-medium leading-[1.15] text-text-main transition-colors group-hover:text-accent">
+                    <span className={`${kickerClass} mb-1`}>{typeOf(a)}</span>
+                    <h3 className="line-clamp-3 font-copy text-[19px] font-normal leading-[1.18] text-text-main transition-colors group-hover:text-accent">
                       {a.richTitle || a.title}
                     </h3>
                     <Byline authors={a.authorLinks} date={opinionDate(a)} size="sm" margin="mt-1.5" />
@@ -252,22 +280,27 @@ export default function OpinionSectionPage({
       {/* Phones: one column. Tablets (768–1023px): the same order, stories two
           across, the guest-writer box beside Opinion's Choice. */}
       <div className="lg:hidden">
-        <div className={TABLET_PAIRS}>
-          {mobileOrderedArticles.slice(0, 2).map(({ article, withImage }, index) => (
-            <OpinionCard
-              key={`mobile-top-${article.id}`}
-              article={article}
-              withImage={withImage}
-              priority={index === 0 && withImage}
-            />
-          ))}
-        </div>
-
-        {hasSpotlightAuthors && (
-          <div className="mb-10">
-            <AuthorSpotlightCarousel authors={spotlightAuthors} pinnedAuthors={pinnedSpotlightAuthors} />
-          </div>
+        {/* The lead across the page; on tablets the next story sits beside
+            the author carousel, so neither is left alone on its row */}
+        {mobileOrderedArticles[0] && (
+          <OpinionCard
+            article={mobileOrderedArticles[0].article}
+            withImage={mobileOrderedArticles[0].withImage}
+            priority={mobileOrderedArticles[0].withImage}
+            lead
+          />
         )}
+
+        <div className={`md:mb-8 md:grid md:grid-cols-2 md:items-center md:gap-x-6 ${mobileOrderedArticles.length > 1 ? "border-t border-rule pt-6 md:border-t-0 md:pt-0" : ""}`}>
+          {mobileOrderedArticles.slice(1, 2).map(({ article, withImage }) => (
+            <OpinionCard key={`mobile-top-${article.id}`} article={article} withImage={withImage} />
+          ))}
+          {hasSpotlightAuthors && (
+            <div className="mb-10 md:mb-0">
+              <AuthorSpotlightCarousel authors={spotlightAuthors} pinnedAuthors={pinnedSpotlightAuthors} />
+            </div>
+          )}
+        </div>
 
         <div className={TABLET_PAIRS}>
           {mobileOrderedArticles.slice(2, 6).map(({ article, withImage }) => (
@@ -306,7 +339,7 @@ export default function OpinionSectionPage({
         {/* ── Col 1: first 3 slots, CTA, remaining slots ── */}
         <div className="lg:border-r lg:border-rule lg:pr-6">
           {col1.slice(0, 3).map((article, i) => (
-            article && <OpinionCard key={`col1-${article.id}`} article={article} withImage={col1Images[i] ?? false} priority={i === 0 && (col1Images[0] ?? true)} />
+            article && <OpinionCard key={`col1-${article.id}`} article={article} withImage={col1Images[i] ?? false} priority={i === 0 && (col1Images[0] ?? true)} lead={i === 0} />
           ))}
 
           <div style={{ marginBottom: 30 }}>
@@ -336,7 +369,7 @@ export default function OpinionSectionPage({
         {/* ── Col 3: editors choice, then all slots ── */}
         <div>
           {editorsChoiceArticles.length > 0 && (
-            <div className="mb-3">
+            <div className="mb-8">
               <EditorsChoice
                 articles={editorsChoiceArticles}
                 label={editorsChoiceLabel}

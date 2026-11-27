@@ -20,15 +20,8 @@ export default function EditorsChoice({
     <div>
       <div style={{ borderTop: "2px solid var(--accent-color)", paddingTop: 8, marginLeft: -1, marginRight: -1 }}>
         <p
-          className="font-meta uppercase"
-          style={{
-            fontSize: 15,
-            letterSpacing: "0.08em",
-            color: "var(--accent-color)",
-            fontWeight: 500,
-            margin: "0 0 1px",
-            paddingLeft: 5,
-          }}
+          className="font-meta text-[12px] font-semibold uppercase tracking-[0.12em] text-accent dark:text-[#d96b76]"
+          style={{ margin: "2px 0 2px", paddingLeft: 1 }}
         >
           {label}
         </p>
@@ -65,8 +58,8 @@ export default function EditorsChoice({
                 className="font-copy"
                 style={{
                   fontSize: 20,
-                  fontWeight: 500,
-                  lineHeight: 1.12,
+                  fontWeight: 400,
+                  lineHeight: 1.15,
                 }}
               >
                 {article.richTitle || article.title}
