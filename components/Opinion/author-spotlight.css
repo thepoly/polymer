@@ -1,0 +1,13 @@
+/* The author spotlight's face strip: a ring round the current author's face,
+   drawn over the five seconds they're shown (the circle has pathLength="100")
+   and paused with the timer (animation-play-state) */
+@keyframes spotlight-ring {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+
+.spotlight-ring {
+  animation-name: spotlight-ring;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}

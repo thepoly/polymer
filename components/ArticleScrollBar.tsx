@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { Moon, Search, Sun } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 import { openSearchOverlay } from '@/components/SearchOverlayHost';
+import ArticleSectionMenu from '@/components/ArticleSectionMenu';
+import sectionStyles from '@/components/Article/ArticleSectionLabel.module.css';
 import posthog from 'posthog-js';
 
 type Props = {
@@ -103,12 +105,13 @@ const ARTICLE_LOGO_SHIFT_THRESHOLD = 100;
 export default function ArticleScrollBar({ title, richTitle, section, hideUntilScroll = false }: Props) {
   const isHome = !title || !section;
   // Home / hideUntilScroll: controls whether the whole bar fades in.
-  // Article (default): bar is always visible, but `atTop` controls the
-  // logo-centered vs logo-left layout.
+  // Phones keep the centered logo. Larger screens switch the center to
+  // section/title navigation after scrolling.
   const [visible, setVisible] = useState(!isHome && !hideUntilScroll);
   const [atTop, setAtTop] = useState(true);
   const [shareOpen, setShareOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const toolbarRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { isDarkMode, toggleDarkMode, logoSrcs } = useTheme();
 
@@ -117,36 +120,70 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
   const sectionHref = section ? `/${section.toLowerCase()}` : '/';
 
   useEffect(() => {
+    const toolbar = toolbarRef.current;
+    const viewport = isHome ? null : window.visualViewport;
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    const tabletUp = window.matchMedia('(min-width: 768px)');
+    const photoUsesStandardHeader = window.matchMedia('(max-width: 639px)');
+    let positionedInVisualViewport = false;
+
+    const resetViewportPosition = () => {
+      if (!toolbar || !positionedInVisualViewport) return;
+      toolbar.style.removeProperty('translate');
+      toolbar.style.removeProperty('width');
+      positionedInVisualViewport = false;
+    };
+
     const handleScroll = () => {
-      const y = window.scrollY;
+      let y = window.scrollY;
       if (isHome) {
         setVisible(y > HOME_SCROLL_THRESHOLD);
         return;
       }
+
+      // Chromium pans the visible viewport separately during pinch zoom.
+      // Fixed positioning alone keeps the toolbar at the layout viewport's origin.
+      if (toolbar && viewport && desktop.matches && viewport.scale > 1) {
+        toolbar.style.translate = `${viewport.offsetLeft}px ${viewport.offsetTop}px`;
+        toolbar.style.width = `${viewport.width}px`;
+        positionedInVisualViewport = true;
+        y += viewport.offsetTop;
+      } else {
+        resetViewportPosition();
+      }
+
       if (hideUntilScroll) {
         // Photofeature desktop: hero is h-screen with its own header overlay.
         // Wait until the hero has scrolled most of the way out before fading
         // the bar in, so it doesn't double up on the in-hero header.
         // On mobile (< sm), the photofeature falls back to the standard
         // text header layout, so the bar should behave normally (always on).
-        const isMobile = window.matchMedia('(max-width: 639px)').matches;
-        if (isMobile) {
+        if (photoUsesStandardHeader.matches) {
           setVisible(true);
         } else {
           const threshold = Math.max(HOME_SCROLL_THRESHOLD, window.innerHeight - SCROLLBAR_HEIGHT);
           setVisible(y > threshold);
         }
       }
-      setAtTop(y <= ARTICLE_LOGO_SHIFT_THRESHOLD);
+      setAtTop(!tabletUp.matches || y <= ARTICLE_LOGO_SHIFT_THRESHOLD);
       if (y > ARTICLE_LOGO_SHIFT_THRESHOLD + 50) setShareOpen(false);
+    };
+
+    const handleViewportChange = () => {
+      if (desktop.matches) handleScroll();
     };
 
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleScroll);
+    viewport?.addEventListener('scroll', handleViewportChange, { passive: true });
+    viewport?.addEventListener('resize', handleViewportChange);
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
+      viewport?.removeEventListener('scroll', handleViewportChange);
+      viewport?.removeEventListener('resize', handleViewportChange);
+      resetViewportPosition();
     };
   }, [isHome, hideUntilScroll]);
 
@@ -204,9 +241,13 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
     setShareOpen(false);
   };
 
-  return (
+  const toolbar = (
     <div
+      ref={toolbarRef}
       className="fixed top-0 left-0 right-0 z-[51] bg-bg-main border-b border-border-main"
+      // Invisible until scrolled to: out of the tab order and the
+      // accessibility tree until then too
+      inert={(isHome || hideUntilScroll) && !visible}
       style={{
         opacity: (isHome || hideUntilScroll) && !visible ? 0 : 1,
         pointerEvents: (isHome || hideUntilScroll) && !visible ? 'none' : 'auto',
@@ -218,10 +259,13 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
             there instead); always shown on home mode. */}
         <Link
           href="/"
-          className={`shrink-0 transition-opacity duration-300 ease-out ${
+          className={`shrink-0 transition-opacity duration-300 ease-out ${!isHome ? 'hidden lg:block' : ''} ${
             !isHome && atTop ? 'opacity-0 pointer-events-none' : 'opacity-100'
           }`}
           aria-hidden={!isHome && atTop ? true : undefined}
+          // Hidden copies are taken out of the tab order too
+          tabIndex={!isHome && atTop ? -1 : undefined}
+          aria-label="The Polytechnic, home page"
         >
           <div className="relative h-[56px] w-[180px]">
             <Image
@@ -233,9 +277,8 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
           </div>
         </Link>
 
-        {/* Centered logo: article-only, only while at top of page. Fades
-            out as the user scrolls, at which point section|title takes
-            its place. */}
+        {/* Phones keep this logo centered; tablets and desktops replace it
+            with section/title navigation after scrolling. */}
         {!isHome && (
           <Link
             href="/"
@@ -243,8 +286,10 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
               atTop ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
             aria-hidden={!atTop}
+            tabIndex={atTop ? undefined : -1}
+            aria-label="The Polytechnic, home page"
           >
-            <div className="relative h-[56px] w-[180px]">
+            <div className="relative h-[56px] w-[calc(100vw-192px)] max-w-[180px]">
               <Image
                 src={logoSrc}
                 alt="The Polytechnic"
@@ -259,19 +304,27 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
             the user has scrolled past the logo-shift threshold. */}
         {!isHome && (
           <div
-            className={`hidden md:flex items-center gap-2 font-meta text-[13px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[50%] transition-opacity duration-300 ease-out ${
+            className={`hidden md:flex items-center gap-2 font-meta text-[13px] absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[50%] lg:max-w-[max(0px,min(50%,calc(100%_-_26.5rem)))] transition-opacity duration-300 ease-out ${
               atTop ? 'opacity-0 pointer-events-none' : 'opacity-100'
             }`}
             aria-hidden={atTop}
           >
             <a
               href={sectionHref}
-              className="font-bold uppercase tracking-wide text-text-main shrink-0 transition-colors hover:text-accent"
+              tabIndex={atTop ? -1 : undefined}
+              className={`${sectionStyles.sectionUnderline} font-bold uppercase tracking-wide text-text-main shrink-0 transition-colors hover:text-accent`}
             >
               {sectionLabel}
             </a>
             <span className="text-rule-strong shrink-0">|</span>
-            <span className="text-text-muted truncate">{richTitle || title}</span>
+            <a
+              href={sectionHref}
+              tabIndex={atTop ? -1 : undefined}
+              className="lg:hidden font-normal [&_strong]:font-normal [&_b]:font-normal text-text-muted truncate hover:text-accent"
+            >
+              {richTitle || title}
+            </a>
+            <span className="hidden lg:block font-normal [&_strong]:font-normal [&_b]:font-normal text-text-muted truncate">{richTitle || title}</span>
           </div>
         )}
 
@@ -353,5 +406,18 @@ export default function ArticleScrollBar({ title, richTitle, section, hideUntilS
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <>
+      {!isHome && (
+        <ArticleSectionMenu
+          overPhotofeatureHero={hideUntilScroll && !visible}
+          swipeToOpen={hideUntilScroll}
+          onThemeToggle={() => triggerThemeTransition(window.innerWidth, 0, toggleDarkMode)}
+        />
+      )}
+      {toolbar}
+    </>
   );
 }

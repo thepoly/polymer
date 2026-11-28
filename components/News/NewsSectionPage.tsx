@@ -1,5 +1,6 @@
 "use client";
 
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React, { useMemo } from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
@@ -8,6 +9,7 @@ import type { Article as ComponentArticle } from "@/components/FrontPage/types";
 import { Byline } from "@/components/FrontPage/Byline";
 import { AnimatedLine } from "@/components/Opinion/RainbowDivider";
 import { newsCategories } from "./newsCategories";
+import { NEWS_CONTACT_MAILTO } from "./newsLayout";
 
 /* ── Layout constants — shared with the Features page ── */
 
@@ -15,9 +17,6 @@ const COLUMN_GAP = "clamp(16px, 2vw, 24px)";
 const SECTION_RULE_GAP = "clamp(18px, 3vw, 24px)";
 const SECTION_RULE_INSET = 7;
 const LOWER_SECTION_EXTRA_TOP_SPACE = 8;
-
-const NEWS_CONTACT_MAILTO =
-  "mailto:news@poly.rpi.edu,eic@poly.rpi.edu?subject=News%2C%20Request%2FComment";
 
 /* ── Article card — optionally shows image ── */
 
@@ -69,13 +68,13 @@ function NewsCard({
         {article.richTitle || article.title}
       </h3>
       <Byline
-        author={article.author}
+        authors={article.authorLinks}
         date={hideDate ? null : article.date}
-        variant="features"
-        className="mt-2 text-[13px]"
+        size={large ? "lg" : "md"}
+        margin="mt-2"
       />
       {showExcerpt && article.excerpt && (
-        <p className="mt-0.5 font-meta text-[15px] font-medium leading-[1.5] text-text-main line-clamp-4">
+        <p className={`mt-0.5 ${SUMMARY_CLASS} text-[15px] leading-[1.5] line-clamp-4`}>
           {article.excerpt}
         </p>
       )}
@@ -487,13 +486,13 @@ export default function NewsSectionPage({
                       {lead[3].richTitle || lead[3].title}
                     </h2>
                     <Byline
-                      author={lead[3].author}
+                      authors={lead[3].authorLinks}
                       date={lead[3].date}
-                      variant="features"
-                      className="mt-2 text-[13px]"
+                      size="md"
+                      margin="mt-2"
                     />
                     {lead[3].excerpt && (
-                      <p className="mt-2 font-meta text-[15px] font-medium leading-[1.5] text-text-muted line-clamp-3">
+                      <p className={`mt-2 ${SUMMARY_CLASS} text-[15px] leading-[1.5] line-clamp-3`}>
                         {lead[3].excerpt}
                       </p>
                     )}
@@ -665,7 +664,7 @@ export default function NewsSectionPage({
                     <h3 className="font-copy font-medium leading-[1.12] text-[28px] text-text-main transition-colors group-hover:text-accent">
                       {article.richTitle || article.title}
                     </h3>
-                    <Byline author={article.author} variant="features" className="mt-2 text-[13px]" />
+                    <Byline authors={article.authorLinks} size="md" margin="mt-2" />
                   </TransitionLink>
                 ))}
               </div>

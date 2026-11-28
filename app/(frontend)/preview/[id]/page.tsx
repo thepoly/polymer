@@ -7,7 +7,7 @@ import { extractTextFromLexical, renderLexicalHeadline } from '@/utils/formatArt
 import { getArticleLayout, ArticleLayouts } from '@/components/Article/Layouts';
 import ArticleScrollBar from '@/components/ArticleScrollBar';
 import { PreviewBanner } from '@/components/Article/PreviewBanner';
-import { toPublicArticle } from '@/lib/publicArticle';
+import { toPublicArticle, withPopulatedPhotographer } from '@/lib/publicArticle';
 import type { Article } from '@/payload-types';
 
 /**
@@ -57,7 +57,7 @@ export default async function PreviewPage({ params }: Args) {
   }
   if (!raw) notFound();
 
-  const article = toPublicArticle(raw);
+  const article = toPublicArticle(await withPopulatedPhotographer(payload, raw));
   const layoutType = getArticleLayout(article);
   const LayoutComponent = ArticleLayouts[layoutType];
   const title = extractTextFromLexical(article.title);

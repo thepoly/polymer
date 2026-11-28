@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from 'react';
 import Link from 'next/link';
 import { Article } from './types';
@@ -9,8 +10,8 @@ export const CompactArticle = ({ article }: { article: Article }) => (
         <h3 className={`font-copy font-bold text-text-main mb-1 text-[16px] md:text-[18px] leading-tight transition-colors ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "sports" ? "font-light" : ""} ${article.section === "features" ? "font-light text-[17px] md:text-[19px]" : ""}`}>
             {article.richTitle || article.title}
         </h3>
-        <Byline author={article.author} date={article.date} />
-        <p className="font-meta text-text-main text-[13px] md:text-[14px] font-normal leading-[1.4] mb-2 transition-colors">
+        <Byline authors={article.authorLinks} date={article.date} size="sm" />
+        <p className={`${SUMMARY_CLASS} text-[13px] md:text-[14px] leading-[1.4] mb-2 transition-colors`}>
             {article.excerpt}
         </p>
     </Link>

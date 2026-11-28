@@ -76,12 +76,13 @@ will prompt you to create the first admin user.
 | `pnpm test:search-limit` | Search query bounds test (desktop chromium) |
 | `pnpm test:deploy-smoke` | Manual post-deploy smoke (`scripts/deploy-smoke.mjs`) |
 | `pnpm generate:types` | Regenerate `payload-types.ts` after collection changes |
+| `pnpm test:payload-cli` | Verify the pinned Payload CLI backport without database access |
 | `pnpm exec payload migrate` | Run pending migrations |
 | `pnpm exec payload migrate:create <name>` | Scaffold a new migration |
 
 ## Pre-commit checklist
 
-Run **both** before pushing:
+Run **both** before committing:
 
 ```bash
 pnpm lint
@@ -91,7 +92,39 @@ pnpm typecheck
 CI runs these in addition to a Postgres-backed `pnpm exec payload migrate`
 and `pnpm build`. Pushes that fail any step block the deploy workflow.
 
+### Lint expectations and CMS image previews
+
+The current baseline is **zero ESLint errors and zero warnings**, with no
+TypeScript errors from `pnpm typecheck`.
+
+Staff CMS layout previews and drag overlays intentionally use ordinary
+`<img>` elements. The `cms-layout-editor-previews` override in
+[`eslint.config.mjs`](../eslint.config.mjs) disables only
+`@next/next/no-img-element` for these five files:
+
+- `components/Dashboard/LayoutEditor/index.tsx` (homepage)
+- `components/Dashboard/FeaturesLayoutEditor/index.tsx`
+- `components/Dashboard/NewsLayoutEditor/index.tsx`
+- `components/Dashboard/OpinionLayoutEditor/index.tsx`
+- `components/Dashboard/SportsLayoutEditor/index.tsx`
+
+This policy is settled; no preview optimization task remains.
+The rule remains enabled for public-facing components and other CMS files;
+alt-text accessibility checks remain enabled in the previews. Keep the
+exception limited to these files and this rule. Any future exception needs
+its own rationale rather than a blanket Dashboard or repository exclusion.
+
 ## Troubleshooting
+
+### Payload CLI exits without running migrations
+
+Payload 3.80.0 can exit 0 while its config import is unfinished because of
+Lexical's asynchronous Node entry points. The version-specific pnpm patch in
+[`patches/`](../patches/README.md) backports the upstream CLI resolver and
+unfinished-command exit handling. A normal `pnpm install --frozen-lockfile`
+applies it; `pnpm test:payload-cli` checks its behavior. Keep CI's `Done.`
+completion check. A Payload upgrade must explicitly retire the patch after
+compatibility and migration review.
 
 ### "missing secret key" on boot
 

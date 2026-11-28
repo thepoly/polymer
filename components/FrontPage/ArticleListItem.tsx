@@ -10,7 +10,7 @@ export const ArticleListItem = ({ article }: { article: Article }) => (
       <h4 className={`text-[22px] md:text-[24px] font-bold leading-[1.12] tracking-[-0.01em] text-text-main transition-colors font-copy ${article.section === "opinion" ? "font-light" : ""} ${article.section === "news" ? "text-[23px] md:text-[25px]" : ""} ${article.section === "sports" ? "font-light" : ""} ${article.section === "features" ? "font-light text-[23px] md:text-[25px]" : ""}`}>
         {article.richTitle || article.title}
       </h4>
-      <Byline author={article.author} date={article.date} className="mt-1 block text-[10px] md:text-[10px]" />
+      <Byline authors={article.authorLinks} date={article.date} margin="mt-1" className="block" />
     </TransitionLink>
   </li>
 );

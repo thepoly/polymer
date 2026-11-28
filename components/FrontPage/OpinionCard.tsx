@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -24,9 +25,9 @@ export const OpinionCard = ({ article, hasImage }: { article: Article, hasImage?
         <h3 className={`font-copy mb-1 text-[24px] md:text-[26px] font-bold leading-[1.04] text-text-main transition-colors ${article.section === "news" ? "!text-[1.2em]" : ""} ${article.section === "features" ? "font-light italic text-[25px] md:text-[27px]" : ""}`}>
             {article.richTitle || article.title}
         </h3>
-        <Byline author={article.author} date={article.date} />
+        <Byline authors={article.authorLinks} date={article.date} />
         {hasImage && article.excerpt && (
-            <p className="font-meta mb-1 text-[12px] font-normal leading-[1.38] text-text-main transition-colors">
+            <p className={`${SUMMARY_CLASS} mb-1 text-[12px] leading-[1.38] transition-colors`}>
                 {article.excerpt}
             </p>
         )}

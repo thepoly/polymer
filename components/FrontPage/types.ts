@@ -15,6 +15,9 @@ export interface GameResult {
   rpiScore: number | null;
   opponentScore: number | null;
   status: string;
+  date: string | null;
+  /** Matched recap or box score from the RPI Athletics calendar */
+  link?: string;
 }
 
 export interface Article {
@@ -30,6 +33,8 @@ export interface Article {
   imageFull: string | null;
   /** CSS object-position from the photo's focal point ("50% 30%") */
   imageFocus?: string | null;
+  /** Width ÷ height of the original upload, when known */
+  imageAspect?: number | null;
   imageCaption?: string | null;
   imagePhotographer?: string | null;
   imagePhotographerId?: string | number | null;
@@ -45,5 +50,5 @@ export interface Article {
   /** Authors in byline order; href is the staff profile, null for write-ins */
   authorLinks?: { name: string; href: string | null }[];
   sport?: string | null;
-  game?: GameResult | null;
+  games?: GameResult[];
 }

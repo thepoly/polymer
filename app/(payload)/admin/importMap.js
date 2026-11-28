@@ -26,6 +26,7 @@ import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0
 import { PositionRowLabel as PositionRowLabel_86f57aac7d0693294032b493201ea313 } from '@/components/Dashboard/PositionRowLabel'
 import { PortfolioField as PortfolioField_31f5e66c31356ff566602624da4a9170 } from '@/components/admin/PortfolioField'
 import { KickerField as KickerField_e2595ae0a94be2629ae7712d78d40f23 } from '@/components/admin/KickerField'
+import { FeaturesPlacementHint as FeaturesPlacementHint_cc99f27425a829a9bfcfc54076a5fc1c } from '@/components/admin/FeaturesPlacementHint'
 import { SlugField as SlugField_d66ddfc75b0270bf9636e30c2125444d } from '../../../components/admin/SlugField'
 import { PreviewMenuItems as PreviewMenuItems_0d11815e2eba6d3d575d913f22507aa2 } from '@/components/admin/PreviewMenuItems'
 import { LayoutEditor as LayoutEditor_70d9e2a438fb0ccc6fcdf841a44849c6 } from '@/components/Dashboard/LayoutEditor'
@@ -33,9 +34,12 @@ import { OpinionLayoutEditor as OpinionLayoutEditor_3bb87213e86dff82b05745c66924
 import { FeaturesLayoutEditor as FeaturesLayoutEditor_4a48329e978179877a0d50f880212653 } from '@/components/Dashboard/FeaturesLayoutEditor'
 import { SchoolsListButton as SchoolsListButton_886588c5ceef1efff36c4600c652202c } from '@/components/Dashboard/SportsLayoutEditor/SchoolsButton'
 import { SportsLayoutEditor as SportsLayoutEditor_6df05bc5fe37004d8e6293671456fb85 } from '@/components/Dashboard/SportsLayoutEditor'
+import { NewsLayoutEditor as NewsLayoutEditor_7346d059463d93735e9b56f2884b6999 } from '@/components/Dashboard/NewsLayoutEditor'
 import { ThemeColorField as ThemeColorField_083666974322f0a8b2244e62c210f3ce } from '@/components/admin/ThemeColorField'
+import { GetInvolvedPhotoField as GetInvolvedPhotoField_69a4a195c3d1af813b5cbb3faf71d4f8 } from '@/components/admin/GetInvolvedPhotoField'
 import { Icon as Icon_6823e23e6721eed83ef38d632cfc3284 } from '@/components/Dashboard/Icon'
 import { Logo as Logo_fb0cfd647438b613656b847e25f14183 } from '@/components/Dashboard/Login/Logo'
+import { NewsLayoutNavDropdown as NewsLayoutNavDropdown_f3b8e750166547bf62c27c359b052a37 } from '@/components/Dashboard/NewsLayoutNavDropdown'
 import { default as default_b39f2d96c5778d5698b3c9e7777aa63a } from '@/components/Dashboard'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
@@ -68,6 +72,7 @@ export const importMap = {
   "@/components/Dashboard/PositionRowLabel#PositionRowLabel": PositionRowLabel_86f57aac7d0693294032b493201ea313,
   "@/components/admin/PortfolioField#PortfolioField": PortfolioField_31f5e66c31356ff566602624da4a9170,
   "@/components/admin/KickerField#KickerField": KickerField_e2595ae0a94be2629ae7712d78d40f23,
+  "@/components/admin/FeaturesPlacementHint#FeaturesPlacementHint": FeaturesPlacementHint_cc99f27425a829a9bfcfc54076a5fc1c,
   "/components/admin/SlugField#SlugField": SlugField_d66ddfc75b0270bf9636e30c2125444d,
   "@/components/admin/PreviewMenuItems#PreviewMenuItems": PreviewMenuItems_0d11815e2eba6d3d575d913f22507aa2,
   "@/components/Dashboard/LayoutEditor#LayoutEditor": LayoutEditor_70d9e2a438fb0ccc6fcdf841a44849c6,
@@ -75,9 +80,12 @@ export const importMap = {
   "@/components/Dashboard/FeaturesLayoutEditor#FeaturesLayoutEditor": FeaturesLayoutEditor_4a48329e978179877a0d50f880212653,
   "@/components/Dashboard/SportsLayoutEditor/SchoolsButton#SchoolsListButton": SchoolsListButton_886588c5ceef1efff36c4600c652202c,
   "@/components/Dashboard/SportsLayoutEditor#SportsLayoutEditor": SportsLayoutEditor_6df05bc5fe37004d8e6293671456fb85,
+  "@/components/Dashboard/NewsLayoutEditor#NewsLayoutEditor": NewsLayoutEditor_7346d059463d93735e9b56f2884b6999,
   "@/components/admin/ThemeColorField#ThemeColorField": ThemeColorField_083666974322f0a8b2244e62c210f3ce,
+  "@/components/admin/GetInvolvedPhotoField#GetInvolvedPhotoField": GetInvolvedPhotoField_69a4a195c3d1af813b5cbb3faf71d4f8,
   "@/components/Dashboard/Icon#Icon": Icon_6823e23e6721eed83ef38d632cfc3284,
   "@/components/Dashboard/Login/Logo#Logo": Logo_fb0cfd647438b613656b847e25f14183,
+  "@/components/Dashboard/NewsLayoutNavDropdown#NewsLayoutNavDropdown": NewsLayoutNavDropdown_f3b8e750166547bf62c27c359b052a37,
   "@/components/Dashboard#default": default_b39f2d96c5778d5698b3c9e7777aa63a,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }

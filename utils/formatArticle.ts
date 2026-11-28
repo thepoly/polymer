@@ -1,7 +1,11 @@
+import { getGames, type ArticleGameFields } from './getGames';
 import { Media } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
 import React from 'react';
 import { focalObjectPosition } from './focalPoint';
+import { joinNameText } from './joinNames';
+import { getArticleAuthors } from './articleAuthors';
+import { longDate, recentAge } from './articleDates';
 
 type PublicAuthorLike = {
   id?: number | string;
@@ -10,7 +14,7 @@ type PublicAuthorLike = {
   slug?: string | null;
 };
 
-type PublicMediaLike = Pick<Media, 'url' | 'alt'> & Partial<Pick<Media, 'focalX' | 'focalY'>> & {
+type PublicMediaLike = Pick<Media, 'url' | 'alt'> & Partial<Pick<Media, 'focalX' | 'focalY' | 'width' | 'height'>> & {
   title?: string | null;
   photographer?: number | { id: number | string; firstName: string; lastName: string; slug?: string | null } | null;
   writeInPhotographer?: string | null;
@@ -26,14 +30,7 @@ type WriteInAuthor = {
   photo?: unknown;
 };
 
-type SchoolLike = {
-  name: string;
-  shortName?: string | null;
-  url?: string | null;
-  athleticsUrl?: string | null;
-};
-
-type FormatArticleInput = {
+type FormatArticleInput = ArticleGameFields & {
   id: number | string;
   slug?: string | null;
   title: unknown;
@@ -50,11 +47,6 @@ type FormatArticleInput = {
   _status?: string | null;
   isFollytechnic?: boolean | null;
   sport?: string | null;
-  opponent?: number | SchoolLike | null;
-  homeAway?: 'home' | 'away' | 'neutral' | null;
-  rpiScore?: number | null;
-  opponentScore?: number | null;
-  gameStatus?: string | null;
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -95,42 +87,11 @@ export const formatArticle = (
   if (article._status && article._status !== 'published') return null;
   if (!article.slug) return null;
 
-  const staffNames = (article.authors || [])
-    .map((author) => {
-      if (typeof author === 'number') return '';
-      return `${author.firstName} ${author.lastName}`;
-    })
-    .filter(Boolean);
+  const authorList = getArticleAuthors(article);
+  const authors = joinNameText(authorList.map((a) => a.name));
 
-  const writeInNames = (article.writeInAuthors || [])
-    .map((a) => a.name)
-    .filter(Boolean);
-
-  const authors = [...staffNames, ...writeInNames].join(' AND ');
-
-  const date = article.publishedDate ? new Date(article.publishedDate) : null;
-
-  let dateString: string | null = null;
-  if (date) {
-    const now = new Date().getTime();
-    const diffMs = now - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (absoluteDate) {
-      dateString = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    } else if (diffDays >= 7) {
-      // Hide date if older than 7 days
-      dateString = null;
-    } else if (diffMins < 60) {
-      dateString = `${diffMins} MINUTE${diffMins !== 1 ? 'S' : ''} AGO`;
-    } else if (diffHours < 24) {
-      dateString = `${diffHours} HOUR${diffHours !== 1 ? 'S' : ''} AGO`;
-    } else {
-      dateString = `${diffDays} DAY${diffDays !== 1 ? 'S' : ''} AGO`;
-    }
-  }
+  // A week of "3 hours ago" on cards, then nothing (utils/articleDates.ts)
+  const dateString = absoluteDate ? longDate(article.publishedDate) : recentAge(article.publishedDate);
 
   const featuredImage = article.featuredImage as PublicMediaLike | null;
   let imagePhotographer: string | null = null;
@@ -152,7 +113,9 @@ export const formatArticle = (
     title: extractTextFromLexical(article.title),
     richTitle: renderLexicalHeadline(article.title),
     excerpt: article.subdeck || '',
-    author: authors ? authors.toUpperCase() : 'THE POLY',
+    // Plain text, "A, B and C". Bylines render authorLinks; this is for
+    // places that only take a string
+    author: authors || 'The Polytechnic',
     date: dateString,
     isoDate: article.publishedDate || article.createdAt || null,
     // The original upload: next/image resizes it per `sizes`, so cards stay
@@ -160,6 +123,8 @@ export const formatArticle = (
     image: featuredImage?.url || null,
     imageFull: featuredImage?.url || null,
     imageFocus: featuredImage ? focalObjectPosition(featuredImage) : null,
+    imageAspect:
+      featuredImage?.width && featuredImage?.height ? featuredImage.width / featuredImage.height : null,
     imageCaption: article.imageCaption || null,
     imagePhotographer,
     imagePhotographerId,
@@ -171,30 +136,8 @@ export const formatArticle = (
     createdAt: article.createdAt,
     isFollytechnic: article.isFollytechnic || false,
     // Each author with a staff profile link (write-ins have no profile)
-    authorLinks: [
-      ...(article.authors || [])
-        .filter((a): a is PublicAuthorLike => typeof a !== 'number')
-        .map((a) => ({
-          name: `${a.firstName} ${a.lastName}`,
-          href: a.slug || a.id ? `/staff/${a.slug || a.id}` : null,
-        })),
-      ...(article.writeInAuthors || []).filter((a) => a.name).map((a) => ({ name: a.name, href: null })),
-    ],
+    authorLinks: authorList.map((a) => ({ name: a.name, href: a.href })),
     sport: article.sport || null,
-    // Only present when the opponent was populated (depth >= 1)
-    game: article.opponent && typeof article.opponent === 'object'
-      ? {
-          opponent: {
-            name: article.opponent.name,
-            shortName: article.opponent.shortName || article.opponent.name,
-            logo: article.opponent.url || null,
-            url: article.opponent.athleticsUrl || null,
-          },
-          homeAway: article.homeAway || 'home',
-          rpiScore: article.rpiScore ?? null,
-          opponentScore: article.opponentScore ?? null,
-          status: article.gameStatus || 'Final',
-        }
-      : null,
+    games: getGames(article),
   };
 };

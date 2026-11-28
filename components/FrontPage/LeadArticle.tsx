@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from 'react';
 import Image from 'next/image';
 import TransitionLink from '@/components/TransitionLink';
@@ -5,13 +6,7 @@ import { Article } from './types';
 import { Byline } from './Byline';
 import { ImageCaption } from './ImageCaption';
 import { getArticleUrl } from '@/utils/getArticleUrl';
-
-const getLeadDate = (article: Article): string | null => {
-    if (article.date) return article.date;
-    if (!article.publishedDate) return null;
-    const diffDays = Math.floor((Date.now() - new Date(article.publishedDate).getTime()) / (1000 * 60 * 60 * 24));
-    return `${diffDays} DAY${diffDays !== 1 ? 'S' : ''} AGO`;
-};
+import { leadDate } from '@/utils/articleDates';
 
 export const LeadArticle = ({
     article,
@@ -47,11 +42,11 @@ export const LeadArticle = ({
                 >
                     {article.richTitle || article.title}
                 </h3>
-                <Byline author={article.author} date={getLeadDate(article)} split />
+                <Byline authors={article.authorLinks} date={leadDate(article)} size="lg" />
                 {article.excerpt && (
                     <p
                         data-marauders-obstacle="excerpt"
-                        className={`font-meta font-normal text-black dark:text-white transition-colors mt-1.5 ${
+                        className={`${SUMMARY_CLASS} transition-colors mt-1.5 ${
                             compact ? "max-w-[36rem] text-[13px] leading-[1.42] md:text-[14px]" : "max-w-[40rem] text-[14px] leading-[1.45] md:text-[15px]"
                         } [overflow-wrap:anywhere] break-words`}
                     >

@@ -1,0 +1,32 @@
+.sectionUnderline {
+  position: relative;
+}
+
+.sectionUnderline::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: -3px;
+  height: 2px;
+  background: var(--accent-color);
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms ease-out;
+}
+
+.sectionUnderline:focus-visible::after {
+  transform: scaleX(1);
+}
+
+@media (hover: hover) {
+  .sectionUnderline:hover::after {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sectionUnderline::after {
+    transition: none;
+  }
+}

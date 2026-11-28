@@ -77,6 +77,9 @@ export interface Config {
     'opinion-page-layout': OpinionPageLayout;
     'features-page-layout': FeaturesPageLayout;
     'sports-page-layout': SportsPageLayout;
+    'news-page-layout': NewsPageLayout;
+    'student-gov-updates': StudentGovUpdate;
+    'student-gov-terms': StudentGovTerm;
     schools: School;
     'staff-page-layout': StaffPageLayout;
     submissions: Submission;
@@ -100,6 +103,9 @@ export interface Config {
     'opinion-page-layout': OpinionPageLayoutSelect<false> | OpinionPageLayoutSelect<true>;
     'features-page-layout': FeaturesPageLayoutSelect<false> | FeaturesPageLayoutSelect<true>;
     'sports-page-layout': SportsPageLayoutSelect<false> | SportsPageLayoutSelect<true>;
+    'news-page-layout': NewsPageLayoutSelect<false> | NewsPageLayoutSelect<true>;
+    'student-gov-updates': StudentGovUpdatesSelect<false> | StudentGovUpdatesSelect<true>;
+    'student-gov-terms': StudentGovTermsSelect<false> | StudentGovTermsSelect<true>;
     schools: SchoolsSelect<false> | SchoolsSelect<true>;
     'staff-page-layout': StaffPageLayoutSelect<false> | StaffPageLayoutSelect<true>;
     submissions: SubmissionsSelect<false> | SubmissionsSelect<true>;
@@ -118,10 +124,12 @@ export interface Config {
   globals: {
     theme: Theme;
     seo: Seo;
+    'get-involved-page': GetInvolvedPage;
   };
   globalsSelect: {
     theme: ThemeSelect<false> | ThemeSelect<true>;
     seo: SeoSelect<false> | SeoSelect<true>;
+    'get-involved-page': GetInvolvedPageSelect<false> | GetInvolvedPageSelect<true>;
   };
   locale: null;
   widgets: {
@@ -307,7 +315,7 @@ export interface Article {
   id: number;
   section: 'news' | 'sports' | 'features' | 'opinion';
   /**
-   * Which team this story is about. Fills an empty kicker with the sport name.
+   * Which team this story is about. The kicker follows it until you write your own.
    */
   sport?:
     | (
@@ -338,15 +346,23 @@ export interface Article {
       )
     | null;
   /**
-   * The school RPI played. Leave empty for stories that are not about one game.
+   * Add one game or both games of a series, in playing order. Leave empty for other stories.
    */
+  games?:
+    | {
+        opponent: number | School;
+        date?: string | null;
+        homeAway?: ('home' | 'away' | 'neutral') | null;
+        rpiScore?: number | null;
+        opponentScore?: number | null;
+        status?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   opponent?: (number | null) | School;
   homeAway?: ('home' | 'away' | 'neutral') | null;
   rpiScore?: number | null;
   opponentScore?: number | null;
-  /**
-   * e.g. Final, Final/OT, Final/2OT, Final/SO. Defaults to "Final".
-   */
   gameStatus?: string | null;
   title: {
     root: {
@@ -703,6 +719,107 @@ export interface SportsPageLayout {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "news-page-layout".
+ */
+export interface NewsPageLayout {
+  id: number;
+  name: string;
+  layout?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Short Senate and Executive Board updates. They show on the timeline pages and in the Student Government box on the News page.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "student-gov-updates".
+ */
+export interface StudentGovUpdate {
+  id: number;
+  title: string;
+  /**
+   * Which timeline this update belongs to.
+   */
+  body: 'senate' | 'eboard';
+  /**
+   * A few sentences. Plain text.
+   */
+  blurb: string;
+  /**
+   * Where the update sits on the timeline. Defaults to now; change it to backfill older items.
+   */
+  date: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Senate and Executive Board terms, GM Week to GM Week. Timeline entries are sorted into terms by date; each listed term has its own page and a row in the Terms list at the foot of the timeline.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "student-gov-terms".
+ */
+export interface StudentGovTerm {
+  id: number;
+  /**
+   * Filled in from the body, number and first meeting.
+   */
+  name?: string | null;
+  /**
+   * The term’s URL: /senate/57 or /e-board/2026-27.
+   */
+  slug?: string | null;
+  body: 'senate' | 'eboard';
+  /**
+   * 57 for the 57th Senate.
+   */
+  number?: number | null;
+  /**
+   * The new body’s first meeting after GM Week. The term runs until the next term’s first meeting; entries from GM Week up to then still belong to the outgoing term.
+   */
+  startsOn: string;
+  /**
+   * When the election that produced this term was decided (the runoff, if there was one).
+   */
+  gmWeekOn?: string | null;
+  /**
+   * Linked from the GM Week marker at the top of the previous term.
+   */
+  gmWeekStory?: (number | null) | Article;
+  /**
+   * Untick for terms before the digital archive’s coverage starts: the term leaves the Terms list and its page 404s.
+   */
+  hasCoverage?: boolean | null;
+  /**
+   * The Grand Marshal (Senate) or President of the Union (E-Board). Add a second row when the leader changed mid-term. Leave empty if unknown.
+   */
+  leaders?:
+    | {
+        name: string;
+        /**
+         * 160 for the 160th Grand Marshal.
+         */
+        ordinal?: number | null;
+        how?: ('elected' | 'runoff' | 'appointed') | null;
+        /**
+         * Only needed for a mid-term change: adds a divider to the stream on this date.
+         */
+        startedOn?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "staff-page-layout".
  */
 export interface StaffPageLayout {
@@ -775,6 +892,8 @@ export interface Submission {
   createdAt: string;
 }
 /**
+ * Archive only. The public event form and the Features page events box were removed, so nothing new arrives here.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "event-submissions".
  */
@@ -876,6 +995,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'sports-page-layout';
         value: number | SportsPageLayout;
+      } | null)
+    | ({
+        relationTo: 'news-page-layout';
+        value: number | NewsPageLayout;
+      } | null)
+    | ({
+        relationTo: 'student-gov-updates';
+        value: number | StudentGovUpdate;
+      } | null)
+    | ({
+        relationTo: 'student-gov-terms';
+        value: number | StudentGovTerm;
       } | null)
     | ({
         relationTo: 'schools';
@@ -1057,6 +1188,17 @@ export interface LogosSelect<T extends boolean = true> {
 export interface ArticlesSelect<T extends boolean = true> {
   section?: T;
   sport?: T;
+  games?:
+    | T
+    | {
+        opponent?: T;
+        date?: T;
+        homeAway?: T;
+        rpiScore?: T;
+        opponentScore?: T;
+        status?: T;
+        id?: T;
+      };
   opponent?: T;
   homeAway?: T;
   rpiScore?: T;
@@ -1201,6 +1343,53 @@ export interface FeaturesPageLayoutSelect<T extends boolean = true> {
 export interface SportsPageLayoutSelect<T extends boolean = true> {
   name?: T;
   layout?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "news-page-layout_select".
+ */
+export interface NewsPageLayoutSelect<T extends boolean = true> {
+  name?: T;
+  layout?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "student-gov-updates_select".
+ */
+export interface StudentGovUpdatesSelect<T extends boolean = true> {
+  title?: T;
+  body?: T;
+  blurb?: T;
+  date?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "student-gov-terms_select".
+ */
+export interface StudentGovTermsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  body?: T;
+  number?: T;
+  startsOn?: T;
+  gmWeekOn?: T;
+  gmWeekStory?: T;
+  hasCoverage?: T;
+  leaders?:
+    | T
+    | {
+        name?: T;
+        ordinal?: T;
+        how?: T;
+        startedOn?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1593,13 +1782,7 @@ export interface Seo {
      * Used for the /features/archive page description.
      */
     featuresArchiveDescription?: string | null;
-    /**
-     * Used for the /features/submit-event page title.
-     */
     featuresSubmitEventTitle?: string | null;
-    /**
-     * Used for the /features/submit-event page description.
-     */
     featuresSubmitEventDescription?: string | null;
     /**
      * Used for the /opinion/other page title.
@@ -1671,6 +1854,36 @@ export interface Seo {
      * Used for /staff/[slug] profile descriptions. Tokens: {name}, {siteName}.
      */
     staffProfileDescription?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * The photo behind the Get involved page. It stays still while the page scrolls, and shows through the heading, the meeting box, the buttons and the news tip box.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "get-involved-page".
+ */
+export interface GetInvolvedPage {
+  id: number;
+  /**
+   * A wide (landscape) photo works best. Its alt text and photographer come from the media record. Leave empty to use the built-in placeholder.
+   */
+  photo?: (number | null) | Media;
+  mobile?: {
+    focusX?: number | null;
+    focusY?: number | null;
+    zoom?: number | null;
+  };
+  tablet?: {
+    focusX?: number | null;
+    focusY?: number | null;
+    zoom?: number | null;
+  };
+  desktop?: {
+    focusX?: number | null;
+    focusY?: number | null;
+    zoom?: number | null;
   };
   updatedAt?: string | null;
   createdAt?: string | null;
@@ -1791,6 +2004,37 @@ export interface SeoSelect<T extends boolean = true> {
         sectionFallbackDescription?: T;
         articleFallbackDescription?: T;
         staffProfileDescription?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "get-involved-page_select".
+ */
+export interface GetInvolvedPageSelect<T extends boolean = true> {
+  photo?: T;
+  mobile?:
+    | T
+    | {
+        focusX?: T;
+        focusY?: T;
+        zoom?: T;
+      };
+  tablet?:
+    | T
+    | {
+        focusX?: T;
+        focusY?: T;
+        zoom?: T;
+      };
+  desktop?:
+    | T
+    | {
+        focusX?: T;
+        focusY?: T;
+        zoom?: T;
       };
   updatedAt?: T;
   createdAt?: T;

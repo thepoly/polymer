@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
@@ -7,15 +8,7 @@ import { ArticleCard } from "./ArticleCard";
 import type { Article } from "./types";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import { getSlotNumber } from "@/lib/homepageSlots";
-
-const getLeadDate = (article: Article): string | null => {
-  if (article.date) return article.date;
-  if (!article.publishedDate) return null;
-  const diffDays = Math.floor(
-    (Date.now() - new Date(article.publishedDate).getTime()) / (1000 * 60 * 60 * 24),
-  );
-  return `${diffDays} DAY${diffDays !== 1 ? "S" : ""} AGO`;
-};
+import { leadDate } from "@/utils/articleDates";
 
 const sectionFontClasses = (section: string | undefined): string => {
   if (section === "sports") return "font-light";
@@ -69,13 +62,13 @@ function CenterLead({
       {showSubdeck && article.excerpt && (
         <p
           data-marauders-obstacle="excerpt"
-          className="font-meta font-normal text-text-main mt-3 text-[14px] leading-[1.5] md:text-[15px] [overflow-wrap:anywhere] break-words"
+          className={`${SUMMARY_CLASS} mt-3 text-[14px] leading-[1.5] md:text-[15px] [overflow-wrap:anywhere] break-words`}
         >
           {article.excerpt}
         </p>
       )}
       <div className="mt-2">
-        <Byline author={article.author} date={getLeadDate(article)} />
+        <Byline authors={article.authorLinks} date={leadDate(article)} />
       </div>
     </div>
   );
@@ -109,7 +102,7 @@ function TextOnlyItem({ article, showSubdeck = true }: { article: Article; showS
         {article.richTitle || article.title}
       </h3>
       {showSubdeck && article.excerpt && (
-        <p className="font-meta font-normal text-text-muted mt-1.5 text-[12.5px] leading-[1.4] line-clamp-2">
+        <p className={`${SUMMARY_CLASS} mt-1.5 text-[12.5px] leading-[1.4] line-clamp-2`}>
           {article.excerpt}
         </p>
       )}
@@ -141,7 +134,7 @@ function SideFeature({ article, showSubdeck = true }: { article: Article; showSu
           {article.richTitle || article.title}
         </h3>
         {showSubdeck && article.excerpt && (
-          <p className="font-meta font-normal text-text-muted mt-1.5 text-[12.5px] leading-[1.4] line-clamp-3">
+          <p className={`${SUMMARY_CLASS} mt-1.5 text-[12.5px] leading-[1.4] line-clamp-3`}>
             {article.excerpt}
           </p>
         )}

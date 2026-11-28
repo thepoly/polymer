@@ -99,7 +99,7 @@ export function PhotoCaption({ entry, className = '', tone, corner = 'left' }: P
     >
       {caption}
       {(staff.length > 0 || writeIn) && (
-        <span className={tone ? 'opacity-80' : 'opacity-60'}>
+        <span className="not-italic text-[11px] tracking-[0.02em]">
           {caption ? ' ' : ''}
           {staff.map((user, i) => (
             <Fragment key={user.id}>

@@ -23,7 +23,7 @@ For deeper architectural context, see [`docs/`](docs/) (architecture, data model
 
 ## Repository Layout
 
-- `app/(frontend)/`: public site routes (`/`, section pages, article pages, staff, search, `/live`, submission forms, `/about`, `/contact`, etc.)
+- `app/(frontend)/`: public site routes (`/`, section pages, article pages, staff, search, `/live`, `/get-involved`, submission forms, `/about`, `/contact`, etc.)
 - `app/(payload)/`: Payload admin/app API integration routes (`/admin`, `/newsroom`)
 - `app/api/`: custom API routes (`/api/health`, search, push, weather, submit, etc.)
 - `collections/`: Payload collection + global definitions
@@ -32,6 +32,7 @@ For deeper architectural context, see [`docs/`](docs/) (architecture, data model
 - `migrations/`: Payload-format TypeScript migrations registered via `migrations/index.ts`
 - `mobile/`: Capacitor Android + iOS shells (separate `package.json`; install with `pnpm install --ignore-workspace`)
 - `scripts/`: deploy/runtime scripts (`run_deploy_sql_migrations.sh`, `deploy-smoke.mjs`, `generate-env.js`)
+- `patches/`: pnpm dependency patches (currently a Payload 3.80.0 CLI backport); see `patches/README.md` for provenance and when to remove each
 - `middleware.ts`: returns `410 Gone` for matching article URLs whose row is unpublished
 - `.github/workflows/`: CI, production deploy, Android release, and iOS simulator build workflows
 
@@ -53,16 +54,17 @@ Collections:
 - `articles`: drafts/publish enabled (`versions.drafts: true`); `publishedDate` is set on first publish in a `beforeChange` hook; `lastModifiedBy` is stamped on every change; `opinionType` auto-derives from the kicker for opinion pieces
 - `live-articles`: live-blog entries with append-only `updates`; mirrors the photo-gallery / carousel rich-text blocks
 - `layout`: homepage curation (lead, slots, top-4, layout template, sections, volume/issue) — drafts enabled
-- `opinion-page-layout`, `features-page-layout`, `sports-page-layout`, `staff-page-layout`: per-section page composition
+- `opinion-page-layout`, `features-page-layout`, `sports-page-layout`, `news-page-layout`, `staff-page-layout`: per-section page composition
+- `student-gov-updates`, `student-gov-terms`: Student Senate / Executive Board timeline updates and terms (GM Week to GM Week); see `docs/news-section.md`
 - `users`: staff/auth/roles + slug, headshot, retired flag, "one-liner", and seen-newsroom-notice flag
 - `media`: uploaded assets (alt, title, caption, source URL, photographer relationship, write-in photographer)
 - `job-titles`: staff position metadata
 - `submissions`: public op-ed / letter submissions (anonymous create, staff triage)
-- `event-submissions`: public event submissions for the calendar
+- `event-submissions`: archived event submissions (read-only; the public event form and Features events box were removed)
 - `logos`: branded section logos and homepage assets
 - `device-tokens`: registered Android and iOS FCM tokens (anonymous create via `/api/push/register`, admin-only read/delete)
 - `redirects`: short tracked links at `poly.rpi.edu/<path>` (`path` + `destination`); `middleware.ts` answers with a 302 and captures a `redirect_followed` PostHog event per hit
-- `schools`: opponents RPI teams play, each with a logo (upload collection; seeded from RPI Athletics schedules by `pnpm db:seed:schools`). Sports articles link one as `opponent`, alongside `homeAway`, `rpiScore`, `opponentScore` and `gameStatus`
+- `schools`: opponents RPI teams play, each with a logo (upload collection; seeded from RPI Athletics schedules by `pnpm db:seed:schools`). Sports articles record up to two results in a `games` array (`opponent`, `date`, `homeAway`, `rpiScore`, `opponentScore`, `status`); the older single-game fields (`opponent`, `homeAway`, `rpiScore`, `opponentScore`, `gameStatus`) are hidden and kept for older articles and revisions
 
 Globals:
 
@@ -116,6 +118,8 @@ Optional:
 - `pnpm test:smoke`
 - `pnpm test:search-limit`
 - `pnpm test:deploy-smoke` (manual smoke script; not used by deploy workflow)
+- `pnpm test:unit` (Vitest)
+- `pnpm test:payload-cli` (checks the Payload CLI patch; also runs in CI)
 - `pnpm generate:types`
 
 ## CI (Current)
@@ -126,10 +130,13 @@ Runs on PRs + pushes to `main`:
 
 1. Postgres service (`postgres:16`)
 2. `pnpm install --frozen-lockfile`
-3. `pnpm exec payload migrate`
-4. `pnpm lint`
-5. `pnpm typecheck`
-6. `pnpm build`
+3. `pnpm test:payload-cli`
+4. `pnpm exec payload migrate` (fails unless the CLI prints `Done.`)
+5. `pnpm lint`
+6. `pnpm typecheck`
+7. `pnpm build`
+
+Pull-request workflows don't run while a PR has merge conflicts with its base, so a conflicting PR shows no CI result at all.
 
 Playwright is not part of the current CI runtime path.
 
@@ -223,6 +230,7 @@ Mixing PM2 users creates split daemons/process lists and inconsistent runtime ow
 
 - **Pre-commit checks:** Always run `pnpm lint` and `pnpm typecheck` before committing. Do not commit code that fails either check.
 - **Linting & Code Quality:** Ensure code changes are lint-safe before completing your task. Either review your code rigorously for common ESLint and React purity warnings, or execute `pnpm lint` to automatically verify.
+- **Lint baseline and CMS previews:** Expect zero ESLint errors and warnings. Plain images in the five named CMS layout editor files are intentional; `eslint.config.mjs` contains a scoped `@next/next/no-img-element` exception. Public-site image checks and preview alt-text checks remain enabled. See [`docs/local-development.md`](docs/local-development.md#lint-expectations-and-cms-image-previews) for the policy and exact file scope.
 - **Database Migrations:** When adding or modifying Payload collection fields that change the DB schema (new fields, new collections, enum changes), you MUST create corresponding migrations in BOTH paths:
   1. A TypeScript migration file in `migrations/` and register it in `migrations/index.ts` (used by CI via `pnpm exec payload migrate`)
   2. The equivalent SQL in `scripts/run_deploy_sql_migrations.sh` with a tracking INSERT entry (used by production deploy)

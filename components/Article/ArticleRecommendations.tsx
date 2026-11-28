@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import { extractTextFromLexical, renderLexicalHeadline } from '@/utils/formatArticle';
 import React from 'react';
 import Image from 'next/image';
@@ -8,6 +9,8 @@ import { Byline } from '@/components/FrontPage/Byline';
 import { opinionTypeLabels } from '@/components/Opinion/opinionTypeLabels';
 import { Article, Media, User } from '@/payload-types';
 import { getArticleUrl } from '@/utils/getArticleUrl';
+import { getArticleAuthors } from '@/utils/articleAuthors';
+import { shortDate } from '@/utils/articleDates';
 
 type Props = {
   currentArticle: Article;
@@ -57,6 +60,7 @@ type RecommendationArticle = {
   publishedDate?: string | null;
   createdAt: string;
   authors: RecommendationAuthor[];
+  writeInAuthors?: { name?: string | null }[] | null;
   featuredImage?: RecommendationImage | null;
   opinionType?: string | null;
 };
@@ -69,28 +73,10 @@ const getFeaturedImage = (value: RecommendationArticle['featuredImage'] | Media 
   return value as RecommendationImage;
 };
 
-const getAuthorString = (article: RecommendationArticle) => {
-  const staffNames = (article.authors || []).flatMap((author) => {
-    if (typeof author === 'number') return [];
-    return [`${author.firstName} ${author.lastName}`];
-  });
-  const writeInNames = ((article as unknown as Record<string, unknown>).writeInAuthors as Array<{ name: string }> || [])
-    .map((a) => a.name)
-    .filter(Boolean);
-  const names = [...staffNames, ...writeInNames];
-  return names.length > 0 ? names.join(' AND ') : null;
-};
+/** Authors in byline order; empty renders "By The Polytechnic" */
+const getAuthors = (article: RecommendationArticle) => getArticleAuthors(article);
 
-const formatDate = (article: RecommendationArticle) => {
-  const dateValue = article.publishedDate || article.createdAt;
-  if (!dateValue) return null;
-
-  return new Date(dateValue).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-};
+const formatDate = (article: RecommendationArticle) => shortDate(article.publishedDate || article.createdAt);
 
 const getArticleLabel = (article: RecommendationArticle) => {
   if (article.section === 'opinion') {
@@ -102,10 +88,13 @@ const getArticleLabel = (article: RecommendationArticle) => {
 };
 
 const getHeadlineClasses = (article: RecommendationArticle, variant: 'lead' | 'list') => {
+  const weight = article.section === 'news'
+    ? 'font-normal [&_strong]:font-normal [&_b]:font-normal'
+    : 'font-bold';
   const base =
     variant === 'lead'
-      ? 'font-copy font-bold leading-[1.12] tracking-[-0.01em] text-[28px] md:text-[32px]'
-      : 'font-copy font-bold leading-[1.12] tracking-[-0.01em] text-[22px] md:text-[24px]';
+      ? 'font-copy leading-[1.12] tracking-[-0.01em] text-[28px] md:text-[32px]'
+      : 'font-copy leading-[1.12] tracking-[-0.01em] text-[22px] md:text-[24px]';
 
   const sectionStyles = [
     article.section === 'features'
@@ -124,7 +113,7 @@ const getHeadlineClasses = (article: RecommendationArticle, variant: 'lead' | 'l
     .filter(Boolean)
     .join(' ');
 
-  return `${base} text-text-main transition-colors ${sectionStyles}`;
+  return `${base} ${weight} text-text-main transition-colors ${sectionStyles}`;
 };
 
 const prioritizeRecommendations = (articles: RecommendationArticle[], currentArticle: Article) => {
@@ -214,13 +203,20 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
   const leadImage = getFeaturedImage(leadArticle.featuredImage);
   const supportingArticles = pool.filter((article) => article.id !== leadArticle.id).slice(0, 4);
   const sectionLabel = sectionLabels[currentArticle.section];
+  const isNews = currentArticle.section === 'news';
+  const isSports = currentArticle.section === 'sports';
+  const sectionSpacing = isSports
+    ? 'mt-6 pb-3'
+    : isNews
+      ? 'mt-7 md:mt-10 pb-[22px] md:pb-[34px]'
+      : 'mt-14 md:mt-20 pb-14 md:pb-20';
 
   return (
     <section
-      className="mx-auto mt-14 md:mt-20 max-w-[1200px] px-4 md:px-6 pb-14 md:pb-20"
+      className={`mx-auto max-w-[1200px] px-4 md:px-6 ${sectionSpacing}`}
       data-article-recommendations
     >
-      <div className="pt-2 md:pt-3">
+      <div className={isSports ? undefined : isNews ? 'pt-1 md:pt-1.5' : 'pt-2 md:pt-3'}>
         <div className="mb-8 flex flex-col gap-4 border-b border-rule pb-6 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
             <p className="font-meta text-[14px] font-bold uppercase tracking-[0.12em] text-accent">
@@ -271,12 +267,13 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                   {leadArticle.richTitle || leadArticle.title}
                 </h3>
                 <Byline
-                  author={getAuthorString(leadArticle)}
+                  authors={getAuthors(leadArticle)}
                   date={formatDate(leadArticle)}
-                  className="mt-4 text-[14px] md:text-[14px]"
+                  size="lg"
+                  margin="mt-4"
                 />
                 {leadArticle.subdeck && (
-                  <p className="mt-3 max-w-xl font-meta text-[17px] leading-[1.48] text-text-muted line-clamp-3">
+                  <p className={`mt-3 max-w-xl ${SUMMARY_CLASS} text-[17px] leading-[1.48] line-clamp-3`}>
                     {leadArticle.subdeck}
                   </p>
                 )}
@@ -293,7 +290,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                 return (
                   <div
                     key={article.id}
-                    className={`${isLast ? '' : 'border-b border-rule'} ${index === 0 ? 'pt-5 lg:pt-0' : 'pt-5'} pb-5`}
+                    className={`${isLast ? '' : 'border-b border-rule'} ${index === 0 ? 'pt-5 lg:pt-0' : 'pt-5'} ${isSports && isLast ? '' : 'pb-5'}`}
                   >
                     <TransitionLink
                       href={getArticleUrl(article)}
@@ -320,7 +317,7 @@ export async function ArticleRecommendations({ currentArticle }: Props) {
                         <h3 className={`mt-1 ${getHeadlineClasses(article, 'list')}`}>
                           {article.richTitle || article.title}
                         </h3>
-                        <Byline author={getAuthorString(article)} date={formatDate(article)} className="text-[15px] md:text-[14px]" />
+                        <Byline authors={getAuthors(article)} date={formatDate(article)} />
                       </div>
                     </TransitionLink>
                   </div>

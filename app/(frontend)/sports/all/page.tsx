@@ -4,14 +4,14 @@ import config from '@/payload.config';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import SportsAllStories, { type SportTab } from '@/components/Sports/SportsAllStories';
-import type { FeaturedFocus } from '@/components/Sports/sportsFormat';
 import { formatArticle } from '@/utils/formatArticle';
 import { SPORTS, type SportValue } from '@/lib/sports';
+import { loadSportsLayout } from '@/lib/sportsPage';
+import { troyMonth } from '@/lib/troyTime';
 import type { Article as ComponentArticle } from '@/components/FrontPage/types';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-
-export const revalidate = 60;
+import { unstable_cache } from 'next/cache';
 
 const PER_PAGE = 24;
 // Far past any real archive; bigger numbers would overflow the query offset
@@ -27,6 +27,41 @@ type Args = { searchParams: Promise<{ sport?: string; page?: string }> };
 
 const isSport = (value: string | undefined): value is SportValue => SPORTS.some((s) => s.value === value);
 
+// Tabs: each sport with stories, most stories first. This page renders on
+// every request (it reads the query string), and the count has to look at
+// every labelled sports story, so it is shared between requests for a minute.
+const getSportTabs = unstable_cache(
+  async (): Promise<SportTab[]> => {
+    const payload = await getPayload({ config });
+    const response = await payload.find({
+      collection: 'articles',
+      where: {
+        and: [
+          { section: { equals: 'sports' } },
+          { _status: { equals: 'published' } },
+          { sport: { exists: true } },
+        ],
+      },
+      pagination: false,
+      depth: 0,
+      select: { sport: true },
+    });
+    const counts = new Map<SportValue, number>();
+    for (const doc of response.docs) {
+      const sport = doc.sport as SportValue | null | undefined;
+      if (sport) counts.set(sport, (counts.get(sport) ?? 0) + 1);
+    }
+    return (
+      [...counts.entries()]
+        .map(([sport, count]) => ({ sport, count }))
+        // Ties keep the sports list's order
+        .sort((a, b) => b.count - a.count || SPORTS.findIndex((s) => s.value === a.sport) - SPORTS.findIndex((s) => s.value === b.sport))
+    );
+  },
+  ['sports-all-tabs'],
+  { revalidate: 60 },
+);
+
 export default async function SportsAllStoriesPage({ searchParams }: Args) {
   const params = await searchParams;
   const activeSport = isSport(params.sport) ? params.sport : null;
@@ -37,24 +72,7 @@ export default async function SportsAllStoriesPage({ searchParams }: Args) {
   const payload = await getPayload({ config });
 
   const published: Where[] = [{ section: { equals: 'sports' } }, { _status: { equals: 'published' } }];
-
-  // Tabs: each sport with stories, most stories first (just the sport column)
-  const sportsResponse = await payload.find({
-    collection: 'articles',
-    where: { and: published },
-    pagination: false,
-    depth: 0,
-    select: { sport: true },
-  });
-  const counts = new Map<SportValue, number>();
-  for (const doc of sportsResponse.docs) {
-    const sport = doc.sport as SportValue | null | undefined;
-    if (sport) counts.set(sport, (counts.get(sport) ?? 0) + 1);
-  }
-  const tabs: SportTab[] = [...counts.entries()]
-    .map(([sport, count]) => ({ sport, count }))
-    // Ties keep the sports list's order
-    .sort((a, b) => b.count - a.count || SPORTS.findIndex((s) => s.value === a.sport) - SPORTS.findIndex((s) => s.value === b.sport));
+  const tabs = await getSportTabs();
 
   const response = await payload.find({
     collection: 'articles',
@@ -83,17 +101,9 @@ export default async function SportsAllStoriesPage({ searchParams }: Args) {
     .map((a) => formatArticle(a))
     .filter((a): a is ComponentArticle => a !== null);
 
-  // Stories editors reframed for the featured row keep that framing here
-  let focus: FeaturedFocus = {};
-  try {
-    const layoutResponse = await payload.find({ collection: 'sports-page-layout', limit: 1, depth: 0, select: { layout: true } });
-    const layout = layoutResponse.docs[0]?.layout as { featuredFocus?: FeaturedFocus } | null | undefined;
-    focus = layout?.featuredFocus ?? {};
-  } catch {
-    // Table may not exist yet; cards use each photo's focal point
-  }
-
-  const currentMonth = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit' }).format(new Date());
+  // Stories editors reframed for the featured row keep that framing here;
+  // the rest use each photo's focal point
+  const { featuredFocus: focus } = await loadSportsLayout(payload);
 
   return (
     <main className="min-h-screen bg-bg-main section-sports transition-colors duration-300">
@@ -104,7 +114,7 @@ export default async function SportsAllStoriesPage({ searchParams }: Args) {
         activeSport={activeSport}
         page={response.page ?? requestedPage}
         totalPages={response.totalPages}
-        currentMonth={currentMonth}
+        currentMonth={troyMonth(new Date())}
         focus={focus}
       />
       <Footer />

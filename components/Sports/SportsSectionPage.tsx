@@ -1,6 +1,5 @@
-"use client";
-
-import React, { useEffect, useRef, useState } from "react";
+import { SUMMARY_CLASS } from "@/components/summaryClass";
+import React from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
@@ -10,61 +9,33 @@ import type { SportSchedule } from "@/lib/schedule";
 import SportsStandings, { type StandingsTeam } from "./SportsStandings";
 import SportsScoreStrip from "./SportsScoreStrip";
 import SportsFeatured from "./SportsFeatured";
-import { FEATURED_COUNT, shortDate, sportName, type FeaturedFocus } from "./sportsFormat";
-
-const RPI_FALLBACK: GameTeam = {
-  name: "Rensselaer Polytechnic Institute",
-  shortName: "RPI",
-  logo: null,
-  url: "https://rpiathletics.com",
-};
+import SportsHeading from "./SportsHeading";
+import { LinkedGameScores } from "./Scoreboard/GameScores";
+import { RPI_FALLBACK } from "./Scoreboard/results";
+import SportsByline from "./SportsByline";
+import { BYLINE_META_CLASS } from "@/components/FrontPage/Byline";
+import { shortDate, sportName } from "./sportsFormat";
+import {
+  FEATURED_COUNT,
+  HEADLINE_COUNT,
+  autoFill,
+  type FeaturedFocus,
+  type ScoreboardDate,
+} from "@/lib/sportsLayout";
 
 const COLUMN_GAP = "clamp(16px, 2vw, 28px)";
-const HEADLINE_COUNT = 3;
 
 /* ── Helpers ── */
 
-/** Day the lead's game was played, typed into the layout editor */
-export type ScoreboardDate = { articleId: number; date: string };
-
-// "2026-10-22" is a calendar day, not an instant, so it's read as UTC to keep
-// it from shifting a day in any time zone
-const gameDayLabel = (date: string) =>
-  /^\d{4}-\d{2}-\d{2}$/.test(date)
-    ? new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric" })
-    : null;
-
-/**
- * Author names in red, joined with "&", each linked to its staff profile
- * (write-ins stay plain text)
- */
+/** "By" and names: names in ink at 600, no red (sports cards have no red kicker either) */
 function AuthorNames({ article }: { article: ComponentArticle }) {
-  const authors = article.authorLinks?.length
-    ? article.authorLinks
-    : article.author
-      ? [{ name: article.author, href: null }]
-      : [];
   return (
-    <span className="text-accent">
-      {authors.map((a, i) => (
-        <React.Fragment key={i}>
-          {i > 0 && " & "}
-          {a.href ? (
-            // z-10 lifts the link above the card's stretched title link
-            <TransitionLink href={a.href} className="relative z-10 transition-colors hover:text-text-main">
-              {a.name}
-            </TransitionLink>
-          ) : (
-            a.name
-          )}
-        </React.Fragment>
-      ))}
-    </span>
+    <SportsByline article={article} nameClassName="font-semibold text-text-main" />
   );
 }
 
 /**
- * Sport • author • date. Each dot belongs to the item after it and sits in a
+ * Sport · author · date. Each dot belongs to the item after it and sits in a
  * strip that's clipped off at the start of every line, so a wrapped line
  * never begins or ends with a stray dot. With stackOnDesktop the items stack
  * one per line on desktop, without dots.
@@ -85,17 +56,18 @@ function MetaLine({
   const sport = sportName(article);
   const hasAuthors = showAuthors && Boolean(article.authorLinks?.length || article.author);
   const items: { node: React.ReactNode; wrap?: boolean }[] = [
-    ...(sport ? [{ node: <span className="font-bold text-text-main">{sport}</span> }] : []),
+    // Only the sport is uppercase; the byline and date read in sentence case
+    ...(sport ? [{ node: <span className="font-bold uppercase tracking-[0.04em] text-text-main">{sport}</span> }] : []),
     ...(hasAuthors ? [{ node: <AuthorNames article={article} />, wrap: true }] : []),
     ...(date ? [{ node: date }] : []),
   ];
   return (
-    <div className={`overflow-hidden font-meta uppercase tracking-[0.04em] text-text-muted ${className}`}>
+    <div className={`overflow-hidden font-meta tracking-[0.01em] ${BYLINE_META_CLASS} ${className}`}>
       <div className={`-ml-[1.2em] flex flex-wrap ${stackOnDesktop ? "lg:ml-0 lg:flex-col" : ""}`}>
         {items.map((item, i) => (
           <span
             key={i}
-            className={`relative pl-[1.2em] before:absolute before:left-[0.38em] before:content-['•'] ${item.wrap ? "" : "whitespace-nowrap"} ${stackOnDesktop ? "lg:pl-0 lg:before:hidden" : ""}`}
+            className={`relative pl-[1.2em] before:absolute before:left-[0.47em] before:content-['·'] ${item.wrap ? "" : "whitespace-nowrap"} ${stackOnDesktop ? "lg:pl-0 lg:before:hidden" : ""}`}
           >
             {item.node}
           </span>
@@ -105,182 +77,17 @@ function MetaLine({
   );
 }
 
-/* ── Scoreboard bar above the lead story ── */
-
-type ScoreSideData = { team: GameTeam; score: number | null };
-
-function ScoreSide({
-  side,
-  align,
-  isWinner,
-  hideName,
-}: {
-  side: ScoreSideData;
-  align: "left" | "right";
-  isWinner: boolean;
-  /** Set by ScoreboardBar when the names don't fit beside logo + score */
-  hideName: boolean;
-}) {
-  // When there isn't room, the logo stands in for the name, as on a broadcast
-  // score bug. A hidden name is taken out of the flow but stays measurable.
-  // On phones it starts hidden so nothing overlaps before measuring.
-  const canHide = Boolean(side.team.logo);
-  const hidden = canHide && hideName;
-  const hideClass = hidden
-    ? "pointer-events-none invisible absolute"
-    : canHide
-      ? "max-sm:pointer-events-none max-sm:invisible max-sm:absolute"
-      : "";
-  const nameClassName = `${hideClass} whitespace-nowrap font-meta text-[17px] sm:text-[24px] lg:text-[30px] leading-tight ${align === "left" ? "text-right" : "text-left"} ${isWinner ? "text-text-main font-semibold" : "text-text-muted font-medium"}`;
-  const nameBlock = side.team.url ? (
-    <a
-      href={side.team.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      title={`${side.team.name} athletics`}
-      data-team-name
-      aria-hidden={hidden || undefined}
-      tabIndex={hidden ? -1 : undefined}
-      className={`${nameClassName} hover:text-accent focus-visible:text-accent transition-colors`}
-    >
-      {side.team.shortName}
-    </a>
-  ) : (
-    <div data-team-name aria-hidden={hidden || undefined} className={nameClassName}>
-      {side.team.shortName}
-    </div>
-  );
-
-  const logoBlock = side.team.logo ? (
-    <div data-team-logo className="relative h-11 w-11 shrink-0 sm:h-16 sm:w-16 lg:h-[76px] lg:w-[76px]">
-      {/* Logos are small, already-sized transparent images */}
-      <Image src={side.team.logo} alt={`${side.team.name} logo`} fill sizes="76px" className="object-contain" unoptimized />
-    </div>
-  ) : null;
-
-  const scoreBlock = (
-    <span
-      className={`text-[46px] sm:text-[64px] lg:text-[84px] leading-none tabular-nums ${isWinner ? "text-text-main" : "text-text-muted"}`}
-      style={{ fontFamily: "var(--font-display-news)", fontWeight: 700 }}
-    >
-      {side.score ?? "–"}
-    </span>
-  );
-
-  return (
-    <div
-      data-score-side
-      className={`relative flex min-w-0 items-center gap-2.5 sm:gap-5 lg:gap-6 ${align === "left" ? "justify-end" : "justify-start"}`}
-    >
-      {align === "left" ? (
-        <>
-          {nameBlock}
-          {logoBlock}
-          {scoreBlock}
-        </>
-      ) : (
-        <>
-          {scoreBlock}
-          {logoBlock}
-          {nameBlock}
-        </>
-      )}
-    </div>
-  );
-}
-
-function ScoreboardBar({
-  game,
-  rpiTeam,
-  sport,
-  date,
-}: {
-  game: GameResult;
-  rpiTeam: GameTeam;
-  /** Shown above the status, e.g. "Men's Hockey" */
-  sport?: string | null;
-  /** Shown below the status, e.g. "Oct 22" */
-  date?: string | null;
-}) {
-  const rpi: ScoreSideData = { team: rpiTeam, score: game.rpiScore };
-  const opponent: ScoreSideData = { team: game.opponent, score: game.opponentScore };
-  // Away team on the left, home on the right; RPI is "home" at neutral sites
-  const [left, right] = game.homeAway === "away" ? [rpi, opponent] : [opponent, rpi];
-
-  const decided = left.score !== null && right.score !== null && left.score !== right.score;
-  const leftWins = decided && (left.score ?? 0) > (right.score ?? 0);
-  const rightWins = decided && !leftWins;
-
-  // Hide both team names as soon as either would collide with its logo and
-  // score; show them again once there's room. Measured, not a fixed
-  // breakpoint, because widths depend on the names ("Western New England").
-  const boardRef = useRef<HTMLDivElement>(null);
-  const [hideNames, setHideNames] = useState(false);
-
-  useEffect(() => {
-    const board = boardRef.current;
-    if (!board) return;
-    const measure = () => {
-      const fits = [...board.querySelectorAll<HTMLElement>("[data-score-side]")].every((side) => {
-        const name = side.querySelector<HTMLElement>("[data-team-name]");
-        if (!name || !side.querySelector("[data-team-logo]")) return true;
-        const gap = parseFloat(getComputedStyle(side).columnGap) || 0;
-        const others = [...side.children]
-          .filter((child) => child !== name)
-          .reduce((width, child) => width + (child as HTMLElement).offsetWidth, 0);
-        return name.scrollWidth + others + gap * 2 <= side.clientWidth;
-      });
-      setHideNames(!fits);
-    };
-    // Fires once on observe, then on every resize
-    const observer = new ResizeObserver(measure);
-    observer.observe(board);
-    // Web fonts change the names' widths once they load
-    document.fonts?.ready.then(measure);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div
-      ref={boardRef}
-      className="mb-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3 pb-3 sm:gap-8 sm:pb-4"
-    >
-      <ScoreSide side={left} align="left" isWinner={leftWins} hideName={hideNames} />
-      <div className="flex flex-col items-center gap-1 sm:gap-1.5">
-        {sport && (
-          <span className="font-meta text-[11px] sm:text-[12px] lg:text-[13px] max-w-[96px] text-center leading-tight uppercase tracking-[0.1em] text-text-main/75 sm:max-w-none sm:whitespace-nowrap">
-            {sport}
-          </span>
-        )}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <span aria-hidden="true" className={`text-[12px] sm:text-[16px] text-text-main ${leftWins ? "" : "invisible"}`}>&#9664;</span>
-          <span className="font-meta font-semibold text-[14px] sm:text-[18px] lg:text-[22px] uppercase tracking-[0.06em] text-text-main whitespace-nowrap">
-            {game.status}
-          </span>
-          <span aria-hidden="true" className={`text-[12px] sm:text-[16px] text-text-main ${rightWins ? "" : "invisible"}`}>&#9654;</span>
-        </div>
-        {date && (
-          <span className="font-meta text-[11px] sm:text-[12px] lg:text-[13px] uppercase tracking-[0.1em] text-text-main/75 whitespace-nowrap">
-            {date}
-          </span>
-        )}
-      </div>
-      <ScoreSide side={right} align="right" isWinner={rightWins} hideName={hideNames} />
-    </div>
-  );
-}
-
 /* ── Lead story: big image with the title box overlapping its bottom-right ── */
 
 function SportsLeadStory({
   article,
-  showScoreboard,
+  games,
   gameDate,
   titleOverlay,
   rpiTeam,
 }: {
   article: ComponentArticle;
-  showScoreboard: boolean;
+  games: GameResult[];
   /** Day the game was played, for the scoreboard; else the publish date */
   gameDate: string | null;
   /** Desktop: title box overlapping the photo's foot, else a plain title below it */
@@ -289,23 +96,23 @@ function SportsLeadStory({
 }) {
   const href = getArticleUrl(article);
   const image = article.imageFull || article.image;
-  const date = shortDate(article);
-  const scoreboardDate = (gameDate && gameDayLabel(gameDate)) || date;
+  const date = shortDate(article, true);
   const sport = sportName(article);
+  const series = games.length === 2;
 
   return (
     // Desktop: scoreboard, photo, then the title box overlapping the photo
     // (or, with the overlay off, a plain title under it). Phones reorder to
     // scoreboard, title, photo either way.
     <article className="group flex flex-col">
-      {showScoreboard && article.game && (
+      {games.length > 0 && (
         <div className="order-1 pt-4 lg:pt-0">
-          <ScoreboardBar game={article.game} rpiTeam={rpiTeam} sport={sport} date={scoreboardDate} />
+          <LinkedGameScores games={games} rpiTeam={rpiTeam} sport={sport} sportValue={article.sport} dateOverride={gameDate} published={article.isoDate} lead />
         </div>
       )}
 
       <TransitionLink href={href} className="order-3 block lg:order-2">
-        <div className="relative aspect-[16/9] w-full overflow-hidden bg-rule">
+        <div className="relative -mx-4 aspect-[16/9] overflow-hidden bg-rule sm:mx-0 sm:w-full">
           {image && (
             <Image
               src={image}
@@ -320,20 +127,21 @@ function SportsLeadStory({
       </TransitionLink>
 
       <div
-        className={
+        className={`${series ? "max-lg:contents" : ""} ${
           titleOverlay
             ? "relative z-10 order-2 mb-5 bg-bg-main lg:order-3 lg:mb-0 lg:-mt-8 lg:ml-auto lg:w-[72%] lg:pl-5 lg:pt-4"
             : "order-2 mb-5 lg:order-3 lg:mb-0 lg:mt-4"
-        }
+        }`}
       >
-        <MetaLine article={article} date={date} showAuthors={false} className="mb-2 text-[12px]" />
-        <TransitionLink href={href}>
+        <MetaLine article={article} date={date} showAuthors={false} className={`mb-2 text-[13px] ${series ? "max-lg:hidden" : ""}`} />
+        <TransitionLink href={href} className={series ? "max-lg:order-2 max-lg:mb-4" : undefined}>
           <h2 className="font-copy font-light text-[30px] sm:text-[36px] lg:text-[38px] leading-[1.08] tracking-[-0.01em] text-text-main group-hover:text-accent transition-colors">
             {article.richTitle ?? article.title}
           </h2>
         </TransitionLink>
-        <p className="mt-3 font-meta text-[13px] font-medium uppercase tracking-[0.04em]">
+        <p className={`order-4 mt-3 font-meta text-[15px] font-normal tracking-[0.01em] ${BYLINE_META_CLASS}`}>
           <AuthorNames article={article} />
+          {series && date && <span className="lg:hidden"> · {date}</span>}
         </p>
       </div>
     </article>
@@ -352,7 +160,7 @@ function SportsWideCard({ article, flip = false }: { article: ComponentArticle; 
       {/* Phones: text above the photo; wider screens: photo left, text right
           (or mirrored with flip) */}
       {image && (
-        <div className="relative order-2 aspect-[3/2] w-full shrink-0 overflow-hidden bg-rule sm:order-none sm:w-[46%]">
+        <div className="relative order-2 -mx-4 aspect-[3/2] shrink-0 overflow-hidden bg-rule sm:order-none sm:mx-0 sm:w-[46%]">
           <Image
             src={image}
             alt={article.title}
@@ -369,9 +177,9 @@ function SportsWideCard({ article, flip = false }: { article: ComponentArticle; 
           </TransitionLink>
         </h3>
         {article.excerpt && (
-          <p className="font-copy text-[17px] lg:text-[18px] leading-[1.35] text-text-muted line-clamp-4">{article.excerpt}</p>
+          <p className={`${SUMMARY_CLASS} text-[15px] lg:text-[16px] leading-[1.5] line-clamp-4`}>{article.excerpt}</p>
         )}
-        <MetaLine article={article} date={shortDate(article, true)} className="text-[12px] lg:text-[13px] lg:leading-[1.5]" stackOnDesktop />
+        <MetaLine article={article} date={shortDate(article, true)} className="text-[13px] lg:text-[14px] lg:leading-[1.5]" stackOnDesktop />
       </div>
     </div>
   );
@@ -411,14 +219,14 @@ function HeadlineRow({ article }: { article: ComponentArticle }) {
           </TransitionLink>
         </h3>
         {article.excerpt && (
-          <p className="mt-1 font-copy leading-[1.3] text-text-muted line-clamp-2 [font-size:clamp(14px,calc(0.8vw_+_11px),17px)] lg:[font-size:14px]">
+          <p className={`mt-1 ${SUMMARY_CLASS} leading-[1.45] line-clamp-2 [font-size:clamp(13px,calc(0.6vw_+_10.5px),15px)] lg:[font-size:13px]`}>
             {article.excerpt}
           </p>
         )}
         <MetaLine
           article={article}
           date={shortDate(article, true)}
-          className="mt-1.5 [font-size:clamp(11px,calc(0.3vw_+_10px),13px)] lg:leading-[1.5] lg:[font-size:11px]"
+          className="mt-1.5 text-[13px] sm:text-[14px] lg:text-[13px] lg:leading-[1.5]"
           stackOnDesktop
         />
       </div>
@@ -429,14 +237,7 @@ function HeadlineRow({ article }: { article: ComponentArticle }) {
 function SportsHeadlines({ articles }: { articles: ComponentArticle[] }) {
   return (
     <section>
-      <div style={{ borderTop: "2px solid var(--accent-color)", paddingTop: 4, marginBottom: 16 }}>
-        <h2
-          className="font-meta uppercase text-accent dark:text-white"
-          style={{ fontSize: 21, letterSpacing: "0.08em", fontWeight: 500, margin: "0 0 2px" }}
-        >
-          Headlines
-        </h2>
-      </div>
+      <SportsHeading>Headlines</SportsHeading>
       <div className="divide-y divide-rule">
         {/* Every row: photo left, text right */}
         {articles.map((a) => (
@@ -495,9 +296,9 @@ export default function SportsSectionPage({
     if (a) used.add(a.id);
   }
   const take = (): ComponentArticle | null => {
-    const next = articles.find((a) => !used.has(a.id) && a.image) ?? articles.find((a) => !used.has(a.id));
+    const next = autoFill(articles, used, (a) => Boolean(a.image));
     if (next) used.add(next.id);
-    return next ?? null;
+    return next;
   };
 
   const lead = pinnedLead ?? take();
@@ -505,10 +306,10 @@ export default function SportsSectionPage({
     (a): a is ComponentArticle => a !== null,
   );
   const belowLead = pinnedBelowLead ?? take();
+  const games = showScoreboard ? lead?.games ?? [] : [];
   // Without the scoreboard the left column is shorter, so a second wide card
   // (mirrored: text left, photo right) fills the space
-  const scoreboardShown = showScoreboard && Boolean(lead?.game);
-  const belowLead2 = scoreboardShown ? null : (pinnedBelowLead2 ?? take());
+  const belowLead2 = games.length ? null : (pinnedBelowLead2 ?? take());
   // Featured row: pinned cards keep their places, the rest fill from what's left
   const featured = Array.from({ length: FEATURED_COUNT }, (_, i) => pinnedFeatured[i] ?? take()).filter(
     (a): a is ComponentArticle => a !== null,
@@ -517,7 +318,7 @@ export default function SportsSectionPage({
   return (
     // Side padding matches the site header's, so the page lines up with the
     // rule under the logo at every width
-    <div className={`mx-auto max-w-[1280px] px-4 pb-8 md:px-6 xl:px-[30px] ${schedule.length > 0 ? "" : "pt-5"}`}>
+    <div className={`mx-auto max-w-[1280px] px-4 pb-2.5 md:px-6 xl:px-[30px] ${schedule.length > 0 ? "" : "pt-5"}`}>
       {/* Header: the score strip, hung from the header's rule, with the page
           title kept for screen readers and search. The original "Sports |
           Contact" header shows instead when editors switch the strip off (the
@@ -548,10 +349,10 @@ export default function SportsSectionPage({
         </div>
       )}
 
-      {/* Top block: lead stories (~63%) | standings and headlines (~37%) */}
+      {/* Equal desktop tracks keep the scrolling standings tabs inside their column. */}
       <div
-        className="flex flex-col gap-10 lg:grid lg:gap-y-0"
-        style={{ gridTemplateColumns: "1.7fr 1fr", columnGap: COLUMN_GAP }}
+        className="flex flex-col gap-10 lg:grid lg:grid-cols-2 lg:gap-y-0"
+        style={{ columnGap: COLUMN_GAP }}
       >
         {/* Phone order: scoreboard, lead title, lead photo, wide card,
             standings, headlines. Desktop keeps the two-column layout. */}
@@ -559,7 +360,7 @@ export default function SportsSectionPage({
           {lead && (
             <SportsLeadStory
               article={lead}
-              showScoreboard={showScoreboard}
+              games={games}
               // Only for the article it was entered for, never one that auto-filled the slot
               gameDate={scoreboardDate && String(scoreboardDate.articleId) === String(lead.id) ? scoreboardDate.date : null}
               titleOverlay={leadTitleOverlay}
@@ -570,7 +371,7 @@ export default function SportsSectionPage({
           {belowLead2 && <SportsWideCard article={belowLead2} flip />}
         </div>
 
-        <div className="flex flex-col gap-10 lg:gap-0 lg:border-l lg:border-rule lg:pl-6">
+        <div className="flex flex-col gap-3 md:gap-5 lg:gap-0 lg:border-l lg:border-rule lg:pl-6">
           {standings.length > 0 && (
             <div>
               <SportsStandings standings={standings} teams={standingsTeams} defaultSport={lead?.sport} />

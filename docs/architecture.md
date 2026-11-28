@@ -46,6 +46,118 @@ and content flag:
 - opinion → `components/Article/OpinionLayout`
 - first paragraph contains `#photofeature#` → `components/Article/PhotofeatureLayout`
 
+Text article headers leave 29.25px below the fixed article strip on phones
+and 35.25px from the `md` breakpoint (Opinion: 21px / 27px), a 25% reduction
+from 39px / 47px (Opinion: 28px / 36px). Layouts reserve 60px for the 56px
+strip, its 1px border and clearance. Standard article margins are 6.25px /
+12.25px with 20px header padding; Opinion uses 9px / 15px with 9px padding.
+Mobile photofeatures use the same spacing; their desktop hero stays full-screen.
+
+All four sections use `components/Article/ArticleSectionLabel.tsx` above the
+article title: centered accent section name, uppercase kicker in the main
+text color, and a short rule. The section name links to its section page; a
+2px accent underline draws left to right on hover and keyboard focus (shown
+instantly with reduced motion), matching the section link in the sticky
+article strip. Empty kickers and kickers matching the section are omitted. Opinion uses its stored kicker, falling back to its type label
+for older articles. Photofeature heroes use white kicker text and a white rule
+over the photo; mobile photofeatures use the standard header.
+
+Article titles use regular weight, including bold spans stored in rich-text
+headlines. These overrides apply only to the title within standard, Opinion,
+photofeature and live articles, and to the title in the sticky article strip;
+italic emphasis is preserved.
+
+News recommendation titles at the bottom of articles also use regular weight,
+including bold spans in their rich-text headlines. The News block leaves
+32px above its heading and 34px below its content on phones, and 46px above
+and below from `md`, halving its previous surrounding gaps. Bottom spacing
+includes the footer's existing 12px margin. The Sports block is tighter
+still: 24px from the author rule to Continue Reading and from the last
+recommendation to the footer rule at every width.
+
+Article pages below 1024px keep a menu button fixed at the top left throughout
+the article. Phones keep the logo centered while scrolling. Tablets start
+with the centered logo and switch to `Section | Title` after 100px of
+scrolling. Both tablet text links return to the section page. The same fixed
+button serves the photofeature hero and the article beneath it. The button opens the same
+`MobileMenuDrawer` as the mobile header and photofeature hero. It is a portalled
+modal dialog with a visible close button, section descriptions/current-section
+marker in rows with 12px vertical padding and a 72px minimum height,
+archive search, paper links, `/get-involved` link, dark-mode switch
+and colophon. The paper group leads with a large Get involved link, accent
+arrow and "Join the staff, submit an op-ed, or send a tip." description. A rule
+separates it from one row of uppercase About, Archives, Staff and Contact links,
+with decorative dot separators and 44px-tall targets. The row's type scales
+to fit narrow phones. Phone width is min(86vw, 360px); tablets use 380px. Changing the
+theme keeps the drawer open, preserving its focus, scroll position and page
+isolation. During a circular theme reveal with the drawer open, the page's
+view-transition layer supplies a steady 4px blur directly, avoiding browser
+bugs that omit backdrop filters from snapshots. The backdrop's own blur is
+disabled only during that capture/animation so it is not applied twice;
+its dimming remains. Live blur resumes immediately afterward to avoid an
+unblurred frame during the handoff; the backdrop's dimming still fades.
+The panel captures separately to stay sharp and follows
+the same circular reveal. Only the open panel claims a transition name.
+Without view transitions, the
+existing color fade retains the live backdrop blur.
+Its search uses the same `UnderlinedSearchForm` as section-page
+footers: a typing field, accent underline and rainbow wave, submitting a GET
+request to `/search`.
+Drawer searches are site-wide; section footers retain their section filter.
+Submitting closes the drawer without returning focus to the menu trigger.
+The panel scrolls on short screens, with its footer last and split safe-area padding.
+Its lower area includes one latest published story on phones and three on tablets,
+across all sections, with section labels, regular-weight headlines and dates
+in Troy's time zone. The optional feed loads when a phone or tablet drawer opens, using
+the public collection API without credentials and selecting only summary
+fields. Requests are shared/cached for one minute; future/invalid items are
+excluded, and an empty or unavailable feed leaves the navigation usable.
+Both sizes share the feed cache. Story links close the modal.
+Opening moves focus inside; Tab stays in the dialog and the page behind is
+inert. Close restores prior inert/scroll state and focus, except when following
+a link or opening search. The 220ms swipe/slide uses the rendered panel width;
+reduced motion disables transitions. Font tokens are carried across the portal
+to preserve article-local Follytechnic styling. The fixed article trigger
+closes the drawer on resize. Photofeatures support swipe-to-open through the
+drawer for the current breakpoint. Closed drawers ignore touches while
+another drawer is open.
+Theme/share controls stay on the right. During desktop pinch zoom, the
+article strip follows the visible viewport as it pans, and the title
+truncates within the available width.
+
+The desktop header's "Submit" and drawer's "Get involved" links open
+`/get-involved`, a server-rendered hub
+for joining staff, submitting an op-ed/letter through `/submit`, and sending a
+news tip. Only the mutually exclusive native desk accordion and clipboard
+button need client components. Desk rows animate their measured height over
+220ms on opening and closing, continuing from their current height on rapid
+clicks. Closing content is inert; reduced motion and width changes settle
+immediately. Native grouped details remain available without JavaScript.
+The copy button selects the email text if
+clipboard access fails. Meetings use the times/room already on `/contact`;
+update both pages if these change. Below 1024px, meetings appear first and
+native jump links remain visible. Desktop groups the staff introduction,
+meeting times and desk list in the left column, with op-ed submissions and
+news tips stacked in the right column. From 768px, the content aligns with
+the header container. Below 1024px, the title stays on one line at 26–30px on
+phones and 40–44px on tablets, with 24px below the date strip and 20px before
+its divider. The path index uses 16px text and 44px tap targets with compact
+padding; the staff section has no trailing divider.
+Desktop retains its 76px title with balanced wrapping, without a hero divider,
+and uses a 24px gap before the column labels.
+Tablet and desktop leave 24px between the final content and the footer rule.
+The news-tip section has no top divider and starts 24px after the submission
+button, preserving the short hairline beside its label. Its email sits on the
+page's own background (no photo behind it since 2026-11-28), lined up with the
+heading; only its Copy button is a window onto the page photo.
+An events/advertising block follows news tips, stacking below 640px. It shows
+`features@poly.rpi.edu` for event details and `business@poly.rpi.edu` for ads;
+both reuse the copy control with distinct accessible labels. At all widths,
+the block's rule sits 24px below the news email box.
+Jump-link smooth scrolling is disabled for reduced motion.
+Metadata is static and the route is included in the sitemap; no SEO schema or
+submission/contact/staff behavior changes are required.
+
 Homepage composition is **data-driven**: the `layout` collection (one
 versioned global-ish doc) describes what's pinned, what's lead, and which
 sections render below. `app/(frontend)/page.tsx` reads layout and supplements
@@ -53,6 +165,15 @@ empty slots with recent stories from each section.
 
 The header animation, theme colors, and SEO defaults all come from globals
 (`theme`, `seo`) so they can be edited from the admin without a deploy.
+
+The desktop section underline slides between section links. Opening a
+section from the landing page brings its underline in from outside the
+rule's left edge and slides it beneath the selected label at a fixed width.
+Choosing the masthead logo from a section carries that underline onto the
+landing-page rule and slides it off the left edge, without delaying navigation.
+It uses the section slide's 420ms timing and easing, with the active-colour text
+following the bar. Reduced motion and mobile skip these entrance and exit
+animations; resizing or navigating again cleans them up.
 
 ### Payload — `app/(payload)/` and `payload.config.ts`
 
@@ -84,7 +205,7 @@ Roughly grouped:
 - **public read**: `health`, `search`, `search/spellcheck`,
   `search/archive-date`, `archive/day`, `staff/[slug]`, `weather`,
   `logos/file`, `section-layout`
-- **public write**: `submit`, `submit-event`, `push/register`
+- **public write**: `submit`, `push/register`
 - **internal**: `push/send` (requires `x-internal-secret`), `inline-edit`,
   `admin/archive`, `newsroom/admin-move-notice`
 

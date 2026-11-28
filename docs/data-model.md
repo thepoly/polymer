@@ -44,9 +44,10 @@ metadata.
 
 ### Per-section page layouts
 
-- `opinion-page-layout` — [`collections/OpinionPageLayout.ts`](../collections/OpinionPageLayout.ts)
-- `features-page-layout` — [`collections/FeaturesPageLayout.ts`](../collections/FeaturesPageLayout.ts)
+- `opinion-page-layout` — [`collections/OpinionPageLayout.ts`](../collections/OpinionPageLayout.ts) (one `layout` json read by `normalizeOpinionLayout` in [`lib/opinionLayout.ts`](../lib/opinionLayout.ts): column pins and image flags, Opinion’s Choice, spotlight authors, plus `pitch`, the photo behind the guest-writer box, and `pitchPositions`, where it sits on phones, tablets and computers. Keys in the json, so no migration; see [`opinion-section.md`](opinion-section.md))
+- `features-page-layout` — [`collections/FeaturesPageLayout.ts`](../collections/FeaturesPageLayout.ts) (one `layout` json, the v3 layout read by `normalizeFeaturesLayout` in [`lib/featuresFront.ts`](../lib/featuresFront.ts): pinned cover, section leads and photo reel story, plus `pitch`, the photo behind "Have a suggestion?", and `pitchPositions`, where it sits on phones, tablets and computers. Older shapes keep only their first Featured slot. Keys in the json, so no migration; see [`features-section.md`](features-section.md))
 - `sports-page-layout` — [`collections/SportsPageLayout.ts`](../collections/SportsPageLayout.ts)
+- `news-page-layout` — [`collections/NewsPageLayout.ts`](../collections/NewsPageLayout.ts) (one `layout` jsonb: lead, Student Government boxes, and the timeline pages' photos, hidden entries, layouts and archive additions; see [`news-section.md`](news-section.md))
 - `staff-page-layout` — [`collections/StaffPageLayout.ts`](../collections/StaffPageLayout.ts)
 
 Each is the editor-curated composition for its section landing page.
@@ -88,7 +89,7 @@ update; only `admin` can delete.
 
 ### `event-submissions` — [`collections/EventSubmissions.ts`](../collections/EventSubmissions.ts)
 
-Public event submissions for the calendar (`/api/submit-event`).
+Archived event submissions from the removed Features event form. Read-only: `create` is closed, and `/features/submit-event` redirects to `/features`. Kept so past submissions stay readable; dropping it needs a migration.
 
 ### `logos` — [`collections/Logos.ts`](../collections/Logos.ts)
 
@@ -98,7 +99,15 @@ Branded section/homepage assets. Served via `/api/logos/file`.
 
 Opponents RPI teams play, each with its logo (upload collection, files in `MEDIA_DIR`, served via `/api/schools/file`). Seeded from RPI Athletics schedules (all sports, four seasons) by `pnpm db:seed:schools`, which reads `scripts/data/schools.json`; existing schools are left as editors set them, except that a missing logo or athletics link is filled in. Run it once on a new database (including production after the first deploy). RPI's own record (`Rensselaer Polytechnic Institute`) supplies the home side of the `/sports` scoreboard.
 
-Sports articles carry an optional `sport` (values in [`lib/sports.ts`](../lib/sports.ts), matching RPI Athletics slugs; an empty kicker is filled with the sport name) and an optional game result: `opponent` (→ `schools`), `homeAway` (`home` | `away` | `neutral`), `rpiScore`, `opponentScore`, `gameStatus` (e.g. "Final/OT"; blank means "Final").
+Sports articles carry an optional `sport` (values in [`lib/sports.ts`](../lib/sports.ts), matching RPI Athletics slugs; an empty kicker is filled with the sport name) and up to two game results in a `games` array (tables `articles_games` and `_articles_v_version_games`), in playing order. Each game has `opponent` (→ `schools`, required), `date`, `homeAway` (`home` | `away` | `neutral`), `rpiScore`, `opponentScore` and `status` (e.g. "Final/OT"; blank means "Final" when both scores are set, otherwise "Scheduled"). The older single-game columns (`opponent`, `homeAway`, `rpiScore`, `opponentScore`, `gameStatus`) are hidden in the admin and kept so older articles and revisions still read; migration `20261121_000000_add_article_games` copied them into `games`. See [`sports-section.md`](sports-section.md).
+
+### `student-gov-updates` — [`collections/StudentGovUpdates.ts`](../collections/StudentGovUpdates.ts)
+
+Short Student Senate / Executive Board items (title, blurb, date, `body`: `senate` | `eboard`) shown on the timelines and the /news boxes. Hidden from the sidebar; edited from the timeline page editors. Create/update: admin, EIC, news-section editors; delete: admin, EIC.
+
+### `student-gov-terms` — [`collections/StudentGovTerms.ts`](../collections/StudentGovTerms.ts)
+
+One Senate or E-Board term, GM Week to GM Week: `body`, Senate `number`, `startsOn` (first meeting; decides which term every entry falls in), `gmWeekOn`, `gmWeekStory` (→ `articles`), `hasCoverage`, and a `leaders` array (table `student_gov_terms_leaders`: name, ordinal, how, startedOn). `name` and the unique `slug` (`senate-57`, `eboard-2026-27`) are set by a `beforeValidate` hook. Seeded by `pnpm db:seed:terms`. Same access as the updates. See [`news-section.md`](news-section.md).
 
 ### `redirects` — [`collections/Redirects.ts`](../collections/Redirects.ts)
 

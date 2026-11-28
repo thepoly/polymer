@@ -25,7 +25,7 @@ export function ImageCaption({
     <figcaption className={`image-caption-container font-meta text-[12px] italic text-text-muted transition-colors ${className}`}>
       {caption ? <span className="image-caption-text">{caption}</span> : null}
       {photographer && (
-        <span className="image-caption-photographer opacity-60">
+        <span className="image-caption-photographer not-italic text-[11px] tracking-[0.02em]">
           {caption ? <span className="image-caption-space"> </span> : ''}
           {photographer}/The Polytechnic
         </span>

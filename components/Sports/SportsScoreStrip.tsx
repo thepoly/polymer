@@ -5,6 +5,8 @@ import Image from "next/image";
 import type { GameTeam } from "@/components/FrontPage/types";
 import type { ScheduleGame, SportSchedule } from "@/lib/schedule";
 import { sportLabel } from "@/lib/sports";
+import { useScrollEdges } from "./useScrollEdges";
+import { useMomentumScroll } from "./useMomentumScroll";
 
 /* ── Dates ── */
 
@@ -86,7 +88,7 @@ function GameCell({ game, rpiTeam }: { game: ScheduleGame; rpiTeam: GameTeam }) 
       </div>
     </>
   );
-  const className = "block w-[176px] shrink-0 snap-start border-l border-rule px-3 py-3.5 sm:w-[190px]";
+  const className = "block w-[176px] shrink-0 border-l border-rule px-3 py-3.5 sm:w-[190px]";
 
   return game.link ? (
     <a
@@ -107,15 +109,16 @@ function GameCell({ game, rpiTeam }: { game: ScheduleGame; rpiTeam: GameTeam }) 
 
 /**
  * RPI's last two finals and next game in each standings sport (see
- * lib/schedule.ts for how gaps are filled), one group per sport. The row scrolls sideways (finger or trackpad swipe), with a fade on
- * the cut-off edge and arrows for mouse users, who can't swipe sideways.
+ * lib/schedule.ts for how gaps are filled), one group per sport. The row
+ * supports finger and trackpad swipes, plus desktop mouse dragging with a
+ * coast. Desktop arrows sit on the cut-off edges.
  */
 export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: SportSchedule[]; rpiTeam: GameTeam }) {
   const listRef = useRef<HTMLDivElement>(null);
-  const [edges, setEdges] = useState({ left: false, right: false });
-  // Visible part of the strip, as fractions of its full width, for the red
-  // progress bar along the bottom rule
-  const [view, setView] = useState({ start: 0, size: 1 });
+  const { handlers, stopMomentum } = useMomentumScroll(listRef, { mouseDrag: true });
+  // Cut-off edges for the arrows, and the visible part of the strip (as
+  // fractions of its full width) for the red progress bar on the bottom rule
+  const view = useScrollEdges(listRef);
   // The bar stays hidden until the reader first points at or scrolls the
   // strip, then fills in once and stays
   const [revealed, setRevealed] = useState(false);
@@ -128,35 +131,19 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
     return () => el.removeEventListener("scroll", reveal);
   }, [revealed]);
 
-  useEffect(() => {
-    const el = listRef.current;
-    if (!el) return;
-    const update = () => {
-      setEdges({
-        left: el.scrollLeft > 2,
-        right: el.scrollLeft + el.clientWidth < el.scrollWidth - 2,
-      });
-      setView({ start: el.scrollLeft / el.scrollWidth, size: el.clientWidth / el.scrollWidth });
-    };
-    // Fires once on observe, then on every resize
-    const observer = new ResizeObserver(update);
-    observer.observe(el);
-    el.addEventListener("scroll", update, { passive: true });
-    return () => {
-      observer.disconnect();
-      el.removeEventListener("scroll", update);
-    };
-  }, []);
-
-  const scrollBy = (direction: 1 | -1) =>
+  const scrollBy = (direction: 1 | -1) => {
+    stopMomentum();
     listRef.current?.scrollBy({ left: direction * listRef.current.clientWidth * 0.8, behavior: "smooth" });
+  };
 
   // A full-height tab built into the strip's edge, for mouse users (touch
-  // devices swipe and see only the fade). Red chevron; fills red on hover.
+  // devices swipe). Red chevron; fills red on hover.
   const arrow = (side: "left" | "right") => (
     <div
-      // Stops inside the rules so they run the full width
-      className={`pointer-events-none absolute top-px bottom-px flex lg:top-0 ${side === "left" ? "left-0" : "right-0 flex-row-reverse"}`}
+      // Stops inside the rules so they run the full width. Hangs 1px past the
+      // strip's end: at fractional zoom (125%, 175%) the scroller can paint a
+      // device pixel beyond a flush tab, leaving a sliver of the next cell.
+      className={`pointer-events-none absolute top-px bottom-px hidden lg:top-0 lg:flex ${side === "left" ? "-left-px" : "-right-px"}`}
     >
       <button
         type="button"
@@ -178,25 +165,20 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
           <path d={side === "left" ? "M10 3.5 5.5 8 10 12.5" : "M6 3.5 10.5 8 6 12.5"} />
         </svg>
       </button>
-      {/* Softens the cut-off cell next to the tab */}
-      <div
-        className="w-8"
-        style={{ background: `linear-gradient(to ${side === "left" ? "right" : "left"}, var(--background), transparent)` }}
-      />
     </div>
   );
 
   return (
     <section
       aria-label="RPI scores and schedule"
-      className="relative mb-3 sm:mb-5"
+      className="relative -mx-4 mb-3 sm:mb-5 md:-mx-6 lg:mx-0"
       onMouseEnter={() => setRevealed(true)}
     >
       <div
         ref={listRef}
-        // On desktop the strip sits right under the header's rule, which serves
-        // as its top one; the phone header has no such rule, so it gets its own
-        className="flex snap-x snap-proximity overflow-x-auto overscroll-x-contain border-y border-rule lg:border-t-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        // The header's bottom rule also serves as the strip's top border.
+        className="flex overflow-x-auto overscroll-x-contain touch-pan-y touch-pinch-zoom border-b border-rule [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:cursor-grab lg:select-none lg:active:cursor-grabbing lg:[&_a]:cursor-[inherit]"
+        {...handlers}
       >
         {schedule.map((s, i) => (
           <div key={s.sport} role="group" aria-label={sportLabel(s.sport) ?? s.sport} className="flex shrink-0">
@@ -205,7 +187,7 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
               target="_blank"
               rel="noopener noreferrer"
               title="Full schedule on RPI Athletics"
-              className={`flex w-[92px] shrink-0 snap-start items-center justify-center bg-text-main/[0.04] px-2 text-center font-meta text-[11px] font-semibold uppercase leading-tight tracking-[0.06em] text-text-main transition-colors hover:text-accent ${i > 0 ? "border-l border-rule" : ""}`}
+              className={`flex w-[92px] shrink-0 items-center justify-center bg-text-main/[0.04] px-2 text-center font-meta text-[11px] font-semibold uppercase leading-tight tracking-[0.06em] text-text-main transition-colors hover:text-accent ${i > 0 ? "border-l border-rule" : ""}`}
             >
               {sportLabel(s.sport)}
             </a>
@@ -215,8 +197,8 @@ export default function SportsScoreStrip({ schedule, rpiTeam }: { schedule: Spor
           </div>
         ))}
       </div>
-      {edges.left && arrow("left")}
-      {edges.right && arrow("right")}
+      {view.left && arrow("left")}
+      {view.right && arrow("right")}
       {/* Red progress bar on the bottom rule, filled from the left edge to the
           end of what's in view. Hidden until the first hover or scroll. */}
       {view.size < 1 && revealed && (

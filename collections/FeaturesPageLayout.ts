@@ -38,13 +38,13 @@ const FeaturesPageLayout: CollectionConfig = {
       required: true,
       defaultValue: 'Features Layout',
     },
-    // JSON blob storing the full layout:
-    // Shape: {
-    //   onCampus: (number | null)[],     // 4 article slots (indices 0,1 can have images)
-    //   featured: (number | null)[],      // 3 slots: 1 large hero + 2 with images
-    //   rightArticles: (number | null)[], // 3 slots: 1 with image + 2 text-only
-    //   events: Array<{ title, date, time, location? }>
-    // }
+    // JSON blob storing the editor's pins: { version: 3, cover, leads:
+    // { campus, arts, people }, reel } (FeaturesLayoutV3 in
+    // lib/featuresFront.ts). Older saves (onCampus, featured, rightArticles,
+    // photoBand, theArts, photoSpotlight, events, collarCity…) are read
+    // through normalizeFeaturesLayout, which keeps only featured[0] as the
+    // cover; the editor's next save rewrites them. No schema change: the
+    // field is JSON either way.
     {
       name: 'layout',
       type: 'json',

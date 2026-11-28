@@ -1,4 +1,4 @@
-import { MigrateDownArgs, MigrateUpArgs, sql } from '@payloadcms/db-postgres'
+import { MigrateUpArgs, sql } from '@payloadcms/db-postgres'
 
 export async function up({ db }: MigrateUpArgs): Promise<void> {
   // In environments where the `skeleton` column is backed by a Postgres enum
@@ -17,7 +17,7 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
   `)
 }
 
-export async function down(_args: MigrateDownArgs): Promise<void> {
+export async function down(): Promise<void> {
   // PostgreSQL does not support removing values from enums directly.
   // No-op on down — recreating the enum would require rewriting the column.
 }

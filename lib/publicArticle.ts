@@ -1,3 +1,4 @@
+import type { BasePayload } from 'payload';
 import type { Article, User } from '@/payload-types';
 import type { LexicalNode } from '@/components/Article/RichTextParser';
 
@@ -85,6 +86,35 @@ const toPublicArticleMedia = (media: Article['featuredImage']): PublicArticleMed
     focalX: media.focalX,
     focalY: media.focalY,
   };
+};
+
+/**
+ * The article page fetches at depth 2, which reaches the featured image's
+ * photographer but not their job title or headshot (both one level deeper).
+ * The "Photos by" byline entry needs those, so fetch that one user at depth 1.
+ * Run it on the raw doc, before toPublicArticle. A failed lookup keeps the
+ * shallow user, which still renders the name without a title.
+ */
+export const withPopulatedPhotographer = async (
+  payload: Pick<BasePayload, 'findByID'>,
+  article: Article,
+): Promise<Article> => {
+  const media = article.featuredImage;
+  if (!media || typeof media === 'number') return article;
+  const photographer = media.photographer;
+  const photographerId = typeof photographer === 'object' && photographer ? photographer.id : photographer;
+  if (!photographerId) return article;
+  try {
+    const user = await payload.findByID({
+      collection: 'users',
+      id: photographerId,
+      depth: 1,
+      select: { firstName: true, lastName: true, slug: true, headshot: true, positions: true },
+    });
+    return { ...article, featuredImage: { ...media, photographer: user as User } };
+  } catch {
+    return article;
+  }
 };
 
 export const toPublicArticle = (article: Article): Article => ({

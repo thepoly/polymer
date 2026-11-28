@@ -1,3 +1,4 @@
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import React from "react";
 import Image from "next/image";
 import TransitionLink from "@/components/TransitionLink";
@@ -55,11 +56,11 @@ function GridArticleCard({
       >
         {article.richTitle || article.title}
       </h3>
-      <Byline author={article.author} date={article.date} split={isLarge} />
+      <Byline authors={article.authorLinks} date={article.date} />
       {article.excerpt && (
         <p
           data-marauders-obstacle="excerpt"
-          className={`font-meta font-normal text-black dark:text-white mt-2 [overflow-wrap:anywhere] break-words ${
+          className={`${SUMMARY_CLASS} mt-2 [overflow-wrap:anywhere] break-words ${
             isLarge
               ? "text-[14px] leading-[1.45] line-clamp-4"
               : "text-[13px] leading-[1.38] line-clamp-3"
@@ -173,11 +174,11 @@ function MobileArticleCard({ article }: { article: Article }) {
       >
         {article.richTitle || article.title}
       </h3>
-      <Byline author={article.author} date={article.date} />
+      <Byline authors={article.authorLinks} date={article.date} />
       {article.excerpt && (
         <p
           data-marauders-obstacle="excerpt"
-          className="font-meta font-normal text-black dark:text-white mt-2 text-[14px] leading-[1.45] line-clamp-3 [overflow-wrap:anywhere] break-words"
+          className={`${SUMMARY_CLASS} mt-2 text-[14px] leading-[1.45] line-clamp-3 [overflow-wrap:anywhere] break-words`}
         >
           {article.excerpt}
         </p>

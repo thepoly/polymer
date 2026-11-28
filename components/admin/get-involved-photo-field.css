@@ -1,0 +1,107 @@
+/* Get Involved Page photo editor (GetInvolvedPhotoField). Colours follow the
+   Payload admin theme; the red matches the Senate / E-Board panel editor. */
+
+.gip-root {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: var(--spacing-field, 24px);
+}
+.gip-title {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.gip-help {
+  margin: 0;
+  max-width: 70ch;
+  font-size: 0.85rem;
+  color: var(--theme-elevation-600, #666);
+}
+.gip-screens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-start;
+}
+.gip-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gip-screen-head {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 0.8rem;
+}
+.gip-screen-head span {
+  color: var(--theme-elevation-500, #777);
+  font-size: 0.72rem;
+}
+.gip-preview {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--theme-elevation-150, #ddd);
+  border-radius: 6px;
+  background: var(--theme-elevation-50, #f5f5f5);
+}
+.gip-preview iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+  background: #fff;
+}
+.gip-overlay {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.gip-overlay:focus-visible {
+  outline: 2px solid #c41e3a;
+  outline-offset: -2px;
+}
+.gip-grabbing {
+  cursor: grabbing;
+}
+.gip-zoom {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.gip-zoom span {
+  opacity: 0.7;
+}
+.gip-zoom input[type='range'] {
+  width: 100%;
+  accent-color: #c41e3a;
+}
+.gip-actions {
+  display: flex;
+  gap: 6px;
+}
+.gip-btn {
+  appearance: none;
+  border: 1px solid var(--theme-elevation-200, #ccc);
+  background: var(--theme-elevation-0, #fff);
+  color: var(--theme-text, #111);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.gip-btn:hover:not(:disabled) {
+  border-color: #c41e3a;
+  color: #c41e3a;
+}
+.gip-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}

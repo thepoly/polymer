@@ -1,5 +1,6 @@
 "use client";
 
+import { SUMMARY_CLASS } from "@/components/summaryClass";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import Image from "next/image";
@@ -183,9 +184,9 @@ function ArchiveArticleRow({ article }: { article: Article }) {
         >
           {article.title}
         </h2>
-        <Byline author={article.author} date={article.date} className="mt-2 block" />
+        <Byline authors={article.authorLinks} date={article.date} margin="mt-2" className="block" />
         {article.excerpt && (
-          <p className="mt-2 font-meta text-[14px] leading-[1.48] text-text-muted">
+          <p className={`mt-2 ${SUMMARY_CLASS} text-[14px] leading-[1.48]`}>
             {article.excerpt}
           </p>
         )}

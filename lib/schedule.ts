@@ -3,10 +3,12 @@
 // same platform as the conference standings pages). It isn't an official API:
 // if a fetch fails or the feed changes, the last good data keeps showing, and
 // a sport with no usable games is left out of the strip.
+import type { GameResult } from '@/components/FrontPage/types'
+import { fetchSidearm } from './sidearm'
 import type { SportValue } from './sports'
+import { troyDay } from './troyTime'
 
 const SITE = 'https://rpiathletics.com'
-const REFRESH_SECONDS = 60 * 60
 /** Windows always fetched, in months from today: one back, two ahead */
 const BASE_MONTHS = [-1, 0, 1, 2]
 /** Furthest back to look for a sport's last finals (holds spring sports over the summer) */
@@ -16,7 +18,9 @@ const SEASON_GAP_DAYS = 60
 const CELLS = 3
 
 // Sidearm's sport codes (global_sport_shortname) → ours. The conference sites
-// use the same codes in their standings URLs.
+// use mostly the same codes in their standings URLs, but not always (field
+// hockey is "fhockey" here and "fhock" there), so lib/standings.ts keeps its
+// own list.
 const FEED_SPORTS: Record<string, SportValue> = {
   mhockey: 'mens-ice-hockey',
   whockey: 'womens-ice-hockey',
@@ -106,16 +110,6 @@ export type SportSchedule = {
 // Last good response per window, for when a refresh fails
 const lastGood = new Map<string, FeedEvent[]>()
 
-/** Today as YYYY-MM-DD in Troy, the feed's time zone */
-function localDay(now: Date): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'America/New_York',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now)
-}
-
 /** "2026-10" plus n months */
 function addMonths(day: string, n: number): string {
   const d = new Date(Date.UTC(Number(day.slice(0, 4)), Number(day.slice(5, 7)) - 1 + n, 1))
@@ -125,8 +119,16 @@ function addMonths(day: string, n: number): string {
 const dayNumber = (date: string) =>
   Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10))) / 86_400_000
 
-const absolute = (url: string | null | undefined) =>
-  url ? (url.startsWith('/') ? `${SITE}${url}` : url) : null
+/** A link from the feed as an absolute http(s) URL; anything else is dropped */
+function absolute(url: string | null | undefined): string | null {
+  if (!url) return null
+  try {
+    const parsed = new URL(url, SITE)
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:' ? parsed.href : null
+  } catch {
+    return null
+  }
+}
 
 const parseScore = (s: string | null | undefined) => (s && /^\d+$/.test(s.trim()) ? Number(s) : null)
 
@@ -155,11 +157,7 @@ function startTime(time: string | null | undefined): string | null {
 async function fetchWindow(month: string): Promise<FeedEvent[]> {
   const url = `${SITE}/services/responsive-calendar.ashx?type=month&sport=0&date=${month.slice(5, 7)}/15/${month.slice(0, 4)}`
   try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'The Polytechnic (poly.rpi.edu) sports desk' },
-      next: { revalidate: REFRESH_SECONDS },
-      signal: AbortSignal.timeout(8000),
-    })
+    const res = await fetchSidearm(url)
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const days = (await res.json()) as { events?: FeedEvent[] | null }[]
     if (!Array.isArray(days)) throw new Error('calendar response not recognised')
@@ -199,12 +197,48 @@ function toGame(e: FeedEvent, today: string): ScheduleGame | null {
     opponent: {
       name,
       shortName: shortSchoolName(name),
-      logo: image?.filename ? `${SITE}${image.path ?? '/images/logos'}/${encodeURIComponent(image.filename)}` : null,
+      logo: image?.filename ? absolute(`${image.path ?? '/images/logos'}/${encodeURIComponent(image.filename)}`) : null,
       rank: e.opponent.prefix?.trim() || null,
     },
     result,
     link: result ? absolute(r?.recap?.url) ?? absolute(r?.boxscore?.url) : null,
   }
+}
+
+/** Look up the game in its own calendar month, including games that have scrolled off the strip. */
+export async function linkArticleGames(
+  games: GameResult[],
+  sport?: string | null,
+  dateOverride?: string | null,
+): Promise<GameResult[]> {
+  if (!Object.values(FEED_SPORTS).some((value) => value === sport)) return games
+
+  const dates = games.map((game) => {
+    const date = games.length === 1 && dateOverride ? dateOverride : game.date
+    return date && /^\d{4}-\d{2}-\d{2}/.test(date) ? date.slice(0, 10) : null
+  })
+  const months = [...new Set(dates.flatMap((day) => day ? [day.slice(0, 7)] : []))]
+  const windows = new Map(await Promise.all(months.map(async (month) => [month, await fetchWindow(month)] as const)))
+
+  const normalize = (name: string) => name.trim().toLowerCase().replace(/\s+/g, ' ')
+  return games.map((game, index) => {
+    const day = dates[index]
+    if (!day) return game
+
+    const schoolNames = [game.opponent.name, game.opponent.shortName].map(normalize)
+    const matches = new Map<number, ScheduleGame>()
+    for (const event of windows.get(day.slice(0, 7)) ?? []) {
+      if (FEED_SPORTS[event.sport?.global_sport_shortname ?? ''] !== sport || typeof event.date !== 'string' || event.date.slice(0, 10) !== day) continue
+      const scheduled = toGame(event, day)
+      if (!scheduled) continue
+      if (![scheduled.opponent.name, scheduled.opponent.shortName].some((name) => schoolNames.includes(normalize(name)))) continue
+      if (game.rpiScore !== null && scheduled.result?.rpiScore !== game.rpiScore) continue
+      if (game.opponentScore !== null && scheduled.result?.opponentScore !== game.opponentScore) continue
+      matches.set(scheduled.id, scheduled)
+    }
+    const [match] = matches.values()
+    return matches.size === 1 && match?.link ? { ...game, link: match.link } : game
+  })
 }
 
 /**
@@ -242,10 +276,23 @@ function pickGames(games: ScheduleGame[]): ScheduleGame[] {
 /**
  * Each sport's three games for the score strip, in the order given (the
  * standings card's sports). Sports with no games are left out.
+ *
+ * The sports may be a promise. The months every sport needs don't depend on
+ * the answer, so they load while the caller is still working out which sports
+ * to show, and only the look-back for those sports waits for it.
  */
-export async function getSportsSchedule(sports: SportValue[], now = new Date()): Promise<SportSchedule[]> {
+export async function getSportsSchedule(
+  sportsWanted: SportValue[] | Promise<SportValue[]>,
+  now = new Date(),
+): Promise<SportSchedule[]> {
+  if (Array.isArray(sportsWanted) && sportsWanted.length === 0) return []
+  // Troy is the feed's time zone
+  const today = troyDay(now)
+  const [sports, baseWindows] = await Promise.all([
+    sportsWanted,
+    Promise.all(BASE_MONTHS.map((n) => fetchWindow(addMonths(today, n)))),
+  ])
   if (sports.length === 0) return []
-  const today = localDay(now)
   const wanted = new Set(sports)
   const bySport = new Map<SportValue, Map<number, ScheduleGame>>(sports.map((s) => [s, new Map()]))
 
@@ -258,7 +305,7 @@ export async function getSportsSchedule(sports: SportValue[], now = new Date()):
     }
   }
 
-  ;(await Promise.all(BASE_MONTHS.map((n) => fetchWindow(addMonths(today, n))))).forEach(add)
+  baseWindows.forEach(add)
 
   // Look further back when a sport is short of finals and no season break
   // shows before its earliest game yet; a sport with no games at all needs

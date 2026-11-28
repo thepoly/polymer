@@ -1,0 +1,100 @@
+diff --git a/bin.js b/bin.js
+index 288bcc8af8e0efc9969d87abe9bdb434b085d5a4..c4ed8a38dc7c554f1295f51b4868692482eacffd 100644
+--- a/bin.js	
++++ b/bin.js	
+@@ -15,7 +15,7 @@ if (disableTranspile) {
+     await bin()
+   }
+ 
+-  void start()
++  await start()
+ } else {
+   const filename = fileURLToPath(import.meta.url)
+   const dirname = path.dirname(filename)
+@@ -30,7 +30,7 @@ if (disableTranspile) {
+       await bin()
+     }
+ 
+-    void start()
++    await start()
+   } else if (useSwc) {
+     const { register } = await import('node:module')
+     // Remove --use-swc from arguments
+@@ -49,6 +49,6 @@ if (disableTranspile) {
+       await bin()
+     }
+ 
+-    void start()
++    await start()
+   }
+ }
+diff --git a/dist/bin/index.js b/dist/bin/index.js
+index 2a801736a95e367cff6403ecf890261e6217d53d..fad848db5ec26d88c75e8742d3447061828a151e 100644
+--- a/dist/bin/index.js	
++++ b/dist/bin/index.js	
+@@ -1,5 +1,6 @@
+ /* eslint-disable no-console */ import { Cron } from 'croner';
+ import minimist from 'minimist';
++import * as nodeModule from 'node:module';
+ import { pathToFileURL } from 'node:url';
+ import path from 'path';
+ import { findConfig } from '../config/find.js';
+@@ -22,6 +23,12 @@ const availableScripts = [
+ ];
+ export const bin = async ()=>{
+     loadEnv();
++    // Backport payloadcms/payload#18398: bypass Lexical's async Node entry points.
++    const environmentCondition = process.env.NODE_ENV === 'production' ? 'production' : 'development';
++    // tsx 4.21 uses async loader hooks even on newer Node versions, so use the same chain.
++    nodeModule.register('../../lexicalLoader.mjs', import.meta.url, {
++        data: environmentCondition
++    });
+     process.env.DISABLE_PAYLOAD_HMR = 'true';
+     const args = minimist(process.argv.slice(2));
+     const script = (typeof args._[0] === 'string' ? args._[0] : '').toLowerCase();
+diff --git a/lexicalLoader.mjs b/lexicalLoader.mjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..5aaa948cb7c6760ef1022b22f51777f7dfc9981f
+--- /dev/null
++++ b/lexicalLoader.mjs	
+@@ -0,0 +1,26 @@
++/** @type {'development' | 'production'} */
++let environmentCondition
++
++/** @param {'development' | 'production'} condition */
++export function initialize(condition) {
++  environmentCondition = condition
++}
++
++/** @type {import('node:module').ResolveHook} */
++export const resolve = (specifier, context, nextResolve) => {
++  if (
++    (specifier === 'lexical' ||
++      specifier.startsWith('lexical/') ||
++      specifier.startsWith('@lexical/')) &&
++    !context.conditions.includes('development') &&
++    !context.conditions.includes('production')
++  ) {
++    // Preserve explicit conditions and leave every other package's resolution unchanged.
++    return nextResolve(specifier, {
++      ...context,
++      conditions: [...context.conditions, environmentCondition],
++    })
++  }
++
++  return nextResolve(specifier, context)
++}
+diff --git a/package.json b/package.json
+index f6de54e5c9a7750171fb36b16fe0bec6177a709e..c078e08bb7efec6689405fc365f747a6162ba42e 100644
+--- a/package.json	
++++ b/package.json	
+@@ -82,7 +82,8 @@
+   },
+   "files": [
+     "dist",
+-    "bin.js"
++    "bin.js",
++    "lexicalLoader.mjs"
+   ],
+   "dependencies": {
+     "@next/env": "^15.1.5",

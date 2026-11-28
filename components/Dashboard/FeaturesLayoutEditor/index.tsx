@@ -1,5 +1,28 @@
 'use client';
 
+/*
+ * The Features Layout editor (features-page-layout). The Features page fills
+ * itself from the newest stories (lib/featuresFront.ts); editors can pin five
+ * things, and each pin holds while it's fresh:
+ *
+ *   Cover                 any story with a featured image
+ *   Campus Life lead      a Campus Life story (it goes first in the row)
+ *   Arts & Culture lead   an Arts & Culture story with a featured image
+ *   People lead           a People story (it goes first in the row)
+ *   Photo Short Story     a photo story, shown in the reel (it needs 3+ photos)
+ *
+ * And one photo, not a story: the Pitch photo, behind "Have a suggestion? Tell
+ * Features about it" in the top's right column. Drop any story with a
+ * featured image on it to use that photo; without one, the page uses the
+ * newest photo story's photo. A picked photo is placed per screen size (phone,
+ * tablet, computer) in previews of the real page, with the same drag, zoom
+ * and reset as the Get Involved and Senate / E-Board photo editors
+ * (components/admin/PinnedPhotoPreview).
+ *
+ * Saved as the v3 layout (FeaturesLayoutV3) in the same JSON field; an older
+ * layout is read through normalizeFeaturesLayout, and the first save rewrites it.
+ */
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   DndContext,
@@ -16,9 +39,20 @@ import {
   pointerWithin,
 } from '@dnd-kit/core';
 import './features-layout-editor.css';
+import { FEATURES_DEPARTMENTS, departmentOf, type FeaturesDepartmentKey } from '@/lib/featuresDepartments';
+import {
+  PIN_STALE_DAYS,
+  SECTION_WINDOW_DAYS,
+  isWithin,
+  normalizeFeaturesLayout,
+  NO_PITCH_POSITIONS,
+  type FeaturesLayoutV3,
+  type SectionKey,
+} from '@/lib/featuresFront';
+import { PitchPositionsEditor, pitchInfoOf, type PitchPhotoInfo } from '@/components/admin/PitchPositionsEditor';
 
 // ---------------------------------------------------------------------------
-// Types
+// Types and slots
 // ---------------------------------------------------------------------------
 
 type ArticleData = {
@@ -29,50 +63,77 @@ type ArticleData = {
   section: string;
   publishedDate: string | null;
   createdAt: string;
-  featuredImage?: { url?: string | null; alt?: string | null } | number | null;
+  featuredImage?:
+    | { id?: number; url?: string | null; alt?: string | null; width?: number | null; height?: number | null; focalX?: number | null; focalY?: number | null }
+    | number
+    | null;
   subdeck?: string | null;
   kicker?: string | null;
   authors?: Array<number | { firstName: string; lastName: string }>;
   writeInAuthors?: Array<{ name: string }>;
 };
 
-type EventEntry = {
-  title: string;
-  date: string;
-  time: string;
-  location: string;
-  url: string;
+type SlotKey = 'cover' | SectionKey | 'reel';
+
+type SlotSpec = {
+  key: SlotKey;
+  label: string;
+  /** What the page does without a pin, or once the pin is stale */
+  fallback: string;
+  /** Which stories the slot takes */
+  dept?: FeaturesDepartmentKey;
+  needsImage: boolean;
+  /** How long the pin holds, in days from the newest Features story */
+  holdsDays: number;
 };
 
-type SpotlightPhoto = {
-  url: string;
-  caption?: string;
-  articleTitle?: string;
-  articleUrl?: string;
-  photographerName?: string;
-  photographerUrl?: string;
+const deptName = (key: FeaturesDepartmentKey) => FEATURES_DEPARTMENTS.find((d) => d.key === key)!.name;
+
+const SLOTS: Record<SlotKey, SlotSpec> = {
+  cover: {
+    key: 'cover',
+    label: 'Cover story',
+    fallback: 'Falls back to the newest story with a photo after 6 weeks.',
+    needsImage: true,
+    holdsDays: PIN_STALE_DAYS,
+  },
+  campus: {
+    key: 'campus',
+    label: `${deptName('campus')} lead`,
+    dept: 'campus',
+    fallback: `Goes first in the row. Falls back to the newest ${deptName('campus')} stories after 6 weeks.`,
+    needsImage: false,
+    holdsDays: PIN_STALE_DAYS,
+  },
+  arts: {
+    key: 'arts',
+    label: `${deptName('arts')} lead`,
+    dept: 'arts',
+    fallback: `Falls back to the newest ${deptName('arts')} story with a photo after 6 weeks.`,
+    needsImage: true,
+    holdsDays: PIN_STALE_DAYS,
+  },
+  people: {
+    key: 'people',
+    label: `${deptName('people')} lead`,
+    dept: 'people',
+    fallback: `Goes first in the row. Falls back to the newest ${deptName('people')} stories after 6 weeks.`,
+    needsImage: false,
+    holdsDays: PIN_STALE_DAYS,
+  },
+  reel: {
+    key: 'reel',
+    label: 'Photo Short Story (the reel)',
+    dept: 'photo',
+    fallback: 'Needs at least 3 photos in the story. Falls back to the newest photo story that has them.',
+    needsImage: true,
+    holdsDays: SECTION_WINDOW_DAYS,
+  },
 };
 
-type FeaturesLayout = {
-  onCampus: (number | null)[];
-  onCampusImages: boolean[];
-  featured: (number | null)[];
-  rightArticles: (number | null)[];
-  rightImages: boolean[];
-  events: EventEntry[];
-  // Row 2
-  theArts: (number | null)[];
-  theArtsImages: boolean[];
-  photoSpotlight: SpotlightPhoto[];
-  spotlightSubs: (number | null)[];
-  collarCity: (number | null)[];
-  collarCityImages: boolean[];
-  wideArticle: (number | null)[];
-};
+const SECTION_SLOTS: SectionKey[] = ['campus', 'arts', 'people'];
 
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
+const EMPTY_LAYOUT: FeaturesLayoutV3 = normalizeFeaturesLayout(null);
 
 const pointerThenCenter: CollisionDetection = (args) => {
   const pointerCollisions = pointerWithin(args);
@@ -80,59 +141,14 @@ const pointerThenCenter: CollisionDetection = (args) => {
   return closestCenter(args);
 };
 
-const EMPTY_LAYOUT: FeaturesLayout = {
-  onCampus: [null, null, null],
-  onCampusImages: [false, false, false],
-  featured: [null, null, null],
-  rightArticles: [null, null, null],
-  rightImages: [false, false, false],
-  events: [],
-  theArts: [null, null, null],
-  theArtsImages: [false, false, false],
-  photoSpotlight: [],
-  spotlightSubs: [null, null],
-  collarCity: [null, null, null],
-  collarCityImages: [false, false, false],
-  wideArticle: [null],
-};
-
-const ON_CAMPUS_LABELS = [
-  'Article 1',
-  'Article 2',
-  'Article 3',
-];
-const FEATURED_LABELS = [
-  'Hero (large image)',
-  'Sub-feature Left (with image)',
-  'Sub-feature Right (with image)',
-];
-const RIGHT_LABELS = [
-  'Article 1',
-  'Article 2',
-  'Article 3',
-];
-const THE_ARTS_LABELS = ['Article 1', 'Article 2', 'Article 3'];
-const COLLAR_CITY_LABELS = ['Article 1', 'Article 2', 'Article 3'];
-
-// Slot ID format: "oc-0", "feat-1", "right-2", "arts-0", "collar-1"
-type ColumnKey = 'onCampus' | 'featured' | 'rightArticles' | 'theArts' | 'spotlightSubs' | 'collarCity' | 'wideArticle';
-
-const parseSlotId = (slotId: string): { column: ColumnKey; index: number } | null => {
-  const [prefix, idxStr] = slotId.split('-');
-  const index = Number(idxStr);
-  if (prefix === 'oc') return { column: 'onCampus', index };
-  if (prefix === 'feat') return { column: 'featured', index };
-  if (prefix === 'right') return { column: 'rightArticles', index };
-  if (prefix === 'arts') return { column: 'theArts', index };
-  if (prefix === 'spotsub') return { column: 'spotlightSubs', index };
-  if (prefix === 'collar') return { column: 'collarCity', index };
-  if (prefix === 'wide') return { column: 'wideArticle', index };
-  return null;
-};
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+const ARTICLE_FIELDS =
+  '&select[title]=true&select[plainTitle]=true&select[slug]=true&select[section]=true&select[publishedDate]=true' +
+  '&select[createdAt]=true&select[featuredImage]=true&select[subdeck]=true&select[kicker]=true' +
+  '&select[authors]=true&select[writeInAuthors]=true';
 
 const getImageUrl = (article: ArticleData): string | null => {
   if (!article.featuredImage || typeof article.featuredImage === 'number') return null;
@@ -149,7 +165,7 @@ const getAuthorString = (article: ArticleData): string => {
 
 const formatDate = (d: string | null): string => {
   if (!d) return '';
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
 const extractDocId = (): string | null => {
@@ -159,242 +175,242 @@ const extractDocId = (): string | null => {
   return null;
 };
 
-const collectUsedIds = (layout: FeaturesLayout): Set<number> => {
-  const ids = new Set<number>();
-  for (const col of [layout.onCampus, layout.featured, layout.rightArticles, layout.theArts, layout.spotlightSubs, layout.collarCity, layout.wideArticle]) {
-    for (const id of col) {
-      if (id !== null) ids.add(id);
-    }
+const pinOf = (layout: FeaturesLayoutV3, slot: SlotKey): number | null =>
+  slot === 'cover' ? layout.cover : slot === 'reel' ? layout.reel : layout.leads[slot];
+
+const withPin = (layout: FeaturesLayoutV3, slot: SlotKey, id: number | null): FeaturesLayoutV3 =>
+  slot === 'cover'
+    ? { ...layout, cover: id }
+    : slot === 'reel'
+      ? { ...layout, reel: id }
+      : { ...layout, leads: { ...layout.leads, [slot]: id } };
+
+const usedIdsOf = (layout: FeaturesLayoutV3): Set<number> =>
+  new Set([layout.cover, layout.reel, ...Object.values(layout.leads)].filter((id): id is number => id != null));
+
+/** Why a story can't go in a slot, or null when it can */
+function rejection(article: ArticleData, slot: SlotSpec): string | null {
+  if (slot.dept && departmentOf(article.kicker) !== slot.dept) {
+    const actual = departmentOf(article.kicker);
+    const where = actual ? `a ${deptName(actual)} story` : 'in no section';
+    return `"${article.plainTitle}" is ${where} (kicker: ${article.kicker || 'none'}), so it can't be the ${slot.label}.`;
   }
-  return ids;
-};
-
-type ExtractedImage = { url: string; alt?: string; photographerName?: string; photographerUrl?: string };
-
-// Extract photographer info from a populated media record (depth=2)
-const extractPhotographer = (media: Record<string, unknown>): { name?: string; url?: string } => {
-  const p = media.photographer;
-  if (p && typeof p === 'object' && 'firstName' in (p as Record<string, unknown>)) {
-    const user = p as Record<string, string>;
-    const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
-    const url = user.slug ? `/staff/${user.slug}` : `/staff/${(p as { id: number }).id}`;
-    return { name: name || undefined, url };
+  if (slot.needsImage && !getImageUrl(article)) {
+    return `"${article.plainTitle}" has no featured image, so it can't be the ${slot.label}.`;
   }
-  const writeIn = media.writeInPhotographer;
-  if (typeof writeIn === 'string' && writeIn.trim()) return { name: writeIn.trim() };
-  return {};
-};
-
-// Extract all images from a fully-fetched article (depth=2)
-const extractImagesFromArticle = (articleData: Record<string, unknown>): ExtractedImage[] => {
-  const images: ExtractedImage[] = [];
-  const seen = new Set<string>();
-
-  // Fallback: use first populated author if no photographer on the media
-  let fallbackName: string | undefined;
-  let fallbackUrl: string | undefined;
-  const authors = articleData.authors as Array<Record<string, unknown>> | undefined;
-  if (Array.isArray(authors) && authors.length > 0) {
-    const first = authors[0];
-    if (first && typeof first === 'object' && 'firstName' in first) {
-      fallbackName = [first.firstName, first.lastName].filter(Boolean).join(' ') || undefined;
-      fallbackUrl = first.slug ? `/staff/${first.slug}` : `/staff/${first.id}`;
-    }
-  }
-
-  const add = (url: string | null | undefined, alt?: string, media?: Record<string, unknown>) => {
-    if (url && !seen.has(url)) {
-      seen.add(url);
-      const photog = media ? extractPhotographer(media) : {};
-      images.push({
-        url,
-        alt: alt || '',
-        photographerName: photog.name || fallbackName,
-        photographerUrl: photog.url || fallbackUrl,
-      });
-    }
-  };
-  // Featured image
-  const fi = articleData.featuredImage;
-  if (fi && typeof fi === 'object' && 'url' in (fi as Record<string, unknown>)) {
-    const m = fi as Record<string, unknown>;
-    add(m.url as string | undefined, m.alt as string | undefined, m);
-  }
-  // Traverse Lexical content tree
-  const traverse = (node: Record<string, unknown>) => {
-    if (!node) return;
-    if (node.type === 'upload' && node.value && typeof node.value === 'object') {
-      const v = node.value as Record<string, unknown>;
-      add(v.url as string | undefined, v.alt as string | undefined, v);
-    }
-    if (node.type === 'block' && node.fields && typeof node.fields === 'object') {
-      const fields = node.fields as Record<string, unknown>;
-      if ((fields.blockType === 'photo_gallery' || fields.blockType === 'carousel') && Array.isArray(fields.images)) {
-        for (const img of fields.images as Array<Record<string, unknown>>) {
-          const media = img.image;
-          if (media && typeof media === 'object') {
-            const m = media as Record<string, unknown>;
-            add(m.url as string | undefined, m.alt as string | undefined, m);
-          }
-        }
-      }
-    }
-    if (Array.isArray(node.children)) (node.children as Record<string, unknown>[]).forEach(traverse);
-    if (node.root && typeof node.root === 'object') traverse(node.root as Record<string, unknown>);
-  };
-  if (articleData.content && typeof articleData.content === 'object') traverse(articleData.content as Record<string, unknown>);
-  return images;
-};
+  return null;
+}
 
 // ---------------------------------------------------------------------------
-// Draggable Article in Slot
+// Draggable article in a slot
 // ---------------------------------------------------------------------------
 
-function DraggableSlotArticle({ article, slotId, showImage }: { article: ArticleData; slotId: string; showImage?: boolean }) {
+function DraggableSlotArticle({ article, slotId }: { article: ArticleData; slotId: SlotKey }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `slot-article-${slotId}`,
     data: { article, source: 'slot', slotId },
   });
 
   return (
-    <div ref={setNodeRef} {...listeners} {...attributes}
-      className={`fle-slot-body ${isDragging ? 'fle-dragging' : ''}`}
-    >
-      <SlotPreview article={article} showImage={showImage} />
+    <div ref={setNodeRef} {...listeners} {...attributes} className={`fle-slot-body ${isDragging ? 'fle-dragging' : ''}`}>
+      <SlotPreview article={article} />
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Slot Preview
-// ---------------------------------------------------------------------------
-
-function SlotPreview({ article, showImage }: { article: ArticleData; showImage?: boolean }) {
+function SlotPreview({ article }: { article: ArticleData }) {
   const imageUrl = getImageUrl(article);
   const author = getAuthorString(article);
-
   return (
     <div className="fle-slot-preview">
-      {showImage && imageUrl && (
+      {imageUrl && (
         <div className="fle-slot-image">
           <img src={imageUrl} alt="" />
         </div>
       )}
       <div className="fle-slot-text">
         <div className="fle-slot-title">{article.plainTitle}</div>
-        {author && <div className="fle-slot-author">{author}</div>}
+        <div className="fle-slot-author">
+          {[author, formatDate(article.publishedDate)].filter(Boolean).join(' · ')}
+        </div>
       </div>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Droppable Slot
+// Droppable slot
 // ---------------------------------------------------------------------------
 
-function DropSlot({
-  slotId, label, article, showImage, onClear, isImageSlot, imageToggle,
-}: {
-  slotId: string;
-  label: string;
-  article: ArticleData | null;
-  showImage?: boolean;
-  onClear: () => void;
-  isImageSlot?: boolean;
-  imageToggle?: React.ReactNode;
-}) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: `drop-${slotId}`,
-    data: { slotId },
-  });
+const noteStyle: React.CSSProperties = { fontSize: '0.68rem', lineHeight: 1.4, opacity: 0.55, margin: '6px 2px 0' };
+const staleStyle: React.CSSProperties = {
+  fontSize: '0.7rem',
+  lineHeight: 1.35,
+  fontWeight: 600,
+  color: '#b45309',
+  background: 'rgba(245, 158, 11, 0.12)',
+  borderRadius: 4,
+  padding: '4px 8px',
+  margin: '6px 0 0',
+};
 
+/** The pitch's photo: drop a story to use its featured photo */
+function PitchPhotoSlot({
+  preview,
+  missing,
+  onClear,
+}: {
+  preview: { url: string; title?: string } | null;
+  /** The saved photo couldn't be loaded (deleted from Media); the page falls back */
+  missing: boolean;
+  onClear: () => void;
+}) {
+  const { isOver, setNodeRef } = useDroppable({ id: 'drop-pitch', data: { slotId: 'pitch' } });
   return (
-    <div
-      ref={setNodeRef}
-      className={`fle-slot ${isOver ? 'fle-slot-over' : ''} ${article ? 'fle-slot-filled' : ''}`}
-    >
-      <div className="fle-slot-header">
-        <span className="fle-slot-label">{label}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {imageToggle}
-          {article && (
-            <button className="fle-slot-clear" onClick={onClear} title="Remove article">&times;</button>
+    <div>
+      <div ref={setNodeRef} className={`fle-slot ${isOver ? 'fle-slot-over' : ''} ${preview ? 'fle-slot-filled' : ''}`}>
+        <div className="fle-slot-header">
+          <span className="fle-slot-label">Pitch photo</span>
+          {(preview || missing) && (
+            <button className="fle-slot-clear" onClick={onClear} title="Remove photo">
+              &times;
+            </button>
           )}
         </div>
-      </div>
-      {article ? (
-        <DraggableSlotArticle article={article} slotId={slotId} showImage={showImage} />
-      ) : (
-        <div className="fle-slot-empty">
-          <div className="fle-slot-empty-inner">
-            {isImageSlot ? (
-              <>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" width="18" height="18">
-                  <rect x="3" y="5" width="18" height="14" rx="2" />
-                  <circle cx="8.5" cy="10" r="1.5" />
-                  <path d="M6 17l4.5-4.5L14 16l2.5-2.5L19 16" />
-                </svg>
-                <span>Drop article (with image)</span>
-              </>
-            ) : (
-              <>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="18" height="18">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                <span>Drop article</span>
-              </>
-            )}
+        {preview ? (
+          <div className="fle-slot-body">
+            <div className="fle-slot-preview">
+              <div className="fle-slot-image">
+                <img src={preview.url} alt="" />
+              </div>
+              {preview.title && (
+                <div className="fle-slot-text">
+                  <div className="fle-slot-author">From: {preview.title}</div>
+                </div>
+              )}
+            </div>
           </div>
+        ) : (
+          <div className="fle-slot-empty">
+            <div className="fle-slot-empty-inner">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" width="18" height="18">
+                <rect x="3" y="5" width="18" height="14" rx="2" />
+                <circle cx="8.5" cy="10" r="1.5" />
+                <path d="M6 17l4.5-4.5L14 16l2.5-2.5L19 16" />
+              </svg>
+              <span>{missing ? 'The picked photo was deleted: the page uses the newest photo story’s photo' : 'Drop a story to use its photo'}</span>
+            </div>
+          </div>
+        )}
+      </div>
+      <p style={noteStyle}>
+        Behind &ldquo;Have a suggestion? Tell Features about it&rdquo; in the top&rsquo;s right column. Without one, the
+        page uses the newest photo story&rsquo;s photo.
+      </p>
+    </div>
+  );
+}
+
+function DropSlot({
+  slot,
+  article,
+  missing,
+  stale,
+  invalid,
+  onClear,
+}: {
+  slot: SlotSpec;
+  article: ArticleData | null;
+  /** A pinned story that couldn't be loaded (unpublished or deleted) */
+  missing: boolean;
+  stale: boolean;
+  /** Why the slot no longer takes its saved pin (say, an Arts lead without a photo); the page ignores it */
+  invalid: string | null;
+  onClear: () => void;
+}) {
+  const { isOver, setNodeRef } = useDroppable({ id: `drop-${slot.key}`, data: { slotId: slot.key } });
+
+  return (
+    <div>
+      <div ref={setNodeRef} className={`fle-slot ${isOver ? 'fle-slot-over' : ''} ${article ? 'fle-slot-filled' : ''}`}>
+        <div className="fle-slot-header">
+          <span className="fle-slot-label">{slot.label}</span>
+          {(article || missing) && (
+            <button className="fle-slot-clear" onClick={onClear} title="Remove pin">
+              &times;
+            </button>
+          )}
         </div>
+        {article ? (
+          <DraggableSlotArticle article={article} slotId={slot.key} />
+        ) : (
+          <div className="fle-slot-empty">
+            <div className="fle-slot-empty-inner">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="18" height="18">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              <span>{missing ? 'Pinned story is unpublished or deleted' : 'No pin: the page fills this itself'}</span>
+            </div>
+          </div>
+        )}
+      </div>
+      {invalid ? (
+        <p style={staleStyle}>{invalid} The page is using the newest story instead.</p>
+      ) : (
+        stale && <p style={staleStyle}>Stale, the page is using the newest story instead.</p>
       )}
+      <p style={noteStyle}>{slot.fallback}</p>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Pool Card
+// Pool
 // ---------------------------------------------------------------------------
 
-function DraggablePoolCard({ article, isUsed }: { article: ArticleData; isUsed: boolean }) {
+function DraggablePoolCard({ article }: { article: ArticleData }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `pool-${article.id}`,
     data: { article, source: 'pool' },
   });
   const imageUrl = getImageUrl(article);
+  const dept = departmentOf(article.kicker);
 
   return (
-    <div ref={setNodeRef} {...listeners} {...attributes}
-      className={`fle-pool-card ${isDragging ? 'fle-dragging' : ''} ${isUsed ? 'fle-used' : ''}`}
-    >
+    <div ref={setNodeRef} {...listeners} {...attributes} className={`fle-pool-card ${isDragging ? 'fle-dragging' : ''}`}>
       {imageUrl ? (
-        <div className="fle-pool-thumb"><img src={imageUrl} alt="" /></div>
+        <div className="fle-pool-thumb">
+          <img src={imageUrl} alt="" />
+        </div>
       ) : (
-        <div className="fle-pool-thumb fle-pool-thumb-empty">
+        <div className="fle-pool-thumb fle-pool-thumb-empty" title="No featured image">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" />
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
           </svg>
         </div>
       )}
       <div className="fle-pool-card-body">
         <div className="fle-pool-card-title">{article.plainTitle}</div>
         <div className="fle-pool-card-meta">
-          <span className="fle-pool-card-date">{formatDate(article.publishedDate)}</span>
+          <span className="fle-pool-card-date">
+            {formatDate(article.publishedDate)} · {dept ? deptName(dept) : 'No section'}
+          </span>
         </div>
       </div>
-      {isUsed && <div className="fle-used-badge">In use</div>}
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Drag Overlay
-// ---------------------------------------------------------------------------
 
 function DragOverlayCard({ article }: { article: ArticleData }) {
   const imageUrl = getImageUrl(article);
   return (
     <div className="fle-drag-overlay">
-      {imageUrl && <div className="fle-drag-overlay-img"><img src={imageUrl} alt="" /></div>}
+      {imageUrl && (
+        <div className="fle-drag-overlay-img">
+          <img src={imageUrl} alt="" />
+        </div>
+      )}
       <div className="fle-drag-overlay-body">
         <div className="fle-drag-overlay-title">{article.plainTitle}</div>
       </div>
@@ -402,31 +418,55 @@ function DragOverlayCard({ article }: { article: ArticleData }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Article Pool
-// ---------------------------------------------------------------------------
+type PoolFilter = 'all' | FeaturesDepartmentKey;
 
 function ArticlePool({
   articles,
   usedIds,
   search,
   onSearch,
+  filter,
+  onFilter,
 }: {
   articles: ArticleData[];
   usedIds: Set<number>;
   search: string;
   onSearch: (v: string) => void;
+  filter: PoolFilter;
+  onFilter: (f: PoolFilter) => void;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: 'pool-drop-zone', data: { pool: true } });
 
   const filtered = articles.filter((a) => {
     if (usedIds.has(a.id)) return false;
+    if (filter !== 'all' && departmentOf(a.kicker) !== filter) return false;
     if (search) {
       const q = search.toLowerCase();
       return (a.plainTitle || '').toLowerCase().includes(q) || getAuthorString(a).toLowerCase().includes(q);
     }
     return true;
   });
+
+  const chip = (key: PoolFilter, label: string) => (
+    <button
+      key={key}
+      type="button"
+      onClick={() => onFilter(key)}
+      aria-pressed={filter === key}
+      style={{
+        fontSize: '0.68rem',
+        fontWeight: 600,
+        padding: '3px 9px',
+        borderRadius: 999,
+        border: '1px solid var(--theme-elevation-250, #555)',
+        background: filter === key ? 'var(--theme-text, #fff)' : 'transparent',
+        color: filter === key ? 'var(--theme-bg, #000)' : 'inherit',
+        cursor: 'pointer',
+      }}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <div
@@ -440,20 +480,18 @@ function ArticlePool({
     >
       <div style={{ padding: '14px 14px 0', fontSize: '0.78rem', fontWeight: 700 }}>Features Articles</div>
       <div style={{ padding: '8px 14px 0' }}>
-        <input
-          type="search"
-          placeholder="Search articles..."
-          value={search}
-          onChange={(e) => onSearch(e.target.value)}
-          className="fle-pool-search"
-        />
+        <input type="search" placeholder="Search articles..." value={search} onChange={(e) => onSearch(e.target.value)} className="fle-pool-search" />
+      </div>
+      <div style={{ padding: '8px 14px 0', display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        {chip('all', 'All')}
+        {FEATURES_DEPARTMENTS.map((d) => chip(d.key, d.name))}
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '6px 10px 16px', display: 'flex', flexDirection: 'column', gap: '1px' }}>
         {filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '32px 16px', opacity: 0.3, fontSize: '0.75rem' }}>No articles found</div>
         )}
-        {filtered.slice(0, 20).map((article) => (
-          <DraggablePoolCard key={article.id} article={article} isUsed={usedIds.has(article.id)} />
+        {filtered.slice(0, 40).map((article) => (
+          <DraggablePoolCard key={article.id} article={article} />
         ))}
       </div>
     </div>
@@ -461,251 +499,53 @@ function ArticlePool({
 }
 
 // ---------------------------------------------------------------------------
-// Photo Spotlight Browser
-// ---------------------------------------------------------------------------
-
-type SpotlightArticleResult = {
-  id: number;
-  title: Record<string, unknown>;
-  plainTitle?: string;
-  section: string;
-  slug: string;
-  publishedDate: string | null;
-  featuredImage?: { url?: string | null; alt?: string | null } | number | null;
-  authors?: Array<number | { firstName: string; lastName: string }>;
-  writeInAuthors?: Array<{ name: string }>;
-};
-
-function SpotlightBrowser({
-  photos, onAdd, onRemove,
-}: {
-  photos: SpotlightPhoto[];
-  onAdd: (photo: SpotlightPhoto) => void;
-  onRemove: (index: number) => void;
-}) {
-  const [browserOpen, setBrowserOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState<SpotlightArticleResult[]>([]);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [imageCache, setImageCache] = useState<Map<number, ExtractedImage[]>>(new Map());
-  const [loadingImages, setLoadingImages] = useState<number | null>(null);
-  const [spotSearch, setSpotSearch] = useState('');
-  const [searching, setSearching] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Set of URLs already in the spotlight
-  const usedUrls = new Set(photos.map((p) => p.url));
-
-  const searchArticles = useCallback(async (query: string) => {
-    if (!query.trim()) { setSearchResults([]); setSearching(false); return; }
-    setSearching(true);
-    try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}&pageSize=10`);
-      const data = await res.json();
-      const articles: SpotlightArticleResult[] = (data.articles || [])
-        .filter((a: { section?: string }) => ['features', 'opinion', 'news'].includes(a.section || ''))
-        .slice(0, 10)
-        .map((a: { id: string | number; title: string; section: string; slug: string; publishedDate?: string; image?: string | null }) => ({
-          id: typeof a.id === 'string' ? parseInt(a.id, 10) : a.id,
-          title: a.title,
-          section: a.section || '',
-          slug: a.slug || '',
-          publishedDate: a.publishedDate || null,
-          featuredImage: a.image ? { url: a.image } : null,
-        }));
-      setSearchResults(articles);
-    } catch (err) { console.error('Search failed', err); }
-    finally { setSearching(false); }
-  }, []);
-
-  const handleSearchChange = (value: string) => {
-    setSpotSearch(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!value.trim()) { setSearchResults([]); setSearching(false); return; }
-    setSearching(true);
-    debounceRef.current = setTimeout(() => searchArticles(value), 300);
-  };
-
-  const loadImages = async (articleId: number) => {
-    if (imageCache.has(articleId)) return;
-    setLoadingImages(articleId);
-    try {
-      const res = await fetch(`/api/articles/${articleId}?depth=2`);
-      const data = await res.json();
-      const imgs = extractImagesFromArticle(data);
-      setImageCache((prev) => new Map(prev).set(articleId, imgs));
-    } catch (err) { console.error('Failed to load article images', err); }
-    finally { setLoadingImages(null); }
-  };
-
-  const handleArticleClick = (id: number) => {
-    if (expandedId === id) { setExpandedId(null); return; }
-    setExpandedId(id);
-    loadImages(id);
-  };
-
-  const handleToggle = () => {
-    setBrowserOpen(!browserOpen);
-  };
-
-  // Filter out articles whose every image is already in the spotlight
-  const displayArticles = searchResults.filter((article) => {
-    const imgs = imageCache.get(article.id);
-    if (!imgs) return true; // not loaded yet, keep visible
-    if (imgs.length === 0) return true; // no images, keep visible (they'll see "no images")
-    return imgs.some((img) => !usedUrls.has(img.url));
-  });
-
-  return (
-    <div className="fle-spotlight-section">
-      <div className="fle-spotlight-header">Photo Spotlight</div>
-
-      {/* Selected photos — compact list */}
-      {photos.length > 0 && (
-        <div className="fle-spotlight-selected-list">
-          {photos.map((photo, i) => (
-            <div key={i} className="fle-spotlight-item">
-              <span className="fle-spotlight-item-number">{i + 1}</span>
-              <div className="fle-spotlight-item-thumb">
-                <img src={photo.url} alt={photo.caption || ''} />
-              </div>
-              <div className="fle-spotlight-item-info">
-                {photo.articleTitle && (
-                  <div className="fle-spotlight-item-title">{photo.articleTitle}</div>
-                )}
-                {photo.caption && (
-                  <div className="fle-spotlight-item-caption">{photo.caption}</div>
-                )}
-                {!photo.articleTitle && !photo.caption && (
-                  <div className="fle-spotlight-item-caption">No caption</div>
-                )}
-              </div>
-              <button className="fle-spotlight-item-remove" onClick={() => onRemove(i)} title="Remove photo">&times;</button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <button className="fle-event-add-btn" onClick={handleToggle}>
-        {browserOpen ? 'Close Browser' : '+ Add Photo'}
-      </button>
-
-      {browserOpen && (
-        <div className="fle-spotlight-browser">
-          <input
-            type="search"
-            placeholder="Search articles"
-            value={spotSearch}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="fle-spotlight-search-input"
-          />
-          {searching && <div className="fle-spotlight-search-spinner-wrap"><div className="fle-spotlight-search-spinner" /></div>}
-
-          <div className="fle-spotlight-articles">
-            {spotSearch.trim() && !searching && displayArticles.length === 0 && (
-              <div className="fle-spotlight-empty">No articles found</div>
-            )}
-            {displayArticles.map((article) => {
-              const isExpanded = expandedId === article.id;
-              const imgs = imageCache.get(article.id);
-              const isLoading = loadingImages === article.id;
-              return (
-                <div key={article.id} className={`fle-spotlight-article ${isExpanded ? 'fle-spotlight-article-expanded' : ''}`}>
-                  <div className="fle-spotlight-article-header" onClick={() => handleArticleClick(article.id)}>
-                    <span className="fle-spotlight-article-title">{article.plainTitle}</span>
-                    <button className={`fle-spotlight-expand-btn ${isExpanded ? 'fle-spotlight-expand-btn-open' : ''}`}>
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="11" height="11">
-                        <path d="M6 9l6 6 6-6" />
-                      </svg>
-                    </button>
-                  </div>
-                  {isExpanded && (
-                    <div className="fle-spotlight-article-images">
-                      {isLoading ? (
-                        <div className="fle-spotlight-loading">
-                          <div className="fle-spotlight-loading-spinner" />
-                          <span>Loading images...</span>
-                        </div>
-                      ) : imgs && imgs.length > 0 ? (
-                        imgs.map((img, idx) => {
-                          const isUsed = usedUrls.has(img.url);
-                          return (
-                            <div
-                              key={idx}
-                              className={`fle-spotlight-image-pick ${isUsed ? 'fle-spotlight-image-used' : ''}`}
-                              onClick={() => {
-                                if (!isUsed) {
-                                  let articleUrl: string | undefined;
-                                  if (article.publishedDate && article.slug) {
-                                    const d = new Date(article.publishedDate);
-                                    articleUrl = `/${article.section}/${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${article.slug}`;
-                                  }
-                                  onAdd({ url: img.url, caption: img.alt, articleTitle: article.plainTitle, articleUrl, photographerName: img.photographerName, photographerUrl: img.photographerUrl });
-                                }
-                              }}
-                            >
-                              <img src={img.url} alt={img.alt || ''} />
-                              {isUsed ? (
-                                <div className="fle-spotlight-used-overlay">Already in spotlight</div>
-                              ) : (
-                                <div className="fle-spotlight-add-badge">+ Add</div>
-                              )}
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="fle-spotlight-no-images">No images found in this article</div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main Editor
+// Editor
 // ---------------------------------------------------------------------------
 
 export function FeaturesLayoutEditor() {
-  const [layout, setLayout] = useState<FeaturesLayout>({ ...EMPTY_LAYOUT });
+  const [layout, setLayout] = useState<FeaturesLayoutV3>(EMPTY_LAYOUT);
   const [articles, setArticles] = useState<ArticleData[]>([]);
+  // Pinned stories older than the pool, fetched on their own
+  const [extra, setExtra] = useState<ArticleData[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<PoolFilter>('all');
   const [activeArticle, setActiveArticle] = useState<ArticleData | null>(null);
+  const [pitchPreview, setPitchPreview] = useState<PitchPhotoInfo | null>(null);
   const docIdRef = useRef<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  const articleMap = new Map(articles.map((a) => [a.id, a]));
-  const usedIds = collectUsedIds(layout);
+  const articleMap = new Map([...extra, ...articles].map((a) => [a.id, a]));
+  const usedIds = usedIdsOf(layout);
+  // Pins go stale measured from the newest Features story, as on the page
+  const anchor = articles.reduce((max, a) => Math.max(max, a.publishedDate ? Date.parse(a.publishedDate) : 0), 0);
 
   // ---- Fetch ----
   useEffect(() => {
     (async () => {
       try {
         const artRes = await fetch(
-          '/api/articles?where[section][equals]=features&where[_status][equals]=published&sort=-publishedDate&limit=100&depth=1' +
-          '&select[title]=true&select[plainTitle]=true&select[slug]=true&select[section]=true&select[publishedDate]=true' +
-          '&select[createdAt]=true&select[featuredImage]=true&select[subdeck]=true&select[kicker]=true' +
-          '&select[authors]=true&select[writeInAuthors]=true',
+          '/api/articles?where[section][equals]=features&where[_status][equals]=published&sort=-publishedDate&limit=100&depth=1' + ARTICLE_FIELDS,
         );
         const artData = await artRes.json();
-        setArticles(artData.docs || []);
+        const pool: ArticleData[] = artData.docs || [];
+        setArticles(pool);
 
         let id = extractDocId();
         let layoutData: Record<string, unknown> | null = null;
 
         if (id) {
           const layoutRes = await fetch(`/api/features-page-layout/${id}?depth=0`);
-          if (layoutRes.ok) { layoutData = await layoutRes.json(); } else { id = null; }
+          if (layoutRes.ok) {
+            layoutData = await layoutRes.json();
+          } else {
+            id = null;
+          }
         }
         if (!id) {
           const listRes = await fetch('/api/features-page-layout?limit=1&depth=0');
@@ -731,33 +571,21 @@ export function FeaturesLayoutEditor() {
         }
         docIdRef.current = id;
 
-        if (layoutData) {
-          const savedLayout = layoutData.layout as FeaturesLayout | undefined;
-          if (savedLayout && typeof savedLayout === 'object') {
-            setLayout({
-              onCampus: padArray(savedLayout.onCampus, 3),
-              onCampusImages: savedLayout.onCampusImages && savedLayout.onCampusImages.length >= 3
-                ? savedLayout.onCampusImages.slice(0, 3)
-                : [false, false, false],
-              featured: padArray(savedLayout.featured, 3),
-              rightArticles: padArray(savedLayout.rightArticles, 3),
-              rightImages: savedLayout.rightImages && savedLayout.rightImages.length >= 3
-                ? savedLayout.rightImages.slice(0, 3)
-                : [false, false, false],
-              events: savedLayout.events || [],
-              theArts: padArray(savedLayout.theArts, 3),
-              theArtsImages: savedLayout.theArtsImages && savedLayout.theArtsImages.length >= 3
-                ? savedLayout.theArtsImages.slice(0, 3)
-                : [false, false, false],
-              photoSpotlight: savedLayout.photoSpotlight || [],
-              spotlightSubs: padArray(savedLayout.spotlightSubs, 2),
-              collarCity: padArray(savedLayout.collarCity, 3),
-              collarCityImages: savedLayout.collarCityImages && savedLayout.collarCityImages.length >= 3
-                ? savedLayout.collarCityImages.slice(0, 3)
-                : [false, false, false],
-              wideArticle: padArray(savedLayout.wideArticle, 1),
-            });
-          }
+        const loaded = normalizeFeaturesLayout(layoutData?.layout);
+        setLayout(loaded);
+        if (loaded.pitch != null) {
+          const mediaRes = await fetch(`/api/media/${loaded.pitch}?depth=0`);
+          const media = mediaRes.ok ? await mediaRes.json() : null;
+          if (media) setPitchPreview(pitchInfoOf(media));
+        }
+
+        // A pin older than the pool still needs its card (and its stale note)
+        const inPool = new Set(pool.map((a) => a.id));
+        const missing = [...usedIdsOf(loaded)].filter((pinId) => !inPool.has(pinId));
+        if (missing.length) {
+          const where = missing.map((m, i) => `where[id][in][${i}]=${m}`).join('&');
+          const res = await fetch(`/api/articles?${where}&where[_status][equals]=published&limit=${missing.length}&depth=1${ARTICLE_FIELDS}`);
+          if (res.ok) setExtra((await res.json()).docs || []);
         }
       } catch (err) {
         setError('Failed to load data');
@@ -769,121 +597,10 @@ export function FeaturesLayoutEditor() {
   }, []);
 
   // ---- Mutations ----
-  const markDirty = useCallback(() => setSaved(false), []);
-
-  const setSlot = useCallback((column: ColumnKey, index: number, articleId: number | null) => {
-    setLayout((prev) => {
-      const col = [...prev[column]];
-      col[index] = articleId;
-      return { ...prev, [column]: col };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const clearSlot = useCallback((slotId: string) => {
-    const parsed = parseSlotId(slotId);
-    if (!parsed) return;
-    setSlot(parsed.column, parsed.index, null);
-  }, [setSlot]);
-
-  const toggleOnCampusImage = useCallback((index: number) => {
-    setLayout((prev) => {
-      const imgs = [...prev.onCampusImages];
-      const currentImageCount = imgs.filter(Boolean).length;
-      if (!imgs[index] && currentImageCount >= 3) return prev;
-      imgs[index] = !imgs[index];
-      return { ...prev, onCampusImages: imgs };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const toggleRightImage = useCallback((index: number) => {
-    setLayout((prev) => {
-      const imgs = [...prev.rightImages];
-      const currentImageCount = imgs.filter(Boolean).length;
-      if (!imgs[index] && currentImageCount >= 2) return prev;
-      imgs[index] = !imgs[index];
-      return { ...prev, rightImages: imgs };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const toggleArtsImage = useCallback((index: number) => {
-    setLayout((prev) => {
-      const imgs = [...prev.theArtsImages];
-      const currentImageCount = imgs.filter(Boolean).length;
-      if (!imgs[index] && currentImageCount >= 2) return prev;
-      imgs[index] = !imgs[index];
-      return { ...prev, theArtsImages: imgs };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const toggleCollarCityImage = useCallback((index: number) => {
-    setLayout((prev) => {
-      const imgs = [...prev.collarCityImages];
-      const currentImageCount = imgs.filter(Boolean).length;
-      if (!imgs[index] && currentImageCount >= 2) return prev;
-      imgs[index] = !imgs[index];
-      return { ...prev, collarCityImages: imgs };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const addSpotlightPhoto = useCallback((photo: SpotlightPhoto) => {
-    setLayout((prev) => ({ ...prev, photoSpotlight: [...prev.photoSpotlight, photo] }));
-    markDirty();
-  }, [markDirty]);
-
-  const removeSpotlightPhoto = useCallback((index: number) => {
-    setLayout((prev) => {
-      const photos = [...prev.photoSpotlight];
-      photos.splice(index, 1);
-      return { ...prev, photoSpotlight: photos };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  // ---- Events ----
-  const addEvent = useCallback(() => {
-    setLayout((prev) => {
-      if (prev.events.length >= 5) return prev;
-      return {
-        ...prev,
-        events: [...prev.events, { title: '', date: '', time: '', location: '', url: '' }],
-      };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const updateEvent = useCallback((index: number, patch: Partial<EventEntry>) => {
-    setLayout((prev) => {
-      const events = [...prev.events];
-      events[index] = { ...events[index], ...patch };
-      return { ...prev, events };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const removeEvent = useCallback((index: number) => {
-    setLayout((prev) => {
-      const events = [...prev.events];
-      events.splice(index, 1);
-      return { ...prev, events };
-    });
-    markDirty();
-  }, [markDirty]);
-
-  const moveEvent = useCallback((index: number, dir: -1 | 1) => {
-    setLayout((prev) => {
-      const events = [...prev.events];
-      const swap = index + dir;
-      if (swap < 0 || swap >= events.length) return prev;
-      [events[index], events[swap]] = [events[swap], events[index]];
-      return { ...prev, events };
-    });
-    markDirty();
-  }, [markDirty]);
+  const setPin = useCallback((slot: SlotKey, id: number | null) => {
+    setLayout((prev) => withPin(prev, slot, id));
+    setSaved(false);
+  }, []);
 
   // ---- DnD ----
   const handleDragStart = (event: DragStartEvent) => {
@@ -895,53 +612,53 @@ export function FeaturesLayoutEditor() {
     setActiveArticle(null);
     const { active, over } = event;
     if (!over) return;
-
     const activeData = active.data.current;
     const overData = over.data.current;
     if (!activeData?.article) return;
+    const dragged = activeData.article as ArticleData;
+    const source = activeData.source === 'slot' ? (activeData.slotId as SlotKey) : null;
 
-    const draggedArticle = activeData.article as ArticleData;
-
-    // Drop onto pool = remove from source
+    // Dropped on the pool: unpin
     if (overData?.pool === true) {
-      if (activeData.source === 'slot' && typeof activeData.slotId === 'string') {
-        clearSlot(activeData.slotId);
-      }
+      if (source) setPin(source, null);
       return;
     }
-
-    if (!overData?.slotId) return;
-    const targetSlotId = overData.slotId as string;
-    const targetParsed = parseSlotId(targetSlotId);
-    if (!targetParsed) return;
-
-    // If source was a slot, swap
-    if (activeData.source === 'slot' && typeof activeData.slotId === 'string') {
-      const sourceParsed = parseSlotId(activeData.slotId);
-      if (sourceParsed) {
-        const targetOldId = layout[targetParsed.column][targetParsed.index];
-        setLayout((prev) => {
-          const sourceCol = [...prev[sourceParsed.column]];
-          const targetCol = sourceParsed.column === targetParsed.column
-            ? sourceCol
-            : [...prev[targetParsed.column]];
-
-          sourceCol[sourceParsed.index] = targetOldId;
-          if (sourceParsed.column === targetParsed.column) {
-            sourceCol[targetParsed.index] = draggedArticle.id;
-            return { ...prev, [sourceParsed.column]: sourceCol };
-          } else {
-            targetCol[targetParsed.index] = draggedArticle.id;
-            return { ...prev, [sourceParsed.column]: sourceCol, [targetParsed.column]: targetCol };
-          }
-        });
-        markDirty();
+    // The pitch photo takes the story's featured photo; the story stays where it is
+    if (overData?.slotId === 'pitch') {
+      const image = dragged.featuredImage;
+      const info = image && typeof image === 'object' && image.id ? pitchInfoOf(image, dragged.plainTitle) : null;
+      if (!image || typeof image === 'number' || !image.id || !info) {
+        setNotice(`"${dragged.plainTitle}" has no featured image, so it can't give the pitch its photo.`);
         return;
       }
+      setNotice(null);
+      // A new photo starts from its own focal point on every screen
+      setLayout((prev) => ({ ...prev, pitch: image.id!, pitchPositions: prev.pitch === image.id ? prev.pitchPositions : { ...NO_PITCH_POSITIONS } }));
+      setPitchPreview(info);
+      setSaved(false);
+      return;
     }
+    const target = overData?.slotId as SlotKey | undefined;
+    if (!target || target === source) return;
 
-    // Drop from pool
-    setSlot(targetParsed.column, targetParsed.index, draggedArticle.id);
+    const why = rejection(dragged, SLOTS[target]);
+    if (why) {
+      setNotice(why);
+      return;
+    }
+    setNotice(null);
+
+    setLayout((prev) => {
+      let next = withPin(prev, target, dragged.id);
+      if (source) {
+        // Moving between slots: swap when the other story fits the source slot, else clear it
+        const displacedId = pinOf(prev, target);
+        const displaced = displacedId != null ? articleMap.get(displacedId) : undefined;
+        next = withPin(next, source, displaced && !rejection(displaced, SLOTS[source]) ? displaced.id : null);
+      }
+      return next;
+    });
+    setSaved(false);
   };
 
   // ---- Save ----
@@ -975,321 +692,93 @@ export function FeaturesLayoutEditor() {
     );
   }
 
-  const getArticle = (column: ColumnKey, index: number): ArticleData | null => {
-    const id = layout[column][index];
-    return id ? articleMap.get(id) || null : null;
+  const slotProps = (key: SlotKey) => {
+    const id = pinOf(layout, key);
+    const article = id != null ? articleMap.get(id) ?? null : null;
+    return {
+      slot: SLOTS[key],
+      article,
+      missing: id != null && !article,
+      stale: Boolean(article && anchor && !isWithin(article.publishedDate, anchor, SLOTS[key].holdsDays)),
+      invalid: article ? rejection(article, SLOTS[key]) : null,
+      onClear: () => setPin(key, null),
+    };
   };
 
-  const imageCount = layout.onCampusImages.filter(Boolean).length;
-  const rightImageCount = layout.rightImages.filter(Boolean).length;
-  const artsImageCount = layout.theArtsImages.filter(Boolean).length;
-  const collarImageCount = layout.collarCityImages.filter(Boolean).length;
-
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={pointerThenCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
+    <DndContext sensors={sensors} collisionDetection={pointerThenCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="fle-root">
-        {/* Toolbar */}
         <div className="fle-toolbar">
           <div className="fle-toolbar-left">
             <h2 className="fle-toolbar-title">Features Page Layout</h2>
           </div>
           <div className="fle-toolbar-right">
             {error && <span className="fle-toolbar-error">{error}</span>}
-            <button
-              className={`fle-save-btn ${saved ? 'fle-save-btn-saved' : 'fle-save-btn-unsaved'}`}
-              onClick={handleSave}
-              disabled={saving || saved}
-            >
+            <button className={`fle-save-btn ${saved ? 'fle-save-btn-saved' : 'fle-save-btn-unsaved'}`} onClick={handleSave} disabled={saving || saved}>
               {saving ? 'Saving...' : saved ? 'Saved' : 'Activate'}
             </button>
           </div>
         </div>
 
         <div className="fle-body">
-          {/* Left: canvas */}
           <div className="fle-canvas-wrap">
-            <div className="fle-canvas">
-              {/* On-Campus column (thin left) */}
-              <div className="fle-column">
-                <div className="fle-column-header">
-                  <span className="fle-column-title">On-Campus</span>
-                  <span style={{ fontSize: '0.62rem', opacity: 0.35 }}>{imageCount}/3 imgs</span>
-                </div>
-                {ON_CAMPUS_LABELS.map((label, i) => (
-                  <DropSlot
-                    key={`oc-${i}`}
-                    slotId={`oc-${i}`}
-                    label={label}
-                    article={getArticle('onCampus', i)}
-                    showImage={layout.onCampusImages[i]}
-                    onClear={() => clearSlot(`oc-${i}`)}
-                    isImageSlot={layout.onCampusImages[i]}
-                    imageToggle={
-                      imageCount >= 3 && !layout.onCampusImages[i] ? (
-                        <span style={{ fontSize: '0.62rem', opacity: 0.2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          locked
-                        </span>
-                      ) : (
-                        <label className="fle-image-toggle" title="Toggle image">
-                          <input
-                            type="checkbox"
-                            checked={layout.onCampusImages[i]}
-                            onChange={() => toggleOnCampusImage(i)}
-                          />
-                          img
-                        </label>
-                      )
-                    }
-                  />
-                ))}
+            <div style={{ fontSize: '0.78rem', lineHeight: 1.5, opacity: 0.75, margin: '0 0 16px', maxWidth: 720 }}>
+              <strong>How this page fills itself.</strong> Beside the cover, the top shows the next six newest stories
+              from any section. Each section below shows its newest stories from the past year (counted back from the newest
+              Features story), sorted into sections by kicker. A pin puts a story in its place and holds
+              for 6 weeks; after that the page goes back to the newest story. Every story appears once on the page.
+            </div>
+            {notice && (
+              <div role="status" style={{ ...staleStyle, margin: '0 0 12px', maxWidth: 720 }}>
+                {notice}
               </div>
+            )}
 
-              {/* Featured column (big middle) */}
-              <div className="fle-column">
-                <div className="fle-column-header">
-                  <span className="fle-column-title">Featured</span>
-                </div>
-                {FEATURED_LABELS.map((label, i) => (
-                  <DropSlot
-                    key={`feat-${i}`}
-                    slotId={`feat-${i}`}
-                    label={label}
-                    article={getArticle('featured', i)}
-                    showImage
-                    onClear={() => clearSlot(`feat-${i}`)}
-                    isImageSlot
-                  />
-                ))}
-                <DropSlot
-                  slotId="wide-0"
-                  label="Wide Article (text + image)"
-                  article={getArticle('wideArticle', 0)}
-                  showImage
-                  onClear={() => clearSlot('wide-0')}
-                  isImageSlot
-                />
-              </div>
-
-              {/* Right column */}
-              <div className="fle-column">
-                <div className="fle-column-header">
-                  <span className="fle-column-title">Right Column</span>
-                  <span style={{ fontSize: '0.62rem', opacity: 0.35 }}>{rightImageCount}/2 imgs</span>
-                </div>
-
-                {/* Events section */}
-                <div className="fle-events-section">
-                  <div className="fle-events-header">Upcoming Events ({layout.events.length}/5)</div>
-                  {layout.events.map((event, i) => (
-                      <div key={i} className="fle-event-entry">
-                        <input
-                          type="text"
-                          placeholder="Event title"
-                          value={event.title}
-                          onChange={(e) => updateEvent(i, { title: e.target.value })}
-                        />
-                        <input
-                          type="date"
-                          value={event.date}
-                          onChange={(e) => updateEvent(i, { date: e.target.value })}
-                        />
-                        <input
-                          type="text"
-                          placeholder="00:00 AM/PM"
-                          value={event.time}
-                          onChange={(e) => updateEvent(i, { time: e.target.value })}
-                        />
-                        <input
-                          type="text"
-                          placeholder="Location (optional)"
-                          value={event.location}
-                          onChange={(e) => updateEvent(i, { location: e.target.value })}
-                        />
-                        <div className="fle-event-entry-row">
-                          <input
-                            type="url"
-                            placeholder="URL (optional)"
-                            value={event.url || ''}
-                            onChange={(e) => updateEvent(i, { url: e.target.value })}
-                          />
-                          <div className="fle-event-actions">
-                            <button className="fle-event-btn" onClick={() => moveEvent(i, -1)} disabled={i === 0} title="Move up">&#8593;</button>
-                            <button className="fle-event-btn" onClick={() => moveEvent(i, 1)} disabled={i === layout.events.length - 1} title="Move down">&#8595;</button>
-                            <button className="fle-event-btn fle-event-remove" onClick={() => removeEvent(i)} title="Remove">&times;</button>
-                          </div>
-                        </div>
-                      </div>
-                  ))}
-                  {layout.events.length < 5 && (
-                    <button className="fle-event-add-btn" onClick={addEvent}>
-                      + Add Event
-                    </button>
-                  )}
-                </div>
-
-                {/* Article slots */}
-                {RIGHT_LABELS.map((label, i) => (
-                  <DropSlot
-                    key={`right-${i}`}
-                    slotId={`right-${i}`}
-                    label={label}
-                    article={getArticle('rightArticles', i)}
-                    showImage={layout.rightImages[i]}
-                    onClear={() => clearSlot(`right-${i}`)}
-                    isImageSlot={layout.rightImages[i]}
-                    imageToggle={
-                      rightImageCount >= 2 && !layout.rightImages[i] ? (
-                        <span style={{ fontSize: '0.62rem', opacity: 0.2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          locked
-                        </span>
-                      ) : (
-                        <label className="fle-image-toggle" title="Toggle image">
-                          <input
-                            type="checkbox"
-                            checked={layout.rightImages[i]}
-                            onChange={() => toggleRightImage(i)}
-                          />
-                          img
-                        </label>
-                      )
-                    }
-                  />
-                ))}
-              </div>
+            <div style={{ maxWidth: 520 }}>
+              <DropSlot {...slotProps('cover')} />
             </div>
 
-            {/* ── Row Divider ── */}
-            <div style={{ borderTop: '2px solid var(--theme-elevation-200, #333)', margin: '20px 0 16px' }} />
-
-            {/* ── Row 2 Canvas ── */}
-            <div className="fle-canvas">
-              {/* The Arts column (thin left) */}
-              <div className="fle-column">
-                <div className="fle-column-header">
-                  <span className="fle-column-title">The Arts</span>
-                  <span style={{ fontSize: '0.62rem', opacity: 0.35 }}>{artsImageCount}/2 imgs</span>
-                </div>
-                {THE_ARTS_LABELS.map((label, i) => (
-                  <DropSlot
-                    key={`arts-${i}`}
-                    slotId={`arts-${i}`}
-                    label={label}
-                    article={getArticle('theArts', i)}
-                    showImage={layout.theArtsImages[i]}
-                    onClear={() => clearSlot(`arts-${i}`)}
-                    isImageSlot={layout.theArtsImages[i]}
-                    imageToggle={
-                      artsImageCount >= 2 && !layout.theArtsImages[i] ? (
-                        <span style={{ fontSize: '0.62rem', opacity: 0.2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          locked
-                        </span>
-                      ) : (
-                        <label className="fle-image-toggle" title="Toggle image">
-                          <input
-                            type="checkbox"
-                            checked={layout.theArtsImages[i]}
-                            onChange={() => toggleArtsImage(i)}
-                          />
-                          img
-                        </label>
-                      )
-                    }
-                  />
-                ))}
-              </div>
-
-              {/* Photo Spotlight column (big middle) */}
-              <div className="fle-column">
-                <SpotlightBrowser
-                  photos={layout.photoSpotlight}
-                  onAdd={addSpotlightPhoto}
-                  onRemove={removeSpotlightPhoto}
-                />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 10px', marginTop: 6 }}>
-                  <DropSlot
-                    slotId="spotsub-0"
-                    label="Sub-feature Left (with image)"
-                    article={getArticle('spotlightSubs', 0)}
-                    showImage
-                    onClear={() => clearSlot('spotsub-0')}
-                    isImageSlot
-                  />
-                  <DropSlot
-                    slotId="spotsub-1"
-                    label="Sub-feature Right (with image)"
-                    article={getArticle('spotlightSubs', 1)}
-                    showImage
-                    onClear={() => clearSlot('spotsub-1')}
-                    isImageSlot
-                  />
-                </div>
-              </div>
-
-              {/* Collar City Column (right) */}
-              <div className="fle-column">
-                <div className="fle-column-header">
-                  <span className="fle-column-title">Collar City Column</span>
-                  <span style={{ fontSize: '0.62rem', opacity: 0.35 }}>{collarImageCount}/2 imgs</span>
-                </div>
-                {COLLAR_CITY_LABELS.map((label, i) => (
-                  <DropSlot
-                    key={`collar-${i}`}
-                    slotId={`collar-${i}`}
-                    label={label}
-                    article={getArticle('collarCity', i)}
-                    showImage={layout.collarCityImages[i]}
-                    onClear={() => clearSlot(`collar-${i}`)}
-                    isImageSlot={layout.collarCityImages[i]}
-                    imageToggle={
-                      collarImageCount >= 2 && !layout.collarCityImages[i] ? (
-                        <span style={{ fontSize: '0.62rem', opacity: 0.2, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                          locked
-                        </span>
-                      ) : (
-                        <label className="fle-image-toggle" title="Toggle image">
-                          <input
-                            type="checkbox"
-                            checked={layout.collarCityImages[i]}
-                            onChange={() => toggleCollarCityImage(i)}
-                          />
-                          img
-                        </label>
-                      )
-                    }
-                  />
-                ))}
-              </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginTop: 20 }}>
+              {SECTION_SLOTS.map((key) => (
+                <DropSlot key={key} {...slotProps(key)} />
+              ))}
             </div>
+
+            <div style={{ maxWidth: 520, marginTop: 20 }}>
+              <DropSlot {...slotProps('reel')} />
+            </div>
+
+            <div style={{ maxWidth: 520, marginTop: 20 }}>
+              <PitchPhotoSlot
+                preview={pitchPreview}
+                missing={layout.pitch != null && !pitchPreview}
+                onClear={() => {
+                  setLayout((prev) => ({ ...prev, pitch: null, pitchPositions: { ...NO_PITCH_POSITIONS } }));
+                  setPitchPreview(null);
+                  setSaved(false);
+                }}
+              />
+            </div>
+            {layout.pitch != null && pitchPreview && (
+              <PitchPositionsEditor
+                photo={pitchPreview}
+                positions={layout.pitchPositions}
+                page="/features"
+                pageName="Features"
+                labelClassName="fle-slot-label"
+                onChange={(next) => {
+                  setLayout((prev) => ({ ...prev, pitchPositions: next }));
+                  setSaved(false);
+                }}
+              />
+            )}
           </div>
 
-          {/* Right: Article pool */}
-          <ArticlePool
-            articles={articles}
-            usedIds={usedIds}
-            search={search}
-            onSearch={setSearch}
-          />
+          <ArticlePool articles={articles} usedIds={usedIds} search={search} onSearch={setSearch} filter={filter} onFilter={setFilter} />
         </div>
 
-        <DragOverlay dropAnimation={null}>
-          {activeArticle ? <DragOverlayCard article={activeArticle} /> : null}
-        </DragOverlay>
+        <DragOverlay dropAnimation={null}>{activeArticle ? <DragOverlayCard article={activeArticle} /> : null}</DragOverlay>
       </div>
     </DndContext>
   );
-}
-
-// ---------------------------------------------------------------------------
-// Utility
-// ---------------------------------------------------------------------------
-
-function padArray(arr: (number | null)[] | undefined, len: number): (number | null)[] {
-  const result = [...(arr || [])];
-  while (result.length < len) result.push(null);
-  return result.slice(0, len);
 }

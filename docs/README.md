@@ -10,12 +10,15 @@ root has lighter-weight onboarding (`/README.md`) and agent-oriented guides
 | Doc | When to read it |
 | --- | --- |
 | [`architecture.md`](architecture.md) | First time touching the app: request flow, runtime layers, where things live |
-| [`local-development.md`](local-development.md) | Setting up a working dev loop, env vars, troubleshooting |
+| [`local-development.md`](local-development.md) | Dev setup, env vars, pre-commit checks, CMS image preview lint policy, troubleshooting |
 | [`data-model.md`](data-model.md) | Adding/changing a Payload collection, global, or field |
 | [`migrations.md`](migrations.md) | The dual-path migration rule (Payload TS + raw SQL) — read **before** you change the schema |
 | [`search.md`](search.md) | Working on `/api/search`, `/archive`, or rate limiting |
 | [`push-notifications.md`](push-notifications.md) | Touching breaking-news, FCM, or the `device-tokens` collection |
 | [`sports-section.md`](sports-section.md) | `/sports`, its layout editor, schools, standings and score feeds, and their upkeep |
+| [`news-section.md`](news-section.md) | `/news`, the Student Senate and Executive Board timelines, terms, the archive finder, launch steps and upkeep |
+| [`summaries.md`](summaries.md) | Styling a story summary (subdeck) anywhere on the public site: one shared class, sizes per context |
+| [`fit-text.md`](fit-text.md) | Closing blank space on any page: headlines that grow to fill the space beside a photo (`FitGroup`) and columns that end on the same line (`BalanceColumns`) |
 | [`analytics.md`](analytics.md) | Adding/removing PostHog events, privacy guardrails |
 | [`deployment.md`](deployment.md) | Production runbook: deploy steps, host setup, rollback, ownership rules |
 | [`android-release.md`](android-release.md) | Cutting an Android APK release |

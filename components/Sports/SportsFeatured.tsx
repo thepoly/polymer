@@ -6,38 +6,16 @@ import Link from "next/link";
 import TransitionLink from "@/components/TransitionLink";
 import { getArticleUrl } from "@/utils/getArticleUrl";
 import type { Article as ComponentArticle } from "@/components/FrontPage/types";
-import { cardPosition, shortDate, sportName, type FeaturedFocus } from "./sportsFormat";
+import SportsHeading from "./SportsHeading";
+import SportsByline from "./SportsByline";
+import { cardPosition, shortDate, sportName } from "./sportsFormat";
+import type { FeaturedFocus } from "@/lib/sportsLayout";
+import { useMomentumScroll } from "./useMomentumScroll";
 
 const GAP = 16;
 // Carousel card widths: one and a peek on phones, then 2.25, 3 and 4 across
 const CAROUSEL_WIDTH =
   "w-[78%] sm:w-[calc((100%-16px)/2.25)] md:w-[calc((100%-32px)/3)] lg:w-[calc((100%-48px)/4)]";
-
-/** Byline in white for the dark card: staff names linked, joined with "&" */
-function CardByline({ article }: { article: ComponentArticle }) {
-  const authors = article.authorLinks?.length
-    ? article.authorLinks
-    : article.author
-      ? [{ name: article.author, href: null }]
-      : [];
-  return (
-    <>
-      {authors.map((a, i) => (
-        <React.Fragment key={i}>
-          {i > 0 && " & "}
-          {a.href ? (
-            // z-10 lifts the link above the card's stretched title link
-            <TransitionLink href={a.href} className="relative z-10 whitespace-nowrap text-white transition-colors hover:text-accent">
-              {a.name}
-            </TransitionLink>
-          ) : (
-            <span className="whitespace-nowrap text-white">{a.name}</span>
-          )}
-        </React.Fragment>
-      ))}
-    </>
-  );
-}
 
 /**
  * A story as a 4:5 photo card: the headline and byline on a dark shade rising
@@ -99,8 +77,12 @@ export function StoryCard({
             {article.richTitle ?? article.title}
           </TransitionLink>
         </h3>
-        <div className={`font-meta uppercase leading-[1.5] tracking-[0.06em] text-white/75 ${compact ? "mt-2 text-[10px]" : "mt-3 text-[11px]"}`}>
-          <CardByline article={article} />
+        <div className={`font-meta leading-[1.5] tracking-[0.01em] text-white/75 ${compact ? "mt-2 text-[12px]" : "mt-3 text-[13px]"}`}>
+          {/* In white for the dark card */}
+          <SportsByline
+            article={article}
+            nameClassName="whitespace-nowrap font-semibold text-white"
+          />
           {date && (
             <>
               <span aria-hidden="true" className="mx-1.5 text-white/40">·</span>
@@ -144,13 +126,13 @@ function ArrowButton({ direction, hidden, onClick }: { direction: "prev" | "next
       aria-label={direction === "prev" ? "Previous headlines" : "Next headlines"}
       onClick={onClick}
       disabled={hidden}
-      className={`absolute z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/75 text-[#111] shadow-[0_8px_24px_-6px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl backdrop-saturate-150 transition-[opacity,scale,background-color] duration-300 ease-out hover:scale-105 hover:bg-white/90 active:scale-95 disabled:pointer-events-none disabled:opacity-0 dark:border-white/15 dark:bg-black/40 dark:text-white dark:shadow-[0_8px_24px_-6px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.12)] dark:hover:bg-black/55 sm:h-14 sm:w-14 ${
+      className={`absolute z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-white/85 text-[#111] shadow-[0_3px_12px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(255,255,255,0.4)] backdrop-blur-[10px] backdrop-saturate-125 supports-[backdrop-filter:blur(1px)]:bg-white/45 transition-[opacity,color,background-color] duration-200 ease-out hover:bg-white/70 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent disabled:pointer-events-none disabled:opacity-0 motion-reduce:transition-none dark:border-white/30 dark:bg-black/75 dark:text-white dark:shadow-[0_3px_12px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.15)] dark:supports-[backdrop-filter:blur(1px)]:bg-black/45 dark:hover:bg-black/65 dark:hover:text-accent lg:flex ${
         direction === "prev" ? "left-4" : "right-4"
       }`}
       // Vertically centred on the cards, inside the room kept for their shadow
-      style={{ top: "calc((100% - 40px) / 2)" }}
+      style={{ top: "calc((100% - 16px) / 2)" }}
     >
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         {direction === "prev" ? <path d="M19 12H5M11 6l-6 6 6 6" /> : <path d="M5 12h14M13 6l6 6-6 6" />}
       </svg>
     </button>
@@ -158,94 +140,74 @@ function ArrowButton({ direction, hidden, onClick }: { direction: "prev" | "next
 }
 
 /**
- * Featured stories under the top block: photo cards in a row that the arrows
- * move a full set at a time, gliding with an ease-in-out. The row doesn't
- * scroll by trackpad, wheel or swipe; only the arrows move it.
+ * Featured photo cards scroll naturally by touch or trackpad, and can be
+ * dragged with a mouse. Desktop arrows move a full set at a time.
  */
 export default function SportsFeatured({ articles, focus }: { articles: ComponentArticle[]; focus: FeaturedFocus }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  // First card in view, and the measurements that turn it into an offset
-  const [index, setIndex] = useState(0);
-  const [metrics, setMetrics] = useState({ step: 0, perSet: 1, maxOffset: 0 });
+  const { handlers, stopMomentum } = useMomentumScroll(viewportRef, { mouseDrag: true });
+  const [edges, setEdges] = useState({ atStart: true, atEnd: false });
 
   useEffect(() => {
     const viewport = viewportRef.current;
-    const track = trackRef.current;
-    if (!viewport || !track) return;
-    const measure = () => {
-      const first = track.firstElementChild as HTMLElement | null;
-      if (!first) return;
-      const step = first.offsetWidth + GAP;
-      setMetrics({
-        step,
-        // Cards fully in view, which is how far one click moves
-        perSet: Math.max(1, Math.floor((track.clientWidth + GAP) / step)),
-        maxOffset: Math.max(0, track.scrollWidth - track.clientWidth),
+    if (!viewport) return;
+    const updateEdges = () => {
+      const atStart = viewport.scrollLeft <= 1;
+      const atEnd = viewport.scrollLeft >= viewport.scrollWidth - viewport.clientWidth - 1;
+      setEdges((previous) => {
+        if (previous.atStart === atStart && previous.atEnd === atEnd) return previous;
+        return { atStart, atEnd };
       });
     };
-    // Fires once on observe, then on every resize
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver(updateEdges);
     observer.observe(viewport);
-    return () => observer.disconnect();
-  }, []);
+    viewport.addEventListener("scroll", updateEdges, { passive: true });
+    updateEdges();
+    return () => {
+      observer.disconnect();
+      viewport.removeEventListener("scroll", updateEdges);
+    };
+  }, [articles.length]);
 
-  const lastIndex = metrics.step ? Math.ceil(metrics.maxOffset / metrics.step) : 0;
-  const current = Math.min(index, lastIndex);
-  // The last set stops flush with the right edge rather than overshooting
-  const offset = Math.min(current * metrics.step, metrics.maxOffset);
-  const atStart = current === 0;
-  const atEnd = offset >= metrics.maxOffset - 1;
-
-  const move = (direction: 1 | -1) =>
-    setIndex(Math.max(0, Math.min(lastIndex, current + direction * metrics.perSet)));
-
-  // Tabbing to a card that's out of view brings its set into view
-  const onFocus = (e: React.FocusEvent) => {
-    const slide = (e.target as HTMLElement).closest<HTMLElement>("[data-slide]");
-    if (!slide) return;
-    const i = Number(slide.dataset.slide);
-    if (i < current || i >= current + metrics.perSet) setIndex(Math.floor(i / metrics.perSet) * metrics.perSet);
+  const move = (direction: 1 | -1) => {
+    stopMomentum();
+    const viewport = viewportRef.current;
+    const track = trackRef.current;
+    const first = track?.firstElementChild;
+    if (!viewport || !track || !first) return;
+    const step = first.getBoundingClientRect().width + GAP;
+    // Fractional widths and a pixel of rounding allowance keep desktop at four.
+    const perSet = Math.max(1, Math.floor((track.getBoundingClientRect().width + GAP + 1) / step));
+    viewport.scrollBy({
+      left: direction * perSet * step,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+    });
   };
 
   return (
     <section aria-labelledby="sports-featured-heading" className="mt-6">
-      <div className="mb-4" style={{ borderTop: "2px solid var(--accent-color)", paddingTop: 4 }}>
-        <h2
-          id="sports-featured-heading"
-          className="font-meta uppercase text-accent dark:text-white"
-          style={{ fontSize: 21, letterSpacing: "0.08em", fontWeight: 500, margin: "0 0 2px" }}
-        >
-          More Headlines
-        </h2>
-      </div>
+      <SportsHeading id="sports-featured-heading">More Headlines</SportsHeading>
 
-      {/* Clips the row without scrolling it. The padding keeps the cards'
-          lift and shadow from being cut off; the negative margins give that
-          room back. A focused card can make the browser scroll even a clipped
-          box, so that is undone at once. The arrows float over the cards. */}
-      <div
-        ref={viewportRef}
-        className="relative -mx-1 -mt-2 -mb-12 overflow-hidden px-1 pt-2 pb-12"
-        onScroll={(e) => {
-          e.currentTarget.scrollLeft = 0;
-        }}
-      >
+      {/* Padding keeps card lift and shadows visible. The arrows stay outside
+          the scrolling viewport so they remain fixed over the row. */}
+      <div className="relative -mt-2 -mb-6">
         <div
-          ref={trackRef}
-          onFocus={onFocus}
-          className="flex motion-safe:transition-transform motion-safe:duration-[800ms] motion-safe:ease-[cubic-bezier(0.65,0,0.35,1)]"
-          style={{ gap: GAP, transform: `translate3d(${-offset}px, 0, 0)` }}
+          ref={viewportRef}
+          className="overflow-x-auto overflow-y-hidden pt-2 pb-6 touch-pan-y touch-pinch-zoom [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:cursor-grab lg:select-none lg:active:cursor-grabbing lg:[&_a]:cursor-inherit"
+          {...handlers}
         >
-          {articles.map((article, i) => (
-            <div key={article.id} data-slide={i} className={`shrink-0 ${CAROUSEL_WIDTH}`}>
-              <StoryCard article={article} position={cardPosition(article, focus)} className="w-full" />
-            </div>
-          ))}
-          <EndCard slide={articles.length} />
+          <div ref={trackRef} className="flex" style={{ gap: GAP }}>
+            {articles.map((article, i) => (
+              <div key={article.id} data-slide={i} className={`shrink-0 ${CAROUSEL_WIDTH}`}>
+                <StoryCard article={article} position={cardPosition(article, focus)} className="w-full" />
+              </div>
+            ))}
+            <EndCard slide={articles.length} />
+          </div>
         </div>
-        <ArrowButton direction="prev" hidden={atStart} onClick={() => move(-1)} />
-        <ArrowButton direction="next" hidden={atEnd} onClick={() => move(1)} />
+        <ArrowButton direction="prev" hidden={edges.atStart} onClick={() => move(-1)} />
+        <ArrowButton direction="next" hidden={edges.atEnd} onClick={() => move(1)} />
       </div>
     </section>
   );

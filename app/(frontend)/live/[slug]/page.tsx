@@ -181,7 +181,7 @@ export default async function LiveArticlePage({ params }: Args) {
 
           {/* Headline (richText title) */}
           <div className="max-w-[680px] w-full mx-auto">
-            <h1 className="font-copy font-bold text-text-main text-[39px] md:text-[34px] lg:text-[42px] leading-[1.05] tracking-[-0.02em] transition-colors">
+            <h1 className="font-copy font-normal [&_strong]:font-normal [&_b]:font-normal text-text-main text-[39px] md:text-[34px] lg:text-[42px] leading-[1.05] tracking-[-0.02em] transition-colors">
               {renderLexicalHeadline(article.title)}
             </h1>
           </div>

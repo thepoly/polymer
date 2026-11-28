@@ -1,10 +1,18 @@
+import { deriveOpinionType } from '../lib/opinionType'
 import type { CollectionConfig } from 'payload'
 import { APIError } from 'payload'
 import { lexicalEditor, BoldFeature, ItalicFeature } from '@payloadcms/richtext-lexical'
 import { getPostHogClient } from '../lib/posthog-server'
 import { getPlainText } from '../utils/getPlainText'
 import { getContentPlainText } from '../utils/getContentPlainText'
-import { SPORTS, sportLabel } from '../lib/sports'
+import { SPORTS, sportKicker, sportLabel } from '../lib/sports'
+
+// Scores are whole numbers. A custom check replaces the built-in one, so this
+// covers the minimum of 0 as well.
+const wholeScore = (value: number | number[] | null | undefined) =>
+  value == null ||
+  (typeof value === 'number' && Number.isInteger(value) && value >= 0) ||
+  'Enter a whole number, 0 or more.'
 
 const Articles: CollectionConfig = {
   slug: 'articles',
@@ -174,35 +182,40 @@ const Articles: CollectionConfig = {
           data.lastModifiedBy = req.user.id
         }
 
-        // Auto-derive opinionType from kicker for opinion articles
-        if (data.section === 'opinion' && data.kicker) {
-          const kickerLower = data.kicker.toLowerCase().trim()
-          const typeMap: Record<string, string> = {
-            'opinion': 'opinion',
-            'column': 'column',
-            'staff editorial': 'staff-editorial',
-            'editorial notebook': 'editorial-notebook',
-            'endorsement': 'endorsement',
-            'top hat': 'top-hat',
-            'candidate profile': 'candidate-profile',
-            'letter to the editor': 'letter-to-the-editor',
-            "the poly's recommendations": 'polys-recommendations',
-            "editor's notebook": 'editors-notebook',
-            'derby': 'derby',
-            'other': 'other',
-          }
-          const matched = typeMap[kickerLower]
-          data.opinionType = matched || 'more'
+        // Partial updates must use the effective saved section and kicker.
+        if ((data.section ?? originalDoc?.section) === 'opinion') {
+          data.opinionType = deriveOpinionType(data.kicker !== undefined ? data.kicker : originalDoc?.kicker)
         }
 
-        // Sports stories with no kicker get the sport's name ("Men's Hockey").
-        // Partial updates may omit fields, so fall back to the saved doc.
+        // A sports story's kicker follows its sport ("Men's Hockey") until an
+        // editor writes their own: it is filled in when empty, and replaced
+        // when it still names the sport the story had before, so changing the
+        // sport never leaves the old one behind. "General" has no name to
+        // show, so it leaves the kicker empty. Partial updates may omit
+        // fields, so fall back to the saved doc.
         {
           const section = data.section ?? originalDoc?.section
-          const sport = data.sport ?? originalDoc?.sport
-          const kicker = data.kicker !== undefined ? data.kicker : originalDoc?.kicker
-          if (section === 'sports' && sport && !kicker?.trim()) {
-            data.kicker = sportLabel(sport) ?? kicker
+          const sport = data.sport !== undefined ? data.sport : originalDoc?.sport
+          const previousSport = originalDoc?.sport
+          const kicker = (data.kicker !== undefined ? data.kicker : originalDoc?.kicker)?.trim() ?? ''
+          const followsSport = !kicker || kicker === sportLabel(previousSport)
+          if (section === 'sports' && (sport || previousSport) && followsSport) {
+            data.kicker = sportKicker(sport)
+          }
+        }
+
+        // Sport and game result belong to sports stories only. A story moved
+        // to another section drops them, so it never keeps a hidden sport or
+        // scoreboard that would come back if it moved again.
+        const outsideSports = (data.section ?? originalDoc?.section) !== 'sports'
+        if (outsideSports) {
+          if (data.sport || originalDoc?.sport) data.sport = null
+          if (data.games?.length || originalDoc?.games?.length) data.games = []
+        }
+        // Clearing the last game must also clear the legacy fallback.
+        if (outsideSports || data.games !== undefined) {
+          for (const field of ['opponent', 'homeAway', 'rpiScore', 'opponentScore', 'gameStatus'] as const) {
+            if (data[field] != null || originalDoc?.[field] != null) data[field] = null
           }
         }
 
@@ -254,84 +267,54 @@ const Articles: CollectionConfig = {
       options: SPORTS.map(({ value, label }) => ({ value, label })),
       index: true,
       admin: {
-        description: 'Which team this story is about. Fills an empty kicker with the sport name.',
+        description: 'Which team this story is about. The kicker follows it until you write your own.',
         condition: (data: Record<string, unknown>) => data?.section === 'sports',
       },
     },
-    // Game result — sports stories about a single game. Drives the scoreboard
-    // above the lead story on /sports.
     {
-      type: 'row',
+      name: 'games',
+      type: 'array',
+      maxRows: 2,
+      labels: { singular: 'Game', plural: 'Games' },
+      admin: {
+        condition: (data) => data?.section === 'sports',
+        description: 'Add one game or both games of a series, in playing order. Leave empty for other stories.',
+      },
       fields: [
         {
-          name: 'opponent',
-          type: 'relationship',
-          relationTo: 'schools',
-          hasMany: false,
-          admin: {
-            width: '50%',
-            description: 'The school RPI played. Leave empty for stories that are not about one game.',
-            condition: (data: Record<string, unknown>) => data?.section === 'sports',
-          },
-        },
-        {
-          name: 'homeAway',
-          type: 'select',
-          label: 'Home / Away',
-          options: [
-            { label: 'Home', value: 'home' },
-            { label: 'Away', value: 'away' },
-            { label: 'Neutral site', value: 'neutral' },
+          type: 'row',
+          fields: [
+            { name: 'opponent', type: 'relationship', relationTo: 'schools', required: true, admin: { width: '50%' } },
+            { name: 'date', label: 'Date played', type: 'date', admin: { width: '25%', date: { pickerAppearance: 'dayOnly' } } },
+            {
+              name: 'homeAway', label: 'Site', type: 'select', defaultValue: 'home',
+              options: [{ label: 'Home', value: 'home' }, { label: 'Away', value: 'away' }, { label: 'Neutral', value: 'neutral' }],
+              admin: { width: '25%' },
+            },
           ],
-          admin: {
-            width: '50%',
-            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
-          },
+        },
+        {
+          type: 'row',
+          fields: [
+            { name: 'rpiScore', label: 'RPI score', type: 'number', min: 0, validate: wholeScore, admin: { width: '25%' } },
+            { name: 'opponentScore', type: 'number', min: 0, validate: wholeScore, admin: { width: '25%' } },
+            { name: 'status', type: 'text', admin: { width: '50%', placeholder: 'Final, Final/OT, 7:00 PM…' } },
+          ],
         },
       ],
     },
-    {
-      type: 'row',
-      fields: [
-        {
-          name: 'rpiScore',
-          type: 'number',
-          label: 'RPI Score',
-          min: 0,
-          admin: {
-            width: '25%',
-            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
-          },
-        },
-        {
-          name: 'opponentScore',
-          type: 'number',
-          label: 'Opponent Score',
-          min: 0,
-          admin: {
-            width: '25%',
-            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
-          },
-        },
-        {
-          name: 'gameStatus',
-          type: 'text',
-          label: 'Game Status',
-          admin: {
-            width: '50%',
-            placeholder: 'Final',
-            description: 'e.g. Final, Final/OT, Final/2OT, Final/SO. Defaults to "Final".',
-            condition: (data: Record<string, unknown>) => data?.section === 'sports' && Boolean(data?.opponent),
-          },
-        },
-      ],
-    },
+    // Retained for older articles and revisions.
+    { name: 'opponent', type: 'relationship', relationTo: 'schools', admin: { hidden: true } },
+    { name: 'homeAway', type: 'select', options: ['home', 'away', 'neutral'], admin: { hidden: true } },
+    { name: 'rpiScore', type: 'number', min: 0, validate: wholeScore, admin: { hidden: true } },
+    { name: 'opponentScore', type: 'number', min: 0, validate: wholeScore, admin: { hidden: true } },
+    { name: 'gameStatus', type: 'text', admin: { hidden: true } },
     {
       name: 'title',
       type: 'richText',
       required: true,
       editor: lexicalEditor({
-        features: ({ defaultFeatures }) => [
+        features: () => [
           BoldFeature(),
           ItalicFeature(),
         ],
@@ -358,6 +341,19 @@ const Articles: CollectionConfig = {
       admin: {
         components: {
           Field: '@/components/admin/KickerField#KickerField',
+        },
+      },
+    },
+    // Read-only, Features stories only: which Features section the kicker puts
+    // the story in, and whether it can lead the photo reel. A "ui" field, so
+    // nothing is stored and there's no database column (no migration).
+    {
+      name: 'featuresPlacement',
+      type: 'ui',
+      admin: {
+        condition: (data) => data?.section === 'features',
+        components: {
+          Field: '@/components/admin/FeaturesPlacementHint#FeaturesPlacementHint',
         },
       },
     },

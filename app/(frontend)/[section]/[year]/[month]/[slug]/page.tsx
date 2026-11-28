@@ -13,7 +13,8 @@ import { getArticleUrl } from '@/utils/getArticleUrl';
 import { fillSeoTemplate, getSeo } from '@/lib/getSeo';
 import type { Metadata } from 'next';
 import type { Article, Media, User } from '@/payload-types';
-import { toPublicArticle } from '@/lib/publicArticle';
+import { SPORTS_GAME_SELECT } from '@/lib/sportsPage';
+import { toPublicArticle, withPopulatedPhotographer } from '@/lib/publicArticle';
 
 export const revalidate = 60;
 
@@ -44,6 +45,7 @@ const getArticle = cache(async (slug: string, section?: string): Promise<Article
       kicker: true,
       subdeck: true,
       section: true,
+      ...(section === 'sports' && SPORTS_GAME_SELECT),
       opinionType: true,
       authors: true,
       writeInAuthors: true,
@@ -62,7 +64,7 @@ const getArticle = cache(async (slug: string, section?: string): Promise<Article
     },
   });
   const article = result.docs[0] as Article | undefined;
-  return article ? toPublicArticle(article) : undefined;
+  return article ? toPublicArticle(await withPopulatedPhotographer(payload, article)) : undefined;
 });
 
 function matchesRequestedDate(article: Article, year: string, month: string): boolean {

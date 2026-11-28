@@ -1,0 +1,1886 @@
+{
+  "_about": "Student Senate and Executive Board stories filed under other kickers or sections, reviewed by hand from the live archive (2026-11-13), added to their timelines by `pnpm db:seed:student-gov-archive`. Matched by slug and publish date (Troy). One copy of each duplicated story.",
+  "senate": [
+    {
+      "slug": "2012-05-02-new-senate-holds-first-meeting-appointments",
+      "date": "2012-05-02",
+      "section": "news",
+      "kicker": null,
+      "title": "New Senate holds first meeting, appointments"
+    },
+    {
+      "slug": "2012-05-09-last-senate-meeting-covers-e-board-student-handbook",
+      "date": "2012-05-09",
+      "section": "news",
+      "kicker": null,
+      "title": "Last Senate meeting covers E-Board, Student Handbook"
+    },
+    {
+      "slug": "2012-09-19-senators-discuss-updates-projects-elections",
+      "date": "2012-09-19",
+      "section": "news",
+      "kicker": null,
+      "title": "Senators discuss updates, projects, elections"
+    },
+    {
+      "slug": "2012-09-26-senate-talks-projects-handbook-rad-laws",
+      "date": "2012-09-26",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate talks projects, handbook, RAD, laws"
+    },
+    {
+      "slug": "2012-10-03-student-senate-registers-rpi-voters",
+      "date": "2012-10-03",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Student Senate registers RPI voters"
+    },
+    {
+      "slug": "2012-10-17-senatersquos-student-life-chair-describes-committee-goals",
+      "date": "2012-10-17",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Senate’s Student Life chair describes committee goals"
+    },
+    {
+      "slug": "2012-10-24-student-senate-meets-greets-campus",
+      "date": "2012-10-24",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Student Senate meets, greets campus"
+    },
+    {
+      "slug": "2012-10-24-senators-talk-off-campus-rad-program",
+      "date": "2012-10-24",
+      "section": "news",
+      "kicker": null,
+      "title": "Senators talk off-campus RAD program"
+    },
+    {
+      "slug": "2012-10-31-senate-ffa-committee-plans-projects",
+      "date": "2012-10-31",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Senate FFA Committee plans projects"
+    },
+    {
+      "slug": "2012-11-07-senator-niguidula-explains-leadership-roles",
+      "date": "2012-11-07",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Senator Niguidula explains leadership roles"
+    },
+    {
+      "slug": "2012-11-07-dotcio-hass-present-goals-ideas-to-senate",
+      "date": "2012-11-07",
+      "section": "news",
+      "kicker": null,
+      "title": "DotCIO, HASS present goals, ideas to Senate"
+    },
+    {
+      "slug": "2012-11-28-senate-discusses-plan-refresh-re-passes-rad",
+      "date": "2012-11-28",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Senate discusses Plan refresh, re-passes RAD"
+    },
+    {
+      "slug": "2013-02-06-senate-in-discussions-about-cdta-286",
+      "date": "2013-02-06",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Senate in discussions about CDTA 286"
+    },
+    {
+      "slug": "2013-02-13-dai-senate-meeting-tonight-about-uar",
+      "date": "2013-02-13",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Dai: Senate meeting tonight about UAR"
+    },
+    {
+      "slug": "2013-02-20-e-board-senate-release-union-report",
+      "date": "2013-02-20",
+      "section": "news",
+      "kicker": null,
+      "title": "E-Board, Senate release Union Report"
+    },
+    {
+      "slug": "2013-02-27-senate-discusses-future-of-cdta-286-bus-route",
+      "date": "2013-02-27",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate discusses future of CDTA 286 bus route"
+    },
+    {
+      "slug": "2013-03-06-student-senate-passes-new-gpa-requirements",
+      "date": "2013-03-06",
+      "section": "news",
+      "kicker": null,
+      "title": "Student Senate passes new GPA requirements"
+    },
+    {
+      "slug": "2013-03-20-staff-editorial-senate-needs-more-power-to-remain-relevant-to-students",
+      "date": "2013-03-20",
+      "section": "opinion",
+      "kicker": "Editorial/Opinion",
+      "title": "Staff Editorial: Senate needs more power to remain relevant to students"
+    },
+    {
+      "slug": "2013-04-10-student-senate-approves-jurisdiction-changes",
+      "date": "2013-04-10",
+      "section": "news",
+      "kicker": null,
+      "title": "Student Senate approves jurisdiction changes"
+    },
+    {
+      "slug": "2013-05-01-new-senators-approve-committee-appointees",
+      "date": "2013-05-01",
+      "section": "news",
+      "kicker": null,
+      "title": "New senators approve committee appointees"
+    },
+    {
+      "slug": "2013-09-11-health-center-director-senate-discuss-issues",
+      "date": "2013-09-11",
+      "section": "news",
+      "kicker": null,
+      "title": "Health Center director, Senate discuss issues"
+    },
+    {
+      "slug": "2013-09-18-carletta-discusses-value-of-senate-speakers",
+      "date": "2013-09-18",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Carletta discusses value of Senate speakers"
+    },
+    {
+      "slug": "2013-10-02-senate-performs-safety-walk",
+      "date": "2013-10-02",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Senate performs safety walk"
+    },
+    {
+      "slug": "2013-10-30-student-faculty-senates-work-together-to-improve-student-experience",
+      "date": "2013-10-30",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Student, Faculty Senates work together to improve student experience"
+    },
+    {
+      "slug": "2013-10-30-gerhardt-speaks-with-senate-reps",
+      "date": "2013-10-30",
+      "section": "news",
+      "kicker": null,
+      "title": "Gerhardt speaks with Senate reps"
+    },
+    {
+      "slug": "2013-11-06-student-senate-discuss-excuse-policy-changes",
+      "date": "2013-11-06",
+      "section": "news",
+      "kicker": null,
+      "title": "Student Senate discuss excuse policy changes"
+    },
+    {
+      "slug": "2013-11-13-senate-approves-fortuner-as-e-board-rep",
+      "date": "2013-11-13",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate approves Fortuner as E-Board rep"
+    },
+    {
+      "slug": "2013-11-20-grand-marshal-senate-raises-interesting-topics",
+      "date": "2013-11-20",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Grand Marshal: Senate raises interesting topics"
+    },
+    {
+      "slug": "2013-12-04-grand-marshal-talks-last-senate-meeting",
+      "date": "2013-12-04",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Grand Marshal talks last Senate meeting"
+    },
+    {
+      "slug": "2014-02-05-gm-discusses-greek-representation-in-senate",
+      "date": "2014-02-05",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "GM discusses Greek representation in Senate"
+    },
+    {
+      "slug": "2014-02-19-senate-confirms-new-rules-amp-elections-chair-judicial-board-appointments",
+      "date": "2014-02-19",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate confirms new Rules & Elections chair, Judicial Board appointments"
+    },
+    {
+      "slug": "2014-02-26-ifc-talks-upcoming-controversy-in-the-student-senate",
+      "date": "2014-02-26",
+      "section": "opinion",
+      "kicker": "Interfraternity Council",
+      "title": "IFC talks upcoming controversy in the Student Senate"
+    },
+    {
+      "slug": "2014-02-26-greek-senate-positions-heavily-debated",
+      "date": "2014-02-26",
+      "section": "news",
+      "kicker": null,
+      "title": "Greek Senate positions heavily debated"
+    },
+    {
+      "slug": "2014-03-05-gm-talks-results-from-recent-senate-session",
+      "date": "2014-03-05",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "GM talks results from recent Senate session"
+    },
+    {
+      "slug": "2014-03-05-greek-independent-senate-positions-stay",
+      "date": "2014-03-05",
+      "section": "news",
+      "kicker": null,
+      "title": "Greek, independent senate positions stay"
+    },
+    {
+      "slug": "2014-03-19-student-senate-proposes-carsharing",
+      "date": "2014-03-19",
+      "section": "news",
+      "kicker": null,
+      "title": "Student Senate proposes carsharing"
+    },
+    {
+      "slug": "2014-03-26-amendments-include-ic-senators-terms-of-office-2",
+      "date": "2014-03-26",
+      "section": "opinion",
+      "kicker": "Constitution Committee",
+      "title": "Amendments include IC Senators, terms of office"
+    },
+    {
+      "slug": "2014-03-26-several-important-senate-motions-pass-2",
+      "date": "2014-03-26",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Several important senate motions pass"
+    },
+    {
+      "slug": "2014-03-26-senate-recommends-excuse-policy-changes",
+      "date": "2014-03-26",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate recommends excuse policy changes"
+    },
+    {
+      "slug": "2014-04-09-senate-passes-prescription-delivery-taxi-proposals",
+      "date": "2014-04-09",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate passes prescription delivery, taxi proposals"
+    },
+    {
+      "slug": "2014-04-14-student-senates-official-poster-incident-statement",
+      "date": "2014-04-14",
+      "section": "features",
+      "kicker": "Uncategorized",
+      "title": "44th Student Senate's official poster incident statement"
+    },
+    {
+      "slug": "2014-04-30-senate-confirms-executive-board-reps",
+      "date": "2014-04-30",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate confirms Executive Board reps"
+    },
+    {
+      "slug": "2014-05-07-senate-confirms-commitee-chairs-cabinet",
+      "date": "2014-05-07",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate confirms commitee chairs, cabinet"
+    },
+    {
+      "slug": "2014-08-27-senate-hospitality-services-negotiate",
+      "date": "2014-08-27",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Senate, Hospitality Services negotiate"
+    },
+    {
+      "slug": "2014-09-03-hospitality-committee-created-by-student-senate",
+      "date": "2014-09-03",
+      "section": "news",
+      "kicker": null,
+      "title": "Hospitality committee created by Student Senate"
+    },
+    {
+      "slug": "2014-09-10-senate-strengthens-ties-within-troy-area",
+      "date": "2014-09-10",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate strengthens ties within Troy area"
+    },
+    {
+      "slug": "2014-10-01-senate-thanks-vp-of-student-life-dr-sams",
+      "date": "2014-10-01",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate thanks VP of Student Life Dr. Sams"
+    },
+    {
+      "slug": "2014-10-08-senate-reestablishes-union-constitution-committee",
+      "date": "2014-10-08",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate reestablishes Union Constitution Committee"
+    },
+    {
+      "slug": "2014-10-22-graduate-council-discusses-senate-e-board-task-force",
+      "date": "2014-10-22",
+      "section": "news",
+      "kicker": null,
+      "title": "Graduate Council discusses Senate, E-Board, Task force"
+    },
+    {
+      "slug": "2014-10-22-senate-reviews-universal-access-after-being-revoked",
+      "date": "2014-10-22",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate reviews universal access after being revoked"
+    },
+    {
+      "slug": "2014-10-29-senate-appoints-dugan-as-independent-senator",
+      "date": "2014-10-29",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate appoints Dugan as Independent senator"
+    },
+    {
+      "slug": "2014-11-05-student-senate-survey-requests-student-input",
+      "date": "2014-11-05",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Student Senate Survey requests student input"
+    },
+    {
+      "slug": "2014-11-12-senate-discusses-green-revolving-fund-electronic-voting",
+      "date": "2014-11-12",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate discusses Green Revolving Fund, electronic voting"
+    },
+    {
+      "slug": "2014-11-19-new-j-board-members-approved-senate-survey-discussed",
+      "date": "2014-11-19",
+      "section": "news",
+      "kicker": null,
+      "title": "New J-Board members approved, Senate survey discussed"
+    },
+    {
+      "slug": "2014-11-19-senate-petition-website-prototype-presented",
+      "date": "2014-11-19",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Senate petition website prototype presented"
+    },
+    {
+      "slug": "2014-12-03-gpa-minimum-change-rejected-by-senate",
+      "date": "2014-12-03",
+      "section": "news",
+      "kicker": null,
+      "title": "GPA minimum change rejected by Senate"
+    },
+    {
+      "slug": "2015-02-11-senate-reviews-iunion-annual-reporti",
+      "date": "2015-02-11",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Senate reviews Union Annual Report"
+    },
+    {
+      "slug": "2015-02-18-j-board-overturns-student-activity-fee-decision-by-senate",
+      "date": "2015-02-18",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "J-Board overturns Student Activity Fee decision by Senate"
+    },
+    {
+      "slug": "2015-05-13-gm-on-future-direction-of-senate",
+      "date": "2015-05-13",
+      "section": "opinion",
+      "kicker": "TOP HAT",
+      "title": "GM on future direction of Senate"
+    },
+    {
+      "slug": "2015-10-21-freshmen-senators-new-officials-elected",
+      "date": "2015-10-21",
+      "section": "news",
+      "kicker": "FRESHMAN ELECTIONS",
+      "title": "Freshmen senators, new officials elected"
+    },
+    {
+      "slug": "2015-11-04-get-the-inside-scoop-at-senate-meetings",
+      "date": "2015-11-04",
+      "section": "opinion",
+      "kicker": "TOP HAT",
+      "title": "Get the inside scoop at Senate meetings"
+    },
+    {
+      "slug": "2015-11-11-senate-rejects-gpa-boost",
+      "date": "2015-11-11",
+      "section": "opinion",
+      "kicker": "TOP HAT",
+      "title": "Senate rejects GPA boost"
+    },
+    {
+      "slug": "2015-11-18-student-senators-serve-as-a-resource-to-students",
+      "date": "2015-11-18",
+      "section": "opinion",
+      "kicker": "TOP HAT",
+      "title": "Student senators serve as a resource to students"
+    },
+    {
+      "slug": "2016-02-24-uar-approved-by-senate-e-board",
+      "date": "2016-02-24",
+      "section": "news",
+      "kicker": "RENSSELAER UNION",
+      "title": "UAR approved by Senate, E-Board"
+    },
+    {
+      "slug": "2016-03-30-e-board-and-senate-assemble-to-form-unity-between-the-two-student-groups-student-leaders-meet-to-discuss-letter",
+      "date": "2016-03-30",
+      "section": "news",
+      "kicker": "STUDENT GOVERNMENT",
+      "title": "E-Board and Senate assemble to form unity between the two student groups Student leaders meet to discuss letter"
+    },
+    {
+      "slug": "2017-04-12-new-grand-marshal-solicits-applicants-for-senate-committees",
+      "date": "2017-04-12",
+      "section": "opinion",
+      "kicker": "TOP HAT",
+      "title": "New Grand Marshal solicits applicants for Senate committees"
+    },
+    {
+      "slug": "2017-04-19-special-election-for-greek-senator-announced",
+      "date": "2017-04-19",
+      "section": "opinion",
+      "kicker": "TOP HAT",
+      "title": "Special election for Greek senator announced"
+    },
+    {
+      "slug": "2017-04-26-internal-reforms-becomes-senate-committee",
+      "date": "2017-04-26",
+      "section": "opinion",
+      "kicker": "TOP HAT",
+      "title": "Internal Reforms becomes Senate committee"
+    },
+    {
+      "slug": "2017-09-06-fully-trained-senators-prepared-for-your-issues",
+      "date": "2017-09-06",
+      "section": "opinion",
+      "kicker": "TOP HAT",
+      "title": "Fully trained senators prepared for your issues"
+    },
+    {
+      "slug": "2017-10-04-response-to-senatersquos-constitution-resolution",
+      "date": "2017-10-04",
+      "section": "opinion",
+      "kicker": "GRADUATE COUNCIL",
+      "title": "Response to Senate’s Constitution resolution"
+    },
+    {
+      "slug": "2017-11-29-make-your-voice-heard-through-senate-survey",
+      "date": "2017-11-29",
+      "section": "opinion",
+      "kicker": "TOP HAT",
+      "title": "Make your voice heard through Senate survey"
+    },
+    {
+      "slug": "senator-candidate-profile",
+      "date": "2018-04-02",
+      "section": "opinion",
+      "kicker": "Candidate Questions",
+      "title": "Senator candidate profile"
+    },
+    {
+      "slug": "are-you-wondering-what-senate-committees-do-let-me-explain",
+      "date": "2018-09-19",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Are you wondering what Senate committees do? Let me explain"
+    },
+    {
+      "slug": "board-of-trustees-updated-on-senate-initiatives",
+      "date": "2018-10-03",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Board of Trustees updated on Senate initiatives"
+    },
+    {
+      "slug": "welcoming-five-new-members-to-student-senate",
+      "date": "2018-10-24",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Welcoming five new members to Student Senate"
+    },
+    {
+      "slug": "student-senate-wants-to-hear-your-feedback",
+      "date": "2018-11-14",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Student Senate wants to hear your feedback"
+    },
+    {
+      "slug": "complete-the-student-senate-survey-before-it-closes-today",
+      "date": "2018-11-28",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Complete the Student Senate survey before it closes today"
+    },
+    {
+      "slug": "an-arch-update-from-student-senate",
+      "date": "2019-02-27",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "An Arch update from Student Senate"
+    },
+    {
+      "slug": "what-the-student-senate-should-do-for-you",
+      "date": "2019-03-26",
+      "section": "opinion",
+      "kicker": "Editorial Notebook",
+      "title": "What the Student Senate should do for you"
+    },
+    {
+      "slug": "help-us-plan-50-events-to-celebrate-the-50th-student-senate",
+      "date": "2019-04-03",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Help us plan 50 events to celebrate the 50th Student Senate"
+    },
+    {
+      "slug": "senate-should-fight-to-make-our-union-student-run-again",
+      "date": "2019-10-09",
+      "section": "opinion",
+      "kicker": "Staff Editorial",
+      "title": "Senate should fight to make our Union student run again"
+    },
+    {
+      "slug": "why-you-should-care-about-the-student-senate-survey",
+      "date": "2020-01-28",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Why you should care about the Student Senate Survey"
+    },
+    {
+      "slug": "-senator-candidate-profile-2020",
+      "date": "2020-04-14",
+      "section": "opinion",
+      "kicker": "Candidate Questions",
+      "title": "Senator candidate profile"
+    },
+    {
+      "slug": "thank-you-to-the-50th-student-senate",
+      "date": "2020-05-15",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "Thank you to the 50th Student Senate"
+    },
+    {
+      "slug": "the-student-senate-survey-is-now-open",
+      "date": "2020-11-19",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "The Student Senate survey is now open"
+    },
+    {
+      "slug": "the-sluggish-pace-of-student-senate-meetings",
+      "date": "2022-02-01",
+      "section": "opinion",
+      "kicker": "Opinion",
+      "title": "The sluggish pace of Student Senate meetings"
+    },
+    {
+      "slug": "senate-writes-policy",
+      "date": "2022-10-04",
+      "section": "opinion",
+      "kicker": "Top Hat",
+      "title": "On compromise and change: how the Senate writes policy"
+    },
+    {
+      "slug": "press-release-senate-addresses-significant-safety-concerns-on-campus",
+      "date": "2024-11-19",
+      "section": "news",
+      "kicker": "Press Release",
+      "title": "Senate addresses significant safety concerns on campus, urging the Institute to publicly respond and reassure the student body"
+    },
+    {
+      "slug": "runoff-election-for-greek-senators-set-for-march-28",
+      "date": "2025-03-26",
+      "section": "news",
+      "kicker": "GM Week 2025",
+      "title": "Runoff election for Greek senators set for March 28"
+    },
+    {
+      "slug": "title-ix-resolution",
+      "date": "2025-11-10",
+      "section": "news",
+      "kicker": "Press Release",
+      "title": "Student Senate Title IX Resolution"
+    },
+    {
+      "slug": "student-senate-opens-constitutional-elections-on-the-fsl-amendment-and-protecting-democracy-amendment",
+      "date": "2026-02-04",
+      "section": "news",
+      "kicker": "Elections",
+      "title": "Student Senate opens Constitutional Elections on the FSL Amendment and Protecting Democracy Amendment"
+    },
+    {
+      "slug": "senate-rldc-ignites-the-war-on-mold-in-discussion-with-the-administration-division",
+      "date": "2026-02-11",
+      "section": "news",
+      "kicker": "News",
+      "title": "Senate's RLDC ignites the “War on Mold,” in discussion with the Administration Division"
+    }
+  ],
+  "eboard": [
+    {
+      "slug": "2012-04-04-executive-board-focuses-on-academics-in-by-law",
+      "date": "2012-04-04",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Executive Board focuses on academics in by-law"
+    },
+    {
+      "slug": "2012-04-11-pu-begins-goodbye-to-position-gives-thanks-advice",
+      "date": "2012-04-11",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "PU begins goodbye to position; gives thanks, advice"
+    },
+    {
+      "slug": "2012-04-18-pu-discusses-union-review-executive-board-applications",
+      "date": "2012-04-18",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "PU discusses Union review, Executive Board applications"
+    },
+    {
+      "slug": "2012-04-25-pu-explains-executive-board-committees",
+      "date": "2012-04-25",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "PU explains Executive Board, committees"
+    },
+    {
+      "slug": "2012-04-25-new-gm-pu-elected-outcomes-close",
+      "date": "2012-04-25",
+      "section": "news",
+      "kicker": null,
+      "title": "New GM, PU elected, outcomes close"
+    },
+    {
+      "slug": "2012-05-09-pu-introduces-new-executive-board-for-fall",
+      "date": "2012-05-09",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "PU introduces new Executive Board for fall"
+    },
+    {
+      "slug": "2012-08-29-stack-discusses-e-board-goals-and-responsibilities",
+      "date": "2012-08-29",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Stack discusses E-board goals and responsibilities"
+    },
+    {
+      "slug": "2012-09-05-stack-executive-board-prepares-for-semester",
+      "date": "2012-09-05",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Stack, Executive Board prepares for semester"
+    },
+    {
+      "slug": "2012-09-12-president-of-union-encourages-participation-in-e-board",
+      "date": "2012-09-12",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "President of Union encourages participation in E-Board"
+    },
+    {
+      "slug": "2012-09-19-president-of-the-union-talks-clubs-officer-training",
+      "date": "2012-09-19",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "President of the union talks clubs, officer training"
+    },
+    {
+      "slug": "2012-09-26-executive-board-updates-budgets",
+      "date": "2012-09-26",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Executive board updates budgets"
+    },
+    {
+      "slug": "2012-10-03-e-board-plans-for-future",
+      "date": "2012-10-03",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "E-Board plans for future"
+    },
+    {
+      "slug": "2012-10-10-president-of-the-union-describes-e-board-committees",
+      "date": "2012-10-10",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "President of the Union describes E-board committees"
+    },
+    {
+      "slug": "2012-10-17-e-board-looks-to-improve-furnish-rensselaer-union",
+      "date": "2012-10-17",
+      "section": "news",
+      "kicker": null,
+      "title": "E-Board looks to improve, furnish Rensselaer Union"
+    },
+    {
+      "slug": "2012-10-24-jon-stack-clarifies-provides-e-board-updates",
+      "date": "2012-10-24",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Jon Stack clarifies, provides E-board updates"
+    },
+    {
+      "slug": "2012-10-31-university-of-vermont-to-host-union-e-board",
+      "date": "2012-10-31",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "University of Vermont to host Union E-Board"
+    },
+    {
+      "slug": "2012-11-07-jon-stack-describes-e-board-and-institute-activities",
+      "date": "2012-11-07",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Jon Stack describes E-board and Institute activities"
+    },
+    {
+      "slug": "2013-01-23-pu-stack-explains-budget-approval-process",
+      "date": "2013-01-23",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "PU Stack explains budget approval process"
+    },
+    {
+      "slug": "2013-01-23-e-board-releases-new-union-based-budgets",
+      "date": "2013-01-23",
+      "section": "news",
+      "kicker": null,
+      "title": "E-Board releases new Union-based budgets"
+    },
+    {
+      "slug": "2013-01-30-e-board-makes-large-furniture-purchase",
+      "date": "2013-01-30",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "E-Board makes large furniture purchase"
+    },
+    {
+      "slug": "2013-02-06-e-board-agenda-includes-upac-rpi-players",
+      "date": "2013-02-06",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "E-Board agenda includes UPAC, RPI Players"
+    },
+    {
+      "slug": "2013-02-20-e-board-senate-release-union-report",
+      "date": "2013-02-20",
+      "section": "news",
+      "kicker": null,
+      "title": "E-Board, Senate release Union Report"
+    },
+    {
+      "slug": "2013-02-27-president-of-the-union-speaks-about-position",
+      "date": "2013-02-27",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "President of the Union speaks about position"
+    },
+    {
+      "slug": "2013-03-06-pu-details-club-teamsrsquo-wins-e-board-news",
+      "date": "2013-03-06",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "PU details club teams’ wins, E-Board news"
+    },
+    {
+      "slug": "2013-03-27-pu-elaborates-on-iunion-constitutioni-changes",
+      "date": "2013-03-27",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "PU elaborates on Union Constitution changes"
+    },
+    {
+      "slug": "2013-04-03-e-board-approves-jazz-trip-proposal-for-suny-festival",
+      "date": "2013-04-03",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "E-Board approves Jazz trip proposal for SUNY festival"
+    },
+    {
+      "slug": "2013-04-17-new-pu-sileo-urges-e-board-applications",
+      "date": "2013-04-17",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "New PU Sileo urges E-Board applications"
+    },
+    {
+      "slug": "2013-04-17-photo-carletta-sileo-elected-gm-pu-2",
+      "date": "2013-04-17",
+      "section": "news",
+      "kicker": null,
+      "title": "PHOTO: Carletta, Sileo elected GM, PU"
+    },
+    {
+      "slug": "2013-05-01-sileo-reviews-candidates-for-executive-board",
+      "date": "2013-05-01",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Sileo reviews candidates for Executive Board"
+    },
+    {
+      "slug": "2013-05-08-pu-announces-2013ndash2014-executive-board",
+      "date": "2013-05-08",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "PU announces 2013–2014 Executive Board"
+    },
+    {
+      "slug": "2013-09-18-executive-board-approves-services-to-help-students",
+      "date": "2013-09-18",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Executive Board approves services to help students"
+    },
+    {
+      "slug": "2013-11-13-club-officer-symposiums-teach-publicity-skills-fire-provides-e-board-excitment",
+      "date": "2013-11-13",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Club Officer Symposiums teach publicity skills; fire provides E-Board excitment"
+    },
+    {
+      "slug": "2013-11-13-senate-approves-fortuner-as-e-board-rep",
+      "date": "2013-11-13",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate approves Fortuner as E-Board rep"
+    },
+    {
+      "slug": "2013-12-04-pu-explains-e-board-plan",
+      "date": "2013-12-04",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "PU explains E-Board plan"
+    },
+    {
+      "slug": "2014-01-29-e-board-approves-new-secretary-policies-chair",
+      "date": "2014-01-29",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "E-Board approves new secretary, Policies chair"
+    },
+    {
+      "slug": "2014-02-26-e-board-approves-union-room-upgrades",
+      "date": "2014-02-26",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "E-Board approves Union room upgrades"
+    },
+    {
+      "slug": "2014-03-19-pu-brings-news-on-sports-additional-club-funding",
+      "date": "2014-03-19",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "PU brings news on sports, additional club funding"
+    },
+    {
+      "slug": "2014-04-09-pursquos-final-derby-on-gm-week",
+      "date": "2014-04-09",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "PU’s final Derby on GM Week"
+    },
+    {
+      "slug": "2014-04-12-pu-candidate-frank-abissi-withdraws-from-race",
+      "date": "2014-04-12",
+      "section": "news",
+      "kicker": null,
+      "title": "President of the Union candidate Frank Abissi withdraws from race"
+    },
+    {
+      "slug": "2014-04-16-amarello-talks-e-board-positions-involvement",
+      "date": "2014-04-16",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Amarello talks E-Board positions, involvement"
+    },
+    {
+      "slug": "2014-04-23-pu-talks-open-positions",
+      "date": "2014-04-23",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "PU talks open positions"
+    },
+    {
+      "slug": "2014-04-30-new-e-board-members-selected",
+      "date": "2014-04-30",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "New E-Board members selected"
+    },
+    {
+      "slug": "2014-04-30-senate-confirms-executive-board-reps",
+      "date": "2014-04-30",
+      "section": "news",
+      "kicker": null,
+      "title": "Senate confirms Executive Board reps"
+    },
+    {
+      "slug": "2014-09-03-5848",
+      "date": "2014-09-03",
+      "section": "news",
+      "kicker": null,
+      "title": "President of the Union discusses goals for the year"
+    },
+    {
+      "slug": "2014-09-17-executive-board-adds-two-new-members",
+      "date": "2014-09-17",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Executive Board adds two new members"
+    },
+    {
+      "slug": "2014-10-08-executive-board-committees-seek-members",
+      "date": "2014-10-08",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Executive Board committees seek members"
+    },
+    {
+      "slug": "2014-10-22-graduate-council-discusses-senate-e-board-task-force",
+      "date": "2014-10-22",
+      "section": "news",
+      "kicker": null,
+      "title": "Graduate Council discusses Senate, E-Board, Task force"
+    },
+    {
+      "slug": "2014-10-29-clubs-come-before-e-board-to-discuss-proposals",
+      "date": "2014-10-29",
+      "section": "news",
+      "kicker": null,
+      "title": "Clubs come before E-Board to discuss proposals"
+    },
+    {
+      "slug": "2014-11-12-rpa-and-womenrsquos-club-soccer-come-before-the-executive-board",
+      "date": "2014-11-12",
+      "section": "news",
+      "kicker": null,
+      "title": "RPA and Women’s Club Soccer come before the Executive Board"
+    },
+    {
+      "slug": "2014-12-03-e-board-collects-budgets",
+      "date": "2014-12-03",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "E-Board collects budgets"
+    },
+    {
+      "slug": "2015-01-28-e-board-reviews-club-budget-proposals",
+      "date": "2015-01-28",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "E-Board reviews club budget proposals"
+    },
+    {
+      "slug": "2015-02-04-pu-holds-true-to-promises-of-new-website",
+      "date": "2015-02-04",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "PU holds true to promises of new website"
+    },
+    {
+      "slug": "2015-03-11-e-board-hears-juggling-model-railroad-proposals",
+      "date": "2015-03-11",
+      "section": "news",
+      "kicker": null,
+      "title": "E-Board hears juggling, model railroad proposals"
+    },
+    {
+      "slug": "2015-04-08-pu-says-thank-you-for-term",
+      "date": "2015-04-08",
+      "section": "opinion",
+      "kicker": "DERBY",
+      "title": "PU says thank you for term"
+    },
+    {
+      "slug": "2015-04-16-sudano-withdraws-from-pu-race",
+      "date": "2015-04-16",
+      "section": "news",
+      "kicker": "GM Week 2015",
+      "title": "Sudano withdraws from PU race"
+    },
+    {
+      "slug": "2015-04-22-runoff-election-to-be-held-for-president-of-the-union",
+      "date": "2015-04-22",
+      "section": "opinion",
+      "kicker": "DERBY",
+      "title": "Runoff election to be held for President of the Union"
+    },
+    {
+      "slug": "2015-04-29-dvorak-wins-pu-election",
+      "date": "2015-04-29",
+      "section": "news",
+      "kicker": "STUDENT GOVERNMENT",
+      "title": "Dvorak wins PU election"
+    },
+    {
+      "slug": "2015-05-06-executive-board-applications-due-weekly-events",
+      "date": "2015-05-06",
+      "section": "opinion",
+      "kicker": "DERBY",
+      "title": "Executive Board applications due; weekly events"
+    },
+    {
+      "slug": "2015-05-13-pu-talks-new-e-board-members",
+      "date": "2015-05-13",
+      "section": "opinion",
+      "kicker": "DERBY",
+      "title": "PU talks new E-Board members"
+    },
+    {
+      "slug": "2015-05-13-senate-approves-senate-e-board-appointments",
+      "date": "2015-05-13",
+      "section": "news",
+      "kicker": "SENATE",
+      "title": "Senate approves Senate, E-Board appointments"
+    },
+    {
+      "slug": "2015-05-15-e-board-passes-motion-on-bookstore-in-unpublicized-meeting",
+      "date": "2015-05-15",
+      "section": "news",
+      "kicker": "Rensselaer Union",
+      "title": "BREAKING: E-Board passes motion on Bookstore in unpublicized meeting"
+    },
+    {
+      "slug": "2015-05-22-j-board-rules-executive-board-actions-unconstitutional",
+      "date": "2015-05-22",
+      "section": "news",
+      "kicker": "Rensselaer Union",
+      "title": "J-Board rules Executive Board actions unconstitutional"
+    },
+    {
+      "slug": "2015-09-02-senate-confirms-gm-pu-appointments",
+      "date": "2015-09-02",
+      "section": "news",
+      "kicker": "SENATE",
+      "title": "Senate confirms GM, PU appointments"
+    },
+    {
+      "slug": "2016-02-10-e-board-meeting-closed-due-to-contract",
+      "date": "2016-02-10",
+      "section": "opinion",
+      "kicker": "DERBY",
+      "title": "E-Board meeting closed due to contract"
+    },
+    {
+      "slug": "2016-02-24-uar-approved-by-senate-e-board",
+      "date": "2016-02-24",
+      "section": "news",
+      "kicker": "RENSSELAER UNION",
+      "title": "UAR approved by Senate, E-Board"
+    },
+    {
+      "slug": "2016-03-30-e-board-and-senate-assemble-to-form-unity-between-the-two-student-groups-student-leaders-meet-to-discuss-letter",
+      "date": "2016-03-30",
+      "section": "news",
+      "kicker": "STUDENT GOVERNMENT",
+      "title": "E-Board and Senate assemble to form unity between the two student groups Student leaders meet to discuss letter"
+    },
+    {
+      "slug": "2016-04-13-thanking-the-executive-board-for-a-great-year",
+      "date": "2016-04-13",
+      "section": "opinion",
+      "kicker": "Editorial notebook",
+      "title": "Thanking the Executive Board for a great year"
+    },
+    {
+      "slug": "2016-04-27-taking-advantage-of-the-e-board-experience",
+      "date": "2016-04-27",
+      "section": "opinion",
+      "kicker": "DERBY",
+      "title": "Taking advantage of the E-Board experience"
+    },
+    {
+      "slug": "2016-05-04-ending-the-year-with-a-fresh-set-of-e-board-members",
+      "date": "2016-05-04",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Ending the year with a fresh set of E-Board members"
+    },
+    {
+      "slug": "2016-05-04-new-leaders-voted-in-e-board-bylaws-reviewed",
+      "date": "2016-05-04",
+      "section": "news",
+      "kicker": "STUDENT SENATE",
+      "title": "New leaders voted in, E-Board bylaws reviewed"
+    },
+    {
+      "slug": "2016-09-07-e-board-wants-you",
+      "date": "2016-09-07",
+      "section": "opinion",
+      "kicker": "DERBY",
+      "title": "E-Board wants YOU"
+    },
+    {
+      "slug": "2016-09-21-official-statement-from-pu-on-poster-outrage",
+      "date": "2016-09-21",
+      "section": "opinion",
+      "kicker": "DERBY",
+      "title": "Official statement from PU on poster outrage"
+    },
+    {
+      "slug": "2016-09-21-senate-confirms-e-board-appointments",
+      "date": "2016-09-21",
+      "section": "news",
+      "kicker": "SENATE",
+      "title": "Senate confirms E-Board appointments"
+    },
+    {
+      "slug": "2016-09-28-freshmen-complete-voting-membership-of-e-board",
+      "date": "2016-09-28",
+      "section": "opinion",
+      "kicker": "DERBY",
+      "title": "Freshmen complete voting membership of E-Board"
+    },
+    {
+      "slug": "2016-11-30-e-board-takes-care-of-budgeting",
+      "date": "2016-11-30",
+      "section": "opinion",
+      "kicker": "DERBY",
+      "title": "E-Board takes care of budgeting"
+    },
+    {
+      "slug": "2016-12-07-gm-and-pu-not-told-of-job-posting",
+      "date": "2016-12-07",
+      "section": "opinion",
+      "kicker": "STAFF EDITORIAL",
+      "title": "GM and PU not told of job posting"
+    },
+    {
+      "slug": "2017-04-05-president-of-the-union-commends-board",
+      "date": "2017-04-05",
+      "section": "opinion",
+      "kicker": "DERBY",
+      "title": "President of the Union commends Board"
+    },
+    {
+      "slug": "2017-04-05-rand-ekhalikar-win-pu-primary",
+      "date": "2017-04-05",
+      "section": "news",
+      "kicker": "ELECTIONS",
+      "title": "Rand, Ekhalikar win PU primary"
+    },
+    {
+      "slug": "2017-04-07-etzine-rand-win-gm-pu-races",
+      "date": "2017-04-07",
+      "section": "news",
+      "kicker": "Elections",
+      "title": "Etzine, Rand win GM, PU races"
+    },
+    {
+      "slug": "2017-04-12-president-of-the-union-promotes-student-voice",
+      "date": "2017-04-12",
+      "section": "opinion",
+      "kicker": "DERBY",
+      "title": "President of the Union promotes student voice"
+    },
+    {
+      "slug": "2017-04-19-final-day-to-apply-to-union-executive-board",
+      "date": "2017-04-19",
+      "section": "opinion",
+      "kicker": "DERBY",
+      "title": "Final day to apply to Union Executive Board"
+    },
+    {
+      "slug": "2017-04-26-new-members-of-executive-board-confirmed",
+      "date": "2017-04-26",
+      "section": "news",
+      "kicker": "STUDENT SENATE",
+      "title": "New members of Executive Board confirmed"
+    },
+    {
+      "slug": "2017-09-27-trustees-e-board-approval-of-union-director-not-required",
+      "date": "2017-09-27",
+      "section": "news",
+      "kicker": "Rensselaer Union",
+      "title": "Trustees: E-Board approval of Union director not required"
+    },
+    {
+      "slug": "2017-10-25-e-board-bylaws-unanimously-approved",
+      "date": "2017-10-25",
+      "section": "news",
+      "kicker": "STUDENT SENATE",
+      "title": "E-Board bylaws unanimously approved"
+    },
+    {
+      "slug": "senate-overrides-e-board-policy-on-livestreaming",
+      "date": "2018-02-15",
+      "section": "news",
+      "kicker": "Student Senate",
+      "title": "Senate overrides E-Board policy on livestreaming"
+    },
+    {
+      "slug": "pu-shares-executive-boards-justification-banning-recordings-privacy-comfort",
+      "date": "2018-02-21",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "PU shares Executive Board’s justification for banning recordings: privacy, comfort"
+    },
+    {
+      "slug": "union-e-board-should-prioritize-transparency",
+      "date": "2018-02-21",
+      "section": "opinion",
+      "kicker": "Editor’s Corner",
+      "title": "Union E-Board should prioritize transparency"
+    },
+    {
+      "slug": "warner-etzine-win-gm-pu-races",
+      "date": "2018-04-07",
+      "section": "news",
+      "kicker": "Elections",
+      "title": "Warner, Etzine win GM, PU races"
+    },
+    {
+      "slug": "interested-in-e-board-applications-are-open",
+      "date": "2018-04-11",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Interested in E-Board? Applications are open"
+    },
+    {
+      "slug": "introducing-new-executive-board-members",
+      "date": "2018-04-25",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Introducing new Executive Board members"
+    },
+    {
+      "slug": "jackson-appoints-director-of-the-union-without-e-board-vote",
+      "date": "2018-08-17",
+      "section": "news",
+      "kicker": "Rensselaer Union",
+      "title": "Jackson appoints Union director without E-Board vote"
+    },
+    {
+      "slug": "my-responsibilities-as-president-of-the-union",
+      "date": "2019-01-23",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "My responsibilities as President of the Union"
+    },
+    {
+      "slug": "lettko-kennedy-win-gm-pu-races",
+      "date": "2019-03-29",
+      "section": "news",
+      "kicker": "Elections",
+      "title": "Lettko, Kennedy win GM, PU races"
+    },
+    {
+      "slug": "a-breakdown-of-e-board-committees",
+      "date": "2019-04-03",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "A breakdown of E-Board committees"
+    },
+    {
+      "slug": "e-board-appointments-approved",
+      "date": "2019-05-07",
+      "section": "news",
+      "kicker": "Student Senate",
+      "title": "E-Board appointments approved"
+    },
+    {
+      "slug": "the-role-of-an-executive-board-representative",
+      "date": "2020-01-28",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "The role of an Executive Board representative"
+    },
+    {
+      "slug": "pu-prepare-for-the-possibility-of-canceled-events",
+      "date": "2020-03-06",
+      "section": "news",
+      "kicker": "Campus Health",
+      "title": "PU: “prepare for the possibility” of canceled events"
+    },
+    {
+      "slug": "narayan-and-choiniere-win-gm-pu-races",
+      "date": "2020-05-03",
+      "section": "news",
+      "kicker": "Elections",
+      "title": "Narayan and Choiniere win GM, PU races"
+    },
+    {
+      "slug": "bennett-mahmoud-elected-as-gm-pu",
+      "date": "2021-03-28",
+      "section": "news",
+      "kicker": "Elections",
+      "title": "Bennett, Mahmoud, elected as GM, PU"
+    },
+    {
+      "slug": "riaz-rao-appointed-union-annual-report-chairperson-executive-board-liaison",
+      "date": "2021-11-10",
+      "section": "news",
+      "kicker": "Student Senate",
+      "title": "Riaz Rao appointed Union Annual Report chairperson, Executive Board liaison"
+    },
+    {
+      "slug": "e-board-meeting-canceled",
+      "date": "2022-02-22",
+      "section": "news",
+      "kicker": "News",
+      "title": "E-Board meeting canceled"
+    },
+    {
+      "slug": "executive-board-and-student-senate-officers-approved",
+      "date": "2022-05-02",
+      "section": "news",
+      "kicker": "Student Senate",
+      "title": "Executive Board and Student Senate officers approved"
+    },
+    {
+      "slug": "special-greetings-from-the-president-of-the-union",
+      "date": "2022-08-30",
+      "section": "opinion",
+      "kicker": "Derby",
+      "title": "Warm welcomes from the president of the Union"
+    },
+    {
+      "slug": "senate-delays-appointment-of-two-new-executive-board-representatives",
+      "date": "2023-01-31",
+      "section": "news",
+      "kicker": "Student Senate",
+      "title": "Senate delays appointment of two new Executive Board representatives"
+    },
+    {
+      "slug": "gm-week-2023-results",
+      "date": "2023-03-24",
+      "section": "news",
+      "kicker": "GM Week 2023",
+      "title": "GM Week election results: Viner, Gallagher elected GM, PU, Massoni reelected UP"
+    },
+    {
+      "slug": "senate-approves-executive-board-judicial-board-appointments",
+      "date": "2023-04-25",
+      "section": "news",
+      "kicker": "Student Senate",
+      "title": "Senate approves Executive Board, Judicial Board appointments"
+    },
+    {
+      "slug": "senate-fails-reconsiders-and-tables-the-motion-to-confirm-new-pu",
+      "date": "2024-02-06",
+      "section": "news",
+      "kicker": "Student Senate",
+      "title": "Senate fails, reconsiders, and tables the motion to confirm new PU"
+    },
+    {
+      "slug": "senate-approves-catherine-philipps-as-135th-president-of-the-union",
+      "date": "2024-02-06",
+      "section": "news",
+      "kicker": "Student Senate",
+      "title": "Senate approves Catherine Philipps '24 as 135th President of the Union"
+    },
+    {
+      "slug": "senate-approves-union-constitution-changes-to-gm-and-pu-elections",
+      "date": "2024-02-13",
+      "section": "news",
+      "kicker": "Student Senate",
+      "title": "Senate approves Union constitution changes to GM and PU elections"
+    },
+    {
+      "slug": "gm-week-2024-election-results",
+      "date": "2024-03-22",
+      "section": "news",
+      "kicker": "GM Week 2024",
+      "title": "GM Week preliminary election results: Philipps, Khoury elected PU, UP, runoff election to be held for GM"
+    },
+    {
+      "slug": "conflict-among-senators-puts-executive-board-operations-in-jeopardy",
+      "date": "2024-04-23",
+      "section": "news",
+      "kicker": "Student Senate",
+      "title": "Conflict among Senators puts Executive Board operations in jeopardy"
+    },
+    {
+      "slug": "primaries-for-gm-and-pu-to-be-held-for-the-first-time-in-15-years",
+      "date": "2025-03-12",
+      "section": "news",
+      "kicker": "GM Week 2025",
+      "title": "Primaries for GM and PU to be held for the first time in 15 years"
+    },
+    {
+      "slug": "primary-results-benavides-guo-advance-for-gm-lieber-mcdonald-advance-for-pu",
+      "date": "2025-03-17",
+      "section": "news",
+      "kicker": "GM Week 2025",
+      "title": "Primary results: Benavides, Guo advance for GM while Lieber, McDonald advance for PU"
+    },
+    {
+      "slug": "gm-week-2025-final-results",
+      "date": "2025-03-21",
+      "section": "news",
+      "kicker": "GM Week 2025",
+      "title": "Benavides elected GM, Lieber elected PU"
+    },
+    {
+      "slug": "senate-eboard-members-clash-with-j-board",
+      "date": "2025-11-05",
+      "section": "news",
+      "kicker": "Student Senate",
+      "title": "Senate, E-Board members clash with J-Board over RUGP case"
+    },
+    {
+      "slug": "gm-week-2026-election-results",
+      "date": "2026-03-27",
+      "section": "news",
+      "kicker": "GM Week 2026",
+      "title": "Krishnayah elected GM, Goldstein elected PU"
+    },
+    {
+      "slug": "senate-fails-to-fully-rectify-the-unconstitutional-uar-freshman-representatives-approved-to-e-board",
+      "date": "2026-09-23",
+      "section": "news",
+      "kicker": "Student Senate",
+      "title": "Senate fails to fully rectify the unconstitutional UAR, freshman representatives confirmed to E-Board"
+    }
+  ],
+  "excluded": [
+    {
+      "body": "senate",
+      "title": "PSS: big senate scoop",
+      "date": "2012-04-04",
+      "reason": "\"PSS\" item: left out by editorial decision"
+    },
+    {
+      "body": "senate",
+      "title": "Stack: UAR approved by Senate",
+      "date": "2013-02-20",
+      "reason": "the President of the Union's column (Derby)"
+    },
+    {
+      "body": "senate",
+      "title": "PSS: dinner with the senate",
+      "date": "2013-02-27",
+      "reason": "\"PSS\" item: left out by editorial decision"
+    },
+    {
+      "body": "senate",
+      "title": "PU obliterates Senate in tell-all student address",
+      "date": "2014-04-01",
+      "reason": "April Fools issue"
+    },
+    {
+      "body": "senate",
+      "title": "Putin gives advice, explains plan during Senate",
+      "date": "2014-04-01",
+      "reason": "April Fools issue"
+    },
+    {
+      "body": "senate",
+      "title": "Republicans win majority in Senate",
+      "date": "2014-11-12",
+      "reason": "US Senate"
+    },
+    {
+      "body": "senate",
+      "title": "Club food policy revisited, revised again Senate petition website prototype presented",
+      "date": "2014-11-19",
+      "reason": "the President of the Union's column (Derby)"
+    },
+    {
+      "body": "senate",
+      "title": "Faculty Senate addresses newfound concerns",
+      "date": "2016-09-21",
+      "reason": "Faculty Senate"
+    },
+    {
+      "body": "senate",
+      "title": "Faculty Senate issues response",
+      "date": "2018-02-07",
+      "reason": "Faculty Senate"
+    },
+    {
+      "body": "senate",
+      "title": "Subsidy requests approved for Business Operations Committee, Student Senate, The Polytechnic, RPI Flying Club",
+      "date": "2022-02-16",
+      "reason": "E-Board funding vote; stays on the E-Board timeline"
+    },
+    {
+      "body": "senate",
+      "title": "Subsidies reallocated for Union Show Techs and Student Senate",
+      "date": "2022-03-01",
+      "reason": "E-Board funding vote; stays on the E-Board timeline"
+    },
+    {
+      "body": "senate",
+      "title": "Senate, CSSA, DDR, CSA get funding approved",
+      "date": "2022-12-06",
+      "reason": "E-Board funding vote; stays on the E-Board timeline"
+    },
+    {
+      "body": "senate",
+      "title": "Senate receives funding for new shuttle tracker technology",
+      "date": "2022-12-13",
+      "reason": "E-Board funding vote; stays on the E-Board timeline"
+    },
+    {
+      "body": "eboard",
+      "title": "Last Senate meeting covers E-Board, Student Handbook",
+      "date": "2012-05-09",
+      "reason": "a Senate meeting story; on the Senate timeline"
+    },
+    {
+      "body": "eboard",
+      "title": "GM, PU debates moved to reddit",
+      "date": "2013-04-17",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "PU describes events occurring on campus",
+      "date": "2013-04-24",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "PU discusses Union Fall Activities Fair",
+      "date": "2013-08-28",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "PU discusses Union Fall Activities Fair",
+      "date": "2013-09-04",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "PU: Dress up for Halloween, carve a pumpkin",
+      "date": "2013-10-30",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "PU talks Big Red Freakout, proactive school spirit",
+      "date": "2014-02-05",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "PU recaps weekend events",
+      "date": "2014-02-12",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "PU overviews Winter Carnival, hockey game",
+      "date": "2014-02-19",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "PU updates on events, hockey, the Union, and break",
+      "date": "2014-03-05",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "PU on variety of issues from elections to meetings",
+      "date": "2014-03-26",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "PU obliterates Senate in tell-all student address",
+      "date": "2014-04-01",
+      "reason": "humour (April Fools issue, joke column or beer review)"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union Q&A",
+      "date": "2014-04-07",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union: Frank Abissi",
+      "date": "2014-04-07",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "Graduate Council endorse Keraga, Abissi for GM, PU",
+      "date": "2014-04-09",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "GM, PU candidates duke it out",
+      "date": "2014-04-09",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "PU pushes campus activities",
+      "date": "2014-07-07",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "PU covers RPI athletics, upcoming events, NRB",
+      "date": "2015-03-11",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "PU talks Pi Day, men’s hockey, and Relay for Life",
+      "date": "2015-03-18",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union: Gregory Bartell and Andrew Sudano",
+      "date": "2015-04-14",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union",
+      "date": "2015-04-14",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "Graduate Council endorses Sudano for PU",
+      "date": "2015-04-15",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "PU discusses showing of American Sniper",
+      "date": "2015-04-15",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "PU’s brew states its case",
+      "date": "2015-10-14",
+      "reason": "humour (April Fools issue, joke column or beer review)"
+    },
+    {
+      "body": "eboard",
+      "title": "PU announces intent to become meanest",
+      "date": "2015-12-09",
+      "reason": "humour (April Fools issue, joke column or beer review)"
+    },
+    {
+      "body": "eboard",
+      "title": "Engineers win first home playoff game; PU stresses voting",
+      "date": "2016-03-09",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "Campaign for GM, PU launches",
+      "date": "2016-04-06",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union: Chip Kirchner",
+      "date": "2016-04-11",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "GM Week 2016 GM/PU Debate",
+      "date": "2016-04-13",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union candidate profiles",
+      "date": "2017-04-03",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union: Rasika Ekhalikar",
+      "date": "2017-04-03",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "PU provides insight into his freshman experience",
+      "date": "2017-07-17",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "Advice worthy of you and PU’s little brother",
+      "date": "2017-09-06",
+      "reason": "the President of the Union's column on campus life, not the E-Board"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union candidate profiles",
+      "date": "2018-04-02",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union: Justin Etzine",
+      "date": "2018-04-02",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union candidate profile",
+      "date": "2019-03-26",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "Family weekend closes with GM–PU brunch",
+      "date": "2019-10-27",
+      "reason": "a campus event"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union candidate profile",
+      "date": "2020-04-14",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union: Anissa Choiniere",
+      "date": "2020-04-27",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union candidate profile",
+      "date": "2021-03-17",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union: Yaseen Mahmoud",
+      "date": "2021-03-22",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union candidate profile: Colleen Corrigan",
+      "date": "2022-03-21",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "PU Mahmoud endorses Gramenides, Corrigan",
+      "date": "2022-03-21",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "Colleen Corrigan for President of the Union",
+      "date": "2022-03-22",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "Ava Gallagher for President of the Union",
+      "date": "2023-03-19",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "President of the Union candidate profile",
+      "date": "2023-03-20",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "Catherine Philipps for President of the Union",
+      "date": "2024-03-17",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "Panhellenic Council endorses Rost-Nasshan, Philipps for GM, PU",
+      "date": "2024-03-20",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "PU Candidate profile: Joseph Bowers",
+      "date": "2025-03-13",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "PU Candidate Profile: Gavin Finn",
+      "date": "2025-03-13",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "PU Candidate Profile: Isabele Lieber",
+      "date": "2025-03-13",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "PU Candidate Profile: Toby McDonald",
+      "date": "2025-03-13",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "GM and PU candidates make their case in primary debate",
+      "date": "2025-03-16",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "The Polytechnic will not endorse a candidate for President of the Union",
+      "date": "2025-03-19",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "PU Candidate Profile: Kate Goldstein",
+      "date": "2026-03-17",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    },
+    {
+      "body": "eboard",
+      "title": "Kate Goldstein for President of the Union",
+      "date": "2026-03-18",
+      "reason": "campaign coverage (candidate profile, endorsement or debate)"
+    }
+  ]
+}

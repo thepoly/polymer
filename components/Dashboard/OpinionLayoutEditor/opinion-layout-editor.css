@@ -255,24 +255,12 @@
   font-weight: 500;
 }
 
-/* ---- CTA Block (fixed, non-draggable) ---- */
-.ole-cta-block {
-  background: var(--theme-elevation-100, #1a1a1a);
-  border: 1px solid var(--theme-elevation-200, #2a2a2a);
-  border-radius: 8px;
-  padding: 14px;
-  position: relative;
-}
-.ole-cta-text {
+/* ---- Guest writer photo slot ---- */
+.ole-pitch-note {
   font-size: 0.72rem;
-  opacity: 0.35;
-  margin: 0;
-  text-align: center;
-  line-height: 1.4;
-}
-.ole-cta-link {
-  text-decoration: underline;
-  cursor: default;
+  line-height: 1.45;
+  opacity: 0.65;
+  margin: 6px 0 0;
 }
 
 /* ---- Editor's Choice section ---- */
@@ -292,6 +280,27 @@
   letter-spacing: 0.06em;
   color: #C41E3A;
   padding: 4px 0;
+}
+.ole-ec-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ole-ec-style {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--theme-elevation-600, #999);
+}
+.ole-ec-style select {
+  font: inherit;
+  color: var(--theme-text, inherit);
+  background: var(--theme-elevation-50, transparent);
+  border: 1px solid var(--theme-elevation-200, #444);
+  border-radius: 4px;
+  padding: 2px 4px;
 }
 .ole-ec-section .ole-slot {
   border-color: rgba(196, 30, 58, 0.25);
@@ -655,4 +664,22 @@
 }
 .ole-add-slot-btn:hover {
   opacity: 0.7;
+}
+
+/* ---- The default's pick for an automatic slot, and a lapsed pin ---- */
+.ole-slot-auto {
+  margin: 6px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  opacity: 0.7;
+  text-align: center;
+}
+.ole-slot-expired {
+  margin: 6px 0 0;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  background: rgba(214, 0, 28, 0.08);
+  color: #b00018;
 }

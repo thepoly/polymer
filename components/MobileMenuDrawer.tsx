@@ -1,15 +1,18 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useId, useSyncExternalStore, type RefObject } from 'react';
+import { createPortal } from 'react-dom';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { Moon, Sun } from 'lucide-react';
-import { SearchOverlayTrigger } from '@/components/SearchOverlay';
+import { ArrowRight, ChevronRight, Moon, X } from 'lucide-react';
+import UnderlinedSearchForm from '@/components/UnderlinedSearchForm';
+import DrawerLatestArticles from '@/components/DrawerLatestArticles';
 
 export const primaryNavItems = [
-  { label: 'News', href: '/news' },
-  { label: 'Features', href: '/features' },
-  { label: 'Opinion', href: '/opinion' },
-  { label: 'Sports', href: '/sports' },
+  { label: 'News', href: '/news', description: 'Campus, Student Senate, Troy' },
+  { label: 'Features', href: '/features', description: 'Profiles, arts, campus life' },
+  { label: 'Opinion', href: '/opinion', description: 'Editorials, columns, letters' },
+  { label: 'Sports', href: '/sports', description: 'Engineers scores and recaps' },
 ];
 
 export const secondaryNavItems = [
@@ -17,13 +20,17 @@ export const secondaryNavItems = [
   { label: 'Archives', href: '/archive' },
   { label: 'Staff', href: '/staff' },
   { label: 'Contact', href: '/contact' },
-  { label: 'Submit', href: 'mailto:edop@poly.rpi.edu?subject=Submitting%20Edop%3A%20%22%5BARTICLE%20TITLE%20HERE%5D%22&body=Thank%20you%20for%20submitting%20an%20Editorial%2FOpinion%20article%20to%20%F0%9D%98%9B%F0%9D%98%A9%F0%9D%98%A6%20%F0%9D%98%97%F0%9D%98%B0%F0%9D%98%AD%F0%9D%98%BA%F0%9D%98%B5%F0%9D%98%A6%F0%9D%98%A4%F0%9D%98%A9%F0%9D%98%AF%F0%9D%98%AA%F0%9D%98%A4%21%20Please%20replace%20%5BARTICLE%20TITLE%20HERE%5D%20in%20the%20subject%20line%20with%20the%20title%20of%20your%20article%2C%20and%20sign%20this%20email%20with%20your%20name.%20Attach%20your%20article%20as%20a%20PDF.%20Thanks%21%0A%0A%F0%9D%98%9B%F0%9D%98%A9%F0%9D%98%A6%20%F0%9D%98%97%F0%9D%98%B0%F0%9D%98%AD%F0%9D%98%BA%F0%9D%98%B5%F0%9D%98%A6%F0%9D%98%A4%F0%9D%98%A9%F0%9D%98%AF%F0%9D%98%AA%F0%9D%98%A4' },
+  { label: 'Submit', href: '/get-involved' },
 ];
 
-export const DRAWER_WIDTH = 0.78;
+export const DRAWER_WIDTH = 0.86;
 export const DRAWER_TRANSITION_MS = 220;
 const SWIPE_THRESHOLD = 36;
 const DRAG_START_THRESHOLD = 6;
+const focusStyle = 'focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2';
+const subscribeToHydration = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 export function isExternalHref(href: string) {
   return /^(?:[a-z]+:)?\/\//i.test(href);
@@ -38,7 +45,12 @@ export function MobileMenuDrawer({
   onThemeToggle,
   onSearchOpen,
   className,
+  id,
+  swipeToOpen = true,
+  returnFocusRef,
 }: {
+  /** For the menu button's aria-controls */
+  id?: string;
   isOpen: boolean;
   onClose: () => void;
   onOpen: () => void;
@@ -47,7 +59,15 @@ export function MobileMenuDrawer({
   onThemeToggle: () => void;
   onSearchOpen: () => void;
   className?: string;
+  /** A secondary trigger can share this drawer without adding another global open gesture. */
+  swipeToOpen?: boolean;
+  returnFocusRef?: RefObject<HTMLButtonElement | null>;
 }) {
+  const hydrated = useSyncExternalStore(subscribeToHydration, getClientSnapshot, getServerSnapshot);
+  const pathname = usePathname() || '';
+  const activeSectionHref = primaryNavItems.find(item => pathname === item.href || pathname.startsWith(`${item.href}/`))?.href;
+  const generatedId = useId();
+  const panelId = id || generatedId;
   const [dragX, setDragX] = useState<number | null>(null);
   const dragXRef = useRef<number | null>(null);
   const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
@@ -55,10 +75,31 @@ export function MobileMenuDrawer({
   const gestureModeRef = useRef<'open' | 'close' | null>(null);
   const isDraggingRef = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const sourceRef = useRef<HTMLSpanElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const skipFocusReturnRef = useRef(false);
+  const callbacksRef = useRef({ onClose, onSearchOpen });
+
+  useEffect(() => {
+    callbacksRef.current = { onClose, onSearchOpen };
+  }, [onClose, onSearchOpen]);
+
+  // Portals retain React context, but CSS variables scoped to an article's
+  // Follytechnic wrapper need to be carried from the original mount point.
+  useEffect(() => {
+    if (!hydrated || !sourceRef.current || !rootRef.current) return;
+    const source = getComputedStyle(sourceRef.current);
+    for (const property of ['--font-copy', '--font-meta', '--font-ui', '--font-display-news']) {
+      rootRef.current.style.setProperty(property, source.getPropertyValue(property));
+    }
+  }, [hydrated, pathname, isOpen]);
 
   const getDrawerPx = useCallback(() => {
     if (typeof window === 'undefined') return 300;
-    return Math.min(window.innerWidth * DRAWER_WIDTH, 320);
+    return window.matchMedia('(min-width: 768px)').matches
+      ? 380
+      : Math.min(window.innerWidth * DRAWER_WIDTH, 360);
   }, []);
 
   const resetGesture = useCallback(() => {
@@ -86,6 +127,10 @@ export function MobileMenuDrawer({
     };
 
     const onTouchStart = (e: TouchEvent) => {
+      // Photofeature articles can also mount a hero drawer. Only the open
+      // drawer should handle a gesture when another trigger is in use.
+      if (!isOpen && (!swipeToOpen || document.querySelector('[data-mobile-menu-open]'))) return;
+      if (!rootRef.current || getComputedStyle(rootRef.current).display === 'none') return;
       const touch = e.touches[0];
       activeTouchIdRef.current = touch.identifier;
       touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() };
@@ -171,99 +216,221 @@ export function MobileMenuDrawer({
       window.removeEventListener('blur', forceCloseTransientState);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [commitDrag, getDrawerPx, isOpen, onClose, onOpen, resetGesture]);
+  }, [commitDrag, getDrawerPx, isOpen, onClose, onOpen, resetGesture, swipeToOpen]);
 
   useEffect(() => {
     if (isOpen || dragX !== null) {
+      const previousOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
-      return () => { document.body.style.overflow = ''; };
+      return () => { document.body.style.overflow = previousOverflow; };
     }
   }, [dragX, isOpen]);
+
+  useEffect(() => {
+    if (!hydrated || !isOpen || !rootRef.current || !panelRef.current) return;
+    const root = rootRef.current;
+    const panel = panelRef.current;
+    const returnTarget = returnFocusRef?.current || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    skipFocusReturnRef.current = false;
+    panel.scrollTop = 0;
+
+    const previousInert = new Map<Element, boolean>();
+    const isolatePage = () => {
+      for (const sibling of Array.from(document.body.children)) {
+        if (sibling === root || previousInert.has(sibling)) continue;
+        previousInert.set(sibling, sibling.hasAttribute('inert'));
+        sibling.setAttribute('inert', '');
+      }
+    };
+    isolatePage();
+    const observer = new MutationObserver(isolatePage);
+    observer.observe(document.body, { childList: true });
+
+    const focusable = () => Array.from(panel.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), [tabindex]'))
+      .filter(element => element.tabIndex >= 0 && element.getClientRects().length > 0 && !element.closest('[inert]'));
+    const timer = window.setTimeout(() => {
+      if (!panel.contains(document.activeElement)) closeRef.current?.focus();
+    },
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : DRAWER_TRANSITION_MS);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        callbacksRef.current.onClose();
+      } else if (event.code === 'Space' && (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey) {
+        event.preventDefault();
+        event.stopPropagation();
+        skipFocusReturnRef.current = true;
+        callbacksRef.current.onClose();
+        callbacksRef.current.onSearchOpen();
+      } else if (event.key === 'Tab') {
+        const elements = focusable();
+        const first = elements[0];
+        const last = elements[elements.length - 1];
+        if (!first || !last) return;
+        if (event.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+          event.preventDefault(); last.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+          event.preventDefault(); first.focus();
+        }
+      }
+    };
+    const onFocusIn = (event: FocusEvent) => {
+      if (!panel.contains(event.target as Node)) closeRef.current?.focus();
+    };
+    document.addEventListener('keydown', onKeyDown, true);
+    document.addEventListener('focusin', onFocusIn);
+    return () => {
+      window.clearTimeout(timer);
+      observer.disconnect();
+      document.removeEventListener('keydown', onKeyDown, true);
+      document.removeEventListener('focusin', onFocusIn);
+      for (const [element, wasInert] of previousInert) {
+        if (!wasInert) element.removeAttribute('inert');
+      }
+      if (!skipFocusReturnRef.current && returnTarget?.isConnected && returnTarget.getClientRects().length > 0) {
+        returnTarget.focus();
+      }
+    };
+  }, [hydrated, isOpen, returnFocusRef]);
+
+  useEffect(() => {
+    const onResize = () => {
+      resetGesture();
+      if (isOpen && rootRef.current && getComputedStyle(rootRef.current).display === 'none') callbacksRef.current.onClose();
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [isOpen, resetGesture]);
 
   const showDrawer = isOpen || dragX !== null;
   const drawerPx = dragX !== null ? getDrawerPx() : null;
   const translateX = dragX !== null && drawerPx !== null ? `${dragX - drawerPx}px` : isOpen ? '0px' : 'calc(-100% - 12px)';
   const progress = dragX !== null && drawerPx !== null ? dragX / drawerPx : isOpen ? 1 : 0;
 
-  return (
-    <div className={`fixed inset-0 z-[60] ${className ?? 'lg:hidden'} ${showDrawer ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+  const followLink = (event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0) {
+      skipFocusReturnRef.current = true;
+      onClose();
+    }
+    handleLinkClick(event, href);
+  };
+
+  const drawer = (
+    <div ref={rootRef} data-mobile-menu-open={showDrawer ? '' : undefined} className={`fixed inset-0 z-[60] ${className ?? 'lg:hidden'} ${showDrawer ? 'pointer-events-auto' : 'pointer-events-none'}`}>
+      {/* The page snapshots supply blur during theme transitions; the open
+          panel has its own sharp layer. Other article triggers stay unnamed.
+          Blur resumes immediately afterward; only the dimming fades. */}
       <div
-        className="absolute inset-0"
+        data-mobile-menu-backdrop=""
+        aria-hidden="true"
+        className="absolute inset-0 transition-colors duration-[220ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none"
         style={{
           backgroundColor: `rgba(0,0,0,${0.4 * progress})`,
           backdropFilter: progress > 0 ? `blur(${Math.min(4, 4 * progress)}px)` : 'none',
+          transition: dragX !== null ? 'none' : undefined,
         }}
         onClick={onClose}
       />
 
+      {/* Off screen while closed: inert, so its links aren't tabbed to or
+          read out until it opens */}
       <div
         ref={panelRef}
-        className={`absolute top-0 left-0 bottom-0 bg-bg-main will-change-transform ${showDrawer ? 'shadow-2xl' : 'shadow-none'}`}
+        id={panelId}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Site menu"
+        aria-hidden={!isOpen}
+        inert={!isOpen}
+        className={`absolute top-0 left-0 bottom-0 flex w-[86vw] max-w-[360px] flex-col overflow-y-auto overscroll-contain bg-bg-main will-change-transform md:w-[380px] md:max-w-[380px] transition-transform duration-[220ms] ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none ${showDrawer ? 'shadow-[0_0_0_1px_var(--rule-color),12px_0_40px_rgba(0,0,0,0.18)]' : ''}`}
         style={{
-          width: `${DRAWER_WIDTH * 100}vw`,
-          maxWidth: '320px',
           transform: `translate3d(${translateX}, 0, 0)`,
-          transition: dragX !== null ? 'none' : `transform ${DRAWER_TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+          viewTransitionName: isOpen ? 'drawer-panel' : undefined,
+          transition: dragX !== null ? 'none' : undefined,
         }}
       >
-        <div className="safe-area-mobile-drawer flex h-full flex-col overflow-hidden">
-          <div className="flex min-h-0 flex-1 flex-col justify-evenly">
-            <nav className="flex flex-col gap-0">
+        <div className="safe-area-mobile-drawer-top flex shrink-0 items-center justify-between">
+          <button ref={closeRef} type="button" onClick={onClose} aria-label="Close menu" className={`flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center text-text-main ${focusStyle}`}>
+            <X aria-hidden="true" className="h-5 w-5" strokeWidth={2} />
+          </button>
+          <span className="font-meta text-[10px] font-semibold uppercase tracking-[0.14em] text-text-muted">The Polytechnic</span>
+        </div>
+        <div className="safe-area-mobile-drawer-content flex shrink-0 flex-col gap-[22px] pt-2">
+            <nav aria-label="Sections">
+              <div className="mb-1.5 flex items-center gap-3 font-meta text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
+                Sections<span aria-hidden="true" className="h-px flex-1 bg-rule" />
+              </div>
               {primaryNavItems.map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
-                  onClick={(e) => handleLinkClick(e, item.href)}
-                  className="font-meta text-[28px] font-bold leading-[1.02] uppercase tracking-[0.04em] text-text-main transition-colors hover:text-accent py-1"
+                  onClick={(e) => followLink(e, item.href)}
+                  aria-current={activeSectionHref === item.href ? 'page' : undefined}
+                  className={`group relative flex min-h-[72px] items-center justify-between gap-3 border-b border-rule py-3 pr-1 text-text-main last:border-b-0 ${focusStyle}`}
                 >
-                  {item.label}
+                  <span>
+                    <span className={`block font-copy text-[27px] leading-none group-hover:text-accent ${activeSectionHref === item.href ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
+                    <span className="mt-[5px] block font-meta text-[12px] font-medium leading-[1.3] text-text-muted">{item.description}</span>
+                  </span>
+                  {activeSectionHref === item.href ? (
+                    <span aria-hidden="true" className="absolute inset-y-2.5 w-[3px] bg-accent" style={{ left: 'calc(-18px - var(--safe-area-left))' }} />
+                  ) : <ChevronRight aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-text-muted opacity-50" />}
                 </Link>
               ))}
             </nav>
-
-            <div className="border-t border-rule pt-4 flex flex-col gap-2">
-              {secondaryNavItems.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  onClick={(e) => handleLinkClick(e, item.href)}
-                  target={isExternalHref(item.href) ? '_blank' : undefined}
-                  rel={isExternalHref(item.href) ? 'noopener noreferrer' : undefined}
-                  className="font-meta text-[14px] font-medium tracking-[0.04em] text-text-muted transition-colors hover:text-accent"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-
-            <div className="border-t border-rule pt-4 flex items-center gap-4">
-              <button
-                onClick={onThemeToggle}
-                className={`flex items-center gap-2 font-meta text-[14px] font-medium transition-colors ${
-                  isDarkMode
-                    ? 'cursor-pointer text-text-muted hover:text-white'
-                    : 'cursor-pointer text-text-muted hover:text-black'
-                }`}
-              >
-                {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                {isDarkMode ? 'Light mode' : 'Dark mode'}
-              </button>
-            </div>
-
-            <div className="border-t border-rule pt-4">
-              <p className="font-meta text-[14px] leading-[1.35] text-text-muted">
-                Or{' '}
-                <SearchOverlayTrigger
-                  onClick={onSearchOpen}
-                  className="inline-flex px-4 align-middle"
-                  alwaysShowBorder
-                />{' '}
-                our archives.
-              </p>
-            </div>
-          </div>
+            <UnderlinedSearchForm
+              label="Search past issues"
+              onSubmit={() => { skipFocusReturnRef.current = true; onClose(); }}
+            />
+            <nav aria-label="About the paper">
+              <div className="mb-4 flex items-center gap-3 font-meta text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
+                The paper<span aria-hidden="true" className="h-px flex-1 bg-rule" />
+              </div>
+              <Link href="/get-involved" onClick={event => followLink(event, '/get-involved')} className={`group block border-b border-rule pb-4 ${focusStyle}`}>
+                <span className="flex items-center justify-between gap-3">
+                  <span className="font-copy text-[28px] font-semibold leading-[1.15] text-text-main group-hover:text-accent">Get involved</span>
+                  <ArrowRight aria-hidden="true" className="h-5 w-5 shrink-0 text-accent transition-transform group-hover:translate-x-[3px] motion-reduce:transition-none" />
+                </span>
+                <span className="mt-2 block font-meta text-[15px] font-medium leading-[1.4] text-text-muted">Join the staff, submit an op-ed, or send a tip.</span>
+              </Link>
+              <ul className="mt-2 flex items-center justify-between gap-1 font-meta text-[clamp(10px,3vw,13px)] font-semibold uppercase tracking-[0.06em]">
+                {secondaryNavItems.filter(item => item.label !== 'Submit').map((item, index) => (
+                  <li key={item.label} className="flex items-center gap-1.5">
+                    {index > 0 && <span aria-hidden="true" className="text-text-muted">·</span>}
+                    <Link
+                      href={item.href}
+                      onClick={(e) => followLink(e, item.href)}
+                      target={isExternalHref(item.href) ? '_blank' : undefined}
+                      rel={isExternalHref(item.href) ? 'noopener noreferrer' : undefined}
+                      className={`flex min-h-11 items-center whitespace-nowrap text-text-main hover:text-accent ${focusStyle}`}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+        </div>
+        <div className="safe-area-mobile-drawer-footer mt-auto flex shrink-0 flex-col gap-3.5 pt-[22px]">
+          <DrawerLatestArticles isOpen={isOpen} onLinkClick={followLink} />
+          <button
+            type="button"
+            role="switch"
+            aria-label="Dark mode"
+            aria-checked={isDarkMode}
+            onClick={onThemeToggle}
+            className={`flex min-h-12 w-full cursor-pointer items-center justify-between gap-3 border-y border-rule font-meta text-[13px] font-semibold uppercase tracking-[0.06em] text-text-main ${focusStyle}`}
+          >
+            <span className="flex items-center gap-2"><Moon aria-hidden="true" className="h-4 w-4" />Dark mode</span>
+            <span aria-hidden="true" className={`relative h-6 w-10 rounded-full border ${isDarkMode ? 'border-accent bg-accent' : 'border-rule-strong'}`}>
+              <span className={`absolute left-[3px] top-[3px] h-4 w-4 rounded-full transition-transform motion-reduce:transition-none ${isDarkMode ? 'translate-x-4 bg-bg-main' : 'bg-text-main'}`} />
+            </span>
+          </button>
+          <p className="font-copy text-[14px] italic leading-[1.35] text-text-muted">The student newspaper of Rensselaer Polytechnic Institute since 1885.</p>
         </div>
       </div>
     </div>
   );
+
+  return <><span ref={sourceRef} hidden />{hydrated ? createPortal(drawer, document.body) : null}</>;
 }
