@@ -9,10 +9,11 @@ Opinion Layout and adds the header and footer). Top to bottom:
 | Part | What it shows |
 | --- | --- |
 | Heading | Screen-reader-only "Opinion" `<h1>`; the header's section nav marks the page, as on News and Features |
-| The columns | Computers: three columns with thin rules between them. Three story slots per column (`OPINION_COLUMN_SLOTS`; editors can add more). Column 1: the lead (with its photo), the guest-writer box, two more. Column 2: two stories, the author spotlight carousel, the third (with its photo). Column 3: Opinion’s Choice (three numbered picks), then its three stories (the last with its photo). Column 3 must always show a photo: at least one of its slots has IMG on (the editor won't switch off the last one, `validateOpinionLayout` rejects a layout without one, and a layout read without one gets its last slot's switched on), and Activate is refused if its only IMG slots are pinned to stories without a featured image. Automatic slots follow the default order below. Every slot is pinned in the Opinion Layout editor or filled by the default order below; each slot's photo is switched on or off there. Tablets (768–1023px): the same stories in phone order, in two columns that fill top to bottom (so photos leave no gaps), with the guest-writer box beside Opinion’s Choice. Phones: one column, photos edge to edge |
+| The columns | Computers: three equal columns, 48px apart with a thin rule down the middle of each gap, on the same grid as the groups below (`OPINION_GRID`, `RULE_AFTER`), so every column is the same width and the rules line up from top to bottom. Two story slots per column (`OPINION_COLUMN_SLOTS`; editors can add more; three until 2026-11-27, when the author spotlight began showing each columnist's latest piece). Column 1: the lead (with its photo), one more, then the guest-writer box. Column 2: a story, the author spotlight carousel, a second (with its photo). Column 3: its two stories (the second with its photo), then Opinion’s Choice closing the column (three picks, `components/Opinion/EditorsChoice.tsx`; each is its headline and byline, unnumbered since the picks are equal, and undated). How it's set off is the editors' choice in the Opinion Layout editor (`editorsChoiceStyle` in the layout JSON): a 1px frame with the label set into its top edge (`keyline`, the default), the label over a 2px rule as the group titles are (`rule`), or a red label and a vertical rule down the left of the picks (`margin`). Nothing above it in the column is a rule, so it never stacks under the header's. Column 3 must always show a photo: at least one of its slots has IMG on (the editor won't switch off the last one, `validateOpinionLayout` rejects a layout without one, and a layout read without one gets its last slot's switched on), and Activate is refused if its only IMG slots are pinned to stories without a featured image. Automatic slots follow the default order below. Every slot is pinned in the Opinion Layout editor or filled by the default order below; each slot's photo is switched on or off there. Tablets (768–1023px): two columns and no author spotlight (2026-11-28). The same stories, the guest-writer box and Opinion’s Choice are placed by `components/Opinion/TabletOpinionColumns.tsx`, which measures them and tries every arrangement: stories keep their order (the newest at top left); the two boxes go anywhere but the top of a column. It keeps the one where no two story photos and no two boxes sit side by side and the columns end together, stretching or shrinking the photos (16:9 to 4:5) and the guest-writer box (2.4:1 to 1.4:1) to square them off; then the fewest stories out of reading order and the least change to the photos. Phones: one column, photos edge to edge |
 | Squared off | On computers the three columns end on one line: `BalanceColumns` stretches or shrinks each column's photo between 16:9 and 4:5 (at its focal point), drops the summaries from a column that's still far too long, and spreads a small leftover through the shorter columns. See [`fit-text.md`](fit-text.md#three-or-more-columns-opinion) |
+| Author spotlight | `components/Opinion/AuthorSpotlightCarousel.tsx`, between rules, a fixed 240px tall inside them (`SPOTLIGHT_HEIGHT`, so `BalanceColumns` can square off column 2). One columnist at a time, on top: their headshot (60px, or initials on a grey gradient), then name and major on one line (`detail`, cut off with an ellipsis rather than wrapping); then their latest piece, the largest type in it, set as the Opinion cards' headlines (up to three lines). The whole slide links to the piece. Below it, a strip of the authors' faces is the page indicator and the way to jump between them: all in full colour (the others are not dimmed or greyed, 2026-11-28), the current one ringed, its ring drawn round over the five seconds it's shown. It changes author every five seconds. Each change is a full slide (Web Animations API, 600ms): the piece on show leaves across the whole width as the next comes in from the side the reader moved toward (from the right for the rotation, wrap included); readers who prefer reduced motion get a short crossfade and no rotation. There is no pause button and there are no arrows, on purpose (2026-11-27): hovering or focus inside it stop the rotation, the ring resumes where it stopped, and swipe, ←/→ and the faces change author by hand. On computers a two-finger trackpad swipe sideways while hovering does too: one author per swipe, its momentum ignored but a new swipe on top of it counted (the movement picking up again, or turning round), mostly vertical movement left to scroll the page, and the browser's swipe-back held off over the carousel. Screen readers hear those changes but not the rotation. The editor's pinned authors, else the eight who wrote the most of the recent opinion pieces (`buildOpinionSpotlights`) |
 | Cards | The opinion type in red ("Staff Editorial", "Column", from the kicker), the headline, byline and date ("Nov 14, 2026"), and the summary in the site-wide summary style ([`summaries.md`](summaries.md)) |
-| Editorials, Opinions, Other | Under the rainbow divider: three groups side by side on computers (one under another below that), each titled as on Features (the title links to its full list, with a chevron, over a rule). Each shows the four newest stories of its types that aren't already on the page: the first with its photo, the next three listed with small photos. Tablets put the first beside the list. A group with nothing left is left out |
+| Editorials, Opinions, Other | Below the columns, set off by white space (no divider since 2026-11-27; their titles carry rules): three groups side by side on computers (one under another below that), each titled as on Features (the title links to its full list, with a chevron, over a rule). Each leads with the newest story of its types that has a photo (shown with it), then lists the two newest of the rest without photos (three stories in all; tablets list four beside the lead, five in all) (`pickGroupStories` in `components/Opinion/opinionGroups.ts`), so the lead can be older than the stories under it; none of them already on the page. Tablets put the first beside the list. A group with nothing left is left out |
 | Looking for an article? | `components/SectionSearchPrompt.tsx`: search limited to Opinion and "Contact Opinion" (edop@). No archive link: Opinion has no single archive, and each group title links to its own list |
 
 ### Default order and pins
@@ -23,8 +24,7 @@ alternating (`snakeOrder` and `planOpinionColumns` in `lib/opinionLayout.ts`):
 ```
    Left    Middle   Right
    1 ▣  |  2     |  3        row 1, left to right
-   6    |  5     |  4        row 2, right to left
-   7    |  8 ▣   |  9 ▣      row 3, left to right
+   6    |  5 ▣   |  4 ▣      row 2, right to left
    ▣ = photo slot (IMG on; the defaults shown)
 ```
 
@@ -48,11 +48,13 @@ slot, and the editor marks the pin "Expired" and names the story the page uses.
 Opinion's Choice picks don't lapse.
 
 Every story appears once on the page: the groups skip anything in the
-columns or Opinion’s Choice (the page fetches 20 per group so four are left).
+columns or Opinion’s Choice (the page fetches 20 per group, so there's a photo story and four more left).
 Which types go in which group is `components/Opinion/opinionGroups.ts`.
 
 The public section page builds its author spotlights on the server. Only the
-explicit public projection from `lib/opinionArticles.ts` is passed to the client;
+explicit public projection from `lib/opinionArticles.ts` (`SpotlightAuthor` in
+`components/Opinion/spotlight.tsx`: id, name, headshot URL, major, latest piece)
+is passed to the client;
 populated Payload user documents must never be passed through as component props.
 The same module defines the card selection, including guest bylines.
 
@@ -60,10 +62,18 @@ The same module defines the card selection, including guest bylines.
 
 `lib/opinionLayout.ts` validates new writes and normalizes legacy or malformed
 reads. Columns retain empty slots, image settings, and their configured length.
-The columns start with three slots each (5/4/4 before 2026-11-27). A layout
-saved before then has no `version: 2`; reading it drops its trailing empty
-(automatic) slots down to three, keeping any slot with a pin, and the next save
-stores `version: 2`, after which slots an editor adds are kept.
+The columns start with two slots each (`version: 3`, 2026-11-27). Older
+layouts are brought down when read, and the next save stores `version: 3`,
+after which slots an editor adds are kept:
+
+Automatic slots without a photo go first (the last such each time), then
+trailing automatic ones; a pinned slot is never dropped, so pins and photo
+slots stay (`shrinkColumn`).
+
+- `version: 2` (three slots each, earlier on 2026-11-27): each column drops
+  one slot. A column with nothing to drop keeps its slots.
+- No version (5/4/4, before that): each column comes down to two, or as near
+  as its pins allow.
 Each column has at most 20 slots; editors can choose at most three editor picks
 and 16 spotlight authors. Missing or unpublished pins fall back to automatic
 articles without moving other pins. Image settings apply on mobile and desktop.
@@ -86,9 +96,9 @@ pitch box (`components/PhotoPitch.tsx`): a window onto a photo pinned to the
 screen, the two lines centred on a dark tint, the photographer's credit in the
 corner. The wording is short so it can use the box's `large` type (14px label,
 28px link line; Features keeps 12px and 22px for its longer invitation). On
-computers it sits in column 1 right after the lead; on phones, after the sixth
-story, before Opinion’s Choice; on tablets, beside Opinion’s Choice, as tall
-as it.
+computers it sits in column 1 after its second story; on phones, after the fourth
+story, before Opinion’s Choice; on tablets, wherever the two-column
+arrangement puts it (never beside Opinion’s Choice).
 
 The page has no visible title: the stories start under the header, whose
 section nav already marks Opinion, as on Features. The `<h1>` is still there
@@ -164,6 +174,7 @@ idempotent (columnists by email, articles by slug). Run `pnpm db:seed` first.
 > **Never** run this against production: it creates placeholder users and
 > articles.
 It covers old pins, remote search, keyboard placement, automatic image settings,
-edits during save, carousel focus behavior, and pause/resume controls. Unit tests
+edits during save, the carousel's hover and focus pauses, its full-width slide, and changing
+author by keyboard and by the face strip. Unit tests
 cover permissions, public projections, layout validation, filling, attribution,
 classification, pagination, and the authenticated editorial APIs.

@@ -1,7 +1,8 @@
 import type { Article, User } from '@/payload-types';
-import type { SpotlightAuthor } from '@/components/Opinion/AuthorSpotlightCarousel';
+import type { SpotlightAuthor } from '@/components/Opinion/spotlight';
 import { extractTextFromLexical } from '@/utils/formatArticle';
 import { getArticleUrl } from '@/utils/getArticleUrl';
+import { headshotObjectPosition } from '@/utils/focalPoint';
 
 export const opinionCardSelect = {
   title: true, slug: true, subdeck: true, featuredImage: true, section: true,
@@ -22,6 +23,8 @@ export function buildOpinionSpotlights(articles: Article[]): SpotlightAuthor[] {
       authors.set(user.id, { count: 1, value: {
         id: user.id, name: `${user.firstName} ${user.lastName}`,
         headshot: user.headshot && typeof user.headshot === 'object' ? user.headshot.url || null : null,
+        headshotFocus: user.headshot && typeof user.headshot === 'object' ? headshotObjectPosition(user.headshot) : null,
+        detail: user.major || null,
         latestArticle: { title: extractTextFromLexical(article.title), url: getArticleUrl(article) },
       } });
     }

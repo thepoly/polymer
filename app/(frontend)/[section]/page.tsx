@@ -37,9 +37,10 @@ import SportsSectionPage from '@/components/Sports/SportsSectionPage';
 import { SPORTS_GAME_SELECT, loadSportsPage } from '@/lib/sportsPage';
 import { Article as PayloadArticle, Media } from '@/payload-types';
 import { Article as ComponentArticle } from '@/components/FrontPage/types';
-import type { SpotlightAuthor } from '@/components/Opinion/AuthorSpotlightCarousel';
+import type { SpotlightAuthor } from '@/components/Opinion/spotlight';
 import { formatArticle } from '@/utils/formatArticle';
-import { normalizeOpinionLayout, readOpinionLayoutDocument, OPINION_LAYOUT_NAME, isOpinionPinStale } from '@/lib/opinionLayout';
+import { headshotObjectPosition } from '@/utils/focalPoint';
+import { normalizeOpinionLayout, readOpinionLayoutDocument, OPINION_LAYOUT_NAME, isOpinionPinStale, DEFAULT_CHOICE_STYLE, type ChoiceStyle } from '@/lib/opinionLayout';
 import { buildOpinionSpotlights, opinionCardSelect } from '@/lib/opinionArticles';
 import { pitchPhotoOf, type PitchPhoto } from '@/lib/pitchPhoto';
 import { opinionGroups } from '@/components/Opinion/opinionGroups';
@@ -228,11 +229,12 @@ export default async function SectionPageRoute({ params }: Args) {
   let pinnedCol1: (ComponentArticle | null)[] = [];
   let pinnedCol2: (ComponentArticle | null)[] = [];
   let pinnedCol3: (ComponentArticle | null)[] = [];
-  let col1Images: boolean[] = [true, false, false];
-  let col2Images: boolean[] = [false, false, true];
-  let col3Images: boolean[] = [false, false, true];
+  let col1Images: boolean[] = [true, false];
+  let col2Images: boolean[] = [false, true];
+  let col3Images: boolean[] = [false, true];
   let editorsChoiceArticles: ComponentArticle[] = [];
   let editorsChoiceLabel = "Opinion\u2019s Choice";
+  let editorsChoiceStyle: ChoiceStyle = DEFAULT_CHOICE_STYLE;
   let pinnedSpotlightAuthors: SpotlightAuthor[] = [];
   let opinionPitch: PitchPhoto | null = null;
 
@@ -265,6 +267,7 @@ export default async function SectionPageRoute({ params }: Args) {
 
     if (layoutJson) {
       if (layoutJson.editorsChoiceLabel) editorsChoiceLabel = layoutJson.editorsChoiceLabel;
+      editorsChoiceStyle = layoutJson.editorsChoiceStyle;
       if (layoutJson.column1Images) col1Images = layoutJson.column1Images;
       if (layoutJson.column2Images) col2Images = layoutJson.column2Images;
       if (layoutJson.column3Images) col3Images = layoutJson.column3Images;
@@ -325,7 +328,7 @@ export default async function SectionPageRoute({ params }: Args) {
             where: { id: { in: userIds } },
             limit: userIds.length,
             depth: 1,
-            select: { firstName: true, lastName: true, headshot: true },
+            select: { firstName: true, lastName: true, headshot: true, major: true },
           });
           const userMap = new Map(userResponse.docs.map((u) => [u.id, u]));
           pinnedSpotlightAuthors = layoutJson.spotlight
@@ -340,6 +343,8 @@ export default async function SectionPageRoute({ params }: Args) {
                 id: user.id,
                 name: `${user.firstName} ${user.lastName}`,
                 headshot,
+                headshotFocus: headshot ? headshotObjectPosition(user.headshot as Media) : null,
+                detail: user.major || null,
                 latestArticle: {
                   title: entry.articleTitle || '',
                   url: entry.articleUrl || '/opinion',
@@ -578,7 +583,8 @@ export default async function SectionPageRoute({ params }: Args) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c') }}
       />
-      <Header flushMobileBottom={isNews || Boolean(sportsPage?.schedule.length)} />
+      {/* Opinion, on phones: the page sets the space under the date rule (28px, the rule's own height) */}
+      <Header flushMobileBottom={isNews || Boolean(sportsPage?.schedule.length) || (isOpinion ? "phone" : false)} />
       {isOpinion ? (
         <OpinionSectionPage
           title={sectionTitle}
@@ -592,6 +598,7 @@ export default async function SectionPageRoute({ params }: Args) {
           col3Images={col3Images}
           editorsChoiceArticles={editorsChoiceArticles}
           editorsChoiceLabel={editorsChoiceLabel}
+          editorsChoiceStyle={editorsChoiceStyle}
           groupedArticles={groupedArticles}
           pinnedSpotlightAuthors={pinnedSpotlightAuthors}
           guestPitch={opinionPitch}

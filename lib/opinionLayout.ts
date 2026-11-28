@@ -4,14 +4,26 @@ export const OPINION_LAYOUT_NAME = 'Opinion Layout';
 export const MAX_OPINION_SLOTS = 20;
 export const MAX_SPOTLIGHT_AUTHORS = 16;
 /** Story slots each column starts with (editors can add more, up to MAX_OPINION_SLOTS) */
-export const OPINION_COLUMN_SLOTS = 3;
+export const OPINION_COLUMN_SLOTS = 2;
 /** Which slot shows its photo by default: column 1's lead, columns 2 and 3's last (column 3 must have one) */
-const DEFAULT_IMAGE_SLOT = [0, 2, 2];
+const DEFAULT_IMAGE_SLOT = [0, 1, 1];
 /**
- * 2: three slots per column. Layouts saved without it are from the 5/4/4
- * days and lose their trailing automatic slots when read.
+ * 3: two slots per column (2026-11-27, when the author spotlight began
+ * showing each columnist's latest piece). Read from version 2 (three slots),
+ * each column drops one automatic slot without a photo. Layouts saved without
+ * a version are from the 5/4/4 days and lose their trailing automatic slots.
  */
-export const OPINION_LAYOUT_VERSION = 2;
+export const OPINION_LAYOUT_VERSION = 3;
+/**
+ * How Opinion's Choice is set off (components/Opinion/EditorsChoice.tsx),
+ * picked in the Opinion Layout editor: a 1px frame with the label in its top
+ * edge (the default), a vertical rule down the left of the picks, or the label
+ * over a 2px rule like the group titles.
+ */
+export const CHOICE_STYLES = ['keyline', 'margin', 'rule'] as const;
+export type ChoiceStyle = typeof CHOICE_STYLES[number];
+export const DEFAULT_CHOICE_STYLE: ChoiceStyle = 'keyline';
+const isChoiceStyle = (value: unknown): value is ChoiceStyle => CHOICE_STYLES.includes(value as ChoiceStyle);
 export const columnKeys = ['column1', 'column2', 'column3'] as const;
 export type OpinionColumn = typeof columnKeys[number];
 export type OpinionSlotColumn = OpinionColumn | 'editorsChoice';
@@ -21,6 +33,7 @@ export type OpinionLayout = Record<OpinionColumn, (number | null)[]> & {
   column1Images: boolean[]; column2Images: boolean[]; column3Images: boolean[];
   editorsChoice: (number | null)[];
   editorsChoiceLabel: string;
+  editorsChoiceStyle: ChoiceStyle;
   spotlight: SpotlightEntry[];
   /** A media id: the photo behind the guest-writer box. Not a story pin; without one the page uses the newest opinion photo. */
   pitch: number | null;
@@ -46,24 +59,28 @@ export function normalizeOpinionLayout(value: unknown): OpinionLayout {
     if (!validId(id) || seen.has(id)) return null;
     seen.add(id); return id;
   });
-  // A layout saved before the columns went to three slots each (no version)
-  // still carries the old 5/4/4 automatic slots: those trailing empty slots
-  // are dropped, down to the new count. A slot with a pin is kept.
-  const legacy = raw.version !== OPINION_LAYOUT_VERSION;
+  // Older layouts are brought down to the current slot count, dropping
+  // automatic slots without a photo first (shrinkColumn), so pins and photo
+  // slots stay. Version 2 (three slots each) loses one such slot per column;
+  // a layout with no version (5/4/4) goes down to the current count.
+  const fromThreeSlots = raw.version === 2;
+  const unversioned = raw.version === undefined || raw.version === null;
   for (const [i, key] of columnKeys.entries()) {
     const imagesKey = `${key}Images` as const;
     const pins = raw[key]; const images = raw[imagesKey];
-    let length = Math.min(MAX_OPINION_SLOTS, Math.max(OPINION_COLUMN_SLOTS, Array.isArray(pins) ? pins.length : 0, Array.isArray(images) ? images.length : 0));
-    result[key] = ids(pins, length);
-    if (legacy) {
-      while (length > OPINION_COLUMN_SLOTS && result[key][length - 1] === null) length--;
-      result[key] = result[key].slice(0, length);
+    const length = Math.min(MAX_OPINION_SLOTS, Math.max(OPINION_COLUMN_SLOTS, Array.isArray(pins) ? pins.length : 0, Array.isArray(images) ? images.length : 0));
+    let slots = ids(pins, length);
+    let photos: boolean[] | null = Array.isArray(images) ? slots.map((_, index) => images[index] === true) : null;
+    if (fromThreeSlots || unversioned) {
+      ({ slots, photos } = shrinkColumn(slots, photos, fromThreeSlots ? 1 : Infinity));
     }
-    result[imagesKey] = Array.from({ length }, (_, index) => Array.isArray(images) ? images[index] === true : index === DEFAULT_IMAGE_SLOT[i]);
+    result[key] = slots;
+    result[imagesKey] = photos ?? slots.map((_, index) => index === DEFAULT_IMAGE_SLOT[i]);
   }
   result.column3Images = ensureColumn3Photo(result.column3Images);
   result.version = OPINION_LAYOUT_VERSION;
   result.editorsChoice = ids(raw.editorsChoice, 3);
+  result.editorsChoiceStyle = isChoiceStyle(raw.editorsChoiceStyle) ? raw.editorsChoiceStyle : DEFAULT_CHOICE_STYLE;
   const users = new Set<number>();
   result.spotlight = (Array.isArray(raw.spotlight) ? raw.spotlight : []).slice(0, MAX_SPOTLIGHT_AUTHORS).flatMap((item) => {
     const entry = record(item);
@@ -74,6 +91,28 @@ export function normalizeOpinionLayout(value: unknown): OpinionLayout {
   result.pitch = validId(raw.pitch) ? raw.pitch : null;
   result.pitchPositions = result.pitch ? pitchPositionsOf(raw.pitchPositions) : { ...NO_PITCH_POSITIONS };
   return result;
+}
+
+/**
+ * Brings an older column down toward OPINION_COLUMN_SLOTS, removing at most
+ * `limit` slots: first automatic slots without a photo (the last such each
+ * time), then trailing automatic slots. A pinned slot is never removed.
+ */
+function shrinkColumn(slots: (number | null)[], photos: boolean[] | null, limit: number) {
+  let removed = 0;
+  const removeAt = (index: number) => {
+    slots = slots.filter((_, s) => s !== index);
+    photos = photos && photos.filter((_, s) => s !== index);
+    removed++;
+  };
+  while (slots.length > OPINION_COLUMN_SLOTS && removed < limit) {
+    let index = -1;
+    for (let s = slots.length - 1; s >= 0; s--) if (slots[s] === null && !photos?.[s]) { index = s; break; }
+    if (index < 0) break;
+    removeAt(index);
+  }
+  while (slots.length > OPINION_COLUMN_SLOTS && removed < limit && slots[slots.length - 1] === null) removeAt(slots.length - 1);
+  return { slots, photos };
 }
 
 export function readOpinionLayoutDocument(value: unknown): OpinionLayout {
@@ -108,6 +147,7 @@ export function validateOpinionLayout(value: unknown): true | string {
   const column3Images = raw.column3Images;
   if (Array.isArray(column3Images) && column3Images.length > 0 && !column3Images.includes(true)) return 'Column 3 needs one story with a photo: switch on IMG for one of its slots.';
   if (raw.editorsChoiceLabel !== undefined && (typeof raw.editorsChoiceLabel !== 'string' || raw.editorsChoiceLabel.length > 100)) return 'Choice label must be at most 100 characters.';
+  if (raw.editorsChoiceStyle !== undefined && !isChoiceStyle(raw.editorsChoiceStyle)) return 'Choice style must be keyline, margin or rule.';
   if (raw.spotlight !== undefined) {
     if (!Array.isArray(raw.spotlight) || raw.spotlight.length > MAX_SPOTLIGHT_AUTHORS) return 'Too many spotlight authors.';
     const users = new Set<number>();
@@ -132,8 +172,7 @@ export function validateOpinionLayout(value: unknown): true | string {
  * in the rows it doesn't reach. Returns [column, slot] pairs.
  *
  *   1 ▣ | 2   | 3
- *   6   | 5   | 4
- *   7   | 8 ▣ | 9 ▣
+ *   6   | 5 ▣ | 4 ▣
  */
 export function snakeOrder(lengths: number[]): [number, number][] {
   const order: [number, number][] = [];

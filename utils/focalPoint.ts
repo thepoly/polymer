@@ -24,3 +24,14 @@ export function focalObjectPosition(media: Focusable | null | undefined): string
   const y = typeof media?.focalY === 'number' ? clampPercent(media.focalY) : 50
   return `${x}% ${y}%`
 }
+
+/**
+ * `object-position` for a headshot cropped to a circle or square. A focal
+ * point an editor has moved wins; an untouched one (50/50) crops a little
+ * high, since a face sits in the upper part of a portrait and an even crop
+ * of a tall photo cuts off the top of the head.
+ */
+export function headshotObjectPosition(media: Focusable | null | undefined): string {
+  const untouched = (media?.focalX ?? 50) === 50 && (media?.focalY ?? 50) === 50
+  return untouched ? '50% 30%' : focalObjectPosition(media)
+}

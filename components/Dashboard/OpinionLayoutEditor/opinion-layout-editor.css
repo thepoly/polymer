@@ -281,6 +281,27 @@
   color: #C41E3A;
   padding: 4px 0;
 }
+.ole-ec-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ole-ec-style {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--theme-elevation-600, #999);
+}
+.ole-ec-style select {
+  font: inherit;
+  color: var(--theme-text, inherit);
+  background: var(--theme-elevation-50, transparent);
+  border: 1px solid var(--theme-elevation-200, #444);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
 .ole-ec-section .ole-slot {
   border-color: rgba(196, 30, 58, 0.25);
 }

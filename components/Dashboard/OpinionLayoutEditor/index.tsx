@@ -16,7 +16,7 @@ import {
   pointerWithin,
 } from '@dnd-kit/core';
 import './opinion-layout-editor.css';
-import { normalizeOpinionLayout, readOpinionLayoutDocument, validateOpinionLayout, isOpinionPinStale, planOpinionColumns, OPINION_LAYOUT_NAME, OPINION_PIN_STALE_DAYS, MAX_OPINION_SLOTS, MAX_SPOTLIGHT_AUTHORS, type OpinionLayout, type SpotlightEntry } from '@/lib/opinionLayout';
+import { normalizeOpinionLayout, readOpinionLayoutDocument, validateOpinionLayout, isOpinionPinStale, planOpinionColumns, OPINION_LAYOUT_NAME, OPINION_PIN_STALE_DAYS, MAX_OPINION_SLOTS, MAX_SPOTLIGHT_AUTHORS, type ChoiceStyle, type OpinionLayout, type SpotlightEntry } from '@/lib/opinionLayout';
 import { NO_PITCH_POSITIONS } from '@/lib/pitchPhoto';
 import { PitchPositionsEditor, pitchInfoOf, type PitchPhotoInfo } from '@/components/admin/PitchPositionsEditor';
 
@@ -59,12 +59,12 @@ const pointerThenCenter: CollisionDetection = (args) => {
 const EMPTY_LAYOUT = normalizeOpinionLayout(null);
 
 // Column labels
-const COL1_LABELS = ['Lead (with image)', 'Article', 'Article'];
-const COL2_LABELS = ['Article', 'Article', 'Article (with image)'];
-const COL3_LABELS = ['Article', 'Article', 'Article (with image)'];
-/** The guest-writer box follows column 1's first slot, and the author spotlight column 2's second, as on the page */
-const PITCH_AFTER = 1;
-const SPOTLIGHT_AFTER = 2;
+const COL1_LABELS = ['Lead (with image)', 'Article'];
+const COL2_LABELS = ['Article', 'Article (with image)'];
+const COL3_LABELS = ['Article', 'Article (with image)'];
+/** The guest-writer box follows column 1's second slot, and the author spotlight column 2's first, as on the page */
+const PITCH_AFTER = 2;
+const SPOTLIGHT_AFTER = 1;
 const EC_LABELS = ['Pick 1', 'Pick 2', 'Pick 3'];
 
 // ---------------------------------------------------------------------------
@@ -585,6 +585,12 @@ export function OpinionLayoutEditor() {
     markDirty();
   }, [markDirty, layout]);
 
+  // ---- Opinion's Choice style ----
+  const setChoiceStyle = useCallback((style: ChoiceStyle) => {
+    setLayout((prev) => ({ ...prev, editorsChoiceStyle: style }));
+    markDirty();
+  }, [markDirty]);
+
   // ---- Spotlight ----
   const addSpotlight = useCallback((userId: number) => {
     setLayout((prev) => {
@@ -993,20 +999,6 @@ export function OpinionLayoutEditor() {
                   <span className="ole-column-title">Column 3</span>
                 </div>
 
-                {/* Editor's Choice slots */}
-                <div className="ole-ec-section">
-                  <div className="ole-ec-header">{layout.editorsChoiceLabel}</div>
-                  {EC_LABELS.map((label, i) => (
-                    <DropSlot
-                      key={`ec-${i}`}
-                      slotId={`ec-${i}`}
-                      label={label}
-                      article={getArticle('editorsChoice', i)}
-                      onClear={() => clearSlot(`ec-${i}`)}
-                    />
-                  ))}
-                </div>
-
                 {layout.column3.map((_, i) => (
                   <DropSlot
                     key={`col3-${i}`}
@@ -1034,6 +1026,34 @@ export function OpinionLayoutEditor() {
                   />
                 ))}
                 <button className="ole-add-slot-btn" onClick={() => addSlot('column3')} disabled={layout.column3.length >= MAX_OPINION_SLOTS}>+ Add slot</button>
+
+                {/* Editor's Choice slots: at the foot of the column, as on the page */}
+                <div className="ole-ec-section">
+                  <div className="ole-ec-header-row">
+                    <div className="ole-ec-header">{layout.editorsChoiceLabel}</div>
+                    <label className="ole-ec-style">
+                      <span>Style</span>
+                      <select
+                        aria-label="Opinion’s Choice style"
+                        value={layout.editorsChoiceStyle}
+                        onChange={(event) => setChoiceStyle(event.target.value as ChoiceStyle)}
+                      >
+                        <option value="keyline">Frame (default)</option>
+                        <option value="rule">Rule under the label</option>
+                        <option value="margin">Rule down the left</option>
+                      </select>
+                    </label>
+                  </div>
+                  {EC_LABELS.map((label, i) => (
+                    <DropSlot
+                      key={`ec-${i}`}
+                      slotId={`ec-${i}`}
+                      label={label}
+                      article={getArticle('editorsChoice', i)}
+                      onClear={() => clearSlot(`ec-${i}`)}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 
