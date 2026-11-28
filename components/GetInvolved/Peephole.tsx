@@ -2,7 +2,8 @@ import PhotoWindow, { type PhotoSource } from '@/components/PhotoWindow';
 
 /*
  * The Get involved page shows one pinned photo through several openings: the
- * heading card, the meeting box, the buttons and the news tip box. Every
+ * heading card, the meeting box and the buttons (the news tip box was one
+ * until 2026-11-28; it's plain now, only its Copy button a window). Every
  * opening must use the same photo and the same position, or the photo won't
  * line up between them.
  *

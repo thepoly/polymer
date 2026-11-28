@@ -112,7 +112,7 @@ function SportsLeadStory({
       )}
 
       <TransitionLink href={href} className="order-3 block lg:order-2">
-        <div className="relative aspect-[16/9] w-full overflow-hidden bg-rule">
+        <div className="relative -mx-4 aspect-[16/9] overflow-hidden bg-rule sm:mx-0 sm:w-full">
           {image && (
             <Image
               src={image}
@@ -160,7 +160,7 @@ function SportsWideCard({ article, flip = false }: { article: ComponentArticle; 
       {/* Phones: text above the photo; wider screens: photo left, text right
           (or mirrored with flip) */}
       {image && (
-        <div className="relative order-2 aspect-[3/2] w-full shrink-0 overflow-hidden bg-rule sm:order-none sm:w-[46%]">
+        <div className="relative order-2 -mx-4 aspect-[3/2] shrink-0 overflow-hidden bg-rule sm:order-none sm:mx-0 sm:w-[46%]">
           <Image
             src={image}
             alt={article.title}

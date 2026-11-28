@@ -147,7 +147,9 @@ Desktop retains its 76px title with balanced wrapping, without a hero divider,
 and uses a 24px gap before the column labels.
 Tablet and desktop leave 24px between the final content and the footer rule.
 The news-tip section has no top divider and starts 24px after the submission
-button, preserving the short hairline beside its label.
+button, preserving the short hairline beside its label. Its email sits on the
+page's own background (no photo behind it since 2026-11-28), lined up with the
+heading; only its Copy button is a window onto the page photo.
 An events/advertising block follows news tips, stacking below 640px. It shows
 `features@poly.rpi.edu` for event details and `business@poly.rpi.edu` for ads;
 both reuse the copy control with distinct accessible labels. At all widths,

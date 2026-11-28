@@ -49,7 +49,7 @@ export default async function GetInvolvedPage() {
   return (
     <div className="min-h-screen bg-bg-main text-text-main">
       <Header flushMobileBottom />
-      <main data-get-involved-page style={photoPositionVars(positions)} className="mx-auto w-full max-w-[1280px] px-5 pb-0 pt-6 md:px-6 md:pb-3 lg:pt-12 xl:px-[30px]">
+      <main data-get-involved-page style={photoPositionVars(positions)} className="mx-auto w-full max-w-[1280px] px-5 pb-0 pt-7 md:px-6 md:pb-3 md:pt-6 lg:pt-12 xl:px-[30px]">
         <style>{`
           @media (prefers-reduced-motion: no-preference) {
             html:has([data-get-involved-page]) { scroll-behavior: smooth; }
@@ -60,7 +60,8 @@ export default async function GetInvolvedPage() {
           alt={photo.alt}
           maxZoom={photo.maxZoom}
           imageClassName={PHOTO_POSITION_CLASSES}
-          className="h-[clamp(240px,42vh,400px)] lg:h-[clamp(360px,52vh,520px)]"
+          // Phones: edge to edge, past the page's margins, as are the other windows
+          className="h-[clamp(240px,42vh,400px)] max-md:mx-[calc(50%_-_50vw)] lg:h-[clamp(360px,52vh,520px)]"
         >
           <div aria-hidden="true" className="absolute inset-0 z-10 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
           {photo.credit && (
@@ -73,7 +74,9 @@ export default async function GetInvolvedPage() {
           </div>
         </PhotoWindow>
 
-        <nav aria-label="Get involved paths" className="border-b border-rule py-1 lg:hidden">
+        {/* Phones: no rule under the links and no space after them; the
+            meetings window, edge to edge, follows at once */}
+        <nav aria-label="Get involved paths" className="border-rule py-1 md:border-b lg:hidden">
           {[
             { label: 'Join the staff', href: '#join' },
             { label: 'Submit an op-ed or letter', href: '#opinion' },
@@ -86,7 +89,7 @@ export default async function GetInvolvedPage() {
         </nav>
 
         <div className="lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-start lg:gap-x-16">
-          <section id="join" aria-labelledby="join-heading" className="grid min-w-0 scroll-mt-24 grid-cols-1 gap-8 pb-2 pt-8 md:py-10 lg:gap-y-0 lg:pb-0 lg:pt-6">
+          <section id="join" aria-labelledby="join-heading" className="grid min-w-0 scroll-mt-24 grid-cols-1 gap-8 pb-2 pt-0 md:py-10 lg:gap-y-0 lg:pb-0 lg:pt-6">
             <div className="min-w-0 lg:contents">
               <div className="contents lg:block lg:pb-6">
                 <PathLabel>Join the staff</PathLabel>
@@ -109,7 +112,7 @@ export default async function GetInvolvedPage() {
                 dark scrim. The @container sits on the inner div, not the aside:
                 a container becomes the anchor for position: fixed children, which
                 would pin this photo to the box instead of the screen. */}
-            <aside aria-label="Weekly meetings" className="relative order-first self-start p-5 text-white md:p-6 lg:order-none lg:row-start-2">
+            <aside aria-label="Weekly meetings" className="relative order-first self-start p-5 text-white max-md:mx-[calc(50%_-_50vw)] md:p-6 lg:order-none lg:row-start-2">
               <Peephole photo={photo} />
               <div className="@container relative z-10">
                 <p className="font-meta text-[11px] font-bold uppercase leading-[1.4] tracking-[0.12em]">Weekly meetings · Open to everyone</p>
@@ -151,9 +154,11 @@ export default async function GetInvolvedPage() {
             <section id="tip" aria-labelledby="tip-heading" className="min-w-0 scroll-mt-24 pb-0 pt-6">
               <PathLabel>Send a news tip</PathLabel>
               <h2 id="tip-heading" className="mb-[18px] mt-4 font-copy text-[30px] font-normal leading-[1.1] md:text-[34px]">Seen something newsworthy?</h2>
-              <div className="relative flex flex-wrap items-center gap-3 p-5 text-white">
-                <Peephole photo={photo} />
-                <span id="get-involved-tip-email" className="relative z-10 min-w-0 select-all font-copy text-[22px] leading-tight [overflow-wrap:anywhere]">news@poly.rpi.edu</span>
+              {/* Plain, on the page's own background (no photo behind it since
+                  2026-11-28), lined up with the heading as the rows below are;
+                  the Copy button is still a window onto the photo */}
+              <div className="flex flex-wrap items-center gap-3 text-text-main">
+                <span id="get-involved-tip-email" className="min-w-0 select-all font-copy text-[22px] leading-tight [overflow-wrap:anywhere]">news@poly.rpi.edu</span>
                 <CopyButton photo={photo} value="news@poly.rpi.edu" targetId="get-involved-tip-email" />
               </div>
             </section>

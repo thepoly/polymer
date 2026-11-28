@@ -153,7 +153,7 @@ function LeadSection({ sec, flip }: { sec: Section; flip: boolean }) {
       <div className="mt-4 grid grid-cols-1 gap-4 md:mt-5 md:grid-cols-2 md:gap-8 lg:gap-10">
         <div className={`self-start ${flip ? 'md:order-2' : ''}`}>
           <TransitionLink href={getArticleUrl(lead)} tabIndex={-1} aria-hidden="true" className="block">
-            <div className="relative aspect-[3/2] overflow-hidden bg-rule">
+            <div className="relative -mx-4 aspect-[3/2] overflow-hidden bg-rule sm:mx-0">
               <Image
                 src={lead.photo!.src}
                 alt=""
@@ -238,7 +238,7 @@ function TopStories({ cover, left, right, pitch }: { cover: Story; left: Story[]
       {/* The cover, in the middle */}
       <article className="md:col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:border-x lg:border-rule lg:px-6">
         <TransitionLink href={getArticleUrl(cover)} tabIndex={-1} aria-hidden="true" className="block">
-          <div className="relative aspect-[3/2] overflow-hidden bg-rule">
+          <div className="relative -mx-4 aspect-[3/2] overflow-hidden bg-rule sm:mx-0">
             <Image
               src={cover.photo!.src}
               alt=""
@@ -291,7 +291,10 @@ function TopStories({ cover, left, right, pitch }: { cover: Story; left: Story[]
             <React.Fragment key={s.id}>
             {i === 3 && (
               <li className="flex flex-1 flex-col border-b border-rule py-4 md:py-3">
-                <Pitch photo={pitch} />
+                {/* Phones: edge to edge, past the page's margins */}
+                <div className="flex flex-1 flex-col max-md:mx-[calc(50%_-_50vw)]">
+                  <Pitch photo={pitch} />
+                </div>
               </li>
             )}
             <li className={`border-b border-rule py-4 first:pt-0 last:border-b-0 md:py-3 md:last:pb-0 max-md:hidden`}>
@@ -312,7 +315,9 @@ function TopStories({ cover, left, right, pitch }: { cover: Story; left: Story[]
           {/* Fewer than four stories: the pitch goes at the end */}
           {right.length < 4 && (
             <li className="flex flex-1 flex-col py-4 md:py-3">
-              <Pitch photo={pitch} />
+              <div className="flex flex-1 flex-col max-md:mx-[calc(50%_-_50vw)]">
+                <Pitch photo={pitch} />
+              </div>
             </li>
           )}
       </ul>
@@ -699,7 +704,9 @@ export default async function FeaturesFront({
     // overflow-x-clip: the reel's rail runs to the screen's edge, and 100vw is a
     // few pixels wider than the page on a desktop with a scrollbar
     <div className="overflow-x-clip text-text-main">
-      <div className="mx-auto w-full max-w-[1280px] px-4 pb-6 pt-4 md:px-6 md:pt-6 xl:px-[30px]">
+      {/* Phones: the header adds no space under its date rule here, so the
+          cover photo starts 28px below it, the rule's own height (as on News) */}
+      <div className="mx-auto w-full max-w-[1280px] px-4 pb-6 pt-7 md:px-6 md:pt-6 xl:px-[30px]">
         <h1 className="sr-only">Features</h1>
 
         {/* ── 1. The top: the cover in the middle, the newest stories either side ── */}

@@ -154,7 +154,8 @@ export default async function SectionPageRoute({ params }: Args) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c') }}
         />
-        <Header />
+        {/* Phones: FeaturesFront sets the space under the date rule (28px, the rule's own height) */}
+        <Header flushMobileBottom="phone" />
         <FeaturesFront pins={pinsOf(layout)} pitchPhotoId={layout.pitch} pitchPositions={layout.pitchPositions} />
         <Footer />
       </main>

@@ -26,7 +26,7 @@ export function FeaturedCard({
     <TransitionLink href={getArticleUrl(article)} className="group block">
       <article>
         {article.image && (
-          <div className="relative mb-3 aspect-[3/2] overflow-hidden">
+          <div className="relative -mx-4 mb-3 aspect-[3/2] overflow-hidden sm:mx-0">
             <Image
               src={article.image}
               alt={article.imageTitle || ""}
